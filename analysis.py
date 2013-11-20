@@ -13,23 +13,20 @@ def analyze_temperature_array(System,Tarrayfile="T_array.txt"):
         temperatures = [ temp[:-1] for temp in tempfile  ]
         
         ## TO DO: ADD CALCULATION OF NATIVE CONTACTS.
-        #calculate_Q()
+        if (not os.path.exists("Q.dat")):
+            #calculate_Q()
+
         cwd2 = os.getcwd()
         for tdir in temperatures:
             print cwd2+"/"+tdir
             os.chdir(cwd2+"/"+tdir)
-            try:
-                check_files_exist(["rmsd.xvg","radius_cropped.xvg","energyterms.xvg","phis.xvg"])
-            except:
+            if (os.path.exists("rmsd.xvg")) and (os.path.exists("radius_cropped.xvg")) \
+               (os.path.exists("energyterms.xvg")) and (os.path.exists("phis.xvg")):
+                pass
+            else:
                 crunch_coordinates()
             os.chdir(cwd2)
         os.chdir(cwd)
-
-def check_files_exist(files):
-    ''' This will return an error if the files don't exist.'''
-    for file in files:
-        test = open(file,"r")
-        test.close()
 
 def crunch_coordinates():
     ''' Crunch the following reaction coordinates with Gromacs: rmsd, radius

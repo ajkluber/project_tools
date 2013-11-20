@@ -415,3 +415,20 @@ class HomogeneousGoModel(object):
                              "nonbond_params.itp":nonbond_params_itps[i]})
         return topology_files
 
+    def write_info_file(self):
+        ''' Writes model.info file for new simulation project. 
+            DOESN"T WORK. NEEDS TO BE UPDATED.'''
+
+        template_info = open('/home/ajk8/projects/dmc_model/gmx/%s.params' % self.modeltype, 'r').read()
+        pdbs = ''
+        for pdb in self.pdbs: pdbs += pdb + " "
+        info = open('model.info','w')
+        info.write("Simulation project initialized on: %s\n" % time.asctime())
+        info.write("[ System ]\n")
+        info.write("SystemName:    %s\n"  % self.systemname )
+        info.write("PDBs:    %s\n"  % pdbs )
+        info.write("\n")
+        info.write("[ Model ]\n")
+        info.write(template_info)
+        info.write("Solvent: %s" % self.solvent)
+        info.close()

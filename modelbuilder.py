@@ -60,27 +60,7 @@ class ModelBuilder(object):
         go_model_rocedure = ["Prepping system","Submitting T_array","Analyzing T_array"]
 
         if args.action == 'new':
-            self.append_log("Project %s started" % args.name)
-            Model = newmodel(self.path)
-            System = system.System(args)
-            self.create_subdirs(System.subdirs)
-            self.append_log("Prepping system")
-            self.prep_system(System,Model)
-            self.append_log("Finished: Prepping system")
-            #print self.Model  ## DEBUGGING
-            #print self.System  ## DEBUGGING
-
-            self.append_log("Submitting T_array")
-            sim.run_temperature_array(Model,System)
-            self.append_log("Finished: Submitting T_array")
-            #self.append_log("Analys T_array")
-            #analysis.analyze_temperature_array(System)
-            #self.append_log("Finished: T_array")
-            #self.save_project(Model,System)
-            print "Success"
-            raise SystemExit
-            
-            #self.write_info_file()
+            self.new_project(args)
         elif args.action == 'check':
             ## I would like this action to check the state of the current 
             ## simulation. Each simulation style has a defined procedure (more 
@@ -105,40 +85,86 @@ class ModelBuilder(object):
 
     def append_time_label(self):
         now = time.localtime()
-        now_string = "%s:%s:%s:%s" % (now.tm_mon,now.tm_mday,now.tm_hour,now.tm_min)
+        now_string = "%s:%s:%s:%s:%s" % (now.tm_year,now.tm_mon,now.tm_mday,now.tm_hour,now.tm_min)
         return now_string
 
     def create_subdirs(self,subdirs):
-        ''' Create the subdirectories for the system.'''
-        pdbs = ''
+        ''' Create the subdirectories for the system. Skip if they already exist.'''
         for i in range(len(subdirs)): 
             sub = subdirs[i]
-            try:
+            if os.path.exists(sub) != True:
                 os.mkdir(sub)
-            except:
+                self.append_log("Creating new subdirectory: %s" % sub)
+            else:
                 pass
-            pdbs += sub + "/ "
-        self.append_log("Creating new subdirectories: %s" % pdbs)
 
-    def write_info_file(self):
-        ''' Writes model.info file for new simulation project. 
-            DOESN"T WORK. NEEDS TO BE UPDATED.'''
+    def folding_temperature_loop(self,Model,System):
+        ''' The "folding temperature loop" is one of the several large-scale 
+            logical structures in modelbuilder. It is entered anytime we want
+            to determine the folding temperature. This could be when we have
+            started a new project, refined the paramters, or returned to a 
+            project in progress. The folding temperature loop successively 
+            narrows in on the folding temperature.'''
 
-        template_info = open('/home/ajk8/projects/dmc_model/gmx/%s.params' % self.modeltype, 'r').read()
-        pdbs = ''
-        for pdb in self.pdbs: pdbs += pdb + " "
-        info = open('model.info','w')
-        info.write("Simulation project initialized on: %s\n" % time.asctime())
-        info.write("[ System ]\n")
-        info.write("SystemName:    %s\n"  % self.systemname )
-        info.write("PDBs:    %s\n"  % pdbs )
-        info.write("\n")
-        info.write("[ Model ]\n")
-        info.write(template_info)
-        info.write("Solvent: %s" % self.solvent)
-        info.close()
+        for sub in System.subdirs:
+            ## Check to see if the folding temperature has been found. If yes, then continue.
+            if (not os.path.exists(sub+"/Tf.txt")):
 
-    def prep_system(self,System,Model):
+                ## Check to see if a previous temperature range was used.
+                if (not os.path.exist(sub+"/Ti_Tf_dT.txt"):
+                    ## For initial exploration use very broad temperature increments.
+                    self.append_log("Starting: Submitting T_array iteration %d ; refinement %d" % \
+                                    (System.Tf_iteration,System.Tf_refinements[System.Tf_iteration]))
+                    sim.run_temperature_array(Model,System,Ti=100,Tf=200,dT=50)
+                    self.append_log("Finished: Submitting T_array iteration %d ; refinement %d" % \
+                                    (System.Tf_iteration,System.Tf_refinements[System.Tf_iteration]))
+                    System.Tf_refinements[System.Tf_iteration] += 1
+                    open(sub+"/Ti_Tf_dT.txt","w").write("%d %d %d" % (100, 200, 50))
+                else:
+                    ## Use previous range to determine new range. 
+                    ## DOESN'T WORK YET. USE ANALYSIS TO ESTIMATE THE BRACKETING TEMPS.
+                    Ti,Tf,dT = open(sub+"/Ti_Tf_dT.txt","r").read().split()
+                    Ti = int(Ti); Tf = int(Tf); dT = int(dT)
+                    lowerT, upperT = open(sub+"T_brackets.txt","r").read().split()
+                    lowerT = int(lowerT); upperT = int(upperT)
+                    newdT = float(dT)/5.
+                    ## If new dT is less than 1 then don't do it.
+                    if newdT < 1.:
+                        newdT = 1
+                    newTi = lowerT + newdT
+                    newTf = upperT - newdT
+                    self.append_log("Starting: Submitting T_array iteration %d ; refinement %d" % \
+                                    (System.Tf_iteration,System.Tf_refinements[System.Tf_iteration]))
+                    sim.run_temperature_array(Model,System,Ti=newTi,Tf=newTf,dT=newdT)
+                    self.append_log("Finished: Submitting T_array iteration %d ; refinement %d" % \
+                                    (System.Tf_iteration,System.Tf_refinements[System.Tf_iteration]))
+            else:
+                ## Folding temperature has been found. Continuing.
+                continue
+
+    def new_project(self,args):
+        ''' Starting a new simulation project.'''
+        self.append_log("Project %s started" % args.name)
+        Model = newmodel(self.path)
+        System = system.System(args)
+        self.create_subdirs(System.subdirs)
+        self.append_log("Starting: Prepping system")
+        self.prepare_system(System,Model)
+        self.append_log("Finished: Prepping system")
+
+        ## The first step depends on the type of model.
+        if args.type in ["HomGo","HetGo"]:
+            self.folding_temperature_loop(Model,System)
+        elif args.type == "DMC":
+            pass
+        #self.append_log("Analys T_array")
+        #analysis.analyze_temperature_array(System)
+        #self.append_log("Finished: T_array")
+        #self.save_project(Model,System)
+        print "Success"
+        #raise SystemExit
+
+    def prepare_system(self,System,Model):
         ''' Extract all the topology files from Model.'''
         System.clean_pdbs()
         System.write_Native_pdb_CA()
@@ -147,27 +173,6 @@ class ModelBuilder(object):
         topology_files = Model.get_itp_strings(prots_indices, prots_residues, prots_coords,prots_ndxs)
         System.topology_files = topology_files
 
-    def load_project(self):
-        ''' Load Model and System objects for later use. Doesn't work.'''
-        mdlpkl = open("model.pkl","rb")
-        Model = cPickle.load(mdlpkl)
-        mdlpkl.close()
-        syspkl = open("system.pkl","rb")
-        System = cPickle.load(syspkl)
-        syspkl.close()
-        return Model, System
-        
-    def save_project(self,Model,System):
-        ''' Save the Model and System objects for later use. Currently doesn't work.'''
-        print Model.__dict__
-        raise SystemExit
-        syspkl = open(System.path+"/system.pkl","wb")
-        cPickle.dump(System,syspkl,protocol=cPickle.HIGHEST_PROTOCOL)
-        mdlpkl = open(System.path+"/model.pkl","wb")
-        cPickle.dump(Model,mdlpkl,protocol=cPickle.HIGHEST_PROTOCOL)
-        mdlpkl.close()
-        syspkl.close()
-            
 def main():
     parser = argparse.ArgumentParser(description='Build a model of a system.')
     sp = parser.add_subparsers(dest='action')

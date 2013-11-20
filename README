@@ -30,6 +30,8 @@ ModelBuilder only needs a PDB file and some command line options to prepare
 and initialize simulation.
 
 
+
+--------------------------------------------------------------------------
 How To Use this Module:
     ModelBuilder depends on Gromacs and python (also many non-standard
 python modules).

@@ -46,6 +46,9 @@ class System(object):
         self.subdirs = [ pdb.split('.pdb')[0] for pdb in self.pdbs ] 
         self.systemname = args.name
         self.itp_files = 0.
+        self.Tf_iteration = 0
+        self.Tf_refinements = {0:0}
+        self.mutation_iteration = 0
         #self.clean_pdbs()
         
     def __repr__(self):

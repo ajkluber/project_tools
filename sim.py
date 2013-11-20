@@ -20,13 +20,21 @@ def run_temperature_array(Model,System,Ti=100,Tf=200,dT=10):
 
     Temperatures = range(Ti,Tf+dT,dT)
     for i in range(len(System.subdirs)):
-        System.append_log("Starting temperature array for protein: %s" % System.subdirs[i])
+        System.append_log("Starting T_array in directory: %s" % System.subdirs[i])
         T_string = ''
         for T in Temperatures:
-            T_string += "%d_0\n" % T
-            System.append_log("  running T=%d" % T)
-            run_constant_temp(Model,System,T,i)
-            ## Need to append logfile.
+            os.chdir(System.path)
+            simpath = System.subdirs[i]+"/"+str(T)+"_0"
+            ## Only start the simulation is directory doesn't exist.
+            if (not os.path.exists(simpath)):
+                T_string += "%d_0\n" % T
+                os.mkdir(simpath)
+                os.chdir(simpath)
+                System.append_log("  running T=%d" % T)
+                run_constant_temp(Model,System,T,i)
+            else:
+                ## Directory exists for this temperature: continue.
+                continue
         open(System.path+"/"+System.subdirs[i]+"/T_array.txt","a").write(T_string)
 
 def run_constant_temp(Model,System,T,prot_num):
@@ -34,23 +42,16 @@ def run_constant_temp(Model,System,T,prot_num):
         to write the gromacs files stored in the System object, then it
         calls a function to submit the job.'''
     grompp_mdp = mdp.get_constant_temperature_mdp(Model,T)
-    os.chdir(System.path)
-    simpath = System.subdirs[prot_num]+"/"+str(T)+"_0"
-    try:
-        os.mkdir(simpath)
-    except:
-        pass
     for filename in System.topology_files[prot_num].iterkeys():
         #print "Writing: ", filename    ## DEBUGGING
-        open(simpath+"/"+filename,"w").write(System.topology_files[prot_num][filename])
-    open(simpath+"/grompp.mdp","w").write(grompp_mdp)
-    open(simpath+"/Native.pdb","w").write(System.native_pdbs[prot_num])
+        open(filename,"w").write(System.topology_files[prot_num][filename])
+    open("grompp.mdp","w").write(grompp_mdp)
+    open("Native.pdb","w").write(System.native_pdbs[prot_num])
     for m in range(len(Model.interaction_groups)):
         tablefile = "table_%s.xvg" % Model.interaction_groups[m]
-        np.savetxt(simpath+"/"+tablefile,Model.tables[m],fmt="%16.15e",delimiter=" ")
-    np.savetxt(simpath+"/table.xvg",Model.other_table,fmt="%16.15e",delimiter=" ")
+        np.savetxt(tablefile,Model.tables[m],fmt="%16.15e",delimiter=" ")
+    np.savetxt("table.xvg",Model.other_table,fmt="%16.15e",delimiter=" ")
     ## Start simulation
-    os.chdir(simpath)
     submit_run(System.subdirs[prot_num]+"_"+str(T))
     
 def submit_run(jobname,walltime="23:00:00",queue="serial"):
