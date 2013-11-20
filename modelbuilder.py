@@ -3,10 +3,14 @@ import os
 import subprocess as sb
 import time
 import numpy as np
+import cPickle 
 
-import model
 import system
-import mdp
+import analysis
+import sim
+from HomogeneousGoModel import HomogeneousGoModel
+from HeterogeneousGoModel import HeterogeneousGoModel
+from DMCModel import DMCModel
 
 '''
 ModelBuilder Class
@@ -43,20 +47,40 @@ class ModelBuilder(object):
     def __init__(self,args):
         ''' Model Initialization.''' 
         self.path = os.getcwd()
+        newmodel = {'HomGo':HomogeneousGoModel, 'HetGo':HeterogeneousGoModel, 
+                      'DMC':DMCModel}[args.type]
         
+        procedure = {'HomGo':["Prepping system","Submitting T_array",
+                              "Analyzing T_array"],
+                     'HetGo':["Prepping system","Submitting T_array",
+                              "Analyzing T_array","Mutations"],
+                     'DMC':["Prepping system","Submitting T_array",
+                              "Analyzing T_array","Mutations"]}
+
+        go_model_rocedure = ["Prepping system","Submitting T_array","Analyzing T_array"]
+
         if args.action == 'new':
-            Model = model.get_model(args.type,self.path)
+            self.append_log("Project %s started" % args.name)
+            Model = newmodel(self.path)
             System = system.System(args)
             self.create_subdirs(System.subdirs)
+            self.append_log("Prepping system")
+            self.prep_system(System,Model)
+            self.append_log("Finished: Prepping system")
             #print self.Model  ## DEBUGGING
             #print self.System  ## DEBUGGING
-            Model.prep_system(System)
-            self.run_temperature_array(Model,System)
+
+            self.append_log("Submitting T_array")
+            sim.run_temperature_array(Model,System)
+            self.append_log("Finished: Submitting T_array")
+            #self.append_log("Analys T_array")
+            #analysis.analyze_temperature_array(System)
+            #self.append_log("Finished: T_array")
+            #self.save_project(Model,System)
             print "Success"
             raise SystemExit
             
             #self.write_info_file()
-            #self.append_log("Project %s started on %s" % (args.name,time.asctime()))
         elif args.action == 'check':
             ## I would like this action to check the state of the current 
             ## simulation. Each simulation style has a defined procedure (more 
@@ -71,10 +95,18 @@ class ModelBuilder(object):
         elif args.action == 'continue':
             ## I would like this action to continue with the next step in the
             ## procedure, picking up right after the last succesfful step.
+            #self.load_project()
+            #System = system.System("system.info")
+            #Model = model.Model("model.info")
             pass
 
     def append_log(self,string):
-        logfile = open(self.path + '/modelbuilder.log','a').write(self.time_label()+' '+string+'\n')
+        logfile = open(self.path + '/modelbuilder.log','a').write(self.append_time_label()+' '+string+'\n')
+
+    def append_time_label(self):
+        now = time.localtime()
+        now_string = "%s:%s:%s:%s" % (now.tm_mon,now.tm_mday,now.tm_hour,now.tm_min)
+        return now_string
 
     def create_subdirs(self,subdirs):
         ''' Create the subdirectories for the system.'''
@@ -86,7 +118,7 @@ class ModelBuilder(object):
             except:
                 pass
             pdbs += sub + "/ "
-        self.append_log("Creating new subdirectories: %s\n" % pdbs)
+        self.append_log("Creating new subdirectories: %s" % pdbs)
 
     def write_info_file(self):
         ''' Writes model.info file for new simulation project. 
@@ -105,85 +137,39 @@ class ModelBuilder(object):
         info.write(template_info)
         info.write("Solvent: %s" % self.solvent)
         info.close()
+
+    def prep_system(self,System,Model):
+        ''' Extract all the topology files from Model.'''
+        System.clean_pdbs()
+        System.write_Native_pdb_CA()
+        prots_indices, prots_residues, prots_coords = System.get_atom_indices(Model.beadmodel)
+        prots_ndxs = Model.get_index_string(System.subdirs,prots_indices)
+        topology_files = Model.get_itp_strings(prots_indices, prots_residues, prots_coords,prots_ndxs)
+        System.topology_files = topology_files
+
+    def load_project(self):
+        ''' Load Model and System objects for later use. Doesn't work.'''
+        mdlpkl = open("model.pkl","rb")
+        Model = cPickle.load(mdlpkl)
+        mdlpkl.close()
+        syspkl = open("system.pkl","rb")
+        System = cPickle.load(syspkl)
+        syspkl.close()
+        return Model, System
         
-    def run_temperature_array(self,Model,System):
-        ''' Run many constant temperature runs over a range of temperatures to
-            find the folding temperature. '''
-    
-        Temperatures = range(100,200,10)
-        for i in range(len(System.subdirs)):
-            self.append_log("Starting Temperature array for protein: %s" % System.subdirs[i])
-            T_string = ''
-            for T in Temperatures:
-                T_string += "%d_0\n" % T
-                self.append_log("  running T=%d" % T)
-                self.run_constant_temp(Model,System,T,i)
-                ## Need to append logfile.
-            open(self.path+"/"+System.subdirs[i]+"/T_array.txt","w").write(T_string)
-
-    def run_constant_temp(self,Model,System,T,prot_num):
-        ''' Start a constant temperature simulation with Gromacs. First it has
-            to write the gromacs files stored in the System object, then it
-            calls a function to submit the job.'''
-        grompp_mdp = mdp.get_constant_temperature_mdp(Model,T)
-        os.chdir(self.path)
-        simpath = System.subdirs[prot_num]+"/"+str(T)+"_0"
-        try:
-            os.mkdir(simpath)
-        except:
-            pass
-        for filename in System.topology_files[prot_num].iterkeys():
-            #print "Writing: ", filename    ## DEBUGGING
-            open(simpath+"/"+filename,"w").write(System.topology_files[prot_num][filename])
-        open(simpath+"/grompp.mdp","w").write(grompp_mdp)
-        open(simpath+"/Native.pdb","w").write(System.native_pdbs[prot_num])
-        for m in range(len(Model.interaction_groups)):
-            tablefile = "table_%s.xvg" % Model.interaction_groups[m]
-            np.savetxt(simpath+"/"+tablefile,Model.tables[m],fmt="%16.15e",delimiter=" ")
-        np.savetxt(simpath+"/table.xvg",Model.other_table,fmt="%16.15e",delimiter=" ")
-        ## Start simulation
-        os.chdir(simpath)
-        self.submit_run(System.subdirs[prot_num]+"_"+str(T))
-        
-    def submit_run(self,jobname,walltime="24:00:00",queue="serial"):
-        ''' Executes the constant temperature runs.'''
-
-        prep_step1 = 'trjconv -f Native.pdb -o Native.xtc'
-        prep_step2 = 'grompp -n index.ndx -c Native.pdb -maxwarn 1'
-        prep_step3 = 'echo -e "System\\n" | trjconv -f Native.pdb -o conf.gro'
-        #prep_step4 = 'grompp -n index.ndx -maxwarn 1'
-
-        sb.call(prep_step1.split())
-        sb.call(prep_step2.split())
-        sb.call(prep_step3,shell=True)
-        #sb.call(prep_step4.split())
-
-        pbs_string = "#!/bin/bash \n"
-        pbs_string +="### Number of nodes and procs/node \n"
-        pbs_string +="#PBS -l nodes=1:ppn=1,walltime=%s \n" % walltime
-        pbs_string +="###PBS -W group_list=pbc \n"
-        pbs_string +="#PBS -q %s \n" % queue
-        pbs_string +="#PBS -V \n"
-        pbs_string +="### output files \n"
-        pbs_string +="#PBS -o out \n"
-        pbs_string +="#PBS -e err \n"
-        pbs_string +="### Job Name (max 15 chars.) \n"
-        pbs_string +="#PBS -N %s \n\n" % jobname
-        pbs_string +="cd $PBS_O_WORKDIR\n"
-        pbs_string +="mdrun -nt 1"
-
-        open("run.pbs","w").write(pbs_string)
-        qsub = "qsub run.pbs"
-        sb.call(qsub.split())
-
-    def time_label(self):
-        now = time.localtime()
-        now_string = "%s:%s:%s:%s" % (now.tm_mon,now.tm_mday,now.tm_hour,now.tm_min)
-        return now_string
+    def save_project(self,Model,System):
+        ''' Save the Model and System objects for later use. Currently doesn't work.'''
+        print Model.__dict__
+        raise SystemExit
+        syspkl = open(System.path+"/system.pkl","wb")
+        cPickle.dump(System,syspkl,protocol=cPickle.HIGHEST_PROTOCOL)
+        mdlpkl = open(System.path+"/model.pkl","wb")
+        cPickle.dump(Model,mdlpkl,protocol=cPickle.HIGHEST_PROTOCOL)
+        mdlpkl.close()
+        syspkl.close()
             
 def main():
-    ''' Two possible branches: 1. Calculate reference matrix, 2. Calculate Q '''
-    parser = argparse.ArgumentParser(description='Calculate the (Non)Native contact matrix')
+    parser = argparse.ArgumentParser(description='Build a model of a system.')
     sp = parser.add_subparsers(dest='action')
 
     ## Initializing a new simulation project.

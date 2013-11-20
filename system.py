@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import time
 
 '''
 Purpose:
@@ -9,6 +10,8 @@ construct the input files which are returned to the System object.
 
 To Do:
 - Create the __repr__ method to print in a pretty way.
+
+
 '''
 
 
@@ -38,6 +41,7 @@ COLUMNS        DATA  TYPE    FIELD        DEFINITION
 class System(object):
     def __init__(self,args):
         self.path = os.getcwd()
+        self.logfile = self.path + '/system.log'
         self.pdbs = args.pdbs
         self.subdirs = [ pdb.split('.pdb')[0] for pdb in self.pdbs ] 
         self.systemname = args.name
@@ -50,8 +54,17 @@ class System(object):
         reprstring += "PDBs: %s\n" % self.subdirs.__repr__()
         return reprstring
 
+    def append_log(self,string):
+        logfile = open(self.path + '/system.log','a').write(self.append_time_label()+' '+string+'\n')
+
+    def append_time_label(self):
+        now = time.localtime()
+        now_string = "%s:%s:%s:%s:%s" % (now.tm_year,now.tm_mon,now.tm_mday,now.tm_hour,now.tm_min)
+        return now_string
+
     def clean_pdbs(self):
         ''' Copy.'''
+        
         for i in range(len(self.pdbs)):
             sub = self.subdirs[i]
             cleanpdb = self.clean_pdb(self.pdbs[i])
@@ -80,15 +93,6 @@ class System(object):
         cleanpdb += 'TER'
         return cleanpdb
 
-    def get_topology(self):
-        
-        self.atomtypes = []
-        self.atoms = []
-        self.Calphas = []
-        for prot in self.pdbs:
-            for line in open(prot,"r"):
-                pass
-                
     def get_atom_indices(self,beadmodel):
         ''' Extract the atom indices for desired atoms. Also get the residue names
             and the native state coordinates.'''
@@ -157,11 +161,6 @@ class System(object):
                         resid += 1
                     elif line[13:15] == "CB":
                         newline = "%s%5d%s%4d%s\n" % (line[:6],atmid,line[11:23],resid,line[26:])
-                        atmid += 1
 
             open(sub+"/Native.pdb","w").write(nativepdb)
         return nativepdb
-
-    def get_index(self):
-        pass
-
