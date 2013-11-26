@@ -124,7 +124,7 @@ class HomogeneousGoModel(object):
             self.energygrp_table += intgrps.split("_")[0]+" "+intgrps.split("_")[1]+" "
         self.solvent = "None"
         self.backbone_params = ["Kb","Ka","Kd"]
-        self.backbone_param_vals = {"Kb":400.,"Ka":40.,"Kd":1}
+        self.backbone_param_vals = {"Kb":20000.,"Ka":400.,"Kd":1}
         self.nonbond_param = 1.
         self.citation = citations[self.modelnameshort]
 

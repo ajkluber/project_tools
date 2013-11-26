@@ -7,26 +7,43 @@ import glob
 
 def analyze_temperature_array(System,Tarrayfile="T_array.txt"):
     cwd = os.getcwd()
-    for sub in System.subdirs:
+    for i in range(len(System.subdirs)):
+        sub = System.subdirs[i]+"/"+System.Tf_active_directory[i]
         os.chdir(cwd+"/"+sub)
         tempfile = open(Tarrayfile,"r").readlines()
         temperatures = [ temp[:-1] for temp in tempfile  ]
+        temperatures.sort()
         
         ## TO DO: ADD CALCULATION OF NATIVE CONTACTS.
         if (not os.path.exists("Q.dat")):
+            pass
             #calculate_Q()
 
+        avgrmsd = np.zeros(len(temperatures),float)
+        lowerT = 0
+        upperT = 1000
         cwd2 = os.getcwd()
-        for tdir in temperatures:
+        for k in range(len(temperatures)):
+            tdir = temperatures[k]
             print cwd2+"/"+tdir
             os.chdir(cwd2+"/"+tdir)
-            if (os.path.exists("rmsd.xvg")) and (os.path.exists("radius_cropped.xvg")) \
-               (os.path.exists("energyterms.xvg")) and (os.path.exists("phis.xvg")):
-                pass
-            else:
+            if (not os.path.exists("rmsd.xvg")) or (not os.path.exists("radius_cropped.xvg")) \
+               (not os.path.exists("energyterms.xvg")) or (not os.path.exists("phis.xvg")):
                 crunch_coordinates()
+
+            t,rmsd = np.loadtxt("rmsd.xvg",unpack=True)
+            avgrmsd[k] = np.mean(rmsd[int(len(rmsd)/2):])
             os.chdir(cwd2)
+        ## Find temperatures that bracket the folding temperature.
+        print avgrmsd
+        folded = list((avgrmsd < 0.4).astype(int))
+        unfolded = list((avgrmsd > 0.8).astype(int))
+        lowerT =  (temperatures[folded.index(0)])[:-2]
+        upperT =  (temperatures[unfolded.index(1)])[:-2]
+        print lowerT, upperT
+        open("T_brackets.txt","w").write("%s %s" % (lowerT,upperT))
         os.chdir(cwd)
+
 
 def crunch_coordinates():
     ''' Crunch the following reaction coordinates with Gromacs: rmsd, radius

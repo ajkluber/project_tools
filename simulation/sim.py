@@ -14,28 +14,28 @@ Description:
 
 '''
 
-def run_temperature_array(Model,System,Ti=100,Tf=200,dT=10):
+def run_temperature_array(Model,System,i,Ti=100,Tf=200,dT=10):
     ''' Run many constant temperature runs over a range of temperatures to
         find the folding temperature. '''
 
     Temperatures = range(Ti,Tf+dT,dT)
-    for i in range(len(System.subdirs)):
-        System.append_log("Starting T_array in directory: %s" % System.subdirs[i])
-        T_string = ''
-        for T in Temperatures:
-            os.chdir(System.path)
-            simpath = System.subdirs[i]+"/"+str(T)+"_0"
-            ## Only start the simulation is directory doesn't exist.
-            if (not os.path.exists(simpath)):
-                T_string += "%d_0\n" % T
-                os.mkdir(simpath)
-                os.chdir(simpath)
-                System.append_log("  running T=%d" % T)
-                run_constant_temp(Model,System,T,i)
-            else:
-                ## Directory exists for this temperature: continue.
-                continue
-        open(System.path+"/"+System.subdirs[i]+"/T_array.txt","a").write(T_string)
+    System.append_log(System.subdirs[i],"Starting T_array in directory: %s" % System.subdirs[i])
+    T_string = ''
+    for T in Temperatures:
+        simpath = str(T)+"_0"
+        ## Only start the simulation is directory doesn't exist.
+        if (not os.path.exists(simpath)):
+            T_string += "%d_0\n" % T
+            os.mkdir(simpath)
+            os.chdir(simpath)
+            System.append_log(System.subdirs[i],"  running T=%d" % T)
+            run_constant_temp(Model,System,T,i)
+            os.chdir("..")
+        else:
+            ## Directory exists for this temperature: continue.
+            continue
+    open("T_array.txt","a").write(T_string)
+    open("Ti_Tf_dT.txt","w").write("%d %d %d" % (Ti, Tf, dT))
 
 def run_constant_temp(Model,System,T,prot_num):
     ''' Start a constant temperature simulation with Gromacs. First it has
@@ -62,9 +62,9 @@ def submit_run(jobname,walltime="23:00:00",queue="serial"):
     prep_step3 = 'echo -e "System\\n" | trjconv -f Native.pdb -o conf.gro'
     #prep_step4 = 'grompp -n index.ndx -maxwarn 1'
 
-    sb.call(prep_step1.split())
-    sb.call(prep_step2.split())
-    sb.call(prep_step3,shell=True)
+    sb.call(prep_step1.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
+    sb.call(prep_step2.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
+    sb.call(prep_step3,shell=True,stdout=open("sim.out","w"),stderr=open("sim.err","w"))
     #sb.call(prep_step4.split())
 
     pbs_string = "#!/bin/bash \n"
@@ -83,4 +83,4 @@ def submit_run(jobname,walltime="23:00:00",queue="serial"):
 
     open("run.pbs","w").write(pbs_string)
     qsub = "qsub run.pbs"
-    sb.call(qsub.split())
+    sb.call(qsub.split(),stdout=open("sim.out","w"),stderr=open("sim.out"))

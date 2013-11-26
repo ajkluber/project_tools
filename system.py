@@ -41,24 +41,38 @@ COLUMNS        DATA  TYPE    FIELD        DEFINITION
 class System(object):
     def __init__(self,args):
         self.path = os.getcwd()
-        self.logfile = self.path + '/system.log'
-        self.pdbs = args.pdbs
-        self.subdirs = [ pdb.split('.pdb')[0] for pdb in self.pdbs ] 
         self.systemname = args.name
         self.itp_files = 0.
-        self.Tf_iteration = 0
-        self.Tf_refinements = {0:0}
-        self.mutation_iteration = 0
-        #self.clean_pdbs()
+        self.pdbs = args.pdbs
+        self.subdirs = [ pdb.split('.pdb')[0] for pdb in self.pdbs ] 
+        self.numprots = len(self.subdirs)
+        self.Tf_iteration = [ 0 for i in range(self.numprots) ]
+        self.Tf_active_directory = [ 'Tf_0' for i in range(self.numprots) ]
+        self.Tf_refinements = [ {0:0} for i in range(self.numprots) ]
+        self.mutation_iteration = [ 0 for i in range(self.numprots) ]
+        self.mutation_active_directory = [ '' for i in range(self.numprots) ]
         
     def __repr__(self):
-        reprstring = "System Name: %s\n" % self.systemname
-        reprstring += "Path: %s\n" % self.path
-        reprstring += "PDBs: %s\n" % self.subdirs.__repr__()
+        reprstring = "[ System_Name ]\n"
+        reprstring += "%s\n" % self.systemname
+        reprstring += "[ Main_Path ]\n"
+        reprstring += "%s\n" % self.path
+        reprstring += "[ PDBs ]\n"
+        reprstring += "%s\n" % self.subdirs.__repr__()
+        reprstring += "[ Tf_iteration ]\n"
+        reprstring += "%s\n" % self.Tf_iteration.__repr__()
+        reprstring += "[ Tf_refinements ]\n"
+        reprstring += "%s\n" % self.Tf_refinements.__repr__()
+        reprstring += "[ Tf_active_directories ]\n"
+        reprstring += "%s\n" % self.Tf_active_directories.__repr__()
+        reprstring += "[ mutation_iteration ]\n"
+        reprstring += "%s\n" % self.mutation_iteration.__repr__()
+        reprstring += "[ mutation_active_directories ]\n"
+        reprstring += "%s\n" % self.mutation_active_directories.__repr__()
         return reprstring
 
-    def append_log(self,string):
-        logfile = open(self.path + '/system.log','a').write(self.append_time_label()+' '+string+'\n')
+    def append_log(self,sub,string):
+        logfile = open(self.path+'/'+sub,'a').write(self.append_time_label()+' '+string+'\n')
 
     def append_time_label(self):
         now = time.localtime()

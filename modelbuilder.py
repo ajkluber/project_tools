@@ -47,8 +47,6 @@ class ModelBuilder(object):
     def __init__(self,args):
         ''' Model Initialization.''' 
         self.path = os.getcwd()
-        newmodel = {'HomGo':HomogeneousGoModel, 'HetGo':HeterogeneousGoModel, 
-                      'DMC':DMCModel}[args.type]
         
         procedure = {'HomGo':["Prepping system","Submitting T_array",
                               "Analyzing T_array"],
@@ -80,23 +78,23 @@ class ModelBuilder(object):
             #Model = model.Model("model.info")
             pass
 
-    def append_log(self,string):
-        logfile = open(self.path + '/modelbuilder.log','a').write(self.append_time_label()+' '+string+'\n')
+    def append_log(self,sub,string):
+        logfile = open(self.path+'/'+sub+'/modelbuilder.log','a').write(self.append_time_label()+' '+string+'\n')
 
     def append_time_label(self):
         now = time.localtime()
         now_string = "%s:%s:%s:%s:%s" % (now.tm_year,now.tm_mon,now.tm_mday,now.tm_hour,now.tm_min)
         return now_string
 
-    def create_subdirs(self,subdirs):
+    def create_subdirs(self,System):
         ''' Create the subdirectories for the system. Skip if they already exist.'''
-        for i in range(len(subdirs)): 
-            sub = subdirs[i]
+        for i in range(len(System.subdirs)): 
+            sub = System.subdirs[i]
             if os.path.exists(sub) != True:
                 os.mkdir(sub)
-                self.append_log("Creating new subdirectory: %s" % sub)
-            else:
-                pass
+                os.mkdir(sub+"/"+System.Tf_active_directory[i])
+                open(sub+"/Tf_active_directory.txt","w").write(System.Tf_active_directory[i])
+                self.append_log(sub,"Creating new subdirectory: %s" % sub)
 
     def folding_temperature_loop(self,Model,System):
         ''' The "folding temperature loop" is one of the several large-scale 
@@ -106,51 +104,65 @@ class ModelBuilder(object):
             project in progress. The folding temperature loop successively 
             narrows in on the folding temperature.'''
 
-        for sub in System.subdirs:
+        for k in range(len(System.subdirs)):
+            sub = System.path +"/"+ System.subdirs[k] +"/"+ System.Tf_active_directory[k]
+            print sub  ## DEBUGGING
+            if (not os.path.exists(sub)):
+                os.mkdir(sub)
             ## Check to see if the folding temperature has been found. If yes, then continue.
             if (not os.path.exists(sub+"/Tf.txt")):
-
                 ## Check to see if a previous temperature range was used.
-                if (not os.path.exist(sub+"/Ti_Tf_dT.txt"):
-                    ## For initial exploration use very broad temperature increments.
-                    self.append_log("Starting: Submitting T_array iteration %d ; refinement %d" % \
-                                    (System.Tf_iteration,System.Tf_refinements[System.Tf_iteration]))
-                    sim.run_temperature_array(Model,System,Ti=100,Tf=200,dT=50)
-                    self.append_log("Finished: Submitting T_array iteration %d ; refinement %d" % \
-                                    (System.Tf_iteration,System.Tf_refinements[System.Tf_iteration]))
-                    System.Tf_refinements[System.Tf_iteration] += 1
-                    open(sub+"/Ti_Tf_dT.txt","w").write("%d %d %d" % (100, 200, 50))
-                else:
-                    ## Use previous range to determine new range. 
-                    ## DOESN'T WORK YET. USE ANALYSIS TO ESTIMATE THE BRACKETING TEMPS.
-                    Ti,Tf,dT = open(sub+"/Ti_Tf_dT.txt","r").read().split()
-                    Ti = int(Ti); Tf = int(Tf); dT = int(dT)
-                    lowerT, upperT = open(sub+"T_brackets.txt","r").read().split()
-                    lowerT = int(lowerT); upperT = int(upperT)
-                    newdT = float(dT)/5.
-                    ## If new dT is less than 1 then don't do it.
-                    if newdT < 1.:
-                        newdT = 1
-                    newTi = lowerT + newdT
-                    newTf = upperT - newdT
-                    self.append_log("Starting: Submitting T_array iteration %d ; refinement %d" % \
-                                    (System.Tf_iteration,System.Tf_refinements[System.Tf_iteration]))
-                    sim.run_temperature_array(Model,System,Ti=newTi,Tf=newTf,dT=newdT)
-                    self.append_log("Finished: Submitting T_array iteration %d ; refinement %d" % \
-                                    (System.Tf_iteration,System.Tf_refinements[System.Tf_iteration]))
+                os.chdir(sub)
+                self.folding_temperature_loop_extension(Model,System,k)
             else:
                 ## Folding temperature has been found. Continuing.
                 continue
 
+    def folding_temperature_loop_extension(self,Model,System,k):
+        if (not os.path.exists("Ti_Tf_dT.txt")):
+            ## For initial exploration use very broad temperature increments.
+            self.append_log(System.subdirs[k],"Starting: Submitting T_array iteration %d ; refinement %d" % \
+                            (System.Tf_iteration[k],System.Tf_refinements[k][System.Tf_iteration[k]]))
+            self.append_log(System.subdirs[k],"  Ti = %d , Tf = %d , dT = %d" % (100, 300, 50))
+            sim.run_temperature_array(Model,System,k,Ti=100,Tf=300,dT=50)
+            self.append_log(System.subdirs[k],"Finished: Submitting T_array iteration %d ; refinement %d" % \
+                            (System.Tf_iteration[k],System.Tf_refinements[k][System.Tf_iteration[k]]))
+            #System.Tf_refinements[k][System.Tf_iteration[k]] += 1
+        else:
+            ## Use previous range to determine new range. 
+            ## DOESN'T WORK YET. USE ANALYSIS TO ESTIMATE THE BRACKETING TEMPS.
+            Ti,Tf,dT = open("Ti_Tf_dT.txt","r").read().split()
+            Ti = int(Ti); Tf = int(Tf); dT = int(dT)
+            lowerT, upperT = open("T_brackets.txt","r").read().split()
+            lowerT = int(lowerT); upperT = int(upperT)
+            newdT = float(dT)/5.
+            ## If new dT is less than 1 then don't do it.
+            if newdT <= 3.:
+                newdT = 1
+                midT = int(0.5*(float(lowerT)+upperT))
+                newTi = midT - 5
+                newTf = midT + 5
+            else:
+                newTi = lowerT + newdT
+                newTf = upperT - newdT
+            self.append_log(System.subdirs[k],"Starting: Submitting T_array iteration %d ; refinement %d" % \
+                            (System.Tf_iteration[k],System.Tf_refinements[k][System.Tf_iteration[k]]))
+            self.append_log(System.subdirs[k],"  Ti = %d , Tf = %d , dT = %d" % (newTi, newTf, dT))
+            sim.run_temperature_array(Model,System,Ti=newTi,Tf=newTf,dT=newdT)
+            self.append_log(System.subdirs[k],"Finished: Submitting T_array iteration %d ; refinement %d" % \
+                            (System.Tf_iteration[k],System.Tf_refinements[k][System.Tf_iteration[k]]))
+            System.Tf_refinements[k][System.Tf_iteration[k]] += 1
+            open("Ti_Tf_dT.txt","w").write("%d %d %d" % (newTi,newTf,newdT))
+
     def new_project(self,args):
         ''' Starting a new simulation project.'''
-        self.append_log("Project %s started" % args.name)
+        newmodel = {'HomGo':HomogeneousGoModel, 'HetGo':HeterogeneousGoModel, 
+                      'DMC':DMCModel}[args.type]
+        #self.append_log("Project %s started" % args.name)
         Model = newmodel(self.path)
         System = system.System(args)
-        self.create_subdirs(System.subdirs)
-        self.append_log("Starting: Prepping system")
+        self.create_subdirs(System)
         self.prepare_system(System,Model)
-        self.append_log("Finished: Prepping system")
 
         ## The first step depends on the type of model.
         if args.type in ["HomGo","HetGo"]:
@@ -163,6 +175,11 @@ class ModelBuilder(object):
         #self.save_project(Model,System)
         print "Success"
         #raise SystemExit
+
+    def save_project_status(self,Model,System):
+
+        open("system.info","w").write(System.__repr__())
+        open("model.info","w").write(Model.__repr__())
 
     def prepare_system(self,System,Model):
         ''' Extract all the topology files from Model.'''
