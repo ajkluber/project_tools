@@ -6,11 +6,11 @@ import numpy as np
 import cPickle 
 
 import system
-import analysis
-import sim
-from HomogeneousGoModel import HomogeneousGoModel
-from HeterogeneousGoModel import HeterogeneousGoModel
-from DMCModel import DMCModel
+import analysis.analysis as analysis
+import simulation
+from models.HomogeneousGoModel import HomogeneousGoModel
+from models.HeterogeneousGoModel import HeterogeneousGoModel
+from models.DMCModel import DMCModel
 
 '''
 ModelBuilder Class
@@ -55,11 +55,12 @@ class ModelBuilder(object):
                      'DMC':["Prepping system","Submitting T_array",
                               "Analyzing T_array","Mutations"]}
 
-        go_model_rocedure = ["Prepping system","Submitting T_array","Analyzing T_array"]
+        go_model_procedure = ["Prepping system","Submitting T_array","Analyzing T_array"]
 
         if args.action == 'new':
             self.new_project(args)
         elif args.action == 'check':
+            self.check_project(args)
             ## I would like this action to check the state of the current 
             ## simulation. Each simulation style has a defined procedure (more 
             ## or less) so this action will check how many steps the procedure has 
@@ -71,6 +72,7 @@ class ModelBuilder(object):
             ## Not sure what to put 
             pass
         elif args.action == 'continue':
+            
             ## I would like this action to continue with the next step in the
             ## procedure, picking up right after the last succesfful step.
             #self.load_project()
@@ -79,7 +81,7 @@ class ModelBuilder(object):
             pass
 
     def append_log(self,sub,string):
-        logfile = open(self.path+'/'+sub+'/modelbuilder.log','a').write(self.append_time_label()+' '+string+'\n')
+        open(self.path+'/'+sub+'/modelbuilder.log','a').write(self.append_time_label()+' '+string+'\n')
 
     def append_time_label(self):
         now = time.localtime()
@@ -96,64 +98,6 @@ class ModelBuilder(object):
                 open(sub+"/Tf_active_directory.txt","w").write(System.Tf_active_directory[i])
                 self.append_log(sub,"Creating new subdirectory: %s" % sub)
 
-    def folding_temperature_loop(self,Model,System):
-        ''' The "folding temperature loop" is one of the several large-scale 
-            logical structures in modelbuilder. It is entered anytime we want
-            to determine the folding temperature. This could be when we have
-            started a new project, refined the paramters, or returned to a 
-            project in progress. The folding temperature loop successively 
-            narrows in on the folding temperature.'''
-
-        for k in range(len(System.subdirs)):
-            sub = System.path +"/"+ System.subdirs[k] +"/"+ System.Tf_active_directory[k]
-            print sub  ## DEBUGGING
-            if (not os.path.exists(sub)):
-                os.mkdir(sub)
-            ## Check to see if the folding temperature has been found. If yes, then continue.
-            if (not os.path.exists(sub+"/Tf.txt")):
-                ## Check to see if a previous temperature range was used.
-                os.chdir(sub)
-                self.folding_temperature_loop_extension(Model,System,k)
-            else:
-                ## Folding temperature has been found. Continuing.
-                continue
-
-    def folding_temperature_loop_extension(self,Model,System,k):
-        if (not os.path.exists("Ti_Tf_dT.txt")):
-            ## For initial exploration use very broad temperature increments.
-            self.append_log(System.subdirs[k],"Starting: Submitting T_array iteration %d ; refinement %d" % \
-                            (System.Tf_iteration[k],System.Tf_refinements[k][System.Tf_iteration[k]]))
-            self.append_log(System.subdirs[k],"  Ti = %d , Tf = %d , dT = %d" % (100, 300, 50))
-            sim.run_temperature_array(Model,System,k,Ti=100,Tf=300,dT=50)
-            self.append_log(System.subdirs[k],"Finished: Submitting T_array iteration %d ; refinement %d" % \
-                            (System.Tf_iteration[k],System.Tf_refinements[k][System.Tf_iteration[k]]))
-            #System.Tf_refinements[k][System.Tf_iteration[k]] += 1
-        else:
-            ## Use previous range to determine new range. 
-            ## DOESN'T WORK YET. USE ANALYSIS TO ESTIMATE THE BRACKETING TEMPS.
-            Ti,Tf,dT = open("Ti_Tf_dT.txt","r").read().split()
-            Ti = int(Ti); Tf = int(Tf); dT = int(dT)
-            lowerT, upperT = open("T_brackets.txt","r").read().split()
-            lowerT = int(lowerT); upperT = int(upperT)
-            newdT = float(dT)/5.
-            ## If new dT is less than 1 then don't do it.
-            if newdT <= 3.:
-                newdT = 1
-                midT = int(0.5*(float(lowerT)+upperT))
-                newTi = midT - 5
-                newTf = midT + 5
-            else:
-                newTi = lowerT + newdT
-                newTf = upperT - newdT
-            self.append_log(System.subdirs[k],"Starting: Submitting T_array iteration %d ; refinement %d" % \
-                            (System.Tf_iteration[k],System.Tf_refinements[k][System.Tf_iteration[k]]))
-            self.append_log(System.subdirs[k],"  Ti = %d , Tf = %d , dT = %d" % (newTi, newTf, dT))
-            sim.run_temperature_array(Model,System,Ti=newTi,Tf=newTf,dT=newdT)
-            self.append_log(System.subdirs[k],"Finished: Submitting T_array iteration %d ; refinement %d" % \
-                            (System.Tf_iteration[k],System.Tf_refinements[k][System.Tf_iteration[k]]))
-            System.Tf_refinements[k][System.Tf_iteration[k]] += 1
-            open("Ti_Tf_dT.txt","w").write("%d %d %d" % (newTi,newTf,newdT))
-
     def new_project(self,args):
         ''' Starting a new simulation project.'''
         newmodel = {'HomGo':HomogeneousGoModel, 'HetGo':HeterogeneousGoModel, 
@@ -162,31 +106,39 @@ class ModelBuilder(object):
         Model = newmodel(self.path)
         System = system.System(args)
         self.create_subdirs(System)
-        self.prepare_system(System,Model)
+        self.prepare_system(Model,System)
+        self.save_model_system_info(Model,System)
+        self.load_model_system_info(Model,System)
 
         ## The first step depends on the type of model.
         if args.type in ["HomGo","HetGo"]:
-            self.folding_temperature_loop(Model,System)
+            simulation.Tf_loop.folding_temperature_loop(Model,System,self.append_log)
         elif args.type == "DMC":
             pass
-        #self.append_log("Analys T_array")
+
+        #self.append_log("Analysis T_array")
         #analysis.analyze_temperature_array(System)
         #self.append_log("Finished: T_array")
-        #self.save_project(Model,System)
         print "Success"
-        #raise SystemExit
 
-    def save_project_status(self,Model,System):
+    def load_model_system_info(self,Model,System):
+        ''' Save the model and system info strings.'''
+        for i in range(len(System.subdirs)):
+            System.load_info_file(i)
+            modelname = 
 
-        open("system.info","w").write(System.__repr__())
-        open("model.info","w").write(Model.__repr__())
+    def save_model_system_info(self,Model,System):
+        ''' Save the model and system info strings.'''
+        for i in range(len(System.subdirs)):
+            System.write_info_file(i)
+            Model.write_info_file(System.subdirs[i])
 
-    def prepare_system(self,System,Model):
+    def prepare_system(self,Model,System):
         ''' Extract all the topology files from Model.'''
         System.clean_pdbs()
         System.write_Native_pdb_CA()
         prots_indices, prots_residues, prots_coords = System.get_atom_indices(Model.beadmodel)
-        prots_ndxs = Model.get_index_string(System.subdirs,prots_indices)
+        prots_ndxs = Model.get_index_string(prots_indices)
         topology_files = Model.get_itp_strings(prots_indices, prots_residues, prots_coords,prots_ndxs)
         System.topology_files = topology_files
 
@@ -203,9 +155,8 @@ def main():
     new_parser.add_argument('--solvent', action='store_true', help='Add this option for solvent.')
 
     ## Checking on a simulation project.
-    #run_parser = sp.add_parser('check')
-    #run_parser.add_argument('--output', type=str, help='Method of calculation',required=True)
-    #run_parser.add_argument('--Ti', type=int, help='Initial Temperature')
+    run_parser = sp.add_parser('check')
+    run_parser.add_argument('--subdir', nargs='+', help='Subdirectories to check',required=True)
     args = parser.parse_args()
     
     

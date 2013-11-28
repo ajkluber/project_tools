@@ -52,24 +52,57 @@ class System(object):
         self.mutation_iteration = [ 0 for i in range(self.numprots) ]
         self.mutation_active_directory = [ '' for i in range(self.numprots) ]
         
-    def __repr__(self):
-        reprstring = "[ System_Name ]\n"
-        reprstring += "%s\n" % self.systemname
-        reprstring += "[ Main_Path ]\n"
+    def __repr__(self,i):
+        reprstring = "[ Main_Path ]\n"
         reprstring += "%s\n" % self.path
-        reprstring += "[ PDBs ]\n"
-        reprstring += "%s\n" % self.subdirs.__repr__()
+        reprstring += "[ System_Name ]\n"
+        reprstring += "%s\n" % self.systemname
+        reprstring += "[ PDB ]\n"
+        reprstring += "%s\n" % self.pdbs[i]
+        reprstring += "[ subdir ]\n"
+        reprstring += "%s\n" % self.subdirs[i]
         reprstring += "[ Tf_iteration ]\n"
-        reprstring += "%s\n" % self.Tf_iteration.__repr__()
+        reprstring += "%s\n" % self.Tf_iteration[i]
         reprstring += "[ Tf_refinements ]\n"
-        reprstring += "%s\n" % self.Tf_refinements.__repr__()
-        reprstring += "[ Tf_active_directories ]\n"
-        reprstring += "%s\n" % self.Tf_active_directories.__repr__()
+        for key in self.Tf_refinements[i].iterkeys():
+            reprstring += "%d %d\n" % (key, self.Tf_refinements[i][key])
+        reprstring += "[ Tf_active_directory ]\n"
+        reprstring += "%s\n" % self.Tf_active_directory[i]
         reprstring += "[ mutation_iteration ]\n"
-        reprstring += "%s\n" % self.mutation_iteration.__repr__()
-        reprstring += "[ mutation_active_directories ]\n"
-        reprstring += "%s\n" % self.mutation_active_directories.__repr__()
+        reprstring += "%s\n" % self.mutation_iteration[i]
+        reprstring += "[ mutation_active_directory ]\n"
+        reprstring += "%s\n" % self.mutation_active_directory[i]
         return reprstring
+
+    def load_info_file(self,i):
+        
+        info_file = open(self.subdirs[i]+'/system.info','r')
+        line = info_file.readline()
+        while line != '':
+            #print line[:-1]
+            print line.split()
+            value = line.split()[1]
+            if value == "Tf_iteration":
+                self.Tf_iteration[i] = int(info_file.readline())
+            elif value == "Tf_refinements":
+                line = info_file.readline()
+                while line[0] != "[":
+                    key,val = line.split()
+                    self.Tf_refinements[i][key] = val
+                    line = info_file.readline()
+                continue
+            elif value == "Tf_active_directory":
+                self.Tf_active_directory[i] = info_file.readline()[:-1]
+            elif value == "mutation_iteration":
+                self.mutation_iteration[i] = int(info_file.readline())
+            elif value == "mutation_active_directory":
+                self.mutation_active_directory[i] = info_file.readline()[:-1]
+            elif value == "System_Name":
+                self.systemname = info_file.readline()[:-1]
+            else:
+                if line[0] == "[":
+                    line = info_file.readline()
+            line = info_file.readline()
 
     def append_log(self,sub,string):
         logfile = open(self.path+'/'+sub,'a').write(self.append_time_label()+' '+string+'\n')
@@ -80,13 +113,14 @@ class System(object):
         return now_string
 
     def clean_pdbs(self):
-        ''' Copy.'''
+        ''' Clean the PDB files by writing only the ATOM lines up until the first
+            TER or END. Doesn't remove any atoms.'''
         
         for i in range(len(self.pdbs)):
             sub = self.subdirs[i]
             cleanpdb = self.clean_pdb(self.pdbs[i])
             open(sub+'/clean.pdb','w').write(cleanpdb)
-
+            open(sub+'/'+sub+'.pdb','w').write(cleanpdb)
 
     def clean_pdb(self,pdb):
         ''' Create Native.pdb in subdirectory. Currently only for CA. Expand later for
@@ -181,3 +215,8 @@ class System(object):
 
             open(sub+"/Native.pdb","w").write(nativepdb)
         return nativepdb
+
+    def write_info_file(self,i):
+        ''' Writes model.info file in subdirectory. The data of the Model object    
+            is static, so this is straightforward documentation.'''
+        open(self.subdirs[i]+"/system.info","w").write(self.__repr__(i))
