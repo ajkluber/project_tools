@@ -7,12 +7,40 @@ import mdp
 '''
 Created: November 17, 2013
 Purpose:
-    This module will be the library for submitting the simulation jobs.
+    This module will be the library for submitting the simulation jobs
+for the Tf_loop (folding temperature loop).
 
 Description:
     To be used as a library.
 
 '''
+
+def check_completion(System,i,append_log):
+    ''' Checks to see if the previous Tf_loop simulation completed.'''
+    cwd = os.getcwd()
+    sub = System.subdirs[i]+"/"+System.Tf_active_directory[i]
+    os.chdir(cwd+"/"+sub)
+    tempfile = open("T_array_last.txt","r").readlines()
+    temperatures = [ temp[:-1] for temp in tempfile  ]
+    for k in range(len(temperatures)):
+        tdir = temperatures[k]
+        mdlog = open(tdir+"/"+"md.log","r")
+        lastline = tail(mdlog)
+        mdlog.close()
+        error = 0
+        if lastline[:9] == "Finished":
+            append_log("  %s finished" % tdir)
+        else:
+            append_log("  %s did not finish" % tdir)
+            error = 1
+    if error == 1:
+        append_log(System.subdirs[i],"Error: Tf_loop_iteration")
+    else:
+        append_log(System.subdirs[i],"Finished: Tf_loop_iteration")
+    System.error[i] = error
+    os.chdir(cwd)
+
+
 
 def folding_temperature_loop(Model,System,append_log):
     ''' The "folding temperature loop" is one of the several large-scale 
@@ -24,12 +52,11 @@ def folding_temperature_loop(Model,System,append_log):
 
     for k in range(len(System.subdirs)):
         sub = System.path +"/"+ System.subdirs[k] +"/"+ System.Tf_active_directory[k]
-        print sub  ## DEBUGGING
+        #print sub  ## DEBUGGING
         if (not os.path.exists(sub)):
             os.mkdir(sub)
         ## Check to see if the folding temperature has been found. If yes, then continue.
         if (not os.path.exists(sub+"/Tf.txt")):
-            ## Check to see if a previous temperature range was used.
             os.chdir(sub)
             folding_temperature_loop_extension(Model,System,k,append_log)
         else:
@@ -40,13 +67,15 @@ def folding_temperature_loop_extension(Model,System,k,append_log):
     ''' This is for doing an additional loop in the Tf_loop. It either starts
         an initial temperature array or refines the temperature range according
         to previous data. '''
+    ## Check to see if a previous temperature range was used.
     if (not os.path.exists("Ti_Tf_dT.txt")):
         ## For initial exploration use very broad temperature increments.
+        Ti = 100; Tf = 350; dT = 50
         append_log(System.subdirs[k],"Submitting T_array iteration %d ; refinement %d" % \
                         (System.Tf_iteration[k],System.Tf_refinements[k][System.Tf_iteration[k]]))
-        append_log(System.subdirs[k],"  Ti = %d , Tf = %d , dT = %d" % (100, 300, 50))
-        run_temperature_array(Model,System,k,Ti=100,Tf=300,dT=50)
-        append_log(System.subdirs[k],"Starting: Tf_loop")
+        append_log(System.subdirs[k],"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
+        run_temperature_array(Model,System,k,Ti=Ti,Tf=Tf,dT=dT)
+        append_log(System.subdirs[k],"Starting: Tf_loop_iteration")
     else:
         ## Use previous range to determine new range. 
         ## DOESN'T WORK YET. USE ANALYSIS TO ESTIMATE THE BRACKETING TEMPS.
@@ -69,7 +98,7 @@ def folding_temperature_loop_extension(Model,System,k,append_log):
         append_log(System.subdirs[k],"Submitting T_array iteration %d ; refinement %d" % \
                         (System.Tf_iteration[k],System.Tf_refinements[k][System.Tf_iteration[k]]))
         append_log(System.subdirs[k],"  Ti = %d , Tf = %d , dT = %d" % (newTi, newTf, dT))
-        append_log(System.subdirs[k],"Starting: Tf_loop")
+        append_log(System.subdirs[k],"Starting: Tf_loop_iteration")
         System.Tf_refinements[k][System.Tf_iteration[k]] += 1
 
 def run_temperature_array(Model,System,i,Ti=100,Tf=200,dT=10):
@@ -77,7 +106,7 @@ def run_temperature_array(Model,System,i,Ti=100,Tf=200,dT=10):
         find the folding temperature. '''
 
     Temperatures = range(Ti,Tf+dT,dT)
-    System.append_log(System.subdirs[i],"Starting T_array in directory: %s" % System.subdirs[i])
+    System.append_log(System.subdirs[i],"Starting Tf_loop_iteration %d " % System.Tf_iteration[i])
     T_string = ''
     for T in Temperatures:
         simpath = str(T)+"_0"
@@ -93,6 +122,7 @@ def run_temperature_array(Model,System,i,Ti=100,Tf=200,dT=10):
             ## Directory exists for this temperature: continue.
             continue
     open("T_array.txt","a").write(T_string)
+    open("T_array_last.txt","w").write(T_string)
     open("Ti_Tf_dT.txt","w").write("%d %d %d" % (Ti, Tf, dT))
 
 def run_constant_temp(Model,System,T,prot_num):
@@ -110,7 +140,7 @@ def run_constant_temp(Model,System,T,prot_num):
         np.savetxt(tablefile,Model.tables[m],fmt="%16.15e",delimiter=" ")
     np.savetxt("table.xvg",Model.other_table,fmt="%16.15e",delimiter=" ")
     ## Start simulation
-    submit_run(System.subdirs[prot_num]+"_"+str(T))
+    #submit_run(System.subdirs[prot_num]+"_"+str(T))
     
 def submit_run(jobname,walltime="23:00:00",queue="serial"):
     ''' Executes the constant temperature runs.'''
@@ -142,3 +172,29 @@ def submit_run(jobname,walltime="23:00:00",queue="serial"):
     open("run.pbs","w").write(pbs_string)
     qsub = "qsub run.pbs"
     sb.call(qsub.split(),stdout=open("sim.out","w"),stderr=open("sim.out"))
+
+def tail(f, window=1):
+    ''' Quickly reads last line of long file.'''
+    BUFSIZ = 1024
+    f.seek(0, 2)
+    bytes = f.tell()
+    size = window
+    block = -1
+    data = []
+    while size > 0 and bytes > 0:
+        if (bytes - BUFSIZ > 0):
+            # Seek back one whole BUFSIZ
+            f.seek(block*BUFSIZ, 2)
+            # read BUFFER
+            data.append(f.read(BUFSIZ))
+        else:
+            # file too small, start from begining
+            f.seek(0,0)
+            # only read what was not read
+            data.append(f.read(bytes))
+        linesFound = data[-1].count('\n')
+        size -= linesFound
+        bytes -= BUFSIZ
+        block -= 1
+    return '\n'.join(''.join(data).splitlines()[-window:])
+

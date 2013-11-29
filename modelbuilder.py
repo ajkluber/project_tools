@@ -6,12 +6,9 @@ import numpy as np
 import cPickle 
 
 import system
-import analysis.analysis as analysis
+import analysis
 import simulation
-from models.HomogeneousGoModel import HomogeneousGoModel
-from models.HeterogeneousGoModel import HeterogeneousGoModel
-from models.DMCModel import DMCModel
-
+import models
 '''
 ModelBuilder Class
 
@@ -98,17 +95,51 @@ class ModelBuilder(object):
                 open(sub+"/Tf_active_directory.txt","w").write(System.Tf_active_directory[i])
                 self.append_log(sub,"Creating new subdirectory: %s" % sub)
 
+    def check_modelbuilder_log(self,sub)
+        modelbuilder = open(args.subdir+'/modelbuilder.log','r').readlines()
+        lasttime, action,task = modelbuilder[-1].split()
+        return lasttime,action,task
+
+    def check_project(self,args):
+        ''' Checks where something left off and continues it.'''
+        arg.pdbs = [ name+'.pdb' for name in  args.subdirs ]
+        System = system.System(args)
+        self.load_model_system_info(System)
+        modelinfo = open(args.subdir+'/model.info','r').readlines()
+        modeltype = modelinfo[3].split()[0]
+        Model = models.get_model(modeltype)
+
+        #print System.__repr__(0) ## DEBUGGING
+        #print Model.__repr__()   ## DEBUGGING
+
+        for i in range(len(System.subdirs)):
+            sub = System.subdirs[i]
+            lasttime,action,task = self.check_modelbuilder_log(sub)
+            #print "Last task was %s %s at %s" % (action,task,lasttime) ## DEBUGGING
+            if action == "Starting:":
+                if task == "Tf_loop_iteration":
+                    simulation.Tf_loop.check_completion(System,i,self.append_log)
+                    lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
+                    if action2 == "Finished:":
+                        analysis.analysis.analyze_temperature_array(System,i,self.append_log)
+            elif action == "Error"
+                pass
+
+            #if task == "Tf_loop":
+            #    simulation.Tf_loop.folding_temperature_loop(Model,System,self.append_log)
+            
+        self.save_model_system_info(Model,System)
+        
+
     def new_project(self,args):
         ''' Starting a new simulation project.'''
-        newmodel = {'HomGo':HomogeneousGoModel, 'HetGo':HeterogeneousGoModel, 
-                      'DMC':DMCModel}[args.type]
         #self.append_log("Project %s started" % args.name)
-        Model = newmodel(self.path)
+        Model = models.get_model(args.type)
         System = system.System(args)
         self.create_subdirs(System)
         self.prepare_system(Model,System)
         self.save_model_system_info(Model,System)
-        self.load_model_system_info(Model,System)
+        self.load_model_system_info(System)
 
         ## The first step depends on the type of model.
         if args.type in ["HomGo","HetGo"]:
@@ -121,11 +152,13 @@ class ModelBuilder(object):
         #self.append_log("Finished: T_array")
         print "Success"
 
-    def load_model_system_info(self,Model,System):
+    def load_model_system_info(self,System):
         ''' Save the model and system info strings.'''
         for i in range(len(System.subdirs)):
+            #print System.subdirs[i]
             System.load_info_file(i)
-            modelname = 
+            #modelname = ''
+        #print System.__repr__(i)
 
     def save_model_system_info(self,Model,System):
         ''' Save the model and system info strings.'''
@@ -142,13 +175,16 @@ class ModelBuilder(object):
         topology_files = Model.get_itp_strings(prots_indices, prots_residues, prots_coords,prots_ndxs)
         System.topology_files = topology_files
 
+    
+
+
 def main():
     parser = argparse.ArgumentParser(description='Build a model of a system.')
     sp = parser.add_subparsers(dest='action')
 
     ## Initializing a new simulation project.
     new_parser = sp.add_parser('new')
-    new_parser.add_argument('--name', type=str, required=True, help='Name of system.')
+    #new_parser.add_argument('--name', type=str, required=True, help='Name of system.')
     new_parser.add_argument('--type', type=str, required=True, help='Choose model type: HetGo, HomGo, DMC')
     new_parser.add_argument('--beads', type=str, required=True, help='Choose model beads: CA, CACB.')
     new_parser.add_argument('--pdbs', type=str, required=True, nargs='+',help='PDBs to start simulations.')
@@ -156,7 +192,7 @@ def main():
 
     ## Checking on a simulation project.
     run_parser = sp.add_parser('check')
-    run_parser.add_argument('--subdir', nargs='+', help='Subdirectories to check',required=True)
+    run_parser.add_argument('--subdir', type=str, nargs='+', help='Subdirectories to check',required=True)
     args = parser.parse_args()
     
     

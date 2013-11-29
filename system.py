@@ -41,11 +41,11 @@ COLUMNS        DATA  TYPE    FIELD        DEFINITION
 class System(object):
     def __init__(self,args):
         self.path = os.getcwd()
-        self.systemname = args.name
         self.itp_files = 0.
         self.pdbs = args.pdbs
         self.subdirs = [ pdb.split('.pdb')[0] for pdb in self.pdbs ] 
         self.numprots = len(self.subdirs)
+        self.error = [ 0 for i in range(self.numprots) ]
         self.Tf_iteration = [ 0 for i in range(self.numprots) ]
         self.Tf_active_directory = [ 'Tf_0' for i in range(self.numprots) ]
         self.Tf_refinements = [ {0:0} for i in range(self.numprots) ]
@@ -55,8 +55,6 @@ class System(object):
     def __repr__(self,i):
         reprstring = "[ Main_Path ]\n"
         reprstring += "%s\n" % self.path
-        reprstring += "[ System_Name ]\n"
-        reprstring += "%s\n" % self.systemname
         reprstring += "[ PDB ]\n"
         reprstring += "%s\n" % self.pdbs[i]
         reprstring += "[ subdir ]\n"
@@ -75,12 +73,13 @@ class System(object):
         return reprstring
 
     def load_info_file(self,i):
-        
+        ''' Load in the dynamic system info. File must have exact
+            format. '''
         info_file = open(self.subdirs[i]+'/system.info','r')
         line = info_file.readline()
         while line != '':
-            #print line[:-1]
-            print line.split()
+            #print line[:-1] ## DEBUGGING
+            #print line.split() ## DEBUGGING
             value = line.split()[1]
             if value == "Tf_iteration":
                 self.Tf_iteration[i] = int(info_file.readline())
@@ -88,7 +87,7 @@ class System(object):
                 line = info_file.readline()
                 while line[0] != "[":
                     key,val = line.split()
-                    self.Tf_refinements[i][key] = val
+                    self.Tf_refinements[i][int(key)] = int(val)
                     line = info_file.readline()
                 continue
             elif value == "Tf_active_directory":
@@ -97,15 +96,13 @@ class System(object):
                 self.mutation_iteration[i] = int(info_file.readline())
             elif value == "mutation_active_directory":
                 self.mutation_active_directory[i] = info_file.readline()[:-1]
-            elif value == "System_Name":
-                self.systemname = info_file.readline()[:-1]
             else:
                 if line[0] == "[":
                     line = info_file.readline()
             line = info_file.readline()
 
     def append_log(self,sub,string):
-        logfile = open(self.path+'/'+sub,'a').write(self.append_time_label()+' '+string+'\n')
+        logfile = open(self.path+'/'+sub+'/'+sub+'.log','a').write(self.append_time_label()+' '+string+'\n')
 
     def append_time_label(self):
         now = time.localtime()

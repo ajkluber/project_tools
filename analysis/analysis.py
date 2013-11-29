@@ -5,15 +5,15 @@ import glob
 
 
 
-def analyze_temperature_array(System,Tarrayfile="T_array.txt"):
+def analyze_temperature_array(System,i,append_log):
+    ''' Analyze the '''
     cwd = os.getcwd()
-    for i in range(len(System.subdirs)):
+    if System.error[i] == 0:
         sub = System.subdirs[i]+"/"+System.Tf_active_directory[i]
         os.chdir(cwd+"/"+sub)
-        tempfile = open(Tarrayfile,"r").readlines()
+        tempfile = open("T_array_last.txt","r").readlines()
         temperatures = [ temp[:-1] for temp in tempfile  ]
-        temperatures.sort()
-        
+
         ## TO DO: ADD CALCULATION OF NATIVE CONTACTS.
         if (not os.path.exists("Q.dat")):
             pass
@@ -21,11 +21,11 @@ def analyze_temperature_array(System,Tarrayfile="T_array.txt"):
 
         avgrmsd = np.zeros(len(temperatures),float)
         lowerT = 0
-        upperT = 1000
+        upperT = 10000
         cwd2 = os.getcwd()
         for k in range(len(temperatures)):
             tdir = temperatures[k]
-            print cwd2+"/"+tdir
+            #print cwd2+"/"+tdir ## DEBUGGING
             os.chdir(cwd2+"/"+tdir)
             if (not os.path.exists("rmsd.xvg")) or (not os.path.exists("radius_cropped.xvg")) \
                (not os.path.exists("energyterms.xvg")) or (not os.path.exists("phis.xvg")):
@@ -43,6 +43,8 @@ def analyze_temperature_array(System,Tarrayfile="T_array.txt"):
         print lowerT, upperT
         open("T_brackets.txt","w").write("%s %s" % (lowerT,upperT))
         os.chdir(cwd)
+    else:
+        continue
 
 
 def crunch_coordinates():
