@@ -43,9 +43,13 @@ def analyze_temperature_array(System,i,append_log):
         print lowerT, upperT
         open("T_brackets.txt","w").write("%s %s" % (lowerT,upperT))
         os.chdir(cwd)
+        append_log(System.subdirs[i],"Starting: Tf_loop_analysis")
     else:
         continue
 
+def check_completion(System,i,append_log):
+
+    pass
 
 def crunch_coordinates():
     ''' Crunch the following reaction coordinates with Gromacs: rmsd, radius

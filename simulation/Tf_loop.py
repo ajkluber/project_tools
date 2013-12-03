@@ -70,7 +70,7 @@ def folding_temperature_loop_extension(Model,System,k,append_log):
     ## Check to see if a previous temperature range was used.
     if (not os.path.exists("Ti_Tf_dT.txt")):
         ## For initial exploration use very broad temperature increments.
-        Ti = 100; Tf = 350; dT = 50
+        Ti = 50; Tf = 350; dT = 50
         append_log(System.subdirs[k],"Submitting T_array iteration %d ; refinement %d" % \
                         (System.Tf_iteration[k],System.Tf_refinements[k][System.Tf_iteration[k]]))
         append_log(System.subdirs[k],"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
@@ -84,7 +84,7 @@ def folding_temperature_loop_extension(Model,System,k,append_log):
         lowerT, upperT = open("T_brackets.txt","r").read().split()
         lowerT = int(lowerT); upperT = int(upperT)
         newdT = float(dT)/5.
-        ## If new dT is less than 1 then don't do it.
+        ## If new dT is less than 3 then don't do it.
         if newdT <= 3.:
             newdT = 1
             midT = int(0.5*(float(lowerT)+upperT))
