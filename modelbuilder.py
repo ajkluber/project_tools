@@ -121,9 +121,9 @@ class ModelBuilder(object):
                     simulation.Tf_loop.check_completion(System,i,self.append_log)
                     lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
                     if action2 == "Finished:":
-                        analysis.analysis.analyze_temperature_array(System,i,self.append_log)
+                        analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log)
                 elif task == "Tf_loop_analysis":
-                    ## analysis.analysis.check_completion(System,i,self.append_log)
+                    ## analysis.Tf_loop.check_completion(System,i,self.append_log)
                     pass
             elif action == "Error"
                 pass
