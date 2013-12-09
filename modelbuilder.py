@@ -55,26 +55,16 @@ class ModelBuilder(object):
         go_model_procedure = ["Prepping system","Submitting T_array","Analyzing T_array"]
 
         if args.action == 'new':
+            ## This option creates a new project with the specifications given
+            ## on the command line. Then saves all that info in a format that 
+            ## can be automatically loaded the next time around.
             self.new_project(args)
-        elif args.action == 'check':
-            self.check_project(args)
-            ## I would like this action to check the state of the current 
-            ## simulation. Each simulation style has a defined procedure (more 
-            ## or less) so this action will check how many steps the procedure has 
-            ## successfully executed. This will be useful when returning to a 
+        elif args.action == 'continue':
             ## project where you don't remember where it left off. Outputs a nice
             ## summary of the state of the simulation.
-            pass
+            self.continue_project(args)
         elif args.action == 'clean':
             ## Not sure what to put 
-            pass
-        elif args.action == 'continue':
-            
-            ## I would like this action to continue with the next step in the
-            ## procedure, picking up right after the last succesfful step.
-            #self.load_project()
-            #System = system.System("system.info")
-            #Model = model.Model("model.info")
             pass
 
     def append_log(self,sub,string):
@@ -95,27 +85,32 @@ class ModelBuilder(object):
                 open(sub+"/Tf_active_directory.txt","w").write(System.Tf_active_directory[i])
                 self.append_log(sub,"Creating new subdirectory: %s" % sub)
 
-    def check_modelbuilder_log(self,sub)
-        modelbuilder = open(args.subdir+'/modelbuilder.log','r').readlines()
+    def check_modelbuilder_log(self,sub):
+        ''' Gets last line of sub/modelbuilder.log to determine where the 
+            program last left off. Could probably be more robust.'''
+        modelbuilder = open(sub+'/modelbuilder.log','r').readlines()
         lasttime, action,task = modelbuilder[-1].split()
         return lasttime,action,task
 
-    def check_project(self,args):
+    def continue_project(self,args):
         ''' Checks where something left off and continues it.'''
-        arg.pdbs = [ name+'.pdb' for name in  args.subdirs ]
+        args.pdbs = [ name+'.pdb' for name in  args.subdirs ]
+
         System = system.System(args)
         self.load_model_system_info(System)
-        modelinfo = open(args.subdir+'/model.info','r').readlines()
+        modelinfo = open(args.subdirs[0]+'/model.info','r').readlines()
         modeltype = modelinfo[3].split()[0]
         Model = models.get_model(modeltype)
+        self.prepare_system(Model,System)
 
         #print System.__repr__(0) ## DEBUGGING
         #print Model.__repr__()   ## DEBUGGING
+        #raise SystemExit
 
         for i in range(len(System.subdirs)):
             sub = System.subdirs[i]
             lasttime,action,task = self.check_modelbuilder_log(sub)
-            #print "Last task was %s %s at %s" % (action,task,lasttime) ## DEBUGGING
+            print "Last task was %s %s at %s" % (action,task,lasttime) ## DEBUGGING
             if action == "Starting:":
                 if task == "Tf_loop_iteration":
                     simulation.Tf_loop.check_completion(System,i,self.append_log)
@@ -123,15 +118,17 @@ class ModelBuilder(object):
                     if action2 == "Finished:":
                         analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log)
                 elif task == "Tf_loop_analysis":
-                    ## analysis.Tf_loop.check_completion(System,i,self.append_log)
-                    pass
-            elif action == "Error"
+                    analysis.Tf_loop.check_completion(System,i,self.append_log)
+            elif action == "Finished:":
+                if task == "Tf_loop_iteration":
+                    analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log)
+                elif task == "Tf_loop_analysis":
+                    simulation.Tf_loop.folding_temperature_loop(Model,System,i,self.append_log)
+            elif action == "Error":
                 pass
 
-            #if task == "Tf_loop":
-            #    simulation.Tf_loop.folding_temperature_loop(Model,System,self.append_log)
-            
         self.save_model_system_info(Model,System)
+        print "Success"
         
 
     def new_project(self,args):
@@ -146,7 +143,8 @@ class ModelBuilder(object):
 
         ## The first step depends on the type of model.
         if args.type in ["HomGo","HetGo"]:
-            simulation.Tf_loop.folding_temperature_loop(Model,System,self.append_log)
+            for k in range(len(System.subdirs)):
+                simulation.Tf_loop.folding_temperature_loop(Model,System,k,self.append_log)
         elif args.type == "DMC":
             pass
 
@@ -194,8 +192,8 @@ def main():
     new_parser.add_argument('--solvent', action='store_true', help='Add this option for solvent.')
 
     ## Checking on a simulation project.
-    run_parser = sp.add_parser('check')
-    run_parser.add_argument('--subdir', type=str, nargs='+', help='Subdirectories to check',required=True)
+    run_parser = sp.add_parser('continue')
+    run_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to check',required=True)
     args = parser.parse_args()
     
     

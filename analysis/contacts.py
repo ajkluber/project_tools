@@ -155,7 +155,8 @@ def calculate_Q():
     return Q, Qh
 
 def get_beadbead_info():
-    ''' Extract the native crystal structure contacts.'''
+    ''' Extract the native crystal structure contacts, equilibrium 
+        contact distance (sigij), and number of residues N.'''
     pairs = []
     pdb = np.loadtxt("Native.pdb",dtype=str)
     coords = pdb[:,6:9].astype(float)
@@ -163,13 +164,14 @@ def get_beadbead_info():
     Sig = np.zeros((N,N),float)
     Native_cryst = np.zeros((N,N),int)
     for line in open("BeadBead.dat","r"):
-        i, j, resi, resj = line[0:5], line[5:10], line[10:18], line[18:26]
-        interaction_num, sigij, epsij = line[26:31], line[31:47], line[47:63]
-        Sig[int(i),int(j)] = float(sigij)
-        rij = np.linalg.norm(coords[pair.i] - coords[pair.j])
-        Sig[pair.i,pair.j] = pair.sigij
-        if rij <= cutoffscale*10.*pair.sigij:
-            Native_cryst[pair.i,pair.j] = 1
+        i, j = int(line[0:5])-1, int(line[5:10])-1
+        resi, resj = line[10:18], line[18:26]
+        interaction_num = int(line[26:31])
+        sigij, epsij = float(line[31:47]), float(line[47:63])
+        Sig[i,j] = sigij
+        rij = np.linalg.norm(coords[i] - coords[j])
+        if rij <= 1.25*10.*sigij:
+            Native_cryst[i,j] = 1
 
     np.savetxt("Qref_cryst.dat",Native_cryst,fmt="%3d",delimiter=" ")
     return Native_cryst, Sig, N

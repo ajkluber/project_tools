@@ -138,7 +138,7 @@ class System(object):
                     atomid += 1
                     resid += 1
                     cleanpdb += newline
-        cleanpdb += 'TER'
+        #cleanpdb += 'TER'
         return cleanpdb
 
     def get_atom_indices(self,beadmodel):
