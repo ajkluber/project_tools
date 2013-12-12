@@ -23,19 +23,42 @@ def check_completion(System,i,append_log):
     os.chdir(cwd+"/"+sub)
     tempfile = open("T_array_last.txt","r").readlines()
     temperatures = [ temp[:-1] for temp in tempfile  ]
+    print " Checking simulation completion..."
     for k in range(len(temperatures)):
         tdir = temperatures[k]
-        mdlog = open(tdir+"/"+"md.log","r")
-        lastline = tail(mdlog)
-        mdlog.close()
+        for line in open(tdir+"/"+"grompp.mdp","r"):
+            if line[:6] == "nsteps":
+                nsteps = int(line.split()[2]) + 1
+                break    
+        finished = 0
+        for line in open(tdir+"/md.log","r"):
+            if line.split()[0] == "Statistics":
+                if line.split()[2] == str(nsteps):
+                    #print ""
+                    print "    %s finished." % tdir
+                    System.append_log(System.subdirs[i],"  %s finished." % tdir)
+                    finished = 1
+
         error = 0
-        if lastline[:9] == "Finished":
-            append_log("  %s finished" % tdir)
-        else:
-            append_log("  %s did not finish" % tdir)
+        if finished == 0:
+            print "    check %s. simulation did not finish."
+            System.append_log(System.subdirs[i],"  %s did not finish" % tdir)
             error = 1
+        #mdlog = open(tdir+"/"+"md.log","r")
+        #lastline = tail(mdlog)
+        #mdlog.close()
+        #error = 0
+        #if lastline.split()[0] == "Finished":
+        #    System.append_log(System.subdirs[i],"  %s finished" % tdir)
+        #    print "     %s finished" % tdir
+        #else:
+        #    System.append_log(System.subdirs[i],"  %s did not finish" % tdir)
+        #    print "     %s did not finish" % tdir
+        #    error = 1
     if error == 1:
-        append_log(System.subdirs[i],"Error: Tf_loop_iteration")
+        #append_log(System.subdirs[i],"Error: Tf_loop_iteration")
+        print "    Cannot continue with errors."
+        pass 
     else:
         append_log(System.subdirs[i],"Finished: Tf_loop_iteration")
     System.error[i] = error

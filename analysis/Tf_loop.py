@@ -93,7 +93,8 @@ def crunch_Q(name):
     contact_pbs +="#PBS -j oe\n"
     contact_pbs +="#PBS -V\n\n"
     contact_pbs +="cd $PBS_O_WORKDIR\n"
-    contact_pbs +='python -m model_builder.analysis.contacts --calc  \n'
+    #contact_pbs +='python -m model_builder.analysis.contacts --calc  \n'
+    contact_pbs +='python /projects/cecilia/ajk8/model_builder/analysis/contacts.py --calc  \n'
     open("contacts.pbs","w").write(contact_pbs)
     qsub = "qsub contacts.pbs"
     sb.call(qsub.split(),stdout=open("contacts.out","w"),stderr=open("contacts.err","w"))

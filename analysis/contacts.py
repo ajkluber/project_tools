@@ -158,8 +158,9 @@ def get_beadbead_info():
     ''' Extract the native crystal structure contacts, equilibrium 
         contact distance (sigij), and number of residues N.'''
     pairs = []
-    pdb = np.loadtxt("Native.pdb",dtype=str)
-    coords = pdb[:,6:9].astype(float)
+    #pdb = np.loadtxt("Native.pdb",dtype=str)
+    #coords = pdb[:,6:9].astype(float)
+    coords = get_pdb_coords("Native.pdb")
     N = len(coords)
     Sig = np.zeros((N,N),float)
     Native_cryst = np.zeros((N,N),int)
@@ -175,6 +176,18 @@ def get_beadbead_info():
 
     np.savetxt("Qref_cryst.dat",Native_cryst,fmt="%3d",delimiter=" ")
     return Native_cryst, Sig, N
+
+def get_pdb_coords(pdbname):
+    ''' Get coordinates from a pdb file.'''
+    coords = []
+    for line in open(pdbname,"r"):
+        if line[:3] in ['TER','END']:
+            break
+        else:
+            if line[:4] == "ATOM":
+                coords.append([float(line[31:39]),float(line[39:47]),float(line[47:55])]) 
+
+    return np.array(coords)
 
 def probabilistic_reference(cutoff=1.25):
     ''' Calculate reference matrix probabilistically. Considers native 

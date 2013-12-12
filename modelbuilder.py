@@ -110,19 +110,28 @@ class ModelBuilder(object):
         for i in range(len(System.subdirs)):
             sub = System.subdirs[i]
             lasttime,action,task = self.check_modelbuilder_log(sub)
+            print "Checking progress for directory:  ", sub
             print "Last task was %s %s at %s" % (action,task,lasttime) ## DEBUGGING
             if action == "Starting:":
                 if task == "Tf_loop_iteration":
+                    print "Next task is checking Tf_loop_iteration completion..."
                     simulation.Tf_loop.check_completion(System,i,self.append_log)
                     lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
                     if action2 == "Finished:":
+                        print "Finished Tf_loop_iteration..."
+                        print "Next task is starting Tf_loop_analysis..."
                         analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log)
                 elif task == "Tf_loop_analysis":
+                    print "Next task is checking Tf_loop_analysis completion..."
                     analysis.Tf_loop.check_completion(System,i,self.append_log)
             elif action == "Finished:":
                 if task == "Tf_loop_iteration":
+                    print "Finished Tf_loop_iteration..."
+                    print "Next task is starting Tf_loop_analysis..."
                     analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log)
                 elif task == "Tf_loop_analysis":
+                    print "Finished Tf_loop_analysis..."
+                    print "Next task is starting Tf_loop_iteration..."
                     simulation.Tf_loop.folding_temperature_loop(Model,System,i,self.append_log)
             elif action == "Error":
                 pass
@@ -134,6 +143,7 @@ class ModelBuilder(object):
     def new_project(self,args):
         ''' Starting a new simulation project.'''
         #self.append_log("Project %s started" % args.name)
+        print "Starting a new project..."
         Model = models.get_model(args.type)
         System = system.System(args)
         self.create_subdirs(System)
@@ -144,6 +154,7 @@ class ModelBuilder(object):
         ## The first step depends on the type of model.
         if args.type in ["HomGo","HetGo"]:
             for k in range(len(System.subdirs)):
+                print "Starting the first Tf_loop_iteration..."
                 simulation.Tf_loop.folding_temperature_loop(Model,System,k,self.append_log)
         elif args.type == "DMC":
             pass
@@ -155,6 +166,7 @@ class ModelBuilder(object):
 
     def load_model_system_info(self,System):
         ''' Save the model and system info strings.'''
+        print "Loading system.info and model.info ..."
         for i in range(len(System.subdirs)):
             #print System.subdirs[i]
             System.load_info_file(i)
@@ -163,12 +175,14 @@ class ModelBuilder(object):
 
     def save_model_system_info(self,Model,System):
         ''' Save the model and system info strings.'''
+        print "Saving system.info progress..."
         for i in range(len(System.subdirs)):
             System.write_info_file(i)
             Model.write_info_file(System.subdirs[i])
 
     def prepare_system(self,Model,System):
         ''' Extract all the topology files from Model.'''
+        print "Preparing files..."
         System.clean_pdbs()
         System.write_Native_pdb_CA()
         prots_indices, prots_residues, prots_coords = System.get_atom_indices(Model.beadmodel)
