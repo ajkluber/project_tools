@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 import numpy as np
 import argparse
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
 from coord_util import mol_reader
+
 #import dmc_model.beadbead as bb
 #from mpi4py import MPI
 
@@ -124,7 +129,7 @@ def calculate_Q():
     framenum = 0 
     frames = mol_reader.open("traj.xtc") 
     for frame in frames.read():
-        D = np.ones((N,N),float)
+        D = np.zeros((N,N),float)
         X = np.reshape(np.array(frame.coordinates), (N,3))
 
         ## This loops allows the construction of the pairwise distance 
@@ -139,7 +144,9 @@ def calculate_Q():
 
         ## Contact matrix. Distances are within 125% of equilibrium 
         ## distance. Sum up contacts to get Q, Q_helical, Q_non-helical.
-        Contact = (D <= 1.25*10*Sig).astype(int)
+        Contact1 = (D <= 1.25*10*Sig).astype(int)
+        Contact2 = (D > 0.01).astype(int)
+        Contact = Contact1*Contact2
         Q.append(sum(sum(Native*Contact)))
         A.append(sum(sum((1 - Native)*Contact)))
         Qh.append(sum(sum(Native_h*Contact)))
@@ -213,7 +220,8 @@ def probabilistic_reference(cutoff=1.25):
         if rmsd[numframes] > 0.25:
             continue
         else:
-            D = np.ones((N,N),float)
+            #D = np.ones((N,N),float)  ## Why is D = ones((N,N))?
+            D = np.zeros((N,N),float)
             X = np.reshape(np.array(frame.coordinates), (N,3))
             ## This loops allows the construction of the pairwise distance 
             ## distance matrix without a second inner loop by computing
@@ -227,14 +235,20 @@ def probabilistic_reference(cutoff=1.25):
 
             ## Contact matrix. Distances are within cutoff of equilibrium 
             ## distance.
-            Contact= (D <= cutoff*10*Sig).astype(int)
+            Contact1 = (D <= 1.25*10*Sig).astype(int)
+            Contact2 = (D > 0.01).astype(int)
+            Contact = Contact1*Contact2
+            #Contact = (D <= cutoff*10.*Sig).astype(int)
+
             probij += Contact
-            if (numframesused >= 1000) == 0:
+            if numframesused >= 1000:
                 break
             numframesused+= 1
     Native = (probij >= .9*float(numframesused)).astype(int)
     np.savetxt("Qref_prob.dat",Native,delimiter=" ",fmt="%1d")
-    return Native
+    plt.pcolor(Native_cryst + (probij/float(numframesused)).T)
+    plt.savefig("crystal_vs_prob.pdf")
+    return Native,probij
 
 if __name__ == "__main__":
     main()

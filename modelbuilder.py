@@ -82,7 +82,7 @@ class ModelBuilder(object):
             if os.path.exists(sub) != True:
                 os.mkdir(sub)
                 os.mkdir(sub+"/"+System.Tf_active_directory[i])
-                open(sub+"/Tf_active_directory.txt","w").write(System.Tf_active_directory[i])
+                #open(sub+"/Tf_active_directory.txt","w").write(System.Tf_active_directory[i])
                 self.append_log(sub,"Creating new subdirectory: %s" % sub)
 
     def check_modelbuilder_log(self,sub):
@@ -114,24 +114,24 @@ class ModelBuilder(object):
             print "Last task was %s %s at %s" % (action,task,lasttime) ## DEBUGGING
             if action == "Starting:":
                 if task == "Tf_loop_iteration":
-                    print "Next task is checking Tf_loop_iteration completion..."
+                    print "Starting to check if Tf_loop_iteration completed..."
                     simulation.Tf_loop.check_completion(System,i,self.append_log)
                     lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
                     if action2 == "Finished:":
                         print "Finished Tf_loop_iteration..."
-                        print "Next task is starting Tf_loop_analysis..."
+                        print "Starting Tf_loop_analysis..."
                         analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log)
                 elif task == "Tf_loop_analysis":
-                    print "Next task is checking Tf_loop_analysis completion..."
+                    print "Starting to check if Tf_loop_analysis completed..."
                     analysis.Tf_loop.check_completion(System,i,self.append_log)
             elif action == "Finished:":
                 if task == "Tf_loop_iteration":
                     print "Finished Tf_loop_iteration..."
-                    print "Next task is starting Tf_loop_analysis..."
+                    print "Starting Tf_loop_analysis..."
                     analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log)
                 elif task == "Tf_loop_analysis":
                     print "Finished Tf_loop_analysis..."
-                    print "Next task is starting Tf_loop_iteration..."
+                    print "Starting Tf_loop_iteration..."
                     simulation.Tf_loop.folding_temperature_loop(Model,System,i,self.append_log)
             elif action == "Error":
                 pass

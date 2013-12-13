@@ -16,8 +16,9 @@ Description:
 '''
 
 def check_completion(System,i,append_log):
-    ''' Checks to see if the previous Tf_loop simulation completed 
-        by checking the last line of md.log in each directory.'''
+    ''' Checks to see if the previous Tf_loop simulation completed. First 
+        checks the desired number of steps in the grompp.mdp file then 
+        checks to see if md.log has recorded that number of steps.'''
     cwd = os.getcwd()
     sub = System.subdirs[i]+"/"+System.Tf_active_directory[i]
     os.chdir(cwd+"/"+sub)
@@ -26,37 +27,22 @@ def check_completion(System,i,append_log):
     print " Checking simulation completion..."
     for k in range(len(temperatures)):
         tdir = temperatures[k]
+        error = 0
+        ## Determine the number of steps for completed run.
         for line in open(tdir+"/"+"grompp.mdp","r"):
             if line[:6] == "nsteps":
                 nsteps = int(line.split()[2]) + 1
                 break    
-        finished = 0
-        for line in open(tdir+"/md.log","r"):
-            if line.split()[0] == "Statistics":
-                if line.split()[2] == str(nsteps):
-                    #print ""
-                    print "    %s finished." % tdir
-                    System.append_log(System.subdirs[i],"  %s finished." % tdir)
-                    finished = 1
-
-        error = 0
-        if finished == 0:
+        finish_line = "Statistics over " + str(nsteps)
+        ## Check if md.log has finished the required number of steps.
+        if finish_line in open(tdir+"/md.log","r").read():
+            System.append_log(System.subdirs[i],"  %s finished." % tdir)
+        else:
             print "    check %s. simulation did not finish."
+            print "    Cannot continue with errors."
             System.append_log(System.subdirs[i],"  %s did not finish" % tdir)
             error = 1
-        #mdlog = open(tdir+"/"+"md.log","r")
-        #lastline = tail(mdlog)
-        #mdlog.close()
-        #error = 0
-        #if lastline.split()[0] == "Finished":
-        #    System.append_log(System.subdirs[i],"  %s finished" % tdir)
-        #    print "     %s finished" % tdir
-        #else:
-        #    System.append_log(System.subdirs[i],"  %s did not finish" % tdir)
-        #    print "     %s did not finish" % tdir
-        #    error = 1
     if error == 1:
-        #append_log(System.subdirs[i],"Error: Tf_loop_iteration")
         print "    Cannot continue with errors."
         pass 
     else:

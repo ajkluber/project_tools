@@ -32,7 +32,7 @@ def analyze_temperature_array(System,i,append_log):
                 crunch_coordinates(System.subdirs[i]+"_"+tdir)
             os.chdir(cwd2)
 
-        ## TO DO: ADD CALCULATION OF NATIVE CONTACTS.
+        ## Calculates native contact reference matrix at lowest temperature.
         if (not os.path.exists(lowT+"/Qref_prob.dat")):
             os.chdir(lowT)
             Qref = contacts.probabilistic_reference()
@@ -40,6 +40,8 @@ def analyze_temperature_array(System,i,append_log):
         else:
             Qref = np.loadtxt(lowT+"/Qref_prob.dat")
 
+        ## Saves the reference matrix in each temp. directory. Submits PBS job for 
+        ## calculating native contacts, native helical, and not-native contacts.
         for k in range(len(temperatures)):
             tdir = temperatures[k]
             #print cwd2+"/"+tdir ## DEBUGGING
