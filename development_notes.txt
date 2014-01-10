@@ -1,0 +1,30 @@
+Development Notes
+
+Fri Jan 10 13:57:40 CST 2014
+Alexander Kluber
+
+    Coming back to work on model_builder.py. Can currently run Go models to
+look for melting temperature. This is the first step to calibrating the 
+heterogeneous Go model.
+
+    To Do Next:
+1. Find the temperature interval where 0.25 < <Q> < 0.75 and then initiate
+simulations spaced by 1K across this interval. 
+    Expectations:
+    - For two-state systems with a very steep melting curve this interval will
+      be narrow.
+    - For systems with multi-state kinetics this interval will be broader,
+      potentially with intermediate plateaus.
+
+2. Prep files for WHAM and run WHAM on the temperature range to get heat 
+capacity. Then run WHAM to get 1D and 2D PMFs at the folding temperature.
+
+3. Start 5 long equilibrium simulations at the folding temperature.
+
+
+To Do at any time:
+- Record information files so simulations can be picked up easily at the spot
+they were left off.
+
+- Put model_builder on github.
+
