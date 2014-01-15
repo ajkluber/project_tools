@@ -74,17 +74,22 @@ def determine_new_T_array():
             upperT = int(tdir.split("_")[0])
             break
         
-    ## Determine the finer grain T_array.
-    newdT = int(float(dT)/5.)
-    ## If newdT < 5 then just do finest temperature spacing. 
-    if newdT < 5:
-        newdT = 1
-        midT = int(0.5*(float(lowerT)+upperT))
-        newTi = midT - 5
-        newTf = midT + 5
+    if dT == 1:
+        ## Previous run was final iteration. Now WHAM needs to be
+        ## done.
+        newTi, newTf, newdT = 0,0,0
     else:
-        newTi = lowerT + newdT
-        newTf = upperT - newdT
+        ## Determine the finer grain T_array.
+        newdT = int(float(dT)/5.)
+        ## If newdT < 5 then just do finest temperature spacing. 
+        if newdT < 5:
+            newdT = 1
+            midT = int(0.5*(float(lowerT)+upperT))
+            newTi = midT - 5
+            newTf = midT + 5
+        else:
+            newTi = lowerT + newdT
+            newTf = upperT - newdT
     return newTi, newTf, newdT
 
 
