@@ -3,6 +3,7 @@ import os
 
 import contacts
 import crunch_coordinates
+import wham
 
 
 def analyze_temperature_array(System,i,append_log):
@@ -83,4 +84,62 @@ def check_completion(System,i,append_log):
         append_log(System.subdirs[i],"Finished: Tf_loop_analysis")
         System.append_log(System.subdirs[i],"Finished: Tf_loop_analysis")
 
+def check_if_wham_is_next(System,i,append_log):
+    ''' Check if the last temperature step, dT=1. If it was start 
+        prepping and running WHAM calculation for the Heat Capacity.'''
 
+    cwd = os.getcwd()
+    sub = System.subdirs[i]+"/"+System.Tf_active_directory[i]
+    os.chdir(cwd+"/"+sub)
+    cwd2 = os.getcwd()
+
+    Tinfo = open("Ti_Tf_dT.txt","r").read().split()
+    Ti,Tf,dT = int(Tinfo[0]), int(Tinfo[1]), int(Tinfo[2])
+    if dT == 1:
+        ## Its time for WHAM
+        print "Temperature interval has reached dT=1. Time for WHAM."
+        print "Starting wham_Cv..."
+        System.append_log(System.subdirs[i],"  prepping wham_Cv inputs")
+        os.makedirs(cwd2 + "/wham")
+        wham.prep_input_files(Ti,Tf,dT,cwd2,"HeatCap")
+
+        System.append_log(System.subdirs[i],"  running wham for heat capacity")
+        append_log(System.subdirs[i],"Starting: wham_Cv")
+        wham.run_wham("HeatCap")
+        flag = 1
+    else:
+        ## Its not time for WHAM
+        flag = 0
+
+    os.chdir(cwd)
+    return flag
+
+def continue_wham(System,i,append_log):
+    ''' If WHAM has already run for the Heat Capacity (Cv) then prep files
+        and run WHAM for 1D & 2D free energy surfaces.'''
+
+    cwd = os.getcwd()
+    sub = System.subdirs[i]+"/"+System.Tf_active_directory[i]
+    os.chdir(cwd+"/"+sub)
+    cwd2 = os.getcwd()
+
+    ## Check for completion
+    if os.path.exists(cwd+"/wham/Heat_rmsd_Rg.dat"):
+        print "Finished wham_Cv..."
+        System.append_log(System.subdirs[i],"  wham heat capacity done")
+        append_log(System.subdirs[i],"Finished: wham_Cv")
+    else:
+        print "wham_Cv may not have finished. Check if Heat_rmsd_Rg.dat exists."
+
+    print "Starting wham_FreeEnergy..."
+    append_log(System.subdirs[i],"Starting: wham_FreeEnergy")
+    System.append_log(System.subdirs[i],"  prepping wham inputs for 1D PMFs")
+    wham.prep_input_files(Ti,Tf,dT,cwd2,"1DFreeEnergy")
+    System.append_log(System.subdirs[i],"  running wham for 1D PMFs")
+    wham.run_wham("1DFreeEnergy")
+    System.append_log(System.subdirs[i],"  prepping wham inputs for 2D PMFs")
+    wham.prep_input_files(Ti,Tf,dT,cwd2,"FreeEnergy")
+    System.append_log(System.subdirs[i],"  running wham for 2D PMFs")
+    wham.run_wham("FreeEnergy")
+
+    os.chdir(cwd)

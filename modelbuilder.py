@@ -124,6 +124,9 @@ class ModelBuilder(object):
                 elif task == "Tf_loop_analysis":
                     print "Starting to check if Tf_loop_analysis completed..."
                     analysis.Tf_loop.check_completion(System,i,self.append_log)
+                elif task == "wham_Cv":
+                    print "Starting to check if wham_Cv completed..."
+                    analysis.Tf_loop.continue_wham(System,i,self.append_log)
             elif action == "Finished:":
                 if task == "Tf_loop_iteration":
                     print "Finished Tf_loop_iteration..."
@@ -131,8 +134,15 @@ class ModelBuilder(object):
                     analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log)
                 elif task == "Tf_loop_analysis":
                     print "Finished Tf_loop_analysis..."
-                    print "Starting Tf_loop_iteration..."
-                    simulation.Tf_loop.folding_temperature_loop(Model,System,i,self.append_log)
+                    flag = analysis.Tf_loop.check_if_wham_is_next(System,i,self.append_log)
+                    if flag == 1:
+                        continue
+                    else:
+                        print "Starting Tf_loop_iteration..."
+                        simulation.Tf_loop.folding_temperature_loop(Model,System,i,self.append_log)
+                elif task == "wham_Cv":
+                    print "Finished wham_Cv..."
+                    analysis.Tf_loop.continue_wham(System,i,self.append_log)
             elif action == "Error":
                 pass
 

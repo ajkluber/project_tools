@@ -66,8 +66,8 @@ from whamdata import WhamData
 
 
 def main():
-    ''' Two possible branches: 1. Calculate reference matrix, 2. Calculate Q '''
-    parser = argparse.ArgumentParser(description='Calculate the (Non)Native contact matrix')
+    ''' Two possible branches: 1. Prep WHAM inputs; 2. Submit WHAM PBS job.'''
+    parser = argparse.ArgumentParser(description='Perform WHAM.')
     sp = parser.add_subparsers(dest='action')
 
     prep_parser = sp.add_parser('prep')
@@ -100,12 +100,12 @@ def prep_input_files_command_line(args):
     N = len(temps)
     inputs = ("rmsd","Rg","Q","Qh","Qnh","Epot")
     numinputs = len(inputs)
-    try:
+    if os.path.exists(path +"/maxs_mins_rmsd_Rg_Q_Qh_Qnh_Et.dat"):
         maxesmins = np.loadtxt(args.path +"/maxs_mins_rmsd_Rg_Q_Qh_Qnh_Et.dat")
         maxs = maxesmins[0,:] 
         mins = maxesmins[1,:] 
         calcflag = 0
-    except:
+    else:
         calcflag = 1  
         maxs = -1000000*np.ones((numinputs),float)
         mins =  1000000*np.ones((numinputs),float)
@@ -143,12 +143,12 @@ def prep_input_files(Ti,Tf,dT,path,outputstyle):
     N = len(temps)
     inputs = ("rmsd","Rg","Q","Qh","Qnh","Epot")
     numinputs = len(inputs)
-    try:
+    if os.path.exists(path +"/maxs_mins_rmsd_Rg_Q_Qh_Qnh_Et.dat"):
         maxesmins = np.loadtxt(path +"/maxs_mins_rmsd_Rg_Q_Qh_Qnh_Et.dat")
         maxs = maxesmins[0,:] 
         mins = maxesmins[1,:] 
         calcflag = 0
-    except:
+    else:
         calcflag = 1  
         maxs = -1000000*np.ones((numinputs),float)
         mins =  1000000*np.ones((numinputs),float)
@@ -330,7 +330,8 @@ def run_wham_command_line(args):
     reaction_coord_pairs = ((0,1),(2,1),(3,4),(2,3))
 
     cwd = os.getcwd()
-    copy_WHAM_executable = "cp /projects/cecilia/ajk8/dmc_model/free_energy_analysis/WHAM " + cwd + "/wham/"
+    #copy_WHAM_executable = "cp /projects/cecilia/ajk8/dmc_model/free_energy_analysis/WHAM " + cwd + "/wham/"
+    copy_WHAM_executable = "cp /projects/cecilia/ajk8/model_builder/analysis/WHAM " + cwd + "/wham/"
     sb.call(copy_WHAM_executable.split())
 
     if args.output == "HeatCap":
@@ -350,7 +351,8 @@ def run_wham(outputstyle):
     reaction_coords = (0,1,2,3,4)
     reaction_coord_pairs = ((0,1),(2,1),(3,4),(2,3))
     cwd = os.getcwd()
-    copy_WHAM_executable = "cp /projects/cecilia/ajk8/dmc_model/free_energy_analysis/WHAM " + cwd + "/wham/"
+    #copy_WHAM_executable = "cp /projects/cecilia/ajk8/dmc_model/free_energy_analysis/WHAM " + cwd + "/wham/"
+    copy_WHAM_executable = "cp /projects/cecilia/ajk8/model_builder/analysis/WHAM " + cwd + "/wham/"
     sb.call(copy_WHAM_executable.split())
     if outputstyle == "HeatCap":
         submit_heat_capacity_job()
@@ -358,7 +360,7 @@ def run_wham(outputstyle):
         submit_free_energy_job(reaction_coord_pairs,inputs)
     elif outputstyle == "1DFreeEnergy":
         submit_free_energy_1D_job(reaction_coords,inputs)
-    print "Finished..."
+    #print "Finished..."
     
 def submit_heat_capacity_job():
     ''' Writes and submits the PBS job for calculating the heat capacity as
