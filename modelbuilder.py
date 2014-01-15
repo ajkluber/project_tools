@@ -63,9 +63,10 @@ class ModelBuilder(object):
             ## project where you don't remember where it left off. Outputs a nice
             ## summary of the state of the simulation.
             self.continue_project(args)
-        elif args.action == 'clean':
-            ## Not sure what to put 
-            pass
+        elif args.action == 'add':
+            self.add_temperature_array(args)
+
+
 
     def append_log(self,sub,string):
         open(self.path+'/'+sub+'/modelbuilder.log','a').write(self.append_time_label()+' '+string+'\n')
@@ -84,6 +85,38 @@ class ModelBuilder(object):
                 os.mkdir(sub+"/"+System.Tf_active_directory[i])
                 #open(sub+"/Tf_active_directory.txt","w").write(System.Tf_active_directory[i])
                 self.append_log(sub,"Creating new subdirectory: %s" % sub)
+
+    def add_temperature_array(self,args):
+        ''' Checks where something left off and continues it.'''
+        args.pdbs = [ name+'.pdb' for name in  args.subdirs ]
+
+        System = system.System(args)
+        self.load_model_system_info(System)
+        modelinfo = open(args.subdirs[0]+'/model.info','r').readlines()
+        modeltype = modelinfo[3].split()[0]
+        Model = models.get_model(modeltype)
+        self.prepare_system(Model,System)
+
+        Ti = args.temparray[0] 
+        Tf = args.temparray[1] 
+        dT = args.temparray[2] 
+
+        ## DEBUGGING 
+        #print Ti, Tf, dT       
+        #print type(Ti), type(Tf), type(dT)
+        #raise SystemExit
+
+        for i in range(len(System.subdirs)):
+            sub = System.subdirs[i]
+            lasttime,action,task = self.check_modelbuilder_log(sub)
+            print "Checking progress for directory:  ", sub
+            print "Last task was %s %s at %s" % (action,task,lasttime) ## DEBUGGING
+            print "Manually adding temperature array Ti=%d Tf=%d dT=%d" % (Ti,Tf,dT)
+            print "Starting Tf_loop_iteration..."
+            simulation.Tf_loop.manually_add_temperature_array(Model,System,i,self.append_log,Ti,Tf,dT)
+            
+        self.save_model_system_info(Model,System)
+        print "Success"
 
     def check_modelbuilder_log(self,sub):
         ''' Gets last line of sub/modelbuilder.log to determine where the 
@@ -217,7 +250,13 @@ def main():
 
     ## Checking on a simulation project.
     run_parser = sp.add_parser('continue')
-    run_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to check',required=True)
+    run_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to continue',required=True)
+
+    ## Checking on a simulation project.
+    run_parser = sp.add_parser('add')
+    run_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
+    run_parser.add_argument('--temparray', type=int, nargs='+', help='T_initial T_final dT for new temp array',required=True)
+
     args = parser.parse_args()
     
     

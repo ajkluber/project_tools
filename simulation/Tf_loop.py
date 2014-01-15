@@ -1,6 +1,7 @@
 import numpy as np
 import subprocess as sb
 import os
+import argparse
 
 import mdp
 
@@ -14,6 +15,7 @@ Description:
     To be used as a library.
 
 '''
+
 
 def check_completion(System,i,append_log):
     ''' Checks to see if the previous Tf_loop simulation completed. First 
@@ -74,7 +76,7 @@ def determine_new_T_array():
             upperT = int(tdir.split("_")[0])
             break
         
-    if dT == 1:
+    if dT == 2:
         ## Previous run was final iteration. Now WHAM needs to be
         ## done.
         newTi, newTf, newdT = 0,0,0
@@ -83,10 +85,10 @@ def determine_new_T_array():
         newdT = int(float(dT)/5.)
         ## If newdT < 5 then just do finest temperature spacing. 
         if newdT < 5:
-            newdT = 1
+            newdT = 2
             midT = int(0.5*(float(lowerT)+upperT))
-            newTi = midT - 5
-            newTf = midT + 5
+            newTi = midT - 20
+            newTf = midT + 20
         else:
             newTi = lowerT + newdT
             newTf = upperT - newdT
@@ -137,6 +139,21 @@ def folding_temperature_loop_extension(Model,System,k,append_log):
                         (System.Tf_iteration[k],System.Tf_refinements[k][System.Tf_iteration[k]]))
         append_log(System.subdirs[k],"  Ti = %d , Tf = %d , dT = %d" % (newTi, newTf, newdT))
         append_log(System.subdirs[k],"Starting: Tf_loop_iteration")
+
+def manually_add_temperature_array(Model,System,k,append_log,Ti,Tf,dT):
+    ''' To manually set the next temperature array.'''
+    cwd = os.getcwd()
+    sub = System.path +"/"+ System.subdirs[k] +"/"+ System.Tf_active_directory[k]
+    os.chdir(sub)
+
+    System.Tf_refinements[k][System.Tf_iteration[k]] += 1
+    append_log(System.subdirs[k],"Submitting T_array iteration %d ; refinement %d" % \
+                (System.Tf_iteration[k],System.Tf_refinements[k][System.Tf_iteration[k]]))
+    append_log(System.subdirs[k],"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
+    run_temperature_array(Model,System,k,Ti,Tf,dT)
+    append_log(System.subdirs[k],"Starting: Tf_loop_iteration")
+
+    os.chdir(cwd)
 
 def run_temperature_array(Model,System,i,Ti,Tf,dT):
     ''' Run many constant temperature runs over a range of temperatures to
@@ -234,4 +251,5 @@ def tail(f, window=1):
         bytes -= BUFSIZ
         block -= 1
     return '\n'.join(''.join(data).splitlines()[-window:])
+
 

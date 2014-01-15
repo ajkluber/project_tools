@@ -95,7 +95,7 @@ def check_if_wham_is_next(System,i,append_log):
 
     Tinfo = open("Ti_Tf_dT.txt","r").read().split()
     Ti,Tf,dT = int(Tinfo[0]), int(Tinfo[1]), int(Tinfo[2])
-    if dT == 1:
+    if dT == 2:
         ## Its time for WHAM
         print "Temperature interval has reached dT=1. Time for WHAM."
         print "Starting wham_Cv..."
