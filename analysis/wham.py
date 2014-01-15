@@ -157,6 +157,7 @@ def prep_input_files(Ti,Tf,dT,path,outputstyle):
     for t in temps:
         ## Prep the first block of the WHAM input file. As well as the
         ## Input_for_WHAM_###.dat files
+        print "  Prepping Input_for_WHAM_"+str(t)+".dat "
         if calcflag == 1:
             maxs, mins = prepare_Input_for_WHAM_for_temperature(t,path,maxs,mins,numinputs)
         firstblock += str(t) + "\n"
@@ -168,7 +169,7 @@ def prep_input_files(Ti,Tf,dT,path,outputstyle):
     ## desired. The three choices are: HeatCap, FreeEnergy, 1DFreeEnergy.
     if outputstyle == "HeatCap":
         ## Write the input file for heat capactiy calculation.
-        secondblock = second_block_string_Cv(inputs,maxs,mins,0,1,len(inputs)-1,temps,Tguess)
+        secondblock = second_block_string_Cv(inputs,maxs,mins,0,1,len(inputs)-1,temps,300)
         open(path+"/wham/input_rmsd_Rg_Cv.wham","w").write(firstblock + secondblock)
     elif outputstyle == "FreeEnergy" or outputstyle == "1DFreeEnergy":
         ## Write the input files for free energy calculations.

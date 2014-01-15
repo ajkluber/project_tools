@@ -100,7 +100,10 @@ def check_if_wham_is_next(System,i,append_log):
         print "Temperature interval has reached dT=1. Time for WHAM."
         print "Starting wham_Cv..."
         System.append_log(System.subdirs[i],"  prepping wham_Cv inputs")
-        os.makedirs(cwd2 + "/wham")
+        if os.path.exists(cwd2+"/wham"):
+            pass
+        else:
+            os.makedirs(cwd2+"/wham")
         wham.prep_input_files(Ti,Tf,dT,cwd2,"HeatCap")
 
         System.append_log(System.subdirs[i],"  running wham for heat capacity")
