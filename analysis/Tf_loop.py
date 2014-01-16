@@ -92,9 +92,9 @@ def check_if_wham_is_next(System,i,append_log):
     sub = System.subdirs[i]+"/"+System.Tf_active_directory[i]
     os.chdir(cwd+"/"+sub)
     cwd2 = os.getcwd()
-
     Tinfo = open("Ti_Tf_dT.txt","r").read().split()
     Ti,Tf,dT = int(Tinfo[0]), int(Tinfo[1]), int(Tinfo[2])
+
     if dT == 2:
         ## Its time for WHAM
         print "Temperature interval has reached dT=1. Time for WHAM."
@@ -125,24 +125,26 @@ def continue_wham(System,i,append_log):
     sub = System.subdirs[i]+"/"+System.Tf_active_directory[i]
     os.chdir(cwd+"/"+sub)
     cwd2 = os.getcwd()
+    Tinfo = open("Ti_Tf_dT.txt","r").read().split()
+    Ti,Tf,dT = int(Tinfo[0]), int(Tinfo[1]), int(Tinfo[2])
 
     ## Check for completion
-    if os.path.exists(cwd+"/wham/Heat_rmsd_Rg.dat"):
+    if os.path.exists(cwd2+"/wham/Heat_rmsd_Rg.dat"):
         print "Finished wham_Cv..."
         System.append_log(System.subdirs[i],"  wham heat capacity done")
         append_log(System.subdirs[i],"Finished: wham_Cv")
+        print "Starting wham_FreeEnergy..."
+        append_log(System.subdirs[i],"Starting: wham_FreeEnergy")
+        System.append_log(System.subdirs[i],"  prepping wham inputs for 1D PMFs")
+        wham.prep_input_files(Ti,Tf,dT,cwd2,"1DFreeEnergy")
+        System.append_log(System.subdirs[i],"  running wham for 1D PMFs")
+        wham.run_wham("1DFreeEnergy")
+        System.append_log(System.subdirs[i],"  prepping wham inputs for 2D PMFs")
+        wham.prep_input_files(Ti,Tf,dT,cwd2,"FreeEnergy")
+        System.append_log(System.subdirs[i],"  running wham for 2D PMFs")
+        wham.run_wham("FreeEnergy")
     else:
         print "wham_Cv may not have finished. Check if Heat_rmsd_Rg.dat exists."
-
-    print "Starting wham_FreeEnergy..."
-    append_log(System.subdirs[i],"Starting: wham_FreeEnergy")
-    System.append_log(System.subdirs[i],"  prepping wham inputs for 1D PMFs")
-    wham.prep_input_files(Ti,Tf,dT,cwd2,"1DFreeEnergy")
-    System.append_log(System.subdirs[i],"  running wham for 1D PMFs")
-    wham.run_wham("1DFreeEnergy")
-    System.append_log(System.subdirs[i],"  prepping wham inputs for 2D PMFs")
-    wham.prep_input_files(Ti,Tf,dT,cwd2,"FreeEnergy")
-    System.append_log(System.subdirs[i],"  running wham for 2D PMFs")
-    wham.run_wham("FreeEnergy")
+        print "Exiting."
 
     os.chdir(cwd)

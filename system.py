@@ -185,9 +185,12 @@ class System(object):
                 else:
                     #print "**%s**" % line[13:15] ## DEBUGGING
                     if line[13:15] == "CA":
-                        newline = "%s%5d%s%4d%s" % (line[:6],resid,line[11:22],resid,line[26:])
-                        nativepdb += newline
-                        resid += 1
+                        if line[16] in ["A"," "]:
+                            newline = "%s%5d%s%s%s%4d%s" % (line[:6],resid,line[11:16]," ",line[17:22],resid,line[26:])
+                            nativepdb += newline
+                            resid += 1
+                        else:
+                            continue
             open(sub+"/Native.pdb","w").write(nativepdb)
             self.native_pdbs.append(nativepdb)
 

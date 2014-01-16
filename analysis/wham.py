@@ -173,7 +173,7 @@ def prep_input_files(Ti,Tf,dT,path,outputstyle):
         open(path+"/wham/input_rmsd_Rg_Cv.wham","w").write(firstblock + secondblock)
     elif outputstyle == "FreeEnergy" or outputstyle == "1DFreeEnergy":
         ## Write the input files for free energy calculations.
-        prepare_free_energy_inputs(path,output,inputs,maxs,mins,firstblock)
+        prepare_free_energy_inputs(path,outputstyle,inputs,maxs,mins,firstblock)
     else:
         print "Select a proper output option: --output = [ HeatCap | FreeEnergy ]"
 
