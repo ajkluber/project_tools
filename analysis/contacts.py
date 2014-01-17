@@ -181,7 +181,7 @@ def get_beadbead_info():
         if rij <= 1.25*10.*sigij:
             Native_cryst[i,j] = 1
 
-    np.savetxt("Qref_cryst.dat",Native_cryst,fmt="%3d",delimiter=" ")
+    np.savetxt("Qref_cryst.dat",Native_cryst,fmt="%1d",delimiter=" ")
     return Native_cryst, Sig, N
 
 def get_pdb_coords(pdbname):
@@ -244,10 +244,19 @@ def probabilistic_reference(cutoff=1.25):
             if numframesused >= 1000:
                 break
             numframesused+= 1
-    Native = (probij >= .9*float(numframesused)).astype(int)
+
+    probij /= float(numframesused)
+    Native = (probij >= .9).astype(int)
     np.savetxt("Qref_prob.dat",Native,delimiter=" ",fmt="%1d")
-    plt.pcolor(Native_cryst + (probij/float(numframesused)).T)
+
+    plt.pcolor(Native_cryst + probij.T)
+    plt.xlim(0,len(Native_cryst))
+    plt.ylim(0,len(Native_cryst))
+    plt.ylabel("Contact Probability")
+    plt.xlabel("Crystal Contacts")
+    plt.title("1000 frames within 2.5A of Crystal")
     plt.savefig("crystal_vs_prob.pdf")
+    
     return Native,probij
 
 if __name__ == "__main__":

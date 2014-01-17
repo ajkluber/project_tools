@@ -34,6 +34,7 @@ def analyze_temperature_array(System,i,append_log):
 
         ## Calculates native contact reference matrix at lowest temperature.
         if (not os.path.exists(lowT+"/Qref_prob.dat")):
+            print "## DEBUGGING: Calculating reference matrix."
             os.chdir(lowT)
             Qref = contacts.probabilistic_reference()
             os.chdir(cwd2)
@@ -97,7 +98,7 @@ def check_if_wham_is_next(System,i,append_log):
 
     if dT == 2:
         ## Its time for WHAM
-        print "Temperature interval has reached dT=1. Time for WHAM."
+        print "Temperature interval has reached dT=2. Time for WHAM."
         print "Starting wham_Cv..."
         System.append_log(System.subdirs[i],"  prepping wham_Cv inputs")
         if os.path.exists(cwd2+"/wham"):

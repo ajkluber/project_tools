@@ -17,7 +17,7 @@ import numpy as np
 '''
 
 class WhamData(object):
-    def __init__(self,path="./",inputfilename="input.wham"):
+    def __init__(self,path=".",inputfilename="input.wham"):
         self.path = path
         self.inputfilename = inputfilename
         self.itermax = 1500
@@ -28,7 +28,7 @@ class WhamData(object):
         self.get_inputs()
 
     def get_inputs(self):
-        inputfile = open(self.path+"wham/"+self.inputfilename,"r").readlines()
+        inputfile = open(self.path+"/wham/"+self.inputfilename,"r").readlines()
         n_input_temp = int(inputfile[0])
 
         self.temp = [ int(x) for x in inputfile[1:2*n_input_temp:2] ]
