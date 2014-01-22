@@ -14,7 +14,7 @@ def crunch_Q(name):
     contact_pbs = "#!/bin/bash\n"
     contact_pbs +="#PBS -N Q_"+name+"\n"
     contact_pbs +="#PBS -q serial\n"
-    contact_pbs +="#PBS -l nodes=1:ppn=1,walltime=00:05:00\n"
+    contact_pbs +="#PBS -l nodes=1:ppn=1,walltime=00:10:00\n"
     contact_pbs +="#PBS -j oe\n"
     contact_pbs +="#PBS -V\n\n"
     contact_pbs +="cd $PBS_O_WORKDIR\n"

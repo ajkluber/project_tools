@@ -160,6 +160,9 @@ class ModelBuilder(object):
                 elif task == "wham_Cv":
                     print "Starting to check if wham_Cv completed..."
                     analysis.Tf_loop.continue_wham(System,i,self.append_log)
+                elif task == "wham_FreeEnergy":
+                    ## Start equilibrium runs.
+                    pass
             elif action == "Finished:":
                 if task == "Tf_loop_iteration":
                     print "Finished Tf_loop_iteration..."

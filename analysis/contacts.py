@@ -171,6 +171,7 @@ def get_beadbead_info():
     N = len(coords)
     Sig = np.zeros((N,N),float)
     Native_cryst = np.zeros((N,N),int)
+    contacts = 0
     for line in open("BeadBead.dat","r"):
         i, j = int(line[0:5])-1, int(line[5:10])-1
         resi, resj = line[10:18], line[18:26]
@@ -211,6 +212,9 @@ def probabilistic_reference(cutoff=1.25):
     numframes = -1
     numframesused = 0
     probij = np.zeros((N,N),float)
+    print "## DEBUGGING: Crystal contacts", sum(sum(Native_cryst))
+    print "## DEBUGGING: N = ", N
+    print "## DEBUGGING: Initial probij", sum(sum(probij))
 
     frames = mol_reader.open("traj.xtc") 
     time, rmsd = np.loadtxt("rmsd.xvg",unpack=True)
@@ -247,7 +251,13 @@ def probabilistic_reference(cutoff=1.25):
 
     probij /= float(numframesused)
     Native = (probij >= .9).astype(int)
-    np.savetxt("Qref_prob.dat",Native,delimiter=" ",fmt="%1d")
+    #print Native
+    print "## DEBUGGING: Final probij", sum(sum(probij))
+    print "## DEBUGGING: Probabalistic contacts: ",sum(sum(Native))
+    print "## DEBUGGING: Type native",type(Native)
+    print "## DEBUGGING: Native shape ", Native.shape
+    #np.savetxt("probij.dat",probij,delimiter=" ")
+    np.savetxt("Qref_prob.dat",Native,delimiter=" ")
 
     plt.pcolor(Native_cryst + probij.T)
     plt.xlim(0,len(Native_cryst))

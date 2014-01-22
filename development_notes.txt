@@ -1,5 +1,5 @@
 Development Notes
-
+------------------------------------------------------------------------------
 Fri Jan 10 13:57:40 CST 2014
 Alexander Kluber
 
@@ -24,7 +24,55 @@ capacity. Then run WHAM to get 1D and 2D PMFs at the folding temperature.
 
 To Do at any time:
 - Record information files so simulations can be picked up easily at the spot
-they were left off.
+they were left off. DONE
 
-- Put model_builder on github.
+- Put model_builder on github. DONE
 
+------------------------------------------------------------------------------
+Wed Jan 22 13:03:59 CST 2014
+Alexander Kluber
+
+    Currently can get simulations all the way to computing WHAM Cv and
+FreeEnergy on temperatures straddling the estimated folding temperature. Found
+an issue with the definition of native contacts. Was trying to adapt the
+algorithm left previously for determining the equilibrium distance for
+contacts, but I found that a significant percentage of native contacts were
+not being formed in the native ensemble. This was because the equilibrium
+distances being assigned to those contacts was shorter than in the crystal 
+structure, leaving gaps in the packing of inner residues.
+
+    These vacancies don't have as much effect on proteins with mostly beta
+structure because beta structure is more dense with contacts in a c-alpha
+model; looking at the contact map it is clear that beta regions are broad
+stripes of contacts while helix-helix packing is achieved with sparse
+contacts. Consequently the percentage of contacts lost to the vacancies is
+around ~10% for canonical globular proteins s6,sh3,1TEN,1TIT (also nmda
+receptor). However, vacancies in the packing caused all-alpha proteins like
+the spectrins to lose ~25-30% of contacts. This has an appreciable effect
+since the helices are more rigid than beta sheets (in a c-alpha model), so the
+native state was constrained from rearranging to satisfy the vacancies.
+
+Protein  PDB  Crystal Conts.  Formed >90%   % Lost
+  s6     1RIS     467             405         13
+  sh3    1FMK     227             204         10
+  Ig     1TEN     380             330         13
+  Ig     1TIT     398             354         11
+Rossman  3CHY     583             498         14
+  nmda   1Y1Z     1507            1333        11
+  r15             403             269         33
+  r16             476             346         27
+  r17             430             328         23
+
+    Consequently, the folding behavior of the globular proteins s6,sh3,1TIT
+1TEN all follow 2-state behavior. Their PMF with respect to Q has folded and
+unfolded basins and a normal looking barrier. On the other hand the PMFs for
+the spectrins look pretty wacky, with a destabilized native state and and
+intermediate basin at lower Q. This underscores the necessity of getting the
+definition of contacts correct.
+
+    Now I'm going to switch to a more trusted algorithm. Two residues will be
+considered in contact if there is a distance <=4.5A in the set of all 
+pairwise inter-residue-heavy-atom distances. This should be done during
+prep_system()
+
+------------------------------------------------------------------------------

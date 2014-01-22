@@ -27,9 +27,9 @@ def check_completion(System,i,append_log):
     tempfile = open("T_array_last.txt","r").readlines()
     temperatures = [ temp[:-1] for temp in tempfile  ]
     print " Checking simulation completion..."
+    error = 0
     for k in range(len(temperatures)):
         tdir = temperatures[k]
-        error = 0
         ## Determine the number of steps for completed run.
         for line in open(tdir+"/"+"grompp.mdp","r"):
             if line[:6] == "nsteps":
@@ -225,7 +225,7 @@ def submit_run(jobname,walltime="23:00:00",queue="serial"):
 
     open("run.pbs","w").write(pbs_string)
     qsub = "qsub run.pbs"
-    sb.call(qsub.split(),stdout=open("sim.out","w"),stderr=open("sim.out"))
+    sb.call(qsub.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
 
 def tail(f, window=1):
     ''' Quickly reads last line of long file.'''

@@ -35,6 +35,7 @@ def analyze_temperature_array(System,i,append_log):
         ## Calculates native contact reference matrix at lowest temperature.
         if (not os.path.exists(lowT+"/Qref_prob.dat")):
             print "## DEBUGGING: Calculating reference matrix."
+            print "## DEBUGGING: ",lowT
             os.chdir(lowT)
             Qref = contacts.probabilistic_reference()
             os.chdir(cwd2)
