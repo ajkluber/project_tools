@@ -196,6 +196,8 @@ class ModelBuilder(object):
         self.prepare_system(Model,System)
         self.save_model_system_info(Model,System)
         self.load_model_system_info(System)
+        if args.temparray != None:
+            System.initial_T_array = args.temparray
 
         ## The first step depends on the type of model.
         if args.type in ["HomGo","HetGo"]:
@@ -233,10 +235,10 @@ class ModelBuilder(object):
         ''' Extract all the topology files from Model.'''
         print "Preparing files..."
         System.clean_pdbs()
-        System.write_Native_pdb_CA()
+        prots_Qref = System.write_Native_pdb_CA()
         prots_indices, prots_residues, prots_coords = System.get_atom_indices(Model.beadmodel)
         prots_ndxs = Model.get_index_string(prots_indices)
-        topology_files = Model.get_itp_strings(prots_indices, prots_residues, prots_coords,prots_ndxs)
+        topology_files = Model.get_itp_strings(prots_indices, prots_residues, prots_coords,prots_ndxs,prots_Qref)
         System.topology_files = topology_files
 
     
@@ -252,6 +254,7 @@ def main():
     new_parser.add_argument('--type', type=str, required=True, help='Choose model type: HetGo, HomGo, DMC')
     new_parser.add_argument('--beads', type=str, required=True, help='Choose model beads: CA, CACB.')
     new_parser.add_argument('--pdbs', type=str, required=True, nargs='+',help='PDBs to start simulations.')
+    new_parser.add_argument('--temparray', type=int, nargs='+',help='Optional initial temp array: Ti Tf dT. Default: 50 350 50')
     new_parser.add_argument('--solvent', action='store_true', help='Add this option for solvent.')
     new_parser.add_argument('--dryrun', action='store_true', help='Add this option for solvent.')
 

@@ -124,7 +124,12 @@ def folding_temperature_loop_extension(Model,System,k,append_log):
     ## Check to see if a previous temperature range was used.
     if (not os.path.exists("T_array_last.txt")):
         ## For initial exploration use very broad temperature increments.
-        Ti = 50; Tf = 350; dT = 50
+        if System.initial_T_array != None:
+            Ti = System.initial_T_array[0]
+            Tf = System.initial_T_array[1]
+            dT = System.initial_T_array[2]
+        else:
+            Ti = 50; Tf = 350; dT = 50
         append_log(System.subdirs[k],"Submitting T_array iteration %d ; refinement %d" % \
                         (System.Tf_iteration[k],System.Tf_refinements[k][System.Tf_iteration[k]]))
         append_log(System.subdirs[k],"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
@@ -193,6 +198,7 @@ def run_constant_temp(Model,System,k,T):
         tablefile = "table_%s.xvg" % Model.interaction_groups[m]
         np.savetxt(tablefile,Model.tables[m],fmt="%16.15e",delimiter=" ")
     np.savetxt("table.xvg",Model.other_table,fmt="%16.15e",delimiter=" ")
+    np.savetxt("Qref_cryst.dat",System.Qrefs[k],fmt="%1d",delimiter=" ")
     ## Start simulation
     submit_run(System.subdirs[k]+"_"+str(T))
     

@@ -46,6 +46,7 @@ class System(object):
         self.subdirs = [ pdb.split('.pdb')[0] for pdb in self.pdbs ] 
         self.numprots = len(self.subdirs)
         self.error = [ 0 for i in range(self.numprots) ]
+        self.initial_T_array = None
         self.Tf_iteration = [ 0 for i in range(self.numprots) ]
         self.Tf_active_directory = [ 'Tf_0' for i in range(self.numprots) ]
         self.Tf_refinements = [ {0:0} for i in range(self.numprots) ]
@@ -176,19 +177,17 @@ class System(object):
 
     def get_native_contacts(self,heavy_atoms,atoms_per_res):
         ''' Calculate contact map based on comparing inter-residue heavy atom 
-            distances. WORKS!'''
+            distances. If two residues that have a sequence separation of 4 or 
+            more have a pair of heavy atoms that are separated by less than 5.5
+            Angstroms then those two residues are in contact.'''
 
         N = len(heavy_atoms)
         D = np.zeros((N,N))
-        Q = np.zeros((len(atoms_per_res),len(atoms_per_res)))
+        Qref = np.zeros((len(atoms_per_res),len(atoms_per_res)))
+        print "Length:",len(atoms_per_res)
         
+        ## Build heavy atom contact map by computing the diagonals.
         for i in range(1,N):
-            ## DEBUGGING
-            #print heavy_atoms[0:-i,:] 
-            #print heavy_atoms[i:,:]
-            #print heavy_atoms[0:-i,:].shape
-            #print heavy_atoms[i:,:].shape
-    
             diff = heavy_atoms[0:-i,:] - heavy_atoms[i:,:]
             d = np.sqrt(diff[:,0]**2 + diff[:,1]**2 + diff[:,2]**2 )
             diag = (np.arange(0,N-i),np.arange(i,N))
@@ -203,11 +202,12 @@ class System(object):
                 m = atoms_per_res[j]
                 
                 res_contact = C[N:N+n,M:M+m].any()
-                Q[i,j] = int(res_contact)
+                Qref[i,j] = int(res_contact)
                 
         #np.savetxt("heavy_atom_dist.dat",D,delimiter=" ",fmt="%5.3f")       ## DEBUGGING
         #np.savetxt("heavy_atom_contacts.dat",C,delimiter=" ",fmt="%1d")       ## DEBUGGING
         #np.savetxt("Native_contact.dat",Q,delimiter=" ",fmt="%1d")       ## DEBUGGING
+        return Qref
 
     def write_Native_pdb(self,beadmodel):
         ''' Depending on the beadmodel that is input (from Model)
@@ -220,6 +220,7 @@ class System(object):
     def write_Native_pdb_CA(self):
         ''' Write the Native.pdb for CA topology.'''
         self.native_pdbs = []
+        prots_Qref = []
         prots_heavy_atoms = []
         prots_heavy_atoms_per_res = []
         for sub in self.subdirs:
@@ -254,21 +255,17 @@ class System(object):
                         
                         heavy_atoms.append(np.array([float(line[30:38]),float(line[38:46]),float(line[46:54])]))
 
-            #print np.array(heavy_atoms[:15])        ## DEBUGGING
-            #print num_heavy_atoms[:10]              ## DEBUGGING
-            self.get_native_contacts(np.array(heavy_atoms),num_heavy_atoms)
+            num_heavy_atoms.append(temp_num_atoms)
+            Qref = self.get_native_contacts(np.array(heavy_atoms),num_heavy_atoms)
 
-            prots_heavy_atoms.append(heavy_atoms)
-            prots_heavy_atoms_per_res.append(num_heavy_atoms)
+            #prots_heavy_atoms.append(heavy_atoms)
+            #prots_heavy_atoms_per_res.append(num_heavy_atoms)
+            prots_Qref.append(Qref)
             open(sub+"/Native.pdb","w").write(nativepdb)
             self.native_pdbs.append(nativepdb)
 
-
-        
-        #raise SystemExit        ## DEBUGGING
-            
-
-        
+        self.Qrefs = prots_Qref
+        return prots_Qref
 
     def write_Native_pdb_CACB(self):
         ''' Write the Native.pdb for CACB topology. '''
