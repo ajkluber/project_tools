@@ -32,15 +32,15 @@ def analyze_temperature_array(System,i,append_log):
                 crunch_coordinates.crunch_all(System.subdirs[i]+"_"+tdir)
             os.chdir(cwd2)
 
-        ## Calculates native contact reference matrix at lowest temperature.
-        if (not os.path.exists(lowT+"/Qref_prob.dat")):
+        ## Calculates native contact reference matrix at lowest temperature. NOT USED FOR GO MODEL.
+        if (not os.path.exists(lowT+"/Qref_cryst.dat")):
             print "## DEBUGGING: Calculating reference matrix."
             print "## DEBUGGING: ",lowT
             os.chdir(lowT)
             Qref = contacts.probabilistic_reference()
             os.chdir(cwd2)
         else:
-            Qref = np.loadtxt(lowT+"/Qref_prob.dat")
+            Qref = np.loadtxt(lowT+"/Qref_cryst.dat")
 
         ## Saves the reference matrix in each temp. directory. Submits PBS job for 
         ## calculating native contacts, native helical, and not-native contacts.
@@ -48,7 +48,7 @@ def analyze_temperature_array(System,i,append_log):
             tdir = temperatures[k]
             #print cwd2+"/"+tdir ## DEBUGGING
             os.chdir(cwd2+"/"+tdir)
-            np.savetxt("Qref_prob.dat",Qref,delimiter=" ",fmt="%1d")
+            #np.savetxt("Qref_prob.dat",Qref,delimiter=" ",fmt="%1d")
             crunch_coordinates.crunch_Q(System.subdirs[i]+"_"+tdir)
 
             os.chdir(cwd2)

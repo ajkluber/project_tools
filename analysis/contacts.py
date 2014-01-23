@@ -112,7 +112,8 @@ def calculate_Q():
     '''
     
     Native_cryst, Sig, N = get_beadbead_info()
-    Native = np.loadtxt("Qref_prob.dat")
+    #Native = np.loadtxt("Qref_prob.dat")
+    Native = np.loadtxt("Qref_cryst.dat")
     ## Define Q_local as the helical contacts (i,i+4) as well as (i,i+5) 
     ## and (i,i+6). 
     h_diag = (np.arange(0,N-4),np.arange(4,N))
@@ -207,6 +208,9 @@ def probabilistic_reference(cutoff=1.25):
         RMSD to native (Note: the folded basin no longer has its minimum 
         at rmsd=0). Varying this cutoff between 2-3 Angstrom doesn't make
         a big difference. 
+        
+        **Currently not used models based on Go model. 1-23-14 AK**
+
     '''
     Native_cryst, Sig, N = get_beadbead_info()
     numframes = -1
