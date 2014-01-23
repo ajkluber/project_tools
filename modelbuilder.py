@@ -201,7 +201,10 @@ class ModelBuilder(object):
         if args.type in ["HomGo","HetGo"]:
             for k in range(len(System.subdirs)):
                 print "Starting the first Tf_loop_iteration..."
-                simulation.Tf_loop.folding_temperature_loop(Model,System,k,self.append_log)
+                if args.dryrun == True:
+                    print "Dry run complete. Exiting."
+                else:
+                    simulation.Tf_loop.folding_temperature_loop(Model,System,k,self.append_log)
         elif args.type == "DMC":
             pass
 
@@ -250,15 +253,18 @@ def main():
     new_parser.add_argument('--beads', type=str, required=True, help='Choose model beads: CA, CACB.')
     new_parser.add_argument('--pdbs', type=str, required=True, nargs='+',help='PDBs to start simulations.')
     new_parser.add_argument('--solvent', action='store_true', help='Add this option for solvent.')
+    new_parser.add_argument('--dryrun', action='store_true', help='Add this option for solvent.')
 
     ## Checking on a simulation project.
     run_parser = sp.add_parser('continue')
     run_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to continue',required=True)
+    run_parser.add_argument('--dryrun', action='store_true', help='Add this option for solvent.')
 
     ## Checking on a simulation project.
-    run_parser = sp.add_parser('add')
-    run_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
-    run_parser.add_argument('--temparray', type=int, nargs='+', help='T_initial T_final dT for new temp array',required=True)
+    add_parser = sp.add_parser('add')
+    add_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
+    add_parser.add_argument('--temparray', type=int, nargs='+', help='T_initial T_final dT for new temp array',required=True)
+    add_parser.add_argument('--dryrun', action='store_true', help='Add this option for solvent.')
 
     args = parser.parse_args()
     

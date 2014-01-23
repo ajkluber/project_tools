@@ -124,20 +124,29 @@ class System(object):
             CACB. PDB fixed-width column format is given by:
         ATOM     44  C   ALA A  11      12.266  21.667  20.517  1.00 28.80           C  
         '''
-        atomid = 0
-        resid = 1
+        atomid = 1
+        first_flag = 0
         cleanpdb = ''
         for line in open(pdb,'r'):
             if line[:3] in ['TER','END']:
                 break
             else:
-                #if line[:4] == 'ATOM' and line[13:15] == 'CA':
                 if line[:4] == 'ATOM':
-                    newline = 'ATOM%7s  %-4s%3s A%4d%s' % \
-                            (atomid,line[13:17],line[17:20],resid,line[26:])
-                    atomid += 1
-                    resid += 1
-                    cleanpdb += newline
+                    if first_flag == 0:
+                        if line[16] in ["A"," "]:
+                            newline = 'ATOM%7s  %-4s%3s A%4d%s' % \
+                                    (atomid,line[13:17],line[17:20],1,line[26:])
+                            atomid += 1
+                            first_flag = 1
+                            first_index = int(line[22:26]) - 1
+                            cleanpdb += newline
+                    else:
+                        if line[16] in ["A"," "]:
+                            newline = 'ATOM%7s  %-4s%3s A%4d%s' % \
+                                    (atomid,line[13:17],line[17:20],int(line[22:26])-first_index,line[26:])
+                            atomid += 1
+                            cleanpdb += newline
+        
         #cleanpdb += 'TER'
         return cleanpdb
 
@@ -162,7 +171,43 @@ class System(object):
             prots_indices.append(atomindices)
             prots_residues.append(residues)
             prots_coords.append(np.array(coords))
+
         return prots_indices, prots_residues, prots_coords
+
+    def get_native_contacts(self,heavy_atoms,atoms_per_res):
+        ''' Calculate contact map based on comparing inter-residue heavy atom 
+            distances. WORKS!'''
+
+        N = len(heavy_atoms)
+        D = np.zeros((N,N))
+        Q = np.zeros((len(atoms_per_res),len(atoms_per_res)))
+        
+        for i in range(1,N):
+            ## DEBUGGING
+            #print heavy_atoms[0:-i,:] 
+            #print heavy_atoms[i:,:]
+            #print heavy_atoms[0:-i,:].shape
+            #print heavy_atoms[i:,:].shape
+    
+            diff = heavy_atoms[0:-i,:] - heavy_atoms[i:,:]
+            d = np.sqrt(diff[:,0]**2 + diff[:,1]**2 + diff[:,2]**2 )
+            diag = (np.arange(0,N-i),np.arange(i,N))
+            D[diag] = d
+        C = (D < 5.5).astype(int)
+
+        for i in range(len(atoms_per_res)):
+            N = sum(atoms_per_res[:i+1])
+            n = atoms_per_res[i]
+            for j in range(i+4,len(atoms_per_res)):
+                M = sum(atoms_per_res[:j+1])
+                m = atoms_per_res[j]
+                
+                res_contact = C[N:N+n,M:M+m].any()
+                Q[i,j] = int(res_contact)
+                
+        #np.savetxt("heavy_atom_dist.dat",D,delimiter=" ",fmt="%5.3f")       ## DEBUGGING
+        #np.savetxt("heavy_atom_contacts.dat",C,delimiter=" ",fmt="%1d")       ## DEBUGGING
+        #np.savetxt("Native_contact.dat",Q,delimiter=" ",fmt="%1d")       ## DEBUGGING
 
     def write_Native_pdb(self,beadmodel):
         ''' Depending on the beadmodel that is input (from Model)
@@ -175,24 +220,55 @@ class System(object):
     def write_Native_pdb_CA(self):
         ''' Write the Native.pdb for CA topology.'''
         self.native_pdbs = []
+        prots_heavy_atoms = []
+        prots_heavy_atoms_per_res = []
         for sub in self.subdirs:
-            resid = 1
+            atomid = 1
+            prev_resid = 1
             nativepdb = ''
+            heavy_atoms = []
+            num_heavy_atoms = []
+            temp_num_atoms = 0
             for line in open(sub+"/clean.pdb","r"):
                 if line[:3] == "TER":
                     nativepdb += line
                     break
                 else:
                     #print "**%s**" % line[13:15] ## DEBUGGING
+
                     if line[13:15] == "CA":
-                        if line[16] in ["A"," "]:
-                            newline = "%s%5d%s%s%s%4d%s" % (line[:6],resid,line[11:16]," ",line[17:22],resid,line[26:])
-                            nativepdb += newline
-                            resid += 1
+                        #newline = "%s%5d%s%s%s%4d%s" % (line[:6],resid,line[11:16]," ",line[17:22],resid,line[26:])
+                        newline = "%s%5d%s%s%s%4d%s" % (line[:6],atomid,line[11:16]," ",line[17:22],atomid,line[26:])
+                        nativepdb += newline
+                        atomid += 1
+
+                    if line[77] != "H":
+                        ## Collect heavy atoms for calculation of native contacts.
+                        resid = int(line[22:26])
+                        if resid != prev_resid:
+                            num_heavy_atoms.append(temp_num_atoms)
+                            temp_num_atoms = 1
+                            prev_resid = resid
                         else:
-                            continue
+                            temp_num_atoms += 1
+                        
+                        heavy_atoms.append(np.array([float(line[30:38]),float(line[38:46]),float(line[46:54])]))
+
+            #print np.array(heavy_atoms[:15])        ## DEBUGGING
+            #print num_heavy_atoms[:10]              ## DEBUGGING
+            self.get_native_contacts(np.array(heavy_atoms),num_heavy_atoms)
+
+            prots_heavy_atoms.append(heavy_atoms)
+            prots_heavy_atoms_per_res.append(num_heavy_atoms)
             open(sub+"/Native.pdb","w").write(nativepdb)
             self.native_pdbs.append(nativepdb)
+
+
+        
+        #raise SystemExit        ## DEBUGGING
+            
+
+        
 
     def write_Native_pdb_CACB(self):
         ''' Write the Native.pdb for CACB topology. '''
