@@ -48,7 +48,7 @@ def analyze_temperature_array(System,i,append_log):
             tdir = temperatures[k]
             #print cwd2+"/"+tdir ## DEBUGGING
             os.chdir(cwd2+"/"+tdir)
-            #np.savetxt("Qref_prob.dat",Qref,delimiter=" ",fmt="%1d")
+            np.savetxt("Qref_cryst.dat",Qref,delimiter=" ",fmt="%1d")
             crunch_coordinates.crunch_Q(System.subdirs[i]+"_"+tdir)
 
             os.chdir(cwd2)

@@ -184,7 +184,6 @@ class System(object):
         N = len(heavy_atoms)
         D = np.zeros((N,N))
         Qref = np.zeros((len(atoms_per_res),len(atoms_per_res)))
-        print "Length:",len(atoms_per_res)
         
         ## Build heavy atom contact map by computing the diagonals.
         for i in range(1,N):

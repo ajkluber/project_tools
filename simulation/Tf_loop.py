@@ -175,6 +175,8 @@ def run_temperature_array(Model,System,i,Ti,Tf,dT):
             os.mkdir(simpath)
             os.chdir(simpath)
             System.append_log(System.subdirs[i],"  running T=%d" % T)
+            #np.savetxt("Qref_cryst.dat",System.Qrefs[i],fmt="%1d",delimiter=" ")
+            #print "Number of contacts: ", sum(sum(System.Qrefs[i]))
             run_constant_temp(Model,System,i,T)
             os.chdir("..")
         else:
