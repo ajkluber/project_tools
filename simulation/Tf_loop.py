@@ -42,10 +42,20 @@ def check_completion(System,i,append_log):
         else:
             print "    check %s. simulation did not finish."
             print "    Cannot continue with errors."
-            System.append_log(System.subdirs[i],"  %s did not finish" % tdir)
+            ## Try to restart the run if possible.
+            if os.path.exists(tdir+"/rst.pbs"):
+                os.chdir(tdir)
+                qrst = "qsub rst.pbs"
+                sb.call(qrst.split(),stdout=open("rst.out","w"),stderr=open("rst.err","w"))
+                os.chdir(cwd+"/"+sub)
+                System.append_log(System.subdirs[i],"  %s did not finish. restarting" % tdir)
+            else:
+                System.append_log(System.subdirs[i],"  %s did not finish. did not find a rst.pbs. skipping." % tdir)
+            
+
             error = 1
     if error == 1:
-        print "    Cannot continue with errors."
+        print "    Cannot continue until simulations complete. Check if all unfinished runs were restarted properly."
         pass 
     else:
         append_log(System.subdirs[i],"Finished: Tf_loop_iteration")
@@ -234,6 +244,22 @@ def submit_run(jobname,walltime="23:00:00",queue="serial"):
     open("run.pbs","w").write(pbs_string)
     qsub = "qsub run.pbs"
     sb.call(qsub.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
+
+    rst_string = "#!/bin/bash \n"
+    rst_string +="### Number of nodes and procs/node \n"
+    rst_string +="#PBS -l nodes=1:ppn=1,walltime=%s \n" % walltime
+    rst_string +="###PBS -W group_list=pbc \n"
+    rst_string +="#PBS -q %s \n" % queue
+    rst_string +="#PBS -V \n"
+    rst_string +="### output files \n"
+    rst_string +="#PBS -o out \n"
+    rst_string +="#PBS -e err \n"
+    rst_string +="### Job Name (max 15 chars.) \n"
+    rst_string +="#PBS -N %s \n\n" % jobname + "rst"
+    rst_string +="cd $PBS_O_WORKDIR\n"
+    rst_string +="mdrun -nt 1 -s topol.tpr -cpi state.cpt"
+
+    open("rst.pbs","w").write(rst_string)
 
 def tail(f, window=1):
     ''' Quickly reads last line of long file.'''
