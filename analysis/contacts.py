@@ -115,13 +115,14 @@ def calculate_Q():
     #Native = np.loadtxt("Qref_prob.dat")
     Native = np.loadtxt("Qref_cryst.dat")
     ## Define Q_local as the helical contacts (i,i+4) as well as (i,i+5) 
-    ## and (i,i+6). 
+    ## [and (i,i+6)]. This is assuming that contacts to i+4 and i+5 
+    ## stabilize helices.
     h_diag = (np.arange(0,N-4),np.arange(4,N))
-    #h_diag2 = (np.arange(0,N-5),np.arange(5,N))
+    h_diag2 = (np.arange(0,N-5),np.arange(5,N))
     #h_diag3 = (np.arange(0,N-6),np.arange(6,N))
     Native_h = np.zeros((N,N),float)
     Native_h[h_diag] = Native[h_diag]
-    #Native_h[h_diag2] = Native[h_diag2]
+    Native_h[h_diag2] = Native[h_diag2]
     #Native_h[h_diag3] = Native[h_diag3]
 
     Q = []

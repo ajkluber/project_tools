@@ -224,8 +224,8 @@ def prepare_free_energy_inputs(path,outputstyle,inputs,maxs,mins,firstblock):
     T, E, Cv, F = np.loadtxt(path+"/wham/Heat_rmsd_Rg.dat",unpack=True)
     maxCv = max(Cv)
     Tf = int(T[list(Cv).index(maxCv)])
-    Tf_rounded = int(round(Tf/10.)*10) 
-    open(path+"/Tf.txt","w").write("%d" % Tf)
+    Tf_rounded = int(Tf) 
+    open(path+"/Tf.txt","w").write("%.2f" % Tf)
     open(path+"/Tf_rounded.txt","w").write("%d" % Tf_rounded)
 
     if outputstyle == "FreeEnergy":
