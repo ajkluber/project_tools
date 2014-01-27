@@ -72,6 +72,6 @@ def get_constant_temperature_mdp(model,T,nsteps=400000000):
     mdp_string += 'constraints              = none \n\n'
     mdp_string += '; GENERATE VELOCITIES FOR STARTUP RUN \n'
     mdp_string += 'gen-vel                  = yes \n'
-    mdp_string += 'gen_temp                 = %d \n' % T
+    mdp_string += 'gen_temp                 = %f \n' % T
     mdp_string += 'gen_seed                 = -1 \n'
     return mdp_string

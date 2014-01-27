@@ -170,6 +170,48 @@ def manually_add_temperature_array(Model,System,k,append_log,Ti,Tf,dT):
 
     os.chdir(cwd)
 
+def run_equilibrium_simulations(Model,System,i,append_log):
+    ''' Run very long (equilibrium) simulations at the determined folding 
+        temperature.'''
+
+    if System.mutation_active_directory[i] == '':
+        System.mutation_active_directory[i] = 'Mut_0'
+        System.append_log(System.subdirs[i],"Creating mutational directory Mut_0" )
+    
+    cwd = os.getcwd()
+    mutsub = System.path +"/"+ System.subdirs[i] +"/"+ System.mutation_active_directory[i]
+    Tfsub = System.path +"/"+ System.subdirs[i] +"/"+ System.Tf_active_directory[i]
+    Tf = open(Tfsub+"/Tf.txt","r").read().split()[0]
+
+    System.append_log(System.subdirs[i],"Starting Equil_Tf")
+
+    if not os.path.exists(mutsub):
+        os.mkdir(mutsub)
+
+    os.chdir(mutsub)
+
+    T_string = ''
+    for simnum in range(1,6):
+        simpath = Tf+"_"+str(simnum)
+        ## Only start the simulation if directory doesn't exist.
+        if (not os.path.exists(simpath)):
+            T_string += "%s\n" % simpath
+            os.mkdir(simpath)
+            os.chdir(simpath)
+            System.append_log(System.subdirs[i],"  running T=%s" % simpath)
+            #np.savetxt("Qref_cryst.dat",System.Qrefs[i],fmt="%1d",delimiter=" ")
+            #print "Number of contacts: ", sum(sum(System.Qrefs[i]))
+            run_constant_temp(Model,System,i,float(Tf),nsteps=1000000000,walltime="60:00:00",queue="serial_long")
+            os.chdir("..")
+        else:
+            ## Directory exists for this temperature: continue.
+            continue
+
+    open("T_array.txt","a").write(T_string)
+    open("T_array_last.txt","w").write(T_string)
+    append_log(System.subdirs[i],"Starting: Equil_Tf")
+    os.chdir(cwd)
+
 def run_temperature_array(Model,System,i,Ti,Tf,dT):
     ''' Run many constant temperature runs over a range of temperatures to
         find the folding temperature. '''
@@ -196,11 +238,11 @@ def run_temperature_array(Model,System,i,Ti,Tf,dT):
     open("T_array_last.txt","w").write(T_string)
     open("Ti_Tf_dT.txt","w").write("%d %d %d" % (Ti, Tf, dT))
 
-def run_constant_temp(Model,System,k,T):
+def run_constant_temp(Model,System,k,T,nsteps=400000000,walltime="23:00:00",queue="serial"):
     ''' Start a constant temperature simulation with Gromacs. First it has
         to write the gromacs files stored in the System object, then it
         calls a function to submit the job.'''
-    grompp_mdp = mdp.get_constant_temperature_mdp(Model,T)
+    grompp_mdp = mdp.get_constant_temperature_mdp(Model,T,nsteps=nsteps)
     for filename in System.topology_files[k].iterkeys():
         #print "Writing: ", filename    ## DEBUGGING
         open(filename,"w").write(System.topology_files[k][filename])
@@ -212,7 +254,7 @@ def run_constant_temp(Model,System,k,T):
     np.savetxt("table.xvg",Model.other_table,fmt="%16.15e",delimiter=" ")
     np.savetxt("Qref_cryst.dat",System.Qrefs[k],fmt="%1d",delimiter=" ")
     ## Start simulation
-    submit_run(System.subdirs[k]+"_"+str(T))
+    submit_run(System.subdirs[k]+"_"+str(T),walltime=walltime,queue=queue)
     
 def submit_run(jobname,walltime="23:00:00",queue="serial"):
     ''' Executes the constant temperature runs.'''
