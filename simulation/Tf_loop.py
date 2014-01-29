@@ -17,12 +17,15 @@ Description:
 '''
 
 
-def check_completion(System,i,append_log):
+def check_completion(System,i,append_log,equil=False):
     ''' Checks to see if the previous Tf_loop simulation completed. First 
         checks the desired number of steps in the grompp.mdp file then 
         checks to see if md.log has recorded that number of steps.'''
     cwd = os.getcwd()
-    sub = System.subdirs[i]+"/"+System.Tf_active_directory[i]
+    if equil == True:
+        sub = System.subdirs[i]+"/"+System.mutation_active_directory[i]
+    else:
+        sub = System.subdirs[i]+"/"+System.Tf_active_directory[i]
     os.chdir(cwd+"/"+sub)
     tempfile = open("T_array_last.txt","r").readlines()
     temperatures = [ temp[:-1] for temp in tempfile  ]
@@ -41,7 +44,7 @@ def check_completion(System,i,append_log):
             System.append_log(System.subdirs[i],"  %s finished." % tdir)
         else:
             print "    check %s. simulation did not finish."
-            print "    Cannot continue with errors."
+            #print "    Cannot continue with errors."
             ## Try to restart the run if possible.
             if os.path.exists(tdir+"/rst.pbs"):
                 os.chdir(tdir)
@@ -58,7 +61,10 @@ def check_completion(System,i,append_log):
         print "    Cannot continue until simulations complete. Check if all unfinished runs were restarted properly."
         pass 
     else:
-        append_log(System.subdirs[i],"Finished: Tf_loop_iteration")
+        if equil == True:
+            append_log(System.subdirs[i],"Finished: Equil_Tf")
+        else:
+            append_log(System.subdirs[i],"Finished: Tf_loop_iteration")
     System.error[i] = error
     os.chdir(cwd)
 

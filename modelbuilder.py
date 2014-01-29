@@ -162,8 +162,19 @@ class ModelBuilder(object):
                     analysis.Tf_loop.continue_wham(System,i,self.append_log)
                 elif task == "wham_FreeEnergy":
                     ## Start equilibrium runs.
-                    print "Starting equil_Tf..."
+                    print "Starting Equil_Tf..."
                     simulation.Tf_loop.run_equilibrium_simulations(Model,System,i,self.append_log)
+                elif task == "Equil_Tf":
+                    print "Starting to check if Equil_Tf completed..."
+                    simulation.Tf_loop.check_completion(System,i,self.append_log,equil=True)
+                    lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
+                    if action2 == "Finished:":
+                        print "Finished Equil_Tf_iteration..."
+                        print "Starting Equil_Tf_analysis..."
+                        analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log,equil=True)
+                elif task == "Equil_Tf_analysis":
+                    print "Starting to check if Equil_Tf_analysis completed..."
+                    analysis.Tf_loop.check_completion(System,i,self.append_log,equil=True)
             elif action == "Finished:":
                 if task == "Tf_loop_iteration":
                     print "Finished Tf_loop_iteration..."
@@ -179,7 +190,11 @@ class ModelBuilder(object):
                         simulation.Tf_loop.folding_temperature_loop(Model,System,i,self.append_log)
                 elif task == "wham_Cv":
                     print "Finished wham_Cv..."
+                    print "Stating wham_FreeEnergy..."
                     analysis.Tf_loop.continue_wham(System,i,self.append_log)
+                elif task == "Equil_Tf":
+                    print "Starting Equil_Tf_analysis..."
+                    analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log,equil=True)
             elif action == "Error":
                 pass
 

@@ -6,7 +6,7 @@ import crunch_coordinates
 import wham
 
 
-def analyze_temperature_array(System,i,append_log):
+def analyze_temperature_array(System,i,append_log,equil=False):
     ''' Analyze the previously simulated temperatures of a Tf_loop iteration.
         Goes into the active Tf_loop directory and crunches all coordinates.
         Exits after submitting a couple PBS scripts to compute Q and 
@@ -14,7 +14,14 @@ def analyze_temperature_array(System,i,append_log):
     '''
     cwd = os.getcwd()
     if System.error[i] == 0:
-        sub = System.subdirs[i]+"/"+System.Tf_active_directory[i]
+        if equil == True:
+            sub = System.subdirs[i]+"/"+System.mutation_active_directory[i]
+            qwalltime = "00:40:00"
+            cwalltime = "00:05:00"
+        else:
+            sub = System.subdirs[i]+"/"+System.Tf_active_directory[i]
+            qwalltime = "00:10:00"
+            cwalltime = "00:02:00"
         os.chdir(cwd+"/"+sub)
         tempfile = open("T_array_last.txt","r").readlines()
         temperatures = [ temp[:-1] for temp in tempfile  ]
@@ -29,7 +36,7 @@ def analyze_temperature_array(System,i,append_log):
             os.chdir(cwd2+"/"+tdir)
             if (not os.path.exists("rmsd.xvg")) or (not os.path.exists("radius_cropped.xvg")) or \
                (not os.path.exists("energyterms.xvg")) or (not os.path.exists("phis.xvg")):
-                crunch_coordinates.crunch_all(System.subdirs[i]+"_"+tdir)
+                crunch_coordinates.crunch_all(System.subdirs[i]+"_"+tdir,walltime=cwalltime)
             os.chdir(cwd2)
 
         ## Calculates native contact reference matrix at lowest temperature. NOT USED FOR GO MODEL.
@@ -49,22 +56,29 @@ def analyze_temperature_array(System,i,append_log):
             #print cwd2+"/"+tdir ## DEBUGGING
             os.chdir(cwd2+"/"+tdir)
             np.savetxt("Qref_cryst.dat",Qref,delimiter=" ",fmt="%1d")
-            crunch_coordinates.crunch_Q(System.subdirs[i]+"_"+tdir)
+            crunch_coordinates.crunch_Q(System.subdirs[i]+"_"+tdir,walltime=qwalltime)
 
             os.chdir(cwd2)
         os.chdir(cwd)
-        append_log(System.subdirs[i],"Starting: Tf_loop_analysis")
-        System.append_log(System.subdirs[i],"Starting: Tf_loop_analysis")
+        if equil == True:
+            append_log(System.subdirs[i],"Starting: Equil_Tf_analysis")
+            System.append_log(System.subdirs[i],"Starting: Equil_Tf_analysis")
+        else:
+            append_log(System.subdirs[i],"Starting: Tf_loop_analysis")
+            System.append_log(System.subdirs[i],"Starting: Tf_loop_analysis")
     else:
         pass
 
-def check_completion(System,i,append_log):
+def check_completion(System,i,append_log,equil=False):
     ''' Check if the Tf_loop_analysis finished by seeing if all needed files
         were generated.
     '''
     done = 0
     cwd = os.getcwd()
-    sub = System.subdirs[i]+"/"+System.Tf_active_directory[i]
+    if equil == True:
+        sub = System.subdirs[i]+"/"+System.mutation_active_directory[i]
+    else:
+        sub = System.subdirs[i]+"/"+System.Tf_active_directory[i]
     os.chdir(cwd+"/"+sub)
     cwd2 = os.getcwd()
     tempfile = open("T_array_last.txt","r").readlines()
@@ -83,8 +97,12 @@ def check_completion(System,i,append_log):
 
     os.chdir(cwd)
     if done == 1:
-        append_log(System.subdirs[i],"Finished: Tf_loop_analysis")
-        System.append_log(System.subdirs[i],"Finished: Tf_loop_analysis")
+        if equil == True:
+            append_log(System.subdirs[i],"Finished: Equil_Tf_analysis")
+            System.append_log(System.subdirs[i],"Finished: Equil_Tf_analysis")
+        else:
+            append_log(System.subdirs[i],"Finished: Tf_loop_analysis")
+            System.append_log(System.subdirs[i],"Finished: Tf_loop_analysis")
 
 def check_if_wham_is_next(System,i,append_log):
     ''' Check if the last temperature step, dT=1. If it was start 
