@@ -106,7 +106,7 @@ class System(object):
                 self.mutation_active_directory[i] = info_file.readline()[:-1]
             elif value == "R_CD":
                 temp = info_file.readline()[:-1]
-                if temp == 'None':
+                if temp == '':
                     self.R_CD.append(None)
                 else:
                     self.R_CD.append(float(temp))

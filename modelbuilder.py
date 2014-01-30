@@ -218,6 +218,7 @@ class ModelBuilder(object):
         Model = models.get_model(args.type)
         System = system.System(args)
         self.create_subdirs(System)
+        print "Using R_CD = ",args.R_CD
         if args.R_CD != None:
             self.prepare_system(Model,System,R_CD=args.R_CD)
         else:
