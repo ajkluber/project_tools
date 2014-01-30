@@ -52,6 +52,8 @@ class System(object):
         self.Tf_refinements = [ {0:0} for i in range(self.numprots) ]
         self.mutation_iteration = [ 0 for i in range(self.numprots) ]
         self.mutation_active_directory = [ '' for i in range(self.numprots) ]
+        self.nonbond_params = []
+        self.R_CD = []
         
     def __repr__(self,i):
         reprstring = "[ Main_Path ]\n"
@@ -71,6 +73,11 @@ class System(object):
         reprstring += "%s\n" % self.mutation_iteration[i]
         reprstring += "[ mutation_active_directory ]\n"
         reprstring += "%s\n" % self.mutation_active_directory[i]
+        reprstring += "[ R_CD ]\n"
+        if type(self.R_CD) == float:
+            reprstring += "%f\n" % self.R_CD[i]
+        else:
+            reprstring += "\n" 
         return reprstring
 
     def load_info_file(self,i):
@@ -97,6 +104,12 @@ class System(object):
                 self.mutation_iteration[i] = int(info_file.readline())
             elif value == "mutation_active_directory":
                 self.mutation_active_directory[i] = info_file.readline()[:-1]
+            elif value == "R_CD":
+                temp = info_file.readline()[:-1]
+                if temp == 'None':
+                    self.R_CD.append(None)
+                else:
+                    self.R_CD.append(float(temp))
             else:
                 if line[0] == "[":
                     line = info_file.readline()

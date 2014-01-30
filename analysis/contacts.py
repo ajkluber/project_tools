@@ -127,6 +127,7 @@ def calculate_Q():
 
     Q = []
     Qh = []
+    Qres = []
     A = []
     framenum = 0 
     frames = mol_reader.open("traj.xtc") 
@@ -150,6 +151,7 @@ def calculate_Q():
         Contact2 = (D > 0.01).astype(int)
         Contact = Contact1*Contact2
         Q.append(sum(sum(Native*Contact)))
+        Qres.append(sum(Native*Contact))
         A.append(sum(sum((1 - Native)*Contact)))
         Qh.append(sum(sum(Native_h*Contact)))
 
@@ -158,6 +160,7 @@ def calculate_Q():
         #    print "Frame #", framenum 
 
     np.savetxt("Qprob.dat",np.array(Q))
+    np.savetxt("Qres.dat",np.array(Qres),delimiter=" ",fmt="%.1f")
     np.savetxt("Qhprob.dat",np.array(Qh))
     np.savetxt("Qnhprob.dat",np.array(Q)-np.array(Qh))
     np.savetxt("Aprob.dat",np.array(A))
