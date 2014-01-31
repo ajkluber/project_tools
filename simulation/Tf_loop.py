@@ -235,7 +235,10 @@ def run_temperature_array(Model,System,i,Ti,Tf,dT):
             System.append_log(System.subdirs[i],"  running T=%d" % T)
             #np.savetxt("Qref_cryst.dat",System.Qrefs[i],fmt="%1d",delimiter=" ")
             #print "Number of contacts: ", sum(sum(System.Qrefs[i]))
-            run_constant_temp(Model,System,i,T)
+            if len(System.Qrefs[i]) > 160:
+                run_constant_temp(Model,System,i,T,nsteps=1000000000,walltime="60:00:00",queue="serial_long")
+            else:
+                run_constant_temp(Model,System,i,T)
             os.chdir("..")
         else:
             ## Directory exists for this temperature: continue.
