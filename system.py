@@ -226,6 +226,8 @@ class System(object):
 
                 os.chdir(cwd2)
                 np.savetxt("Qref_cryst.dat",Qref,delimiter=" ",fmt="%1d")
+
+            print "Sub %s  N=%d  Nc=%d  Nc/N=%.4f" % (sub,len(Qref),sum(sum(Qref)),float(sum(sum(Qref)))/float(len(Qref)))
             prots_Qref.append(Qref)
             self.Qrefs.append(Qref)
 
