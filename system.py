@@ -55,6 +55,7 @@ class System(object):
         self.mutation_active_directory = [ '' for i in range(self.numprots) ]
         self.nonbond_params = []
         self.R_CD = []
+        self.Qrefs = []
         
     def __repr__(self,i):
         reprstring = "[ Main_Path ]\n"
@@ -226,6 +227,7 @@ class System(object):
                 os.chdir(cwd2)
                 np.savetxt("Qref_cryst.dat",Qref,delimiter=" ",fmt="%1d")
             prots_Qref.append(Qref)
+            self.Qrefs.append(Qref)
 
             os.chdir(cwd)
             
