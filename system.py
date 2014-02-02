@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import subprocess as sb
 import time
 
 '''
@@ -75,7 +76,7 @@ class System(object):
         reprstring += "%s\n" % self.mutation_active_directory[i]
         reprstring += "[ R_CD ]\n"
         if len(self.R_CD) > 0:
-            if type(self.R_CD[i]) != NoneType:
+            if type(self.R_CD[i]) != type(None):
                 reprstring += "%f\n" % self.R_CD[i]
         else:
             reprstring += "\n" 
@@ -149,20 +150,20 @@ class System(object):
                 if line[:4] == 'ATOM':
                     if first_flag == 0:
                         if line[16] in ["A"," "]:
-                            newline = 'ATOM%7s  %-4s%3s A%4d%s' % \
-                                    (atomid,line[13:17],line[17:20],1,line[26:])
+                            newline = 'ATOM%7s  %-4s%3s A%4d%s\n' % \
+                                    (atomid,line[13:16],line[17:20],1,line[26:55])
                             atomid += 1
                             first_flag = 1
                             first_index = int(line[22:26]) - 1
                             cleanpdb += newline
                     else:
                         if line[16] in ["A"," "]:
-                            newline = 'ATOM%7s  %-4s%3s A%4d%s' % \
-                                    (atomid,line[13:17],line[17:20],int(line[22:26])-first_index,line[26:])
+                            newline = 'ATOM%7s  %-4s%3s A%4d%s\n' % \
+                                    (atomid,line[13:16],line[17:20],int(line[22:26])-first_index,line[26:55])
                             atomid += 1
                             cleanpdb += newline
         
-        #cleanpdb += 'TER'
+        cleanpdb += 'END\n'
         return cleanpdb
 
     def get_atom_indices(self,beadmodel):
@@ -189,11 +190,53 @@ class System(object):
 
         return prots_indices, prots_residues, prots_coords
 
+    def shadow_contacts(self):
+        ''' Call SMOG Shadow jar code to determine the shadow contacts. If 
+            the reference matrix Qref_cryst.dat doesn't exist then create 
+            and dive into a subdirectory to run shadow map. Then save 
+            Qref_cryst.dat in the parent directory.'''
+
+        self.clean_pdbs()
+        cwd = os.getcwd()
+        prots_Qref = []
+        for sub in self.subdirs:
+            os.chdir(sub)
+            if os.path.exists("Qref_cryst.dat"):
+                Qref = np.loadtxt("Qref_cryst.dat")
+            else:
+                cwd2 = os.getcwd()
+                os.mkdir("Qref_shadow")
+                sb.call("cp clean.pdb Qref_shadow/",shell=True)
+                os.chdir("Qref_shadow")
+                #loadjava = 'module load jdk/1.7.0.21'
+                #sb.call(loadjava,shell=True)
+                cmd0 = 'cp /projects/cecilia/ajk8/model_builder/SCM.1.31.jar .'
+                sb.call(cmd0,shell=True,stdout=open("contacts.out","w"),stderr=open("contacts.err","w"))
+                cmd1 = 'echo -e "9\\n3\\n" | pdb2gmx -f clean.pdb -o %s.gro -p %s.top' % (sub,sub)
+                sb.call(cmd1,shell=True,stdout=open("contacts.out","w"),stderr=open("contacts.err","w"))
+                cmd2 = 'java -jar SCM.1.31.jar -g %s.gro -t %s.top -o %s.contacts -m shadow --coarse CA' % (sub,sub,sub)
+                sb.call(cmd2,shell=True,stdout=open("contacts.out","w"),stderr=open("contacts.err","w"))
+
+                conts = np.loadtxt(sub+".contacts",usecols=(1,3))
+                N = max(conts.ravel())
+                Qref = np.zeros((N,N))
+                for pair in conts:
+                    Qref[pair[0]-1,pair[1]-1] = 1
+
+                os.chdir(cwd2)
+                np.savetxt("Qref_cryst.dat",Qref,delimiter=" ",fmt="%1d")
+            prots_Qref.append(Qref)
+
+            os.chdir(cwd)
+            
+        return prots_Qref
+
     def get_native_contacts(self,heavy_atoms,atoms_per_res,cutoff=5.5):
         ''' Calculate contact map based on comparing inter-residue heavy atom 
             distances. If two residues that have a sequence separation of 4 or 
             more have a pair of heavy atoms that are separated by less than 5.5
-            Angstroms then those two residues are in contact.'''
+            Angstroms then those two residues are in contact. SWITCHING TO 
+            SHADOW MAP.'''
 
         N = len(heavy_atoms)
         D = np.zeros((N,N))
@@ -234,15 +277,15 @@ class System(object):
     def write_Native_pdb_CA(self,cutoff=5.5):
         ''' Write the Native.pdb for CA topology.'''
         self.native_pdbs = []
-        prots_Qref = []
-        prots_heavy_atoms = []
-        prots_heavy_atoms_per_res = []
+        #prots_Qref = []
+        #prots_heavy_atoms = []
+        #prots_heavy_atoms_per_res = []
         for sub in self.subdirs:
             atomid = 1
-            prev_resid = 1
+            #prev_resid = 1
             nativepdb = ''
-            heavy_atoms = []
-            num_heavy_atoms = []
+            #heavy_atoms = []
+            #num_heavy_atoms = []
             temp_num_atoms = 0
             for line in open(sub+"/clean.pdb","r"):
                 if line[:3] == "TER":
@@ -250,37 +293,36 @@ class System(object):
                     break
                 else:
                     #print "**%s**" % line[13:15] ## DEBUGGING
-
                     if line[13:15] == "CA":
                         #newline = "%s%5d%s%s%s%4d%s" % (line[:6],resid,line[11:16]," ",line[17:22],resid,line[26:])
                         newline = "%s%5d%s%s%s%4d%s" % (line[:6],atomid,line[11:16]," ",line[17:22],atomid,line[26:])
                         nativepdb += newline
                         atomid += 1
 
-                    if line[77] != "H":
-                        ## Collect heavy atoms for calculation of native contacts.
-                        resid = int(line[22:26])
-                        if resid != prev_resid:
-                            num_heavy_atoms.append(temp_num_atoms)
-                            temp_num_atoms = 1
-                            prev_resid = resid
-                        else:
-                            temp_num_atoms += 1
-                        
-                        heavy_atoms.append(np.array([float(line[30:38]),float(line[38:46]),float(line[46:54])]))
+                    #if line[77] != "H":
+                    #    ## Collect heavy atoms for calculation of native contacts.
+                    #    resid = int(line[22:26])
+                    #    if resid != prev_resid:
+                    #        num_heavy_atoms.append(temp_num_atoms)
+                    #        temp_num_atoms = 1
+                    #        prev_resid = resid
+                    #    else:
+                    #        temp_num_atoms += 1   
+                    #    heavy_atoms.append(np.array([float(line[30:38]),float(line[38:46]),float(line[46:54])]))
 
-            num_heavy_atoms.append(temp_num_atoms)
-            Qref = self.get_native_contacts(np.array(heavy_atoms),num_heavy_atoms,cutoff=cutoff)
+            #num_heavy_atoms.append(temp_num_atoms)
+            #Qref = self.get_native_contacts(np.array(heavy_atoms),num_heavy_atoms,cutoff=cutoff)
+            #prots_Qref.append(Qref)
 
             #prots_heavy_atoms.append(heavy_atoms)
             #prots_heavy_atoms_per_res.append(num_heavy_atoms)
-            prots_Qref.append(Qref)
-            open(sub+"/Native.pdb","w").write(nativepdb)
-            np.savetxt(sub+"/Qref_cryst.dat",Qref)
-            self.native_pdbs.append(nativepdb)
 
-        self.Qrefs = prots_Qref
-        return prots_Qref
+            open(sub+"/Native.pdb","w").write(nativepdb)
+            self.native_pdbs.append(nativepdb)
+            #np.savetxt(sub+"/Qref_cryst.dat",Qref)
+
+        #self.Qrefs = prots_Qref
+        #return prots_Qref
 
     def write_Native_pdb_CACB(self):
         ''' Write the Native.pdb for CACB topology. '''

@@ -269,8 +269,8 @@ class ModelBuilder(object):
     def prepare_system(self,Model,System,R_CD=None,cutoff=5.5):
         ''' Extract all the topology files from Model.'''
         print "Preparing files..."
-        System.clean_pdbs()
-        prots_Qref = System.write_Native_pdb_CA(cutoff=cutoff)
+        prots_Qref = System.shadow_contacts()
+        System.write_Native_pdb_CA()
         if R_CD != None:
             for i in range(len(System.subdirs)):
                 Nc = float(sum(sum(prots_Qref[i])))
@@ -279,8 +279,10 @@ class ModelBuilder(object):
                 System.R_CD.append(R_CD)
         else:
             for i in range(len(System.subdirs)):
+                N = len(prots_Qref[i])
                 Nc = float(sum(sum(prots_Qref[i])))
                 Nd = float(len(prots_Qref[i])-4)
+                print "Num contacts per residue: ",Nc/N
                 System.nonbond_params.append(Model.nonbond_param)
                 System.R_CD.append(None)
         prots_indices, prots_residues, prots_coords = System.get_atom_indices(Model.beadmodel)

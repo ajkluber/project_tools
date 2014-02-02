@@ -145,7 +145,7 @@ def folding_temperature_loop_extension(Model,System,k,append_log):
             Tf = System.initial_T_array[1]
             dT = System.initial_T_array[2]
         else:
-            Ti = 50; Tf = 350; dT = 50
+            Ti = 50; Tf = 200; dT = 50
         append_log(System.subdirs[k],"Submitting T_array iteration %d ; refinement %d" % \
                         (System.Tf_iteration[k],System.Tf_refinements[k][System.Tf_iteration[k]]))
         append_log(System.subdirs[k],"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
