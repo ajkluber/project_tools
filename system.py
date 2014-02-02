@@ -74,8 +74,9 @@ class System(object):
         reprstring += "[ mutation_active_directory ]\n"
         reprstring += "%s\n" % self.mutation_active_directory[i]
         reprstring += "[ R_CD ]\n"
-        if type(self.R_CD) == float:
-            reprstring += "%f\n" % self.R_CD[i]
+        if len(self.R_CD) > 0:
+            if type(self.R_CD[i]) != NoneType:
+                reprstring += "%f\n" % self.R_CD[i]
         else:
             reprstring += "\n" 
         return reprstring
@@ -188,7 +189,7 @@ class System(object):
 
         return prots_indices, prots_residues, prots_coords
 
-    def get_native_contacts(self,heavy_atoms,atoms_per_res):
+    def get_native_contacts(self,heavy_atoms,atoms_per_res,cutoff=5.5):
         ''' Calculate contact map based on comparing inter-residue heavy atom 
             distances. If two residues that have a sequence separation of 4 or 
             more have a pair of heavy atoms that are separated by less than 5.5
@@ -204,7 +205,8 @@ class System(object):
             d = np.sqrt(diff[:,0]**2 + diff[:,1]**2 + diff[:,2]**2 )
             diag = (np.arange(0,N-i),np.arange(i,N))
             D[diag] = d
-        C = (D < 5.5).astype(int)
+        print "cutoff used ",cutoff
+        C = (D < cutoff).astype(int)
 
         for i in range(len(atoms_per_res)):
             N = sum(atoms_per_res[:i+1])
@@ -229,7 +231,7 @@ class System(object):
         elif len(beadmodel) == 2:
             self.write_Native_pdb_CACB()
 
-    def write_Native_pdb_CA(self):
+    def write_Native_pdb_CA(self,cutoff=5.5):
         ''' Write the Native.pdb for CA topology.'''
         self.native_pdbs = []
         prots_Qref = []
@@ -268,12 +270,13 @@ class System(object):
                         heavy_atoms.append(np.array([float(line[30:38]),float(line[38:46]),float(line[46:54])]))
 
             num_heavy_atoms.append(temp_num_atoms)
-            Qref = self.get_native_contacts(np.array(heavy_atoms),num_heavy_atoms)
+            Qref = self.get_native_contacts(np.array(heavy_atoms),num_heavy_atoms,cutoff=cutoff)
 
             #prots_heavy_atoms.append(heavy_atoms)
             #prots_heavy_atoms_per_res.append(num_heavy_atoms)
             prots_Qref.append(Qref)
             open(sub+"/Native.pdb","w").write(nativepdb)
+            np.savetxt(sub+"/Qref_cryst.dat",Qref)
             self.native_pdbs.append(nativepdb)
 
         self.Qrefs = prots_Qref
@@ -302,6 +305,5 @@ class System(object):
         return nativepdb
 
     def write_info_file(self,i):
-        ''' Writes model.info file in subdirectory. The data of the Model object    
-            is static, so this is straightforward documentation.'''
+        ''' Writes system.info file in subdirectory. '''
         open(self.subdirs[i]+"/system.info","w").write(self.__repr__(i))

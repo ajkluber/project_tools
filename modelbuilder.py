@@ -218,11 +218,16 @@ class ModelBuilder(object):
         Model = models.get_model(args.type)
         System = system.System(args)
         self.create_subdirs(System)
-        print "Using R_CD = ",args.R_CD
-        if args.R_CD != None:
-            self.prepare_system(Model,System,R_CD=args.R_CD)
+        if args.cutoff != None:
+            print "Using cutoff", args.cutoff
+            cutoff = args.cutoff
         else:
-            self.prepare_system(Model,System)
+            cutoff = 5.5
+        if args.R_CD != None:
+            print "Using R_CD = ",args.R_CD
+            self.prepare_system(Model,System,R_CD=args.R_CD,cutoff=cutoff)
+        else:
+            self.prepare_system(Model,System,cutoff=cutoff)
         self.save_model_system_info(Model,System)
         self.load_model_system_info(System)
         if args.temparray != None:
@@ -261,11 +266,11 @@ class ModelBuilder(object):
             Model.nonbond_param = System.nonbond_params[i]
             Model.write_info_file(System.subdirs[i])
 
-    def prepare_system(self,Model,System,R_CD=None):
+    def prepare_system(self,Model,System,R_CD=None,cutoff=5.5):
         ''' Extract all the topology files from Model.'''
         print "Preparing files..."
         System.clean_pdbs()
-        prots_Qref = System.write_Native_pdb_CA()
+        prots_Qref = System.write_Native_pdb_CA(cutoff=cutoff)
         if R_CD != None:
             for i in range(len(System.subdirs)):
                 Nc = float(sum(sum(prots_Qref[i])))
@@ -300,6 +305,7 @@ def main():
     new_parser.add_argument('--solvent', action='store_true', help='Add this option for solvent.')
     new_parser.add_argument('--dryrun', action='store_true', help='Add this option for dry run. No simulations started.')
     new_parser.add_argument('--R_CD', type=float, help='Optional specific ratio of contact to dihedral energy.')
+    new_parser.add_argument('--cutoff', type=float, help='Optional cutoff for heavy atom determination of native contacts.')
 
     ## Checking on a simulation project.
     run_parser = sp.add_parser('continue')

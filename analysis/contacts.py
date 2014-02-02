@@ -118,17 +118,20 @@ def calculate_Q():
     ## [and (i,i+6)]. This is assuming that contacts to i+4 and i+5 
     ## stabilize helices.
     h_diag = (np.arange(0,N-4),np.arange(4,N))
-    #h_diag2 = (np.arange(0,N-5),np.arange(5,N))
+    h_diag2 = (np.arange(0,N-5),np.arange(5,N))
     #h_diag3 = (np.arange(0,N-6),np.arange(6,N))
     Native_h = np.zeros((N,N),float)
+    Native_hi5 = np.zeros((N,N),float)
     Native_h[h_diag] = Native[h_diag]
     #Native_h[h_diag2] = Native[h_diag2]
     #Native_h[h_diag3] = Native[h_diag3]
+    Native_hi5[h_diag2] = Native[h_diag2]
 
     Q = []
     Qh = []
     Qres = []
     Qhres = []
+    Qhi5res = []
     A = []
     framenum = 0 
     frames = mol_reader.open("traj.xtc") 
@@ -154,6 +157,7 @@ def calculate_Q():
         Q.append(sum(sum(Native*Contact)))
         Qres.append(sum(Native*Contact))
         Qhres.append(sum(Native_h*Contact))
+        Qhi5res.append(sum(Native_hi5*Contact))
         A.append(sum(sum((1 - Native)*Contact)))
         Qh.append(sum(sum(Native_h*Contact)))
 
@@ -164,6 +168,7 @@ def calculate_Q():
     np.savetxt("Qprob.dat",np.array(Q))
     np.savetxt("Qres.dat",np.array(Qres),delimiter=" ",fmt="%.1f")
     np.savetxt("Qhres.dat",np.array(Qhres),delimiter=" ",fmt="%.1f")
+    np.savetxt("Qhi5res.dat",np.array(Qhi5res),delimiter=" ",fmt="%.1f")
     np.savetxt("Qhprob.dat",np.array(Qh))
     np.savetxt("Qnhprob.dat",np.array(Q)-np.array(Qh))
     np.savetxt("Aprob.dat",np.array(A))

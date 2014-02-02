@@ -52,11 +52,11 @@ def check_completion(System,i,append_log,equil=False):
                 sb.call(qrst.split(),stdout=open("rst.out","w"),stderr=open("rst.err","w"))
                 os.chdir(cwd+"/"+sub)
                 System.append_log(System.subdirs[i],"  %s did not finish. restarting" % tdir)
+                print "  %s did not finish. Restarting: submitting rst.pbs. " % tdir
             else:
                 System.append_log(System.subdirs[i],"  %s did not finish. did not find a rst.pbs. skipping." % tdir)
-            
-
             error = 1
+
     if error == 1:
         print "    Cannot continue until simulations complete. Check if all unfinished runs were restarted properly."
         pass 
@@ -197,21 +197,24 @@ def run_equilibrium_simulations(Model,System,i,append_log):
     os.chdir(mutsub)
 
     T_string = ''
-    for simnum in range(1,6):
-        simpath = Tf+"_"+str(simnum)
-        ## Only start the simulation if directory doesn't exist.
-        if (not os.path.exists(simpath)):
-            T_string += "%s\n" % simpath
-            os.mkdir(simpath)
-            os.chdir(simpath)
-            System.append_log(System.subdirs[i],"  running T=%s" % simpath)
-            #np.savetxt("Qref_cryst.dat",System.Qrefs[i],fmt="%1d",delimiter=" ")
-            #print "Number of contacts: ", sum(sum(System.Qrefs[i]))
-            run_constant_temp(Model,System,i,float(Tf),nsteps=1000000000,walltime="60:00:00",queue="serial_long")
-            os.chdir("..")
-        else:
-            ## Directory exists for this temperature: continue.
-            continue
+    for n in range(5):
+        T = "%.2f" % (float(Tf)+n-1)
+
+        for simnum in range(1,5):
+            simpath = T+"_"+str(simnum)
+            ## Only start the simulation if directory doesn't exist.
+            if (not os.path.exists(simpath)):
+                T_string += "%s\n" % simpath
+                os.mkdir(simpath)
+                os.chdir(simpath)
+                System.append_log(System.subdirs[i],"  running T=%s" % simpath)
+                #np.savetxt("Qref_cryst.dat",System.Qrefs[i],fmt="%1d",delimiter=" ")
+                #print "Number of contacts: ", sum(sum(System.Qrefs[i]))
+                run_constant_temp(Model,System,i,float(T),nsteps=1000000000,walltime="60:00:00",queue="serial_long")
+                os.chdir("..")
+            else:
+                ## Directory exists for this temperature: continue.
+                continue
 
     open("T_array.txt","a").write(T_string)
     open("T_array_last.txt","w").write(T_string)
@@ -263,7 +266,11 @@ def run_constant_temp(Model,System,k,T,nsteps=400000000,walltime="23:00:00",queu
     np.savetxt("table.xvg",Model.other_table,fmt="%16.15e",delimiter=" ")
     np.savetxt("Qref_cryst.dat",System.Qrefs[k],fmt="%1d",delimiter=" ")
     ## Start simulation
-    submit_run(System.subdirs[k]+"_"+str(T),walltime=walltime,queue=queue)
+    jobname = System.subdirs[k]+"_"+str(T)
+    if len(System.R_CD) != 0:
+        if type(System.R_CD[k]) == float:
+            jobname += "_Rcd_"+str(System.R_CD[k])
+    submit_run(jobname,walltime=walltime,queue=queue)
     
 def submit_run(jobname,walltime="23:00:00",queue="serial"):
     ''' Executes the constant temperature runs.'''
