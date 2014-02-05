@@ -166,9 +166,9 @@ def calculate_Q():
         #    print "Frame #", framenum 
 
     np.savetxt("Qprob.dat",np.array(Q))
-    np.savetxt("Qres.dat",np.array(Qres),delimiter=" ",fmt="%.1f")
-    np.savetxt("Qhres.dat",np.array(Qhres),delimiter=" ",fmt="%.1f")
-    np.savetxt("Qhi5res.dat",np.array(Qhi5res),delimiter=" ",fmt="%.1f")
+    np.savetxt("Qres.dat",np.array(Qres),delimiter=" ",fmt="%d")
+    np.savetxt("Qhres.dat",np.array(Qhres),delimiter=" ",fmt="%d")
+    np.savetxt("Qhi5res.dat",np.array(Qhi5res),delimiter=" ",fmt="%d")
     np.savetxt("Qhprob.dat",np.array(Qh))
     np.savetxt("Qnhprob.dat",np.array(Q)-np.array(Qh))
     np.savetxt("Aprob.dat",np.array(A))

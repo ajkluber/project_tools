@@ -211,7 +211,8 @@ class System(object):
                 os.chdir("Qref_shadow")
                 #loadjava = 'module load jdk/1.7.0.21'
                 #sb.call(loadjava,shell=True)
-                cmd0 = 'cp /projects/cecilia/ajk8/model_builder/SCM.1.31.jar .'
+                #cmd0 = 'cp /projects/cecilia/ajk8/model_builder/SCM.1.31.jar .'
+                cmd0 = 'cp /projects/cecilia/SCM.1.31.jar .'
                 sb.call(cmd0,shell=True,stdout=open("contacts.out","w"),stderr=open("contacts.err","w"))
                 cmd1 = 'echo -e "9\\n3\\n" | pdb2gmx -f clean.pdb -o %s.gro -p %s.top' % (sub,sub)
                 sb.call(cmd1,shell=True,stdout=open("contacts.out","w"),stderr=open("contacts.err","w"))

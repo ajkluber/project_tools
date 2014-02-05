@@ -198,7 +198,8 @@ def run_equilibrium_simulations(Model,System,i,append_log):
 
     T_string = ''
     for n in range(5):
-        T = "%.2f" % (float(Tf)+float(Tf)*(0.003*(n-1)))
+        #T = "%.2f" % (float(Tf)+float(Tf)*(0.003*(n-1)))
+        T = "%.2f" % (float(Tf)+float(Tf)*(0.003*n))
 
         for simnum in range(1,4):
             simpath = T+"_"+str(simnum)
@@ -238,8 +239,10 @@ def run_temperature_array(Model,System,i,Ti,Tf,dT):
             System.append_log(System.subdirs[i],"  running T=%d" % T)
             #np.savetxt("Qref_cryst.dat",System.Qrefs[i],fmt="%1d",delimiter=" ")
             #print "Number of contacts: ", sum(sum(System.Qrefs[i]))
-            if len(System.Qrefs[i]) > 160:
+            if (len(System.Qrefs[i]) > 160) and (len(System.Qrefs[i]) < 250):
                 run_constant_temp(Model,System,i,T,walltime="48:00:00",queue="serial_long")
+            elif len(System.Qrefs[i]) > 250:
+                run_constant_temp(Model,System,i,T,walltime="60:00:00",queue="serial_long")
             else:
                 run_constant_temp(Model,System,i,T)
             os.chdir("..")
