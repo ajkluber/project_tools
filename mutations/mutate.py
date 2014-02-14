@@ -22,6 +22,15 @@ modpy.sh python mutate.py
 Where modpy.sh is a script installed by MODELLER that must be in your PATH.
 Also, several paths need to be in your PYTHONPATH and LD_LIBRARY_PATH. See
 MODELLER install script for specific paths.
+
+Requires that the wild-type clean.pdb be present in the mutants/ directory
+along with the mutations.txt file. 
+
+Resulting pdbs will be named: <wt_res><mut_indx><mut_res>.pdb
+For example mutating PHE (F) at position 90 in the wild-type structure to ALA
+(A) would result in a pdb: F90A.pdb
+
+
 '''
 
 def residue_three_letter_code(rescode):
@@ -50,6 +59,7 @@ def make_all_mutations():
     mut_res = [ mutation_data[i].split()[2] for i in range(len(mutation_data)) ]
 
     for i in range(len(mut_indx)):
+        print "Performing mutation: %s%s%s" % (wt_res[i],mut_indx[i],mut_res[i])
 
         respos = mut_indx[i]
         restyp = residue_three_letter_code(mut_res[i])
@@ -129,3 +139,5 @@ def modeller_mutate_pdb(modelname,respos,restyp,saveas,chain='A'):
 
     mdl1.write(file=saveas)
 
+if __name__ == '__main__':
+    make_all_mutations()
