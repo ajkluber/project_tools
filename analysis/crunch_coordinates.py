@@ -49,3 +49,24 @@ def crunch_all(name,walltime="00:02:00"):
     qsub = "qsub energyterms.pbs"
     sb.call(qsub.split(),stdout=open("energyterms.out","w"),stderr=open("energyterms.err","w"))
 
+def crunch_Nh(tol=40.):
+    ''' Calculate number of helical residues per frame by the following criterion:
+        if a residue is making an i+4 contact and the two dihedral angles between
+        it and its contact'''
+    Qh = np.loadtxt("Qhres.dat")
+    phis = np.loadtxt("phis.xvg")
+    phis = phis[:,2:]
+
+    native_Nh = (phis[0,:] > (50-tol)).astype(int)*(phis[0,:] < (50+tol)).astype(int)
+    num_nat_Nh = sum(native_Nh)
+
+    dih1 = (phis[:,:-1] > (50-tol)).astype(int)*(phis[:,:-1] < (50+tol)).astype(int)
+    dih2 = (phis[:,1:] > (50-tol)).astype(int)*(phis[:,1:] < (50+tol)).astype(int)
+    Nh = dih1*dih2*Qh[:,4:]
+
+    #Nh_norm = sum(Nh.T)/float(num_nat_Nh)
+
+    np.savetxt("Nh.dat",sum(Nh.T))
+    np.savetxt("Nhres.dat",Nh)
+
+

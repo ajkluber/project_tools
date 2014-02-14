@@ -89,6 +89,8 @@ def check_completion(System,i,append_log,equil=False):
         if  os.path.exists("rmsd.xvg") and os.path.exists("radius_cropped.xvg") and \
             os.path.exists("energyterms.xvg") and os.path.exists("phis.xvg") and \
             os.path.exists("Qprob.dat"):
+            crunch_coordinates.crunch_Nh()
+            System.append_log(System.subdirs[i],"  crunching Nh")
             System.append_log(System.subdirs[i],"  analysis done for "+tdir)
             done = 1
         else:

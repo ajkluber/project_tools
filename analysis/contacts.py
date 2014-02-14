@@ -4,6 +4,7 @@ import argparse
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import os
 
 from coord_util import mol_reader
 
@@ -58,7 +59,7 @@ def main():
         
 
 
-def contacts_for_states(framestate,numstates,cutoff=1.25):
+def contacts_for_states(framestate,numstates,name,cutoff=1.25):
     ''' Calculate contacts given a list of frames to use. This function is to be
         used by other programs. This function is still a little experimental.
     '''
@@ -91,24 +92,81 @@ def contacts_for_states(framestate,numstates,cutoff=1.25):
 
         frameidx += 1
         if (frameidx % 20000) == 0:
-            print "Finished"
-            break
+            #print "Finished"
+            #break
             print "Frame # ", frameidx
-            if frameidx == 60000:
-                break
+            #if frameidx == 60000:
+            #    break
 
     ## PROBABLY CHANGE TO JUST RETURN THE CONTACT MAPS
     for m in range(len(statesprobij)):
-        print "Accum ", m , " ", accum[m], "   Length ", len(statesprobij[m]), " Counted ", framestate.count(m)
+        #print "Accum ", m , " ", accum[m], "   Length ", len(statesprobij[m]), " Counted ", list(framestate).count(m)
         if accum[m] != 0:
             statesprobij[m] /= float(accum[m])
-        np.savetxt("contacts%s.dat" % m,statesprobij[m])
+        np.savetxt(name+"_%s.dat" % m,statesprobij[m])
+    return statesprobij
+
+def equil_contacts_for_states(framestate,numstates,savedir,T,numtemps,cutoff=1.25):
+    ''' Calculate contacts given a list of frames to use. This function is to be
+        used by other programs. This function is still a little experimental.
+    '''
+
+    Native_cryst, Sig, N = get_beadbead_info(path=T+"_1")
+
+    statesprobij = [ np.zeros((N,N),float) for i in range(numstates) ]
+    #accum = [0,0,0]
+    accum = np.zeros(numstates)
+    frameidx = 0
+    numframesused = 0
+    cwd = os.getcwd()
+    ## Loop over subdirectories with same temp.
+    for tnum in range(1,numtemps+1):
+        T = T+"_"+str(tnum)
+        
+        os.chdir(T)
+
+        frames = mol_reader.open("traj.xtc") 
+        ## Loops over frames in trajectory.
+        for frame in frames.read():
+            state = framestate[frameidx] 
+            if state == -1:
+                pass
+            else:
+                D = np.ones((N,N),float)
+                X = np.reshape(np.array(frame.coordinates), (N,3))
+                for i in range(4,N):
+                    diff = X[0:-i,:] - X[i:,:]
+                    d = np.sqrt(diff[:,0]**2 + diff[:,1]**2 + diff[:,2]**2)
+                    ## Slice to insert values on the diagonal   
+                    diag = (np.arange(0,N-i),np.arange(i,N))
+                    D[diag] = d
+                Contact = (D <= cutoff*10*Sig).astype(int)
+                statesprobij[state] += Contact
+                accum[state] += 1
+
+            frameidx += 1
+            if (frameidx % 20000) == 0:
+                #print "Finished"
+                #break
+                print "Frame # ", frameidx
+                #if frameidx == 60000:
+                #    break
+        os.chdir(cwd)
+
+    ## PROBABLY CHANGE TO JUST RETURN THE CONTACT MAPS
+    for m in range(len(statesprobij)):
+        #print "Accum ", m , " ", accum[m], "   Length ", len(statesprobij[m]), " Counted ", list(framestate).count(m)
+        if accum[m] != 0:
+            statesprobij[m] /= float(accum[m])
+        np.savetxt(savedir+"/map_%s.dat" % m,statesprobij[m])
     return statesprobij
 
 def calculate_Q():
     ''' A routine to calculate Q, Q_helical, Q_non-helical and A (not-native
         contacts) probabalistically. Meant to be run from a PBS script that 
-        is submitted in the directory containing all the files.
+        is submitted in the directory containing all the files. 
+
+        This function is the primary purpose for this submodule.
     '''
     
     Native_cryst, Sig, N = get_beadbead_info()
@@ -165,6 +223,7 @@ def calculate_Q():
         #if (framenum % 1000) == 0:
         #    print "Frame #", framenum 
 
+    ## Save all the data files!
     np.savetxt("Qprob.dat",np.array(Q))
     np.savetxt("Qres.dat",np.array(Qres),delimiter=" ",fmt="%d")
     np.savetxt("Qhres.dat",np.array(Qhres),delimiter=" ",fmt="%d")
@@ -174,18 +233,18 @@ def calculate_Q():
     np.savetxt("Aprob.dat",np.array(A))
     return Q, Qh
 
-def get_beadbead_info():
+def get_beadbead_info(path='.'):
     ''' Extract the native crystal structure contacts, equilibrium 
         contact distance (sigij), and number of residues N.'''
     pairs = []
     #pdb = np.loadtxt("Native.pdb",dtype=str)
     #coords = pdb[:,6:9].astype(float)
-    coords = get_pdb_coords("Native.pdb")
+    coords = get_pdb_coords(path+"/Native.pdb")
     N = len(coords)
     Sig = np.zeros((N,N),float)
     Native_cryst = np.zeros((N,N),int)
     contacts = 0
-    for line in open("BeadBead.dat","r"):
+    for line in open(path+"/BeadBead.dat","r"):
         i, j = int(line[0:5])-1, int(line[5:10])-1
         resi, resj = line[10:18], line[18:26]
         interaction_num = int(line[26:31])
@@ -195,7 +254,7 @@ def get_beadbead_info():
         if rij <= 1.25*10.*sigij:
             Native_cryst[i,j] = 1
 
-    np.savetxt("Qref_cryst.dat",Native_cryst,fmt="%1d",delimiter=" ")
+    #np.savetxt("Qref_cryst.dat",Native_cryst,fmt="%1d",delimiter=" ")
     return Native_cryst, Sig, N
 
 def get_pdb_coords(pdbname):

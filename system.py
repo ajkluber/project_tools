@@ -293,7 +293,7 @@ class System(object):
             #num_heavy_atoms = []
             temp_num_atoms = 0
             for line in open(sub+"/clean.pdb","r"):
-                if line[:3] == "TER":
+                if line[:3] in ["TER","END"]:
                     nativepdb += line
                     break
                 else:
