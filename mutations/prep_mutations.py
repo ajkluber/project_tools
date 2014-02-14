@@ -5,15 +5,17 @@ import numpy as np
 
 
 '''
-Feb 5 2014
+Feb 14 2014
 Alexander Kluber
 
-    Starting to implement the mutations to the heterogeneous Go model.
+    This submodule uses information in a mutations.txt file and the wild type
+structure wt.pdb to create mutated pdbs and resulting contact maps. The contact
+maps are then used to calculate the fraction of heavy-atom contact loss between
+residues i and j for mutation k.
+    Currently works! 2-14-14
 
-MODELLER broke my Numpy build :( 
-
+MODELLER broke my Numpy build :( ===> FIXED by adding library path to LD_LIBRARY_PATH.
 Follow instructions at:
-
 https://docs.rice.edu/confluence/display/ITDIY/How+to+use+BLAS+and+LAPACK+libraries
 
 '''
@@ -93,7 +95,7 @@ def calculate_fraction_contact_loss(name):
     print "Number of contacts lost for ",name,sum(sum(diff))
     Cwt[ Cwt < 1 ] = 1.
     diff /= Cwt
-    #np.savetxt("fij_"+name+".dat",diff,fmt="%.5f",delimiter=" ")
+    np.savetxt("fij_"+name+".dat",diff,fmt="%.5f",delimiter=" ")
 
     #plt.subplot(1,1,1,aspect=1)
     #plt.pcolor(diff,cmap=plt.cm.binary)
@@ -105,32 +107,43 @@ def calculate_fraction_contact_loss(name):
     #plt.savefig("fij_wt_F90A.pdf")
     #plt.show()
 
+def calculate_contacts_from_pdb(name):
+    ''' Calls shadow map to calculate'''
+    if os.path.exists(name+".gro") == False:
+        cmd1 = 'echo -e "9\\n3\\n" | pdb2gmx -f %s.pdb -o %s.gro -p %s.top' % (name,name,name)
+        sb.call(cmd1,shell=True,stdout=open("cutoff.out","w"),stderr=open("cutoff.err","w"))
+
+    cmd2 = 'java -jar SCM.1.31.jar -g %s.gro -t %s.top -o %s.cutoff.contacts -m cutoff -p %s.cutoff.wH.pdb' % (name,name,name,name)
+    sb.call(cmd2,shell=True,stdout=open("cutoff.out","w"),stderr=open("cutoff.err","w"))
 
 
 if __name__ == '__main__':
 
     ## Start by reading the mutations file. Should be an attribute of System
     ## object.
+#def prep_mutations():
     modelname = 'wt.pdb'
     mutation_data = open("mutations.txt","r").readlines()[1:]
     mut_indx = [ mutation_data[i].split()[0] for i in range(len(mutation_data)) ]
     wt_res = [ mutation_data[i].split()[1] for i in range(len(mutation_data)) ]
     mut_res = [ mutation_data[i].split()[2] for i in range(len(mutation_data)) ]
     
-    cmd0 = 'cp /projects/cecilia/SCM.1.31.jar .'
-    sb.call(cmd0,shell=True,stdout=open("cutoff.out","w"),stderr=open("cutoff.err","w"))
-    cmd1 = 'echo -e "9\\n3\\n" | pdb2gmx -f wt.pdb -o wt.gro -p wt.top' 
-    sb.call(cmd1,shell=True,stdout=open("cutoff.out","w"),stderr=open("cutoff.err","w"))
-    cmd2 = 'java -jar SCM.1.31.jar -g wt.gro -t wt.top -o wt.cutoff.contacts -m cutoff -p wt.cutoff.wH.pdb'
-    sb.call(cmd2,shell=True,stdout=open("cutoff.out","w"),stderr=open("cutoff.err","w"))
+    if os.path.exists("SCM.1.31.jar") == False:
+        cmd0 = 'cp /projects/cecilia/SCM.1.31.jar .'
+        sb.call(cmd0,shell=True,stdout=open("cutoff.out","w"),stderr=open("cutoff.err","w"))
+    if os.path.exists("wt.cutoff.contacts") == False:
+        if os.path.exists("wt.gro") == False:
+            cmd1 = 'echo -e "9\\n3\\n" | pdb2gmx -f wt.pdb -o wt.gro -p wt.top' 
+            sb.call(cmd1,shell=True,stdout=open("cutoff.out","w"),stderr=open("cutoff.err","w"))
+        cmd2 = 'java -jar SCM.1.31.jar -g wt.gro -t wt.top -o wt.cutoff.contacts -m cutoff -p wt.cutoff.wH.pdb'
+        sb.call(cmd2,shell=True,stdout=open("cutoff.out","w"),stderr=open("cutoff.err","w"))
 
     ## Use shadow map to create all-atom contact map. For each mutated pdb
     ## determine the 
     for i in range(len(mut_indx)):
         name = wt_res[i]+mut_indx[i]+mut_res[i]
 
-        cmd2 = 'java -jar SCM.1.31.jar -g %s.gro -t %s.top -o %s.cutoff.contacts -m cutoff -p %s.cutoff.wH.pdb' % (name,name,name,name)
-        #sb.call(cmd2,shell=True,stdout=open("cutoff.out","w"),stderr=open("cutoff.err","w"))
+        if os.path.exists(name+".cutoff.contacts") == False:
+            calculate_contacts_from_pdb(name)
         
-        print cmd1
-        #calculate_fraction_contact_loss(name)
+        calculate_fraction_contact_loss(name)
