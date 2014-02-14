@@ -52,7 +52,7 @@ def make_all_mutations():
         MODELLER uses 3-letter amino acid code (e.g. ALA instead of A) whereas 
         the mutational data files will probably use single-letter code.
     '''
-    modelname = 'clean'
+    modelname = 'wt'
     mutation_data = open("mutations.txt","r").readlines()[1:]
     mut_indx = [ mutation_data[i].split()[0] for i in range(len(mutation_data)) ]
     wt_res = [ mutation_data[i].split()[1] for i in range(len(mutation_data)) ]
@@ -64,7 +64,7 @@ def make_all_mutations():
         respos = mut_indx[i]
         restyp = residue_three_letter_code(mut_res[i])
         saveas = wt_res[i]+mut_indx[i]+mut_res[i]+".pdb"
-        modeller_mutate_pdb(modelname,repos,restyp,saveas)
+        modeller_mutate_pdb(modelname,respos,restyp,saveas)
 
 
 def modeller_mutate_pdb(modelname,respos,restyp,saveas,chain='A'):
