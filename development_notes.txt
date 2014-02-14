@@ -76,3 +76,35 @@ pairwise inter-residue-heavy-atom distances. This should be done during
 prep_system()
 
 ------------------------------------------------------------------------------
+Thu Feb 13 22:44:18 CST 2014
+Alexander Kluber
+
+    Added functionality to compute native contacts with shadow map developed
+by Jeff Noel, Paul Whitford in the Onuchic group (1). 
+
+    Added new coordinate Nh which is number of helical residues. This is a
+refinement of Qh (fraction of i+4 contacts) in that it also requires the
+two dihedrals in between i and i+4 to be within +/-40 degrees of the alpha-
+helical region 52 degrees. Using this we see that helices -are- unfolded in
+the unfolded state because the thermal flucuations knock the dihedrals out
+of their minima even if the i+4 contact is made. Hopefully this metric will
+reveal if tertiary contacts stabilize helices.
+
+    Added plot submodule to help with plotting. Currently not finished and 
+only focused on plotting 1D,2D pmfs and contact maps for equilibrium data.
+
+    Currently working on incorporating f^k_ij calculator for mutational 
+data. Deciding on a format for the mutational data files. Using MODELLER
+on my local machine to create many mutant pdbs, then bringing them to the
+server to use pdb2gmx and shadow map, then parse output to get f^k_ij.
+
+Future Plans:
+- Want to use umbrella sampling along Q to generate free energy profiles
+like the Onuchic and Wolynes group, then perform mutational algorithm to 
+biased data.
+
+(1) Noel, J. K.; Whitford, P. C.; Onuchic, J. N. The Shadow Map: A General
+Contact Definition for Capturing the Dynamics of Biomolecular Folding and
+Function. J. Phys. Chem. B 2012, 116, 8692–8702.
+
+------------------------------------------------------------------------------
