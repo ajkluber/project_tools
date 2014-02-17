@@ -45,7 +45,7 @@ December 2013
 '''
 
 def main():
-    ''' Two possible branches: 1. Calculate reference matrix, 2. Calculate Q '''
+    ''' One possible branches: Calculate Q '''
     parser = argparse.ArgumentParser(description='Calculate the (Non)Native contact matrix')
 
     parser.add_argument('--calcQ', action='store_true', help='calculate Q')

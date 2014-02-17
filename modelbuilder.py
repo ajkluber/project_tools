@@ -37,6 +37,11 @@ To Do:
 
 - Think about analysis tools. Probably should be their own module.
 
+February 15 2014
+Alexander Kluber
+
+
+
 '''
 
 
@@ -314,7 +319,7 @@ def main():
     run_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to continue',required=True)
     run_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
 
-    ## Checking on a simulation project.
+    ## Manually adding a temperature array.
     add_parser = sp.add_parser('add')
     add_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
     add_parser.add_argument('--temparray', type=int, nargs='+', help='T_initial T_final dT for new temp array',required=True)
