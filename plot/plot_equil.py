@@ -1,9 +1,12 @@
-import numpy as np
+#!/usr/bin/env python
 import matplotlib
-import matplotlib.cm as cm
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import numpy as np
 import os
 import argparse
+import subprocess as sb
 
 import model_builder.analysis.contacts as ct
 
@@ -36,12 +39,13 @@ def main():
     args = parser.parse_args()
     
     if args.action == 'maps':
-        plot_equil_data(name,num,T)
+        plot_contact_maps(args.subdir,args.T,args.num)
 
-def get_equil_data(name,T,mutnum=0,numsub=4):
+def get_equil_data(T,path=".",numsub=3):
     ''' Accumulate data from equilibrium temperature directories.'''
-    path = name +"/Mut_"+str(mutnum)
-    for i in range(1,numsub):
+    #path = name +"/Mut_"+str(mutnum)
+    #path = "."
+    for i in range(1,numsub+1):
         q = np.loadtxt(path+"/"+T+"_"+str(i)+"/Qprob.dat",dtype=float)
         qh = np.loadtxt(path+"/"+T+"_"+str(i)+"/Qhprob.dat",dtype=float)
         qnh = np.loadtxt(path+"/"+T+"_"+str(i)+"/Qnhprob.dat",dtype=float)
@@ -62,7 +66,7 @@ def get_equil_data(name,T,mutnum=0,numsub=4):
     Nh /= float(max(Nh))
     return Q,Qh,Qnh,Nh
 
-def plot_2D_equil_pmfs(name,T):
+def plot_2D_equil_pmfs(name,T,num):
     ''' Plot 2D pmfs.'''
 
     path = name +"/Mut_0/"+T+"_pmfs"
@@ -70,7 +74,7 @@ def plot_2D_equil_pmfs(name,T):
         os.mkdir(path)
     #Tf = open(name+"/Tf_0/Tf.txt","r").read()[:-1]
     #Tf = "%.2f" % float(Tf)
-    Q,Qh,Qnh,Nh = get_equil_data(name,T)
+    Q,Qh,Qnh,Nh = get_equil_data(T,path=name+"/Mut_0",numsub=num)
 
     qvals = np.unique(list(Q)+[1.0,])
     qhvals = np.unique(list(Qh)+[1.0,])
@@ -161,7 +165,7 @@ def plot_2D_equil_pmfs(name,T):
     #plt.savefig(path+"/Qnh_Nh_"+T+"_pmf.pdf")
     plt.savefig(path+"/Qnh_Nh_pmf.pdf")
 
-def plot_1D_equil_pmfs(name,T):
+def plot_1D_equil_pmfs(name,T,num):
     ''' Plot 1D pmfs.'''
 
     path = name+"/Mut_0/"+T+"_pmfs"
@@ -169,7 +173,7 @@ def plot_1D_equil_pmfs(name,T):
         os.mkdir(path)
     #Tf = open(name+"/Tf_0/Tf.txt","r").read()[:-1]
     #Tf = "%.2f" % float(Tf)
-    Q,Qh,Qnh,Nh = get_equil_data(name,T)
+    Q,Qh,Qnh,Nh = get_equil_data(T,path=name+"/Mut_0",numsub=num)
 
     qvals = np.unique(list(Q)+[1.0,])
     qhvals = np.unique(list(Qh)+[1.0,])
@@ -184,14 +188,14 @@ def plot_1D_equil_pmfs(name,T):
     #nqh,binsqh = np.histogram(Qh,bins=10,density=True)
     #nqnh,binsqnh = np.histogram(Qnh,bins=35,density=True)
 
-    np.savetxt(path+"/Q_n.dat",nq,delimter=" ",fmt="%.4f")
-    np.savetxt(path+"/Q_bins.dat",binsq,delimter=" ",fmt="%.4f")
-    np.savetxt(path+"/Qh_n.dat",nqh,delimter=" ",fmt="%.4f")
-    np.savetxt(path+"/Qh_bins.dat",binsqh,delimter=" ",fmt="%.4f")
-    np.savetxt(path+"/Qnh_n.dat",nqnh,delimter=" ",fmt="%.4f")
-    np.savetxt(path+"/Qnh_bins.dat",binsqnh,delimter=" ",fmt="%.4f")
-    np.savetxt(path+"/Nh_n.dat",nnh,delimter=" ",fmt="%.4f")
-    np.savetxt(path+"/Nh_bins.dat",binsnh,delimter=" ",fmt="%.4f")
+    np.savetxt(path+"/Q_n.dat",nq,delimiter=" ",fmt="%.4f")
+    np.savetxt(path+"/Q_bins.dat",binsq,delimiter=" ",fmt="%.4f")
+    np.savetxt(path+"/Qh_n.dat",nqh,delimiter=" ",fmt="%.4f")
+    np.savetxt(path+"/Qh_bins.dat",binsqh,delimiter=" ",fmt="%.4f")
+    np.savetxt(path+"/Qnh_n.dat",nqnh,delimiter=" ",fmt="%.4f")
+    np.savetxt(path+"/Qnh_bins.dat",binsqnh,delimiter=" ",fmt="%.4f")
+    np.savetxt(path+"/Nh_n.dat",nnh,delimiter=" ",fmt="%.4f")
+    np.savetxt(path+"/Nh_bins.dat",binsnh,delimiter=" ",fmt="%.4f")
 
     pmfq = -np.log(nq)
     pmfqh = -np.log(nqh)
@@ -252,15 +256,16 @@ def plot_contact_maps(name,T,numtemps):
     ''' Plot contact maps as a function of several reaction coordinates. '''
 
     coords = ["Q","Qh","Qnh","Nh"]
-    Q,Qh,Qnh,Nh = get_equil_data(name,T)
+    Q,Qh,Qnh,Nh = get_equil_data(T,numsub=numtemps)
     data = [Q,Qh,Qnh,Nh]
 
     cwd = os.getcwd()
-    os.chdir(name+"/Mut_0")
+    #os.chdir(name+"/Mut_0")
     path = T+"_maps"
     if os.path.exists(path) == False:
         print "Creating subdirectory ",path
         os.mkdir(path)
+    ## Testing first on just Q.
     #for i in range(len(data)):
     for i in [0]:
         coord = coords[i]
@@ -295,12 +300,12 @@ def plot_contact_maps(name,T,numtemps):
         ct.equil_contacts_for_states(framestate,numstates,savedir,T,numtemps)
     os.chdir(cwd)
 
-def submit_contact_map_calculator(subdir,T,num,name,walltime="00:40:00"):
-    ''' PBS script to call plot_equil.py to plot 1D and 2D pmfs as well as
-        contact maps as a function of multiple coordinates.'''
+def submit_contact_map_calculator(subdir,T,num,mutnum=0,walltime="00:40:00"):
+    ''' PBS script to call plot_equil.py to plot contact maps as a function
+        of multiple coordinates.'''
     ##   **** NOT DONE YET ***
     maps_pbs = "#!/bin/bash\n"
-    maps_pbs +="#PBS -N maps_"+name+"\n"
+    maps_pbs +="#PBS -N maps_"+subdir+"\n"
     maps_pbs +="#PBS -q serial\n"
     maps_pbs +="#PBS -l nodes=1:ppn=1,walltime=%s\n" % walltime
     maps_pbs +="#PBS -j oe\n"
@@ -310,9 +315,12 @@ def submit_contact_map_calculator(subdir,T,num,name,walltime="00:40:00"):
     maps_pbs +="cd $PBS_O_WORKDIR\n"
     maps_pbs +='python -m model_builder.plot.plot_equil maps --subdir %s --T %s --num %d\n' % (subdir,T,num)
 
-    open("maps.pbs","w").write(energy_pbs)
+    open(subdir+"/Mut_0/maps.pbs","w").write(maps_pbs)
+    cwd = os.getcwd()
+    os.chdir(subdir+"/Mut_0")
     qsub = "qsub maps.pbs"
-    sb.call(qsub.split(),stdout=open("maps.out","w"),stderr=open("pbs.err","w"))
+    sb.call(qsub.split(),stdout=open("maps.out","w"),stderr=open("maps.err","w"))
+    os.chdir(cwd)
 
 
 def plot_equil_data(subdir,T,num,inc=0.003):
@@ -321,18 +329,25 @@ def plot_equil_data(subdir,T,num,inc=0.003):
     #name = "r17"
     #Tf = open(subdir+"/Tf_0/Tf.txt","r").read()[:-1]
     #Tf = "%.2f" % float(Tf)
-    cwd = os.getcwd()
-    for i in range(num):
+
+    ## Plot equilbirium pmfs.
+    print "Plotting equilibrium data for %s at temperature %s" % (subdir,T)
+    #print "  1D pmfs for Q,Qh,Qnh,Nh..."
+    #plot_1D_equil_pmfs(subdir,T,num)
+    #print "  2D pmfs: Qh vs Q; Qh vs Qnh; Nh vs Qnh..."
+    #plot_2D_equil_pmfs(subdir,T,num)
+
+    ## Plot equilibrium contact maps as a function of reactin coords.
+    print "  contact maps as a function of Q,Qh,Qnh,Nh..."
+    submit_contact_map_calculator(subdir,T,num)
+
+    #cwd = os.getcwd()
+    #for i in range(1,num+1):
         #T = float(Tf) + float(Tf)*(inc*i)
         #T = "%.2f" % T
 
-        print "Plotting equilibrium data for %s at temperature %s_%d" % (subdir,T,i)
-        print "  1D pmfs for Q,Qh,Qnh,Nh..."
-        #plot_1D_equil_pmfs(subdir,T)
-        print "  2D pmfs: Qh vs Q; Qh vs Qnh; Nh vs Qnh..."
-        #plot_2D_equil_pmfs(subdir,T)
 
-        print "  contact maps as a function of Q,Qh,Qnh,Nh..."
+        #print "  contact maps as a function of Q,Qh,Qnh,Nh..."
         #os.chdir(subdir+"/Mut_0")
         #submit_contact_map_calculator(subdir,T,num,name)
         #os.chdir(cwd)

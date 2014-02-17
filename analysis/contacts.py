@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-import numpy as np
-import argparse
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import os
+import numpy as np
+import argparse
 
 from coord_util import mol_reader
 
@@ -106,7 +106,7 @@ def contacts_for_states(framestate,numstates,name,cutoff=1.25):
         np.savetxt(name+"_%s.dat" % m,statesprobij[m])
     return statesprobij
 
-def equil_contacts_for_states(framestate,numstates,savedir,T,numtemps,cutoff=1.25):
+def equil_contacts_for_states(framestate,numstates,savedir,Temp,numtemps,cutoff=1.25):
     ''' Calculate contacts given a list of frames to use. This function is to be
         used by other programs. This function is still a little experimental.
     '''
@@ -121,7 +121,7 @@ def equil_contacts_for_states(framestate,numstates,savedir,T,numtemps,cutoff=1.2
     cwd = os.getcwd()
     ## Loop over subdirectories with same temp.
     for tnum in range(1,numtemps+1):
-        T = T+"_"+str(tnum)
+        T = Temp+"_"+str(tnum)
         
         os.chdir(T)
 
