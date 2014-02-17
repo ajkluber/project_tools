@@ -295,7 +295,7 @@ def plot_contact_maps(name,T,numtemps):
         ct.equil_contacts_for_states(framestate,numstates,savedir,T,numtemps)
     os.chdir(cwd)
 
-def submit_contact_map_plotter(subdir,T,num,name,walltime="00:40:00"):
+def submit_contact_map_calculator(subdir,T,num,name,walltime="00:40:00"):
     ''' PBS script to call plot_equil.py to plot 1D and 2D pmfs as well as
         contact maps as a function of multiple coordinates.'''
     ##   **** NOT DONE YET ***
@@ -315,30 +315,27 @@ def submit_contact_map_plotter(subdir,T,num,name,walltime="00:40:00"):
     sb.call(qsub.split(),stdout=open("maps.out","w"),stderr=open("pbs.err","w"))
 
 
-
-def calculate_contact_maps(name,num,inc=0.003):
-
-def plot_equil_data(subdir,num,inc=0.003):
+def plot_equil_data(subdir,T,num,inc=0.003):
     #name = "sh3/1FMK"
     #name = "s6/1RIS"
     #name = "r17"
-    Tf = open(subdir+"/Tf_0/Tf.txt","r").read()[:-1]
-    Tf = "%.2f" % float(Tf)
+    #Tf = open(subdir+"/Tf_0/Tf.txt","r").read()[:-1]
+    #Tf = "%.2f" % float(Tf)
     cwd = os.getcwd()
     for i in range(num):
-        T = float(Tf) + float(Tf)*(inc*i)
+        #T = float(Tf) + float(Tf)*(inc*i)
+        #T = "%.2f" % T
 
-        T = "%.2f" % T
-        print "Plotting equilibrium data for %s at temperature %s" % (subdir,T)
-        print "Plotting 1D pmfs for Q,Qh,Qnh,Nh..."
-        plot_1D_equil_pmfs(subdir,T)
-        print "Plotting 2D pmfs: Qh vs Q; Qh vs Qnh; Nh vs Qnh..."
-        plot_2D_equil_pmfs(subdir,T)
+        print "Plotting equilibrium data for %s at temperature %s_%d" % (subdir,T,i)
+        print "  1D pmfs for Q,Qh,Qnh,Nh..."
+        #plot_1D_equil_pmfs(subdir,T)
+        print "  2D pmfs: Qh vs Q; Qh vs Qnh; Nh vs Qnh..."
+        #plot_2D_equil_pmfs(subdir,T)
 
-        print "Plotting contact maps as a function of Q,Qh,Qnh,Nh..."
-        os.chdir(subdir+"/Mut_0")
-        submit_contact_map_plotter(subdir,T,num,name)
-        os.chdir(cwd)
+        print "  contact maps as a function of Q,Qh,Qnh,Nh..."
+        #os.chdir(subdir+"/Mut_0")
+        #submit_contact_map_calculator(subdir,T,num,name)
+        #os.chdir(cwd)
 
 if __name__ == '__main__':
     main()
