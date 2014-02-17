@@ -111,7 +111,7 @@ def equil_contacts_for_states(framestate,numstates,savedir,Temp,numtemps,cutoff=
         used by other programs. This function is still a little experimental.
     '''
 
-    Native_cryst, Sig, N = get_beadbead_info(path=T+"_1")
+    Native_cryst, Sig, N = get_beadbead_info(path=Temp+"_1")
 
     statesprobij = [ np.zeros((N,N),float) for i in range(numstates) ]
     #accum = [0,0,0]

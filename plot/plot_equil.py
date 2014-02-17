@@ -94,11 +94,11 @@ def plot_2D_equil_pmfs(name,T,num):
     #plt.contour(X,Y,pmf)
     plt.xlim(0,1)
     plt.ylim(0,1)
-    plt.xlabel("$Q$")
-    plt.ylabel("$Q_h$")
-    plt.title("$F(Q,Q_h)$ for "+name+" T="+T)
+    plt.xlabel("$Q$",fontsize="xx-large")
+    plt.ylabel("$Q_h$",fontsize="xx-large")
+    plt.title("$F(Q,Q_h)$ for "+name+" T="+T,fontsize="xx-large")
     cbar = plt.colorbar()
-    cbar.set_label("$F / kT$")
+    cbar.set_label("$F / kT$",fontsize="xx-large")
     #plt.savefig(path+"/Q_Qh_"+T+"_pmf.pdf")
     plt.savefig(path+"/Q_Qh_pmf.pdf")
 
@@ -115,11 +115,11 @@ def plot_2D_equil_pmfs(name,T,num):
     #plt.contour(X,Y,pmf)
     plt.xlim(0,1)
     plt.ylim(0,1)
-    plt.xlabel("$Q_{nh}$")
-    plt.ylabel("$Q_h$")
-    plt.title("$F(Q_{nh},Q_h)$ for "+name+" T="+T)
+    plt.xlabel("$Q_{nh}$",fontsize="xx-large")
+    plt.ylabel("$Q_h$",fontsize="xx-large")
+    plt.title("$F(Q_{nh},Q_h)$ for "+name+" T="+T,fontsize="xx-large")
     cbar = plt.colorbar()
-    cbar.set_label("$F / kT$")
+    cbar.set_label("$F / kT$",fontsize="xx-large")
     #plt.savefig(path+"/Qnh_Qh_"+T+"_pmf.pdf")
     plt.savefig(path+"/Qnh_Qh_pmf.pdf")
 
@@ -136,11 +136,11 @@ def plot_2D_equil_pmfs(name,T,num):
     #plt.contour(X,Y,pmf)
     plt.xlim(0,1)
     plt.ylim(0,1)
-    plt.xlabel("$Q$")
-    plt.ylabel("$Q_{nh}$")
-    plt.title("$F(Q,Q_{nh})$ for "+name)
+    plt.xlabel("$Q$",fontsize="xx-large")
+    plt.ylabel("$Q_{nh}$",fontsize="xx-large")
+    plt.title("$F(Q,Q_{nh})$ for "+name,fontsize="xx-large")
     cbar = plt.colorbar()
-    cbar.set_label("$F / kT$")
+    cbar.set_label("$F / kT$",fontsize="xx-large")
     #plt.savefig(path+"/Q_Qnh_"+T+"_pmf.pdf")
     plt.savefig(path+"/Q_Qnh_pmf.pdf")
 
@@ -157,11 +157,11 @@ def plot_2D_equil_pmfs(name,T,num):
     #plt.contour(X,Y,pmf)
     plt.xlim(0,1)
     plt.ylim(0,1)
-    plt.xlabel("$Q_{nh}$")
-    plt.ylabel("$N_{h}$")
-    plt.title("$F(Q_{nh},N_{h})$ for "+name)
+    plt.xlabel("$Q_{nh}$",fontsize="xx-large")
+    plt.ylabel("$N_{h}$",fontsize="xx-large")
+    plt.title("$F(Q_{nh},N_{h})$ for "+name,fontsize="xx-large")
     cbar = plt.colorbar()
-    cbar.set_label("$F / kT$")
+    cbar.set_label("$F / kT$",fontsize="xx-large")
     #plt.savefig(path+"/Qnh_Nh_"+T+"_pmf.pdf")
     plt.savefig(path+"/Qnh_Nh_pmf.pdf")
 
@@ -210,9 +210,9 @@ def plot_1D_equil_pmfs(name,T,num):
 
     plt.figure()
     plt.plot(binsq[1:]/max(binsq),pmfq)
-    plt.xlabel("$Q$")
-    plt.ylabel("$F(Q) / kT$")
-    plt.title("$F(Q)$ for "+name+" $T_f=%s$" % T)
+    plt.xlabel("$Q$",fontsize="xx-large")
+    plt.ylabel("$F(Q) / kT$",fontsize="xx-large")
+    plt.title("$F(Q)$ for "+name+" $T_f=%s$" % T,fontsize="xx-large")
     plt.ylim(0,6)
     plt.xlim(0,1)
     #plt.savefig(path+"/Q_pmf_"+name+".pdf")
@@ -221,9 +221,9 @@ def plot_1D_equil_pmfs(name,T,num):
 
     plt.figure()
     plt.plot(binsqh[1:]/max(binsqh),pmfqh)
-    plt.xlabel("$Q_h$")
-    plt.ylabel("$F(Q_h) / kT$")
-    plt.title("$F(Q_h)$ for "+name+" $T_f=%s$" % T)
+    plt.xlabel("$Q_h$",fontsize="xx-large")
+    plt.ylabel("$F(Q_h) / kT$",fontsize="xx-large")
+    plt.title("$F(Q_h)$ for "+name+" $T_f=%s$" % T,fontsize="xx-large")
     plt.ylim(0,6)
     plt.xlim(0,1)
     #plt.savefig(path+"/Qh_pmf_"+name+".pdf")
@@ -232,9 +232,9 @@ def plot_1D_equil_pmfs(name,T,num):
 
     plt.figure()
     plt.plot(binsqnh[1:]/max(binsqnh),pmfqnh)
-    plt.xlabel("$Q_{nh}$")
-    plt.ylabel("$F(Q_{nh}) / kT$")
-    plt.title("$F(Q_{nh})$ for "+name+" $T_f=%s$" % T)
+    plt.xlabel("$Q_{nh}$",fontsize="xx-large")
+    plt.ylabel("$F(Q_{nh}) / kT$",fontsize="xx-large")
+    plt.title("$F(Q_{nh})$ for "+name+" $T_f=%s$" % T,fontsize="xx-large")
     plt.ylim(0,6)
     plt.xlim(0,1)
     #plt.savefig(path+"/Qnh_pmf_"+name+".pdf")
@@ -243,9 +243,9 @@ def plot_1D_equil_pmfs(name,T,num):
 
     plt.figure()
     plt.plot(binsnh[1:]/max(binsnh),pmfnh)
-    plt.xlabel("$N_{h}$")
-    plt.ylabel("$F(N_{h}) / kT$")
-    plt.title("$F(N_{h})$ for "+name+" $T_f=%s$" % T)
+    plt.xlabel("$N_{h}$",fontsize="xx-large")
+    plt.ylabel("$F(N_{h}) / kT$",fontsize="xx-large")
+    plt.title("$F(N_{h})$ for "+name+" $T_f=%s$" % T,fontsize="xx-large")
     plt.ylim(0,6)
     plt.xlim(0,1)
     #plt.savefig(path+"/Qnh_pmf_"+name+".pdf")
@@ -329,6 +329,7 @@ def plot_equil_data(subdir,T,num,inc=0.003):
     #name = "r17"
     #Tf = open(subdir+"/Tf_0/Tf.txt","r").read()[:-1]
     #Tf = "%.2f" % float(Tf)
+    coord = "Nh"
 
     ## Plot equilbirium pmfs.
     print "Plotting equilibrium data for %s at temperature %s" % (subdir,T)
@@ -338,8 +339,8 @@ def plot_equil_data(subdir,T,num,inc=0.003):
     #plot_2D_equil_pmfs(subdir,T,num)
 
     ## Plot equilibrium contact maps as a function of reactin coords.
-    print "  contact maps as a function of Q,Qh,Qnh,Nh..."
-    submit_contact_map_calculator(subdir,T,num)
+    #print "  contact maps as a function of Q,Qh,Qnh,Nh..."
+    #submit_contact_map_calculator(subdir,T,num)
 
     #cwd = os.getcwd()
     #for i in range(1,num+1):
