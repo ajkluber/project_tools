@@ -316,7 +316,7 @@ def submit_run(jobname,walltime="23:00:00",queue="serial"):
     rst_string +="#PBS -o out \n"
     rst_string +="#PBS -e err \n"
     rst_string +="### Job Name (max 15 chars.) \n"
-    rst_string +="#PBS -N %s \n\n" % jobname + "rst"
+    rst_string +="#PBS -N %s_rst \n\n" % jobname
     rst_string +="cd $PBS_O_WORKDIR\n"
     rst_string +="mdrun -nt 1 -s topol.tpr -cpi state.cpt"
 

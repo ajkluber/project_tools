@@ -59,12 +59,16 @@ def make_all_mutations():
     mut_res = [ mutation_data[i].split()[2] for i in range(len(mutation_data)) ]
 
     for i in range(len(mut_indx)):
-        print "Performing mutation: %s%s%s" % (wt_res[i],mut_indx[i],mut_res[i])
 
-        respos = mut_indx[i]
-        restyp = residue_three_letter_code(mut_res[i])
         saveas = wt_res[i]+mut_indx[i]+mut_res[i]+".pdb"
-        modeller_mutate_pdb(modelname,respos,restyp,saveas)
+        if os.path.exists(saveas) == False:
+            print "Performing mutation: %s%s%s" % (wt_res[i],mut_indx[i],mut_res[i])
+
+            respos = mut_indx[i]
+            restyp = residue_three_letter_code(mut_res[i])
+            saveas = wt_res[i]+mut_indx[i]+mut_res[i]+".pdb"
+            modeller_mutate_pdb(modelname,respos,restyp,saveas)
+        
 
 
 def modeller_mutate_pdb(modelname,respos,restyp,saveas,chain='A'):

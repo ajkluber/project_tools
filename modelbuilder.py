@@ -313,6 +313,7 @@ def main():
     new_parser.add_argument('--dryrun', action='store_true', help='Add this option for dry run. No simulations started.')
     new_parser.add_argument('--R_CD', type=float, help='Optional specific ratio of contact to dihedral energy.')
     new_parser.add_argument('--cutoff', type=float, help='Optional cutoff for heavy atom determination of native contacts.')
+    new_parser.add_argument('--disulfides', type=int, nargs='+', help='Optional pairs of disulfide linked residues.')
 
     ## Checking on a simulation project.
     run_parser = sp.add_parser('continue')

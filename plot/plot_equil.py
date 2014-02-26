@@ -36,10 +36,17 @@ def main():
     map_parser.add_argument('--num', type=int, required=True, help='Number of temperature')
     map_parser.add_argument('--subdir', type=str, required=True, help='Directory holding Mut_0')
 
+    TS_parser = sp.add_parser('TS')
+    TS_parser.add_argument('--T', type=str, required=True, help='Temperature')
+    TS_parser.add_argument('--num', type=int, required=True, help='Number of temperature')
+    TS_parser.add_argument('--subdir', type=str, required=True, help='Directory holding Mut_0')
+    TS_parser.add_argument('--Qbrackets', type=float, nargs="+", required=True, help='Values of Q that bracket the TS region.')
     args = parser.parse_args()
     
     if args.action == 'maps':
         plot_contact_maps(args.subdir,args.T,args.num)
+    elif args.action == "TS":
+        plot_TS_contact_map(args.subdir,args.T,args.num,args.Qbrackets)
 
 def get_equil_data(T,path=".",numsub=3):
     ''' Accumulate data from equilibrium temperature directories.'''
@@ -252,6 +259,50 @@ def plot_1D_equil_pmfs(name,T,num):
     #plt.savefig(path+"/Nh_pmf_"+T+".pdf")
     plt.savefig(path+"/Nh_pmf.pdf")
 
+def plot_TS_contact_map(name,T,numtemps,brackets):
+    ''' Plot contact maps as a function of several reaction coordinates. '''
+
+    coords = ["Q","Qh","Qnh","Nh"]
+    Q,Qh,Qnh,Nh = get_equil_data(T,numsub=numtemps)
+    data = [Q,Qh,Qnh,Nh]
+    bins = np.array(brackets)
+
+    cwd = os.getcwd()
+    #os.chdir(name+"/Mut_0")
+    path = T+"_maps"
+    if os.path.exists(path) == False:
+        print "Creating subdirectory ",path
+        os.mkdir(path)
+    ## Testing first on just Q.
+    #for i in range(len(data)):
+    for i in [0]:
+        coord = coords[i]
+        datum = data[i]
+        #n, bins = np.histogram(datum,bins=10)
+        print "Calculating transition state contact map"
+        print "Temperature:   ",T
+        print "Bin edges:     ",bins
+
+        framestate = -1*np.ones(len(datum),int)
+        tempstates = [ -1*np.ones(len(datum),int) for j in range(len(bins)-1) ]
+        numstates = len(bins)-1  
+        ## Assign each frame to a bin. Works.
+        for n in range(len(datum)):
+            if (bins[0] <= datum[n] <= bins[1]):
+                framestate[n] = 0
+                tempstates[i][n] = 0
+
+        print framestate
+
+        savedir = path+"/"+coord+"_TS_map"
+        if os.path.exists(savedir) == False:
+            os.mkdir(savedir)
+        np.savetxt(savedir+"/counts.dat",np.array([list(framestate).count(1)]))
+        np.savetxt(savedir+"/bins.dat",bins)
+
+        ct.equil_contacts_for_states(framestate,numstates,savedir,T,numtemps)
+    os.chdir(cwd)
+
 def plot_contact_maps(name,T,numtemps):
     ''' Plot contact maps as a function of several reaction coordinates. '''
 
@@ -270,9 +321,9 @@ def plot_contact_maps(name,T,numtemps):
     for i in [0]:
         coord = coords[i]
         datum = data[i]
-        n, bins = np.histogram(datum,bins=10)
+        counts, bins = np.histogram(datum,bins=10)
         print "Temperature:   ",T
-        print "Bin occupancy: ",n
+        print "Bin occupancy: ",counts
         print "Bin edges:     ",bins
 
         framestate = np.zeros(len(datum),int)
@@ -280,10 +331,10 @@ def plot_contact_maps(name,T,numtemps):
         numstates = len(bins)-1  
         ## Assign each frame to a bin. Works.
         for n in range(len(datum)):
-            for i in range(numstates):
-                if (bins[i] <= datum[n] < datum[i+1]):
-                    framestate[n] = i
-                    tempstates[i][n] = i
+            for k in range(numstates):
+                if (bins[k] <= datum[n] < datum[k+1]):
+                    framestate[n] = k
+                    tempstates[k][n] = k
 
         print framestate
         if list(framestate).count(-1) != 0:
@@ -294,7 +345,7 @@ def plot_contact_maps(name,T,numtemps):
         
         if os.path.exists(savedir) == False:
             os.mkdir(savedir)
-        np.savetxt(savedir+"/counts.dat",bins)
+        np.savetxt(savedir+"/counts.dat",counts)
         np.savetxt(savedir+"/bins.dat",bins)
 
         ct.equil_contacts_for_states(framestate,numstates,savedir,T,numtemps)
@@ -322,6 +373,27 @@ def submit_contact_map_calculator(subdir,T,num,mutnum=0,walltime="00:40:00"):
     sb.call(qsub.split(),stdout=open("maps.out","w"),stderr=open("maps.err","w"))
     os.chdir(cwd)
 
+def submit_TS_contact_map_calculator(subdir,T,num,brackets,mutnum=0,walltime="00:40:00"):
+    ''' PBS script to call plot_equil.py to plot contact maps as a function
+        of multiple coordinates.'''
+    ##   **** NOT DONE YET ***
+    TS_pbs = "#!/bin/bash\n"
+    TS_pbs +="#PBS -N TS_"+subdir+"\n"
+    TS_pbs +="#PBS -q serial\n"
+    TS_pbs +="#PBS -l nodes=1:ppn=1,walltime=%s\n" % walltime
+    TS_pbs +="#PBS -j oe\n"
+    TS_pbs +="#PBS -e TS_%s.err\n" % T
+    TS_pbs +="#PBS -o TS_%s.out\n" % T
+    TS_pbs +="#PBS -V\n\n"
+    TS_pbs +="cd $PBS_O_WORKDIR\n"
+    TS_pbs +='python -m model_builder.plot.plot_equil TS --subdir %s --T %s --num %d --Qbrackets %.4f %.4f\n' % (subdir,T,num,brackets[0],brackets[1])
+
+    open(subdir+"/Mut_0/TS.pbs","w").write(TS_pbs)
+    cwd = os.getcwd()
+    os.chdir(subdir+"/Mut_0")
+    qsub = "qsub TS.pbs"
+    sb.call(qsub.split(),stdout=open("TS.out","w"),stderr=open("TS.err","w"))
+    os.chdir(cwd)
 
 def plot_equil_data(subdir,T,num,inc=0.003):
     #name = "sh3/1FMK"
@@ -333,10 +405,10 @@ def plot_equil_data(subdir,T,num,inc=0.003):
 
     ## Plot equilbirium pmfs.
     print "Plotting equilibrium data for %s at temperature %s" % (subdir,T)
-    #print "  1D pmfs for Q,Qh,Qnh,Nh..."
-    #plot_1D_equil_pmfs(subdir,T,num)
-    #print "  2D pmfs: Qh vs Q; Qh vs Qnh; Nh vs Qnh..."
-    #plot_2D_equil_pmfs(subdir,T,num)
+    print "  1D pmfs for Q,Qh,Qnh,Nh..."
+    plot_1D_equil_pmfs(subdir,T,num)
+    print "  2D pmfs: Qh vs Q; Qh vs Qnh; Nh vs Qnh..."
+    plot_2D_equil_pmfs(subdir,T,num)
 
     ## Plot equilibrium contact maps as a function of reactin coords.
     #print "  contact maps as a function of Q,Qh,Qnh,Nh..."
@@ -352,6 +424,10 @@ def plot_equil_data(subdir,T,num,inc=0.003):
         #os.chdir(subdir+"/Mut_0")
         #submit_contact_map_calculator(subdir,T,num,name)
         #os.chdir(cwd)
+
+def plot_transition_states(subdir,T,num,brackets):
+    ''' Just plots the states for defined range of Q.'''
+    submit_TS_contact_map_calculator(subdir,T,num,brackets)
 
 if __name__ == '__main__':
     main()

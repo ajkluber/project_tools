@@ -117,11 +117,13 @@ def calculate_contacts_from_pdb(name):
     sb.call(cmd2,shell=True,stdout=open("cutoff.out","w"),stderr=open("cutoff.err","w"))
 
 
-if __name__ == '__main__':
 
+def calculate_contacts_lost_for_mutants():
+    ''' Calculates the fraction of heavy-atom contact loss between residues i and j
+        for mutant k:  f^k_ij . Must be in mutants directory which holds wild-type 
+        pdb wt.pdb, a file hold mutations information mutations.txt.'''
     ## Start by reading the mutations file. Should be an attribute of System
     ## object.
-#def prep_mutations():
     modelname = 'wt.pdb'
     mutation_data = open("mutations.txt","r").readlines()[1:]
     mut_indx = [ mutation_data[i].split()[0] for i in range(len(mutation_data)) ]
@@ -139,11 +141,14 @@ if __name__ == '__main__':
         sb.call(cmd2,shell=True,stdout=open("cutoff.out","w"),stderr=open("cutoff.err","w"))
 
     ## Use shadow map to create all-atom contact map. For each mutated pdb
-    ## determine the 
+    ## determine the fraction of heavy-atom contacts lost .
     for i in range(len(mut_indx)):
         name = wt_res[i]+mut_indx[i]+mut_res[i]
 
         if os.path.exists(name+".cutoff.contacts") == False:
             calculate_contacts_from_pdb(name)
-        
-        calculate_fraction_contact_loss(name)
+        if os.path.exists("fij_"+name+".dat") == False:
+            calculate_fraction_contact_loss(name)
+
+if __name__ == '__main__':
+    calculate_contacts_lost_for_mutants()
