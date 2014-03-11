@@ -4,7 +4,7 @@ import subprocess as sb
 import time
 import numpy as np
 
-import system
+from systems import system
 import analysis
 import simulation
 import models
@@ -39,15 +39,30 @@ Change:
 
 '''
 
+def print_header():
+
+    print "---------------------------- Model Builder v0.1 ------------------------------"
+    print " Your using model_builder!  A helper module for prepping CG simulations for"
+    print " Gromacs. More coming soon!"
+    print " Version 0.1 "
+    print " Words to live by:"
+    #print "             'If you can calculate it, you should calculate it' - PGW "
+    #print "               'One never notices what has been done; "
+    #print "                one can only see what remains to be done' - Marie Curie "
+    print "  'The best way to have a good idea is to have a lot of ideas' - Linus Pauling"
+    print "---------------------------------- Good Luck! --------------------------------"
+
 def get_args():
     ''' Get command line arguments and check that they are consistent/allowed.
         Maybe also do a cursory check of stored data for the 'continue' option
         to ensure integrity of data. 
     '''
+    print_header()
+
     parser = argparse.ArgumentParser(description='Build a model of a system.')
     sp = parser.add_subparsers(dest='action')
 
-    ## Initializing a new simulation project.
+    ## Options for initializing a new simulation project.
     new_parser = sp.add_parser('new')
     #new_parser.add_argument('--name', type=str, required=True, help='Name of system.')
     new_parser.add_argument('--type', type=str, required=True, help='Choose model type: HetGo, HomGo, DMC')
@@ -60,12 +75,12 @@ def get_args():
     new_parser.add_argument('--cutoff', type=float, help='Optional cutoff for heavy atom determination of native contacts.')
     new_parser.add_argument('--disulfides', type=int, nargs='+', help='Optional pairs of disulfide linked residues.')
 
-    ## Continuing from a previously saved simulation project.
+    ## Options for continuing from a previously saved simulation project.
     run_parser = sp.add_parser('continue')
     run_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to continue',required=True)
     run_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
 
-    ## Manually adding a temperature array.
+    ## Options for manually adding a temperature array.
     add_parser = sp.add_parser('add')
     add_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
     add_parser.add_argument('--temparray', type=int, nargs='+', help='T_initial T_final dT for new temp array',required=True)
@@ -73,11 +88,26 @@ def get_args():
 
     args = parser.parse_args()
 
-    return args
+    if args.action == "new":
+        ## Check if options for model make sense.
+        options = {}
+        options["Model_Code"] = args.type
+        options["Bead_Model"] = args.beads
+        options["Solvent"] = args.solvent
+        options["R_CD"] = args.R_CD
+        options["Disulfides"] = args.disulfides
+        modeloptions = models.check_options(options)
+
+        if args.dryrun != False:
+            modeloptions["Dry_Run"] = True
+        else:
+            modeloptions["Dry_Run"] = False
+
+    return args, modeloptions
 
 
 class ModelBuilder(object):
-    def __init__(self,args):
+    def __init__(self,args,modeloptions):
         ''' Model Initialization.''' 
         self.path = os.getcwd()
         
@@ -95,7 +125,7 @@ class ModelBuilder(object):
             ## This option creates a new project with the specifications given
             ## on the command line. Then saves all that info in a format that 
             ## can be automatically loaded the next time around.
-            self.new_project(args)
+            self.new_project(args,modeloptions)
         elif args.action == 'continue':
             ## project where you don't remember where it left off. Outputs a nice
             ## summary of the state of the simulation.
@@ -128,6 +158,7 @@ class ModelBuilder(object):
 
         System = system.System(args)
         self.load_model_system_info(System)
+        #Models = models.load_models(System.subdirs)
         modelinfo = open(args.subdirs[0]+'/model.info','r').readlines()
         modeltype = modelinfo[3].split()[0]
         Model = models.get_model(modeltype)
@@ -247,12 +278,14 @@ class ModelBuilder(object):
         print "Success"
         
 
-    def new_project(self,args):
+    def new_project(self,args,modeloptions):
         ''' Starting a new simulation project.'''
-        #self.append_log("Project %s started" % args.name)
-        print "Starting a new project..."
+        print "Starting a new simulation project..."
         Model = models.get_model(args.type)
         System = system.System(args)
+        ## Transitioning to using list of Models instead of one singluar Model
+        ## object. 3-10-14 AK
+        # Models = models.new_models(System.subdirs,modeloptions)
         self.create_subdirs(System)
         if args.cutoff != None:
             print "Using cutoff", args.cutoff
@@ -330,8 +363,8 @@ class ModelBuilder(object):
 
 
 def main():
-    args = get_args()
-    ModelBuilder(args)
+    args, modeloptions = get_args()
+    ModelBuilder(args,modeloptions)
 
 if __name__ == '__main__':
     main()

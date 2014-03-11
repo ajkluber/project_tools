@@ -147,12 +147,21 @@ logical flow:
     
     3.  models.py can also check the arguments for a new model for 
         consistency (i.e. all required options present, no options are 
-        contradictory).
+        contradictory). DONE
 
     4.  Put prepare_system into models.py(?) to separate its mess from the
         main logical loop.
 
     This way all the complex option handling can be pushed into models.py
 and system.py.
+
+Late Night Update:
+    1.  Expanded models.py to do thorough checking of inputted options 
+        and creation of Model objects.
+
+    2.  Good idea to also create a parallel list of System objects for
+        each subdirectory. This would clean up a lot of messy looping
+        inside the System class. This would also make the Model and 
+        System objects more symmetric and logical.
 
 ------------------------------------------------------------------------------
