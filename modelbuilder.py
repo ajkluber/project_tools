@@ -3,7 +3,6 @@ import os
 import subprocess as sb
 import time
 import numpy as np
-import cPickle 
 
 import system
 import analysis
@@ -23,7 +22,7 @@ user, so that the user can focus on top-level questions. For this reason any
 function that requires manipulating the data is best moved to a different 
 module. 
     
-To Do:
+Change:
 - Decide on a logging format that can also be read to determine the
   the last successfully finshed step.
   a. Implement command line option to check last step finished.
@@ -37,12 +36,44 @@ To Do:
 
 - Think about analysis tools. Probably should be their own module.
 
-February 15 2014
-Alexander Kluber
-
-
 
 '''
+
+def get_args():
+    ''' Get command line arguments and check that they are consistent/allowed.
+        Maybe also do a cursory check of stored data for the 'continue' option
+        to ensure integrity of data. 
+    '''
+    parser = argparse.ArgumentParser(description='Build a model of a system.')
+    sp = parser.add_subparsers(dest='action')
+
+    ## Initializing a new simulation project.
+    new_parser = sp.add_parser('new')
+    #new_parser.add_argument('--name', type=str, required=True, help='Name of system.')
+    new_parser.add_argument('--type', type=str, required=True, help='Choose model type: HetGo, HomGo, DMC')
+    new_parser.add_argument('--beads', type=str, required=True, help='Choose model beads: CA, CACB.')
+    new_parser.add_argument('--pdbs', type=str, required=True, nargs='+',help='PDBs to start simulations.')
+    new_parser.add_argument('--temparray', type=int, nargs='+',help='Optional initial temp array: Ti Tf dT. Default: 50 350 50')
+    new_parser.add_argument('--solvent', action='store_true', help='Add this option for solvent.')
+    new_parser.add_argument('--dryrun', action='store_true', help='Add this option for dry run. No simulations started.')
+    new_parser.add_argument('--R_CD', type=float, help='Optional specific ratio of contact to dihedral energy.')
+    new_parser.add_argument('--cutoff', type=float, help='Optional cutoff for heavy atom determination of native contacts.')
+    new_parser.add_argument('--disulfides', type=int, nargs='+', help='Optional pairs of disulfide linked residues.')
+
+    ## Continuing from a previously saved simulation project.
+    run_parser = sp.add_parser('continue')
+    run_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to continue',required=True)
+    run_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
+
+    ## Manually adding a temperature array.
+    add_parser = sp.add_parser('add')
+    add_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
+    add_parser.add_argument('--temparray', type=int, nargs='+', help='T_initial T_final dT for new temp array',required=True)
+    add_parser.add_argument('--dryrun', action='store_true', help='Add this option for solvent.')
+
+    args = parser.parse_args()
+
+    return args
 
 
 class ModelBuilder(object):
@@ -50,6 +81,7 @@ class ModelBuilder(object):
         ''' Model Initialization.''' 
         self.path = os.getcwd()
         
+        ## Not used 
         procedure = {'HomGo':["Prepping system","Submitting T_array",
                               "Analyzing T_array"],
                      'HetGo':["Prepping system","Submitting T_array",
@@ -72,7 +104,6 @@ class ModelBuilder(object):
             self.add_temperature_array(args)
 
 
-
     def append_log(self,sub,string):
         open(self.path+'/'+sub+'/modelbuilder.log','a').write(self.append_time_label()+' '+string+'\n')
 
@@ -92,7 +123,7 @@ class ModelBuilder(object):
                 self.append_log(sub,"Creating new subdirectory: %s" % sub)
 
     def add_temperature_array(self,args):
-        ''' Checks where something left off and continues it.'''
+        ''' Adds manually adds a temperature array.'''
         args.pdbs = [ name+'.pdb' for name in  args.subdirs ]
 
         System = system.System(args)
@@ -299,38 +330,7 @@ class ModelBuilder(object):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Build a model of a system.')
-    sp = parser.add_subparsers(dest='action')
-
-    ## Initializing a new simulation project.
-    new_parser = sp.add_parser('new')
-    #new_parser.add_argument('--name', type=str, required=True, help='Name of system.')
-    new_parser.add_argument('--type', type=str, required=True, help='Choose model type: HetGo, HomGo, DMC')
-    new_parser.add_argument('--beads', type=str, required=True, help='Choose model beads: CA, CACB.')
-    new_parser.add_argument('--pdbs', type=str, required=True, nargs='+',help='PDBs to start simulations.')
-    new_parser.add_argument('--temparray', type=int, nargs='+',help='Optional initial temp array: Ti Tf dT. Default: 50 350 50')
-    new_parser.add_argument('--solvent', action='store_true', help='Add this option for solvent.')
-    new_parser.add_argument('--dryrun', action='store_true', help='Add this option for dry run. No simulations started.')
-    new_parser.add_argument('--R_CD', type=float, help='Optional specific ratio of contact to dihedral energy.')
-    new_parser.add_argument('--cutoff', type=float, help='Optional cutoff for heavy atom determination of native contacts.')
-    new_parser.add_argument('--disulfides', type=int, nargs='+', help='Optional pairs of disulfide linked residues.')
-
-    ## Checking on a simulation project.
-    run_parser = sp.add_parser('continue')
-    run_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to continue',required=True)
-    run_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
-
-    ## Manually adding a temperature array.
-    add_parser = sp.add_parser('add')
-    add_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
-    add_parser.add_argument('--temparray', type=int, nargs='+', help='T_initial T_final dT for new temp array',required=True)
-    add_parser.add_argument('--dryrun', action='store_true', help='Add this option for solvent.')
-
-    args = parser.parse_args()
-    
-    
-    #print args
-    #raise SystemExit
+    args = get_args()
     ModelBuilder(args)
 
 if __name__ == '__main__':

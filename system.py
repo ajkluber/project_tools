@@ -107,6 +107,8 @@ class System(object):
                 self.mutation_iteration[i] = int(info_file.readline())
             elif value == "mutation_active_directory":
                 self.mutation_active_directory[i] = info_file.readline()[:-1]
+            elif value == "disulfides":
+                pass
             elif value == "R_CD":
                 temp = info_file.readline()[:-1]
                 if temp == '':

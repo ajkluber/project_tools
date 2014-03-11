@@ -108,6 +108,7 @@ def determine_new_T_array():
         else:
             newTi = lowerT + newdT
             newTf = upperT - newdT
+    print "##DEBUGGING: New Ti, Tf, dT", newTi, newTf, newdT
     return newTi, newTf, newdT
 
 
@@ -226,7 +227,9 @@ def run_temperature_array(Model,System,i,Ti,Tf,dT):
     ''' Run many constant temperature runs over a range of temperatures to
         find the folding temperature. '''
 
+    print "##DEBUGGING: New Ti, Tf, dT", Ti, Tf, dT
     Temperatures = range(Ti,Tf+dT,dT)
+    print "##DEBUGGING: Temperatures ",Temperatures
     System.append_log(System.subdirs[i],"Starting Tf_loop_iteration %d " % System.Tf_iteration[i])
     T_string = ''
     for T in Temperatures:
@@ -248,6 +251,7 @@ def run_temperature_array(Model,System,i,Ti,Tf,dT):
             os.chdir("..")
         else:
             ## Directory exists for this temperature: continue.
+            print "##DEBUGGING: skipped ",T
             continue
     open("T_array.txt","a").write(T_string)
     open("T_array_last.txt","w").write(T_string)

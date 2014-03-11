@@ -108,3 +108,51 @@ Contact Definition for Capturing the Dynamics of Biomolecular Folding and
 Function. J. Phys. Chem. B 2012, 116, 8692–8702.
 
 ------------------------------------------------------------------------------
+Tue Feb 25 19:50:29 CST 2014
+Alexander Kluber
+
+    Implemented MODELLER in combination with ShadowMap to generate mutated
+pbds for all mutations.
+
+    Thinking of splitting model_builder into a package for preparing GROMACS
+input files and a package for running simulation. The motivation is that
+preparing Gromacs inputs is a general need to start messing around with more
+complicated coarse-grain models (e.g. different bead models, as well as
+different backbone potentials).
+
+------------------------------------------------------------------------------
+Mon Mar  3 14:34:51 CST 2014
+Alexander Kluber
+
+    Outlining how to split model_builder functionality between package that
+prepares files and package that runs simulation. Sketching at what needs to 
+be changed.
+
+------------------------------------------------------------------------------
+Mon Mar 10 20:33:59 CDT 2014
+Alexander Kluber
+
+    New ideas to compartementalize Model and System objects from the main
+logical flow:
+
+    1.  Instead of creating 1 Model object for all subdirectories, create
+        a list of Model object which hold the options for each the 
+        corresponding system/subdirectory (e.g. disulfides, R_C/D, etc.)
+
+    2.  Use universal model.info format, i.e. include all fields with 
+        unused options just set blank lines. models.py can read in 
+        model.info and check for consistency between options, output
+        potential warning/error messages, and/or return corresponding
+        Model object.
+    
+    3.  models.py can also check the arguments for a new model for 
+        consistency (i.e. all required options present, no options are 
+        contradictory).
+
+    4.  Put prepare_system into models.py(?) to separate its mess from the
+        main logical loop.
+
+    This way all the complex option handling can be pushed into models.py
+and system.py.
+
+------------------------------------------------------------------------------
