@@ -8,6 +8,7 @@ from systems import system
 import analysis
 import simulation
 import models
+
 '''
 ModelBuilder Class
 
@@ -22,20 +23,12 @@ user, so that the user can focus on top-level questions. For this reason any
 function that requires manipulating the data is best moved to a different 
 module. 
     
-Change:
-- Decide on a logging format that can also be read to determine the
-  the last successfully finshed step.
-  a. Implement command line option to check last step finished.
-  b. Decide on format to store the meta-procedure for each type of 
-    simulation. Probably store this in Model class.
-  c. Implement logging of every important task.  
-
-- Ideas for new command line functionality. 
-
-- Code procedure for running many temperatures.
-
-- Think about analysis tools. Probably should be their own module.
-
+Description:
+    This module contains the logical flow for running simulations for 
+several coarse-grain models.
+    
+See development_notes.txt for chronological list of changes and development
+plan.
 
 '''
 
@@ -45,12 +38,12 @@ def print_header():
     print " Your using model_builder!  A helper module for prepping CG simulations for"
     print " Gromacs. More coming soon!"
     print " Version 0.1 "
-    print " Words to live by:"
-    #print "             'If you can calculate it, you should calculate it' - PGW "
+    print " Words to live by:\n"
+    #print "             'If you can calculate it, you should calculate it' - PGW \n"
     #print "               'One never notices what has been done; "
-    #print "                one can only see what remains to be done' - Marie Curie "
-    print "  'The best way to have a good idea is to have a lot of ideas' - Linus Pauling"
-    print "---------------------------------- Good Luck! --------------------------------"
+    #print "                one can only see what remains to be done' - Marie Curie \n"
+    print "  'The best way to have a good idea is to have a lot of ideas' - Linus Pauling\n"
+    print "-------------------------------- Good Luck! ----------------------------------"
 
 def get_args():
     ''' Get command line arguments and check that they are consistent/allowed.
@@ -68,6 +61,7 @@ def get_args():
     new_parser.add_argument('--type', type=str, required=True, help='Choose model type: HetGo, HomGo, DMC')
     new_parser.add_argument('--beads', type=str, required=True, help='Choose model beads: CA, CACB.')
     new_parser.add_argument('--pdbs', type=str, required=True, nargs='+',help='PDBs to start simulations.')
+    new_parser.add_argument('--contact_energies', type=str, help='HetGo Contact energies: MJ, Bach, MC2004, from file.')
     new_parser.add_argument('--temparray', type=int, nargs='+',help='Optional initial temp array: Ti Tf dT. Default: 50 350 50')
     new_parser.add_argument('--solvent', action='store_true', help='Add this option for solvent.')
     new_parser.add_argument('--dryrun', action='store_true', help='Add this option for dry run. No simulations started.')
@@ -96,6 +90,7 @@ def get_args():
         options["Solvent"] = args.solvent
         options["R_CD"] = args.R_CD
         options["Disulfides"] = args.disulfides
+        options["Contact_Energies"] = args.contact_energies
         modeloptions = models.check_options(options)
 
         if args.dryrun != False:
@@ -282,9 +277,10 @@ class ModelBuilder(object):
         ''' Starting a new simulation project.'''
         print "Starting a new simulation project..."
         Model = models.get_model(args.type)
+        ## Transistioning to using a list of System objects
         System = system.System(args)
-        ## Transitioning to using list of Models instead of one singluar Model
-        ## object. 3-10-14 AK
+        ## Transitioning to using list of Model objects instead of one singluar
+        ## Model object. 3-10-14 AK
         # Models = models.new_models(System.subdirs,modeloptions)
         self.create_subdirs(System)
         if args.cutoff != None:
@@ -305,6 +301,7 @@ class ModelBuilder(object):
         ## The first step depends on the type of model.
         if args.type in ["HomGo","HetGo"]:
             for k in range(len(System.subdirs)):
+                ## To Do: Prepare each Model System pair. 
                 print "Starting the first Tf_loop_iteration..."
                 if args.dryrun == True:
                     print "Dry run complete. Exiting."
@@ -336,7 +333,9 @@ class ModelBuilder(object):
             Model.write_info_file(System.subdirs[i])
 
     def prepare_system(self,Model,System,R_CD=None,cutoff=5.5):
-        ''' Extract all the topology files from Model.'''
+        ''' Extract all the topology files from Model. 
+            SOON TO BE MOVED INTO THE MODEL CLASS.
+        '''
         print "Preparing files..."
         prots_Qref = System.shadow_contacts()
         System.write_Native_pdb_CA()
@@ -360,8 +359,6 @@ class ModelBuilder(object):
         System.topology_files = topology_files
 
     
-
-
 def main():
     args, modeloptions = get_args()
     ModelBuilder(args,modeloptions)
