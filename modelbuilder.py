@@ -97,6 +97,8 @@ def get_args():
             modeloptions["Dry_Run"] = True
         else:
             modeloptions["Dry_Run"] = False
+    else:
+        modeloptions = None
 
     return args, modeloptions
 
@@ -191,6 +193,7 @@ class ModelBuilder(object):
         ''' Checks where something left off and continues it.'''
         args.pdbs = [ name+'.pdb' for name in  args.subdirs ]
 
+        ## Read in options for each directory.
         System = system.System(args)
         self.load_model_system_info(System)
         modelinfo = open(args.subdirs[0]+'/model.info','r').readlines()
