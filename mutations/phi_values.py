@@ -54,13 +54,6 @@ def load_eps_delta_sig_traj(subdir):
     traj = md.load(subdir+"traj.xtc",top=subdir+"Native.pdb")
     print "Computing distances..."
     traj_dist = md.compute_distances(traj,pairs)
-
-    ## Load in a sample fij matrix.
-    print "Loading in fij_F90A.dat"
-    fij_temp = np.loadtxt("r15/mutants/fij_F90A.dat")
-    fij = []
-    for i in range(len(fij_temp)-4):
-        fij.extend(fij_temp[i,i+4:])
     fij = np.array(fij)
 
     return sigij,epsij,deltaij,pairs,traj,traj_dist
@@ -78,6 +71,13 @@ if __name__ == '__main__':
 
     subdir = path+T+"_1/"
     sigij,epsij,deltaij,pairs,traj,traj_dist = load_eps_delta_sig_traj(subdir)
+
+    ## Load in a sample fij matrix.
+    print "Loading in fij_F90A.dat"
+    fij_temp = np.loadtxt("r15/mutants/fij_F90A.dat")
+    fij = []
+    for i in range(len(fij_temp)-4):
+        fij.extend(fij_temp[i,i+4:])
 
     ## Loop over frames to calculate dH.
     print "computing dH and Qij"

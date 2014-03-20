@@ -93,12 +93,17 @@ def get_args():
         options["Contact_Energies"] = args.contact_energies
         modeloptions = models.check_options(options)
 
-        if args.dryrun != False:
-            modeloptions["Dry_Run"] = True
-        else:
-            modeloptions["Dry_Run"] = False
+    elif args.action == "continue":
+        modeloptions = {}
+        pass
+        ##
     else:
-        modeloptions = None
+        modeloptions = {}
+
+    if args.dryrun != False:
+        modeloptions["Dry_Run"] = True
+    else:
+        modeloptions["Dry_Run"] = False
 
     return args, modeloptions
 
@@ -193,6 +198,9 @@ class ModelBuilder(object):
         ''' Checks where something left off and continues it.'''
         args.pdbs = [ name+'.pdb' for name in  args.subdirs ]
 
+        Models = models.load_models(args.subdirs)
+        print Models
+        raise SystemExit
         ## Read in options for each directory.
         System = system.System(args)
         self.load_model_system_info(System)
@@ -220,71 +228,77 @@ class ModelBuilder(object):
                 print "Checking progress for directory:  ", sub
                 print "Last task was %s %s at %s" % (action,task,lasttime) ## DEBUGGING
                 if action == "Starting:":
-                    if task == "Tf_loop_iteration":
-                        print "Starting to check if Tf_loop_iteration completed..."
-                        simulation.Tf_loop.check_completion(System,i,self.append_log)
-                        lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
-                        if action2 == "Finished:":
-                            print "Finished Tf_loop_iteration..."
-                            print "Starting Tf_loop_analysis..."
-                            analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log)
-                    elif task == "Tf_loop_analysis":
-                        print "Starting to check if Tf_loop_analysis completed..."
-                        analysis.Tf_loop.check_completion(System,i,self.append_log)
-                    elif task == "wham_Cv":
-                        print "Starting to check if wham_Cv completed..."
-                        analysis.Tf_loop.continue_wham(System,i,self.append_log)
-                    elif task == "wham_FreeEnergy":
-                        ## Start equilibrium runs.
-                        print "Starting Equil_Tf..."
-                        simulation.Tf_loop.run_equilibrium_simulations(Model,System,i,self.append_log)
-                    elif task == "Equil_Tf":
-                        print "Starting to check if Equil_Tf completed..."
-                        simulation.Tf_loop.check_completion(System,i,self.append_log,equil=True)
-                        lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
-                        if action2 == "Finished:":
-                            print "Finished Equil_Tf_iteration..."
-                            print "Starting Equil_Tf_analysis..."
-                            analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log,equil=True)
-                    elif task == "Equil_Tf_analysis":
-                        print "Starting to check if Equil_Tf_analysis completed..."
-                        analysis.Tf_loop.check_completion(System,i,self.append_log,equil=True)
+                    logical_flowchart_starting(System,Model,i,sub,task)
                 elif action == "Finished:":
-                    if task == "Tf_loop_iteration":
-                        print "Finished Tf_loop_iteration..."
-                        print "Starting Tf_loop_analysis..."
-                        analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log)
-                    elif task == "Tf_loop_analysis":
-                        print "Finished Tf_loop_analysis..."
-                        flag = analysis.Tf_loop.check_if_wham_is_next(System,i,self.append_log)
-                        if flag == 1:
-                            continue
-                        else:
-                            print "Starting Tf_loop_iteration..."
-                            simulation.Tf_loop.folding_temperature_loop(Model,System,i,self.append_log)
-                    elif task == "wham_Cv":
-                        print "Finished wham_Cv..."
-                        print "Stating wham_FreeEnergy..."
-                        analysis.Tf_loop.continue_wham(System,i,self.append_log)
-                    elif task == "Equil_Tf":
-                        print "Starting Equil_Tf_analysis..."
-                        analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log,equil=True)
+                    logical_flowchart_finished(System,Model,i,sub,task)
                 elif action == "Error":
                     pass
 
         self.save_model_system_info(Model,System)
         print "Success"
-        
+
+    def logical_flowchart_finished(System,Model,i,sub,task):
+        if task == "Tf_loop_iteration":
+            print "Finished Tf_loop_iteration..."
+            print "Starting Tf_loop_analysis..."
+            analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log)
+        elif task == "Tf_loop_analysis":
+            print "Finished Tf_loop_analysis..."
+            flag = analysis.Tf_loop.check_if_wham_is_next(System,i,self.append_log)
+            if flag == 1:
+                pass 
+            else:
+                print "Starting Tf_loop_iteration..."
+                simulation.Tf_loop.folding_temperature_loop(Model,System,i,self.append_log)
+        elif task == "wham_Cv":
+            print "Finished wham_Cv..."
+            print "Stating wham_FreeEnergy..."
+            analysis.Tf_loop.continue_wham(System,i,self.append_log)
+        elif task == "Equil_Tf":
+            print "Starting Equil_Tf_analysis..."
+            analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log,equil=True)
+
+    def logical_flowchart_starting(System,Model,i,sub,task):
+        if task == "Tf_loop_iteration":
+            print "Starting to check if Tf_loop_iteration completed..."
+            simulation.Tf_loop.check_completion(System,i,self.append_log)
+            lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
+            if action2 == "Finished:":
+                print "Finished Tf_loop_iteration..."
+                print "Starting Tf_loop_analysis..."
+                analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log)
+        elif task == "Tf_loop_analysis":
+            print "Starting to check if Tf_loop_analysis completed..."
+            analysis.Tf_loop.check_completion(System,i,self.append_log)
+        elif task == "wham_Cv":
+            print "Starting to check if wham_Cv completed..."
+            analysis.Tf_loop.continue_wham(System,i,self.append_log)
+        elif task == "wham_FreeEnergy":
+            ## Start equilibrium runs.
+            print "Starting Equil_Tf..."
+            simulation.Tf_loop.run_equilibrium_simulations(Model,System,i,self.append_log)
+        elif task == "Equil_Tf":
+            print "Starting to check if Equil_Tf completed..."
+            simulation.Tf_loop.check_completion(System,i,self.append_log,equil=True)
+            lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
+            if action2 == "Finished:":
+                print "Finished Equil_Tf_iteration..."
+                print "Starting Equil_Tf_analysis..."
+                analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log,equil=True)
+        elif task == "Equil_Tf_analysis":
+            print "Starting to check if Equil_Tf_analysis completed..."
+            analysis.Tf_loop.check_completion(System,i,self.append_log,equil=True)
 
     def new_project(self,args,modeloptions):
         ''' Starting a new simulation project.'''
         print "Starting a new simulation project..."
-        Model = models.get_model(args.type)
         ## Transistioning to using a list of System objects
         System = system.System(args)
         ## Transitioning to using list of Model objects instead of one singluar
         ## Model object. 3-10-14 AK
-        # Models = models.new_models(System.subdirs,modeloptions)
+        subdirs = [ x[:-4] for x in args.pdbs ]
+        Models = models.new_models(subdirs,modeloptions)
+        Model = Models[0]
         self.create_subdirs(System)
         if args.cutoff != None:
             print "Using cutoff", args.cutoff
