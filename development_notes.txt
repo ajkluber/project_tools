@@ -165,3 +165,41 @@ Late Night Update:
         System objects more symmetric and logical.
 
 ------------------------------------------------------------------------------
+Fri Mar 21 13:03:43 CDT 2014
+Alexander Kluber
+
+    Starting to reorganize the code to compartementalize the Model and System
+objects so that each subdirectory is associated with a [Model,System] pair. 
+To further separate the Model and System functionality:
+
+    1.  Move all calculation functionality from System into Model. e.g.
+        calculation of native contacts, getting atom indices.
+
+    2.  Dealing with bonded interactions can be a submodule of models. e.g.
+        CA_bonded.py, CACB_bonded.py, etc. This will further compartementalize
+        the preparation of bonded versus non-bonded input files.
+
+
+    Fernando and I also thought it would be helpful to have a command line
+tool that spits out all the info we could want to know about a structure. For
+example:
+    Sequence info
+        Sequence
+        Length
+        Number of types of residues (polar, charged, hydrophobic)
+        
+    Secondary Structural info (via STRIDE)
+        Secondary structure assignment
+        Number of and length of secondary structure elements
+ 
+    Tertiary Structural info
+        Number of (local,nonlocal,helical,total) contacts
+        Fraction of local to nonlocal contacts
+        Radius of gyration
+        Contact order   
+        Absolute contact order
+        Estimate folding temperature 
+        Loop length distribution (distribution of seq. separation for contacts)
+        Distance distribution of native state (?)
+
+------------------------------------------------------------------------------

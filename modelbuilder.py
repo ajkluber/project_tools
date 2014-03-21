@@ -4,7 +4,7 @@ import subprocess as sb
 import time
 import numpy as np
 
-from systems import system
+import systems
 import analysis
 import simulation
 import models
@@ -184,7 +184,7 @@ class ModelBuilder(object):
             print "Starting Tf_loop_iteration..."
             simulation.Tf_loop.manually_add_temperature_array(Model,System,i,self.append_log,Ti,Tf,dT)
             
-        self.save_model_system_info(Model,System)
+        self.save_model_system_info(Model,System,subdirs)
         print "Success"
 
     def check_modelbuilder_log(self,sub):
@@ -197,12 +197,19 @@ class ModelBuilder(object):
     def continue_project(self,args):
         ''' Checks where something left off and continues it.'''
         args.pdbs = [ name+'.pdb' for name in  args.subdirs ]
+        subdirs = args.subdirs
 
-        Models = models.load_models(args.subdirs)
-        print Models
-        raise SystemExit
         ## Read in options for each directory.
-        System = system.System(args)
+        Models = models.load_models(subdirs)
+        Model = Models[0]       ## Temporary for backwards compatibility.
+        Systems = systems.load_systems(subdirs)
+        print Systems[0]
+        System = Systems[0]
+        self.save_model_system_info(Model,System,subdirs)
+        raise SystemExit
+
+        ## Old loading Model and System.
+        System = systems.system.System(args)
         self.load_model_system_info(System)
         modelinfo = open(args.subdirs[0]+'/model.info','r').readlines()
         modeltype = modelinfo[3].split()[0]
@@ -215,14 +222,13 @@ class ModelBuilder(object):
         else:
             self.prepare_system(Model,System)
 
-        #print System.__repr__(0) ## DEBUGGING
-        #print Model.__repr__()   ## DEBUGGING
-        #raise SystemExit
-
         if args.dryrun == True:
             print "Dry run complete. Exiting."
         else:
             for i in range(len(System.subdirs)):
+                ## Desired format:
+                ## Model = Models[i]        # Access Model from list
+                ## System = Systems[i]      # Access System from list
                 sub = System.subdirs[i]
                 lasttime,action,task = self.check_modelbuilder_log(sub)
                 print "Checking progress for directory:  ", sub
@@ -234,7 +240,7 @@ class ModelBuilder(object):
                 elif action == "Error":
                     pass
 
-        self.save_model_system_info(Model,System)
+        self.save_model_system_info(Model,System,subdirs)
         print "Success"
 
     def logical_flowchart_finished(System,Model,i,sub,task):
@@ -291,14 +297,21 @@ class ModelBuilder(object):
 
     def new_project(self,args,modeloptions):
         ''' Starting a new simulation project.'''
+        subdirs = [ x[:-4] for x in args.pdbs ]
+
         print "Starting a new simulation project..."
-        ## Transistioning to using a list of System objects
-        System = system.System(args)
         ## Transitioning to using list of Model objects instead of one singluar
         ## Model object. 3-10-14 AK
-        subdirs = [ x[:-4] for x in args.pdbs ]
         Models = models.new_models(subdirs,modeloptions)
         Model = Models[0]
+        ## Transistioning to using a list of System objects
+        Systems = systems.new_systems(subdirs)
+        System = Systems[0]
+        self.save_model_system_info(Model,System,subdirs)
+        raise SystemExit
+
+        System = systems.system.System(args)
+
         self.create_subdirs(System)
         if args.cutoff != None:
             print "Using cutoff", args.cutoff
@@ -310,7 +323,7 @@ class ModelBuilder(object):
             self.prepare_system(Model,System,R_CD=args.R_CD,cutoff=cutoff)
         else:
             self.prepare_system(Model,System,cutoff=cutoff)
-        self.save_model_system_info(Model,System)
+        self.save_model_system_info(Model,System,subdirs)
         self.load_model_system_info(System)
         if args.temparray != None:
             System.initial_T_array = args.temparray
@@ -341,14 +354,15 @@ class ModelBuilder(object):
             #modelname = ''
         #print System.__repr__(i)
 
-    def save_model_system_info(self,Model,System):
+    def save_model_system_info(self,Model,System,subdirs):
         ''' Save the model and system info strings.'''
         print "Saving system.info progress..."
-        for i in range(len(System.subdirs)):
-            System.write_info_file(i)
-            Model.nonbond_param = System.nonbond_params[i]
-            Model.write_info_file(System.subdirs[i])
+        for i in range(len(subdirs)):
+            open(subdirs[i] + "/system.info","w").write(System.__repr__())
+            open(subdirs[i] + "/model.info","w").write(Model.__repr__())
 
+    def new_prepare_system(self,Model,System,R_CD=None,cutoff=5.5):
+        pass
     def prepare_system(self,Model,System,R_CD=None,cutoff=5.5):
         ''' Extract all the topology files from Model. 
             SOON TO BE MOVED INTO THE MODEL CLASS.
