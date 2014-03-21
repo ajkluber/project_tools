@@ -1,5 +1,6 @@
 import argparse
 import os
+import shutil
 import subprocess as sb
 import time
 import numpy as np
@@ -299,6 +300,12 @@ class ModelBuilder(object):
         ''' Starting a new simulation project.'''
         subdirs = [ x[:-4] for x in args.pdbs ]
 
+        for sub in subdirs:
+            if os.path.exists(sub) == False:
+                os.mkdir(sub)
+            else:
+                print "Subdirectory: ", sub, " already exists! just fyi"
+
         print "Starting a new simulation project..."
         ## Transitioning to using list of Model objects instead of one singluar
         ## Model object. 3-10-14 AK
@@ -308,6 +315,9 @@ class ModelBuilder(object):
         Systems = systems.new_systems(subdirs)
         System = Systems[0]
         self.save_model_system_info(Model,System,subdirs)
+
+        self.prepare_systems(Models,Systems)
+
         raise SystemExit
 
         System = systems.system.System(args)
@@ -361,8 +371,18 @@ class ModelBuilder(object):
             open(subdirs[i] + "/system.info","w").write(System.__repr__())
             open(subdirs[i] + "/model.info","w").write(Model.__repr__())
 
-    def new_prepare_system(self,Model,System,R_CD=None,cutoff=5.5):
-        pass
+    def prepare_systems(self,Models,Systems):
+        ''' New style of preparing files: on subdirectory basis.'''
+        for i in range(len(Models)):
+            if os.path.exists(Systems[i].path + "/" + Systems[i].subdir + "/" + Systems[i].subdir + ".pdb") == False:
+                shutil.copy(Systems[i].subdir + ".pdb", Systems[i].subdir)
+            print os.path.exists(Systems[i].path+"/"+Systems[i].subdir+"/Qref_shadow")
+
+            if os.path.exists(Systems[i].path+"/"+Systems[i].subdir+"/Qref_shadow") == False:
+                os.mkdir(Systems[i].path+"/"+Systems[i].subdir+"/Qref_shadow")
+            Models[i].new_prepare_system(Systems[i])
+            raise SystemExit
+
     def prepare_system(self,Model,System,R_CD=None,cutoff=5.5):
         ''' Extract all the topology files from Model. 
             SOON TO BE MOVED INTO THE MODEL CLASS.

@@ -1,5 +1,13 @@
 import newsystem
 
+'''
+Fri Mar 21 16:12:34 CDT 2014
+Alexander Kluber
+
+    This is the start of the new format for the System class. Hopefully
+the cleaning style will enable it to be more.
+'''
+
 def get_system(opts):
     System = newsystem.NewSystem(opts["Subdir"],Tf_it=opts["Tf_Iteration"],
                                 Tf_act_dir=opts["Tf_Active_Directory"],Tf_refine=opts["Tf_Refinements"],
@@ -53,7 +61,7 @@ def load_system(subdir):
     return System
 
 def check_fields(fields):
-    ''' Check the integrity of the system information'''
+    ''' Update names of inputted fields for backward compatibility.'''
 
     print "Checking system information..."
     print fields
@@ -70,14 +78,6 @@ def check_fields(fields):
     for key in fields.keys():
         if key in old_fields.keys():
             fields[old_fields[key]] = fields[key]
-
-#    fields["Path"] = fields["Main_Path"]
-#    fields["Subdir"] = fields["subdir"]
-#    fields["Tf_Iteration"] = fields["Tf_iteration"]
-#    fields["Tf_Active_Directory"] = fields["Tf_active_directory"]
-#    fields["Tf_Refinements"] = fields["Tf_refinements"]
-#    fields["Mut_Iteration"] = fields["mutation_iteration"]
-#    fields["Mut_Active_Directory"] = fields["mutation_active_directory"]
 
     print "Using system information.."
     print fields

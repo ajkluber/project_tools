@@ -130,7 +130,10 @@ class System(object):
 
     def clean_pdbs(self):
         ''' Clean the PDB files by writing only the ATOM lines up until the first
-            TER or END. Doesn't remove any atoms.'''
+            TER or END. Doesn't remove any atoms.
+
+        DEPRECATED. AK 3-20-14
+        '''
         
         for i in range(len(self.pdbs)):
             sub = self.subdirs[i]
@@ -142,6 +145,8 @@ class System(object):
         ''' Create Native.pdb in subdirectory. Currently only for CA. Expand later for
             CACB. PDB fixed-width column format is given by:
         ATOM     44  C   ALA A  11      12.266  21.667  20.517  1.00 28.80           C  
+        
+        DEPRECATED. AK 3-20-14
         '''
         atomid = 1
         first_flag = 0
@@ -171,7 +176,10 @@ class System(object):
 
     def get_atom_indices(self,beadmodel):
         ''' Extract the atom indices for desired atoms. Also get the residue names
-            and the native state coordinates.'''
+            and the native state coordinates.
+
+            SOON TO BE DEPRECATED.
+        '''
         prots_indices = []
         prots_residues = []
         prots_coords = []
@@ -197,7 +205,10 @@ class System(object):
         ''' Call SMOG Shadow jar code to determine the shadow contacts. If 
             the reference matrix Qref_cryst.dat doesn't exist then create 
             and dive into a subdirectory to run shadow map. Then save 
-            Qref_cryst.dat in the parent directory.'''
+            Qref_cryst.dat in the parent directory.
+
+            DEPRECATED
+        '''
 
         self.clean_pdbs()
         cwd = os.getcwd()
@@ -275,14 +286,19 @@ class System(object):
 
     def write_Native_pdb(self,beadmodel):
         ''' Depending on the beadmodel that is input (from Model)
-            write the corresponding Native.pdb '''
+            write the corresponding Native.pdb 
+            SOON TO BE DEPRECATED. AK 3-20-14
+        '''
         if len(beadmodel) == 1 and beadmodel[0] == "CA":
             self.write_Native_pdb_CA()
         elif len(beadmodel) == 2:
             self.write_Native_pdb_CACB()
 
     def write_Native_pdb_CA(self,cutoff=5.5):
-        ''' Write the Native.pdb for CA topology.'''
+        ''' Write the Native.pdb for CA topology.
+        
+            SOON TO BE DEPRECATED. AK 3-20-14
+        '''
         self.native_pdbs = []
         #prots_Qref = []
         #prots_heavy_atoms = []
