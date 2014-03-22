@@ -318,6 +318,8 @@ class ModelBuilder(object):
 
         self.prepare_systems(Models,Systems)
 
+        #print dir(System) ## DEBUGGING
+        #print System.topology_files.keys() ## DEBUGGING
         raise SystemExit
 
         System = systems.system.System(args)
@@ -376,12 +378,12 @@ class ModelBuilder(object):
         for i in range(len(Models)):
             if os.path.exists(Systems[i].path + "/" + Systems[i].subdir + "/" + Systems[i].subdir + ".pdb") == False:
                 shutil.copy(Systems[i].subdir + ".pdb", Systems[i].subdir)
-            print os.path.exists(Systems[i].path+"/"+Systems[i].subdir+"/Qref_shadow")
+            #print os.path.exists(Systems[i].path+"/"+Systems[i].subdir+"/Qref_shadow")     ## DEBUGGING
 
             if os.path.exists(Systems[i].path+"/"+Systems[i].subdir+"/Qref_shadow") == False:
                 os.mkdir(Systems[i].path+"/"+Systems[i].subdir+"/Qref_shadow")
             Models[i].new_prepare_system(Systems[i])
-            raise SystemExit
+            print "Done preparing systems."
 
     def prepare_system(self,Model,System,R_CD=None,cutoff=5.5):
         ''' Extract all the topology files from Model. 

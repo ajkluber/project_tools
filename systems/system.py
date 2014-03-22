@@ -178,7 +178,7 @@ class System(object):
         ''' Extract the atom indices for desired atoms. Also get the residue names
             and the native state coordinates.
 
-            SOON TO BE DEPRECATED.
+            DEPRECATED.
         '''
         prots_indices = []
         prots_residues = []
@@ -253,8 +253,9 @@ class System(object):
         ''' Calculate contact map based on comparing inter-residue heavy atom 
             distances. If two residues that have a sequence separation of 4 or 
             more have a pair of heavy atoms that are separated by less than 5.5
-            Angstroms then those two residues are in contact. SWITCHING TO 
-            SHADOW MAP.'''
+            Angstroms then those two residues are in contact. 
+
+            DEPRECATED.'''
 
         N = len(heavy_atoms)
         D = np.zeros((N,N))
@@ -287,7 +288,7 @@ class System(object):
     def write_Native_pdb(self,beadmodel):
         ''' Depending on the beadmodel that is input (from Model)
             write the corresponding Native.pdb 
-            SOON TO BE DEPRECATED. AK 3-20-14
+            DEPRECATED. AK 3-20-14
         '''
         if len(beadmodel) == 1 and beadmodel[0] == "CA":
             self.write_Native_pdb_CA()
@@ -297,7 +298,7 @@ class System(object):
     def write_Native_pdb_CA(self,cutoff=5.5):
         ''' Write the Native.pdb for CA topology.
         
-            SOON TO BE DEPRECATED. AK 3-20-14
+            DEPRECATED. AK 3-20-14
         '''
         self.native_pdbs = []
         #prots_Qref = []
@@ -348,7 +349,7 @@ class System(object):
         #return prots_Qref
 
     def write_Native_pdb_CACB(self):
-        ''' Write the Native.pdb for CACB topology. '''
+        ''' Write the Native.pdb for CACB topology. DEPRECATED. '''
         for sub in self.subdirs:
             atmid = 1
             resid = 1
@@ -370,5 +371,5 @@ class System(object):
         return nativepdb
 
     def write_info_file(self,i):
-        ''' Writes system.info file in subdirectory. '''
+        ''' Writes system.info file in subdirectory. DEPRECATED '''
         open(self.subdirs[i]+"/system.info","w").write(self.__repr__(i))
