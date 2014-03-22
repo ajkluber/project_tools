@@ -22,7 +22,7 @@ def load_systems(subdirs):
     ''' Create systems from saved options in system.info'''
     Systems = []
     for subdir in subdirs:
-        print "Loading model from subdirectory: ", subdir
+        print "Loading system from subdirectory: ", subdir
         System = load_system(subdir)
         Systems.append(System)
     return Systems
@@ -31,9 +31,10 @@ def new_systems(subdirs):
     ''' Create systems from saved options in system.info'''
     Systems = []
     for subdir in subdirs:
-        print "Loading model from subdirectory: ", subdir
+        print "Creating system for: ", subdir
         System = new_system(subdir)
         Systems.append(System)
+    print "Proceeding...\n"
     return Systems
 
 def load_system(subdir):
@@ -43,7 +44,6 @@ def load_system(subdir):
     line = info_file.readline()
     options = {}
     while line != '':
-        print line
         field = line.split()[1]
         value = info_file.readline()
         if field == "Tf_refinements":
@@ -58,13 +58,15 @@ def load_system(subdir):
             line = info_file.readline()
     options = check_fields(options)
     System = get_system(options)
+    print "Proceeding...\n"
     return System
 
 def check_fields(fields):
     ''' Update names of inputted fields for backward compatibility.'''
 
-    print "Checking system information..."
-    print fields
+    print "Checking system info:"
+    for key in fields.keys():
+        print "  ", key , " = ", fields[key]
 
     ## For backwards compatibility. Convert old names to new names.
     old_fields = { "Main_Path":"Path","subdir":"Subdir",
@@ -79,7 +81,8 @@ def check_fields(fields):
         if key in old_fields.keys():
             fields[old_fields[key]] = fields[key]
 
-    print "Using system information.."
-    print fields
+    print "Using system info:"
+    for key in fields.keys():
+        print "  ", key , " = ", fields[key]
 
     return fields

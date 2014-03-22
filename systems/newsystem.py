@@ -43,8 +43,5 @@ class NewSystem(System):
         reprstring += "%s\n" % self.mutation_iteration
         reprstring += "[ Mut_Active_Directory ]\n"
         reprstring += "%s\n" % self.mutation_active_directory
-
-        reprstring += "[ R_CD ]\n"
-        reprstring += "\n"
         
         return reprstring

@@ -202,26 +202,29 @@ class ModelBuilder(object):
 
         ## Read in options for each directory.
         Models = models.load_models(subdirs)
-        Model = Models[0]       ## Temporary for backwards compatibility.
         Systems = systems.load_systems(subdirs)
-        print Systems[0]
-        System = Systems[0]
+        Model = Models[0]       ## Temporary for backwards compatibility.
+        System = Systems[0]     ## Temporary for backwards compatibility.
+
+        self.prepare_systems(Models,Systems)
         self.save_model_system_info(Model,System,subdirs)
+
         raise SystemExit
 
-        ## Old loading Model and System.
-        System = systems.system.System(args)
-        self.load_model_system_info(System)
-        modelinfo = open(args.subdirs[0]+'/model.info','r').readlines()
-        modeltype = modelinfo[3].split()[0]
-        Model = models.get_model(modeltype)
-        if len(System.R_CD) != 0:
-            if System.R_CD[0] != None:
-                self.prepare_system(Model,System,R_CD=System.R_CD[0])
-            else:
-                self.prepare_system(Model,System)
-        else:
-            self.prepare_system(Model,System)
+        #####   OLD CODE vvvvv
+        #System = systems.system.System(args)
+        #self.load_model_system_info(System)
+        #modelinfo = open(args.subdirs[0]+'/model.info','r').readlines()
+        #modeltype = modelinfo[3].split()[0]
+        #Model = models.get_model(modeltype)
+        #if len(System.R_CD) != 0:
+        #    if System.R_CD[0] != None:
+        #        self.prepare_system(Model,System,R_CD=System.R_CD[0])
+        #    else:
+        #        self.prepare_system(Model,System)
+        #else:
+        #    self.prepare_system(Model,System)
+        #####   OLD CODE ^^^^^
 
         if args.dryrun == True:
             print "Dry run complete. Exiting."
@@ -314,10 +317,10 @@ class ModelBuilder(object):
         ## Transistioning to using a list of System objects
         Systems = systems.new_systems(subdirs)
         System = Systems[0]
-        self.save_model_system_info(Model,System,subdirs)
 
         self.prepare_systems(Models,Systems)
 
+        self.save_model_system_info(Model,System,subdirs)
         #print dir(System) ## DEBUGGING
         #print System.topology_files.keys() ## DEBUGGING
         raise SystemExit
