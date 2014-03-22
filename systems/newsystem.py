@@ -1,4 +1,5 @@
 import os
+import time
 from system import System
 
 
@@ -45,3 +46,8 @@ class NewSystem(System):
         reprstring += "%s\n" % self.mutation_active_directory
         
         return reprstring
+
+    def append_log(self,string):
+        now = time.localtime()
+        now_string = "%s:%s:%s:%s:%s" % (now.tm_year,now.tm_mon,now.tm_mday,now.tm_hour,now.tm_min)
+        logfile = open(self.path+'/'+self.subdir+'/'+self.subdir+'.log','a').write(now_string+' '+string+'\n')

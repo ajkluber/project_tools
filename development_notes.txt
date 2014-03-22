@@ -179,7 +179,6 @@ To further separate the Model and System functionality:
         CA_bonded.py, CACB_bonded.py, etc. This will further compartementalize
         the preparation of bonded versus non-bonded input files.
 
-
     Fernando and I also thought it would be helpful to have a command line
 tool that spits out all the info we could want to know about a structure. For
 example:
@@ -201,5 +200,15 @@ example:
         Estimate folding temperature 
         Loop length distribution (distribution of seq. separation for contacts)
         Distance distribution of native state (?)
+
+------------------------------------------------------------------------------
+Sat Mar 22 18:28:09 CDT 2014
+Alexander Kluber
+
+    Finished tasks of separating Model and System functionality. Refactored
+Model and System generation and included a function to check that inputs are
+consistent with one another. For backwards compatibility system.info and 
+model.info files can be updated to new format using the --dryrun option on the
+command line.
 
 ------------------------------------------------------------------------------

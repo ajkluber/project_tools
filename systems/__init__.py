@@ -80,6 +80,10 @@ def check_fields(fields):
     for key in fields.keys():
         if key in old_fields.keys():
             fields[old_fields[key]] = fields[key]
+        
+    fields["Tf_Iteration"] = int(fields["Tf_Iteration"])
+    fields["Mut_Iteration"] = int(fields["Mut_Iteration"])
+    fields["Tf_Refinements"] = [ int(x) for x in fields["Tf_Refinements"].split() ]
 
     print "Using system info:"
     for key in fields.keys():

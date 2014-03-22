@@ -58,7 +58,6 @@ def get_args():
 
     ## Options for initializing a new simulation project.
     new_parser = sp.add_parser('new')
-    #new_parser.add_argument('--name', type=str, required=True, help='Name of system.')
     new_parser.add_argument('--type', type=str, required=True, help='Choose model type: HetGo, HomGo, DMC')
     new_parser.add_argument('--beads', type=str, required=True, help='Choose model beads: CA, CACB.')
     new_parser.add_argument('--pdbs', type=str, required=True, nargs='+',help='PDBs to start simulations.')
@@ -101,7 +100,6 @@ def get_args():
         modeloptions = options
     else:
         modeloptions = options
-
     
     return args, modeloptions
 
@@ -156,13 +154,19 @@ class ModelBuilder(object):
         ''' Adds manually adds a temperature array.'''
         args.pdbs = [ name+'.pdb' for name in  args.subdirs ]
 
-        System = system.System(args)
-        self.load_model_system_info(System)
+        subdirs = args.subdirs
+        Models = models.load_models(subdirs,dryrun=args.dryrun)
+        Systems = systems.load_systems(subdirs)
+        self.prepare_systems(Models,Systems)
+
+        ## STILL NEED TO UPDATE THIS
+        #System = system.System(args)
+        #self.load_model_system_info(System)
         #Models = models.load_models(System.subdirs)
-        modelinfo = open(args.subdirs[0]+'/model.info','r').readlines()
-        modeltype = modelinfo[3].split()[0]
-        Model = models.get_model(modeltype)
-        self.prepare_system(Model,System)
+        #modelinfo = open(args.subdirs[0]+'/model.info','r').readlines()
+        #modeltype = modelinfo[3].split()[0]
+        #Model = models.get_model(modeltype)
+        #self.prepare_system(Model,System)
 
         Ti = args.temparray[0] 
         Tf = args.temparray[1] 
@@ -173,14 +177,16 @@ class ModelBuilder(object):
         #print type(Ti), type(Tf), type(dT)
         #raise SystemExit
 
-        for i in range(len(System.subdirs)):
-            sub = System.subdirs[i]
+        for i in range(len(subdirs)):
+            sub = subdirs[i]
+            Model = Models[i]
+            System = Systems[i]
             lasttime,action,task = self.check_modelbuilder_log(sub)
             print "Checking progress for directory:  ", sub
             print "Last task was %s %s at %s" % (action,task,lasttime) ## DEBUGGING
             print "Manually adding temperature array Ti=%d Tf=%d dT=%d" % (Ti,Tf,dT)
             print "Starting Tf_loop_iteration..."
-            simulation.Tf_loop.manually_add_temperature_array(Model,System,i,self.append_log,Ti,Tf,dT)
+            simulation.Tf_loop.manually_add_temperature_array(Model,System,self.append_log,Ti,Tf,dT)
             
         self.save_model_system_info(Model,System,subdirs)
         print "Success"
@@ -198,107 +204,85 @@ class ModelBuilder(object):
         subdirs = args.subdirs
         Models = models.load_models(subdirs,dryrun=args.dryrun)
         Systems = systems.load_systems(subdirs)
-        Model = Models[0]       ## Temporary for backwards compatibility.
-        System = Systems[0]     ## Temporary for backwards compatibility.
-
         self.prepare_systems(Models,Systems)
-
-        self.save_model_system_info(Model,System,subdirs)
-
-        raise SystemExit
-
-        #####   OLD CODE vvvvv
-        #System = systems.system.System(args)
-        #self.load_model_system_info(System)
-        #modelinfo = open(args.subdirs[0]+'/model.info','r').readlines()
-        #modeltype = modelinfo[3].split()[0]
-        #Model = models.get_model(modeltype)
-        #if len(System.R_CD) != 0:
-        #    if System.R_CD[0] != None:
-        #        self.prepare_system(Model,System,R_CD=System.R_CD[0])
-        #    else:
-        #        self.prepare_system(Model,System)
-        #else:
-        #    self.prepare_system(Model,System)
-        #####   OLD CODE ^^^^^
 
         if args.dryrun == True:
             print "  Dry run complete. Saving and Exiting."
         else:
-            for i in range(len(System.subdirs)):
-                ## Desired format:
-                ## Model = Models[i]        # Access Model from list
-                ## System = Systems[i]      # Access System from list
-                subdir = System.subdirs[i]
+            for i in range(len(subdirs)):
+                Model = Models[i]        
+                System = Systems[i]      
+                subdir = subdirs[i]
+                
                 lasttime,action,task = self.check_modelbuilder_log(subdir)
                 print "Checking progress for directory:  ", subdir
                 print "Last task was %s %s at %s" % (action,task,lasttime) ## DEBUGGING
                 if action == "Starting:":
-                    logical_flowchart_starting(System,Model,i,subdir,task)
+                    self.logical_flowchart_starting(System,Model,subdir,task)
                 elif action == "Finished:":
-                    logical_flowchart_finished(System,Model,i,subdir,task)
+                    self.logical_flowchart_finished(System,Model,subdir,task)
                 elif action == "Error":
                     pass
 
         self.save_model_system_info(Model,System,subdirs)
         print "Success"
 
-    def logical_flowchart_finished(System,Model,i,sub,task):
+    def logical_flowchart_starting(self,System,Model,sub,task):
         if task == "Tf_loop_iteration":
-            print "Finished Tf_loop_iteration..."
-            print "Starting Tf_loop_analysis..."
-            analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log)
-        elif task == "Tf_loop_analysis":
-            print "Finished Tf_loop_analysis..."
-            flag = analysis.Tf_loop.check_if_wham_is_next(System,i,self.append_log)
-            if flag == 1:
-                pass 
-            else:
-                print "Starting Tf_loop_iteration..."
-                simulation.Tf_loop.folding_temperature_loop(Model,System,i,self.append_log)
-        elif task == "wham_Cv":
-            print "Finished wham_Cv..."
-            print "Stating wham_FreeEnergy..."
-            analysis.Tf_loop.continue_wham(System,i,self.append_log)
-        elif task == "Equil_Tf":
-            print "Starting Equil_Tf_analysis..."
-            analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log,equil=True)
-
-    def logical_flowchart_starting(System,Model,i,sub,task):
-        if task == "Tf_loop_iteration":
-            print "Starting to check if Tf_loop_iteration completed..."
-            simulation.Tf_loop.check_completion(System,i,self.append_log)
+            print "Checking if Tf_loop_iteration completed..."
+            simulation.Tf_loop.check_completion(System,self.append_log)
             lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
             if action2 == "Finished:":
                 print "Finished Tf_loop_iteration..."
                 print "Starting Tf_loop_analysis..."
-                analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log)
+                analysis.Tf_loop.analyze_temperature_array(System,self.append_log)
         elif task == "Tf_loop_analysis":
-            print "Starting to check if Tf_loop_analysis completed..."
-            analysis.Tf_loop.check_completion(System,i,self.append_log)
+            print "Checking if Tf_loop_analysis completed..."
+            analysis.Tf_loop.check_completion(System,self.append_log)
         elif task == "wham_Cv":
             print "Starting to check if wham_Cv completed..."
-            analysis.Tf_loop.continue_wham(System,i,self.append_log)
+            analysis.Tf_loop.continue_wham(System,self.append_log)
         elif task == "wham_FreeEnergy":
             ## Start equilibrium runs.
             print "Starting Equil_Tf..."
-            simulation.Tf_loop.run_equilibrium_simulations(Model,System,i,self.append_log)
+            simulation.Tf_loop.run_equilibrium_simulations(Model,System,self.append_log)
         elif task == "Equil_Tf":
             print "Starting to check if Equil_Tf completed..."
-            simulation.Tf_loop.check_completion(System,i,self.append_log,equil=True)
+            simulation.Tf_loop.check_completion(System,self.append_log,equil=True)
             lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
             if action2 == "Finished:":
                 print "Finished Equil_Tf_iteration..."
                 print "Starting Equil_Tf_analysis..."
-                analysis.Tf_loop.analyze_temperature_array(System,i,self.append_log,equil=True)
+                analysis.Tf_loop.analyze_temperature_array(System,self.append_log,equil=True)
         elif task == "Equil_Tf_analysis":
             print "Starting to check if Equil_Tf_analysis completed..."
-            analysis.Tf_loop.check_completion(System,i,self.append_log,equil=True)
+            analysis.Tf_loop.check_completion(System,self.append_log,equil=True)
+
+    def logical_flowchart_finished(self,System,Model,sub,task):
+        if task == "Tf_loop_iteration":
+            print "Finished Tf_loop_iteration..."
+            print "Starting Tf_loop_analysis..."
+            analysis.Tf_loop.analyze_temperature_array(System,self.append_log)
+        elif task == "Tf_loop_analysis":
+            print "Finished Tf_loop_analysis..."
+            flag = analysis.Tf_loop.check_if_wham_is_next(System,self.append_log)
+            if flag == 1:
+                pass 
+            else:
+                print "Starting Tf_loop_iteration..."
+                simulation.Tf_loop.folding_temperature_loop(Model,System,self.append_log)
+        elif task == "wham_Cv":
+            print "Finished wham_Cv..."
+            print "Stating wham_FreeEnergy..."
+            analysis.Tf_loop.continue_wham(System,self.append_log)
+        elif task == "Equil_Tf":
+            print "Starting Equil_Tf_analysis..."
+            analysis.Tf_loop.analyze_temperature_array(System,self.append_log,equil=True)
+
 
     def new_project(self,args,modeloptions):
         ''' Starting a new simulation project.'''
         subdirs = [ x[:-4] for x in args.pdbs ]
-
         for sub in subdirs:
             if os.path.exists(sub) == False:
                 os.mkdir(sub)
@@ -320,23 +304,7 @@ class ModelBuilder(object):
         #print dir(System) ## DEBUGGING
         #print System.topology_files.keys() ## DEBUGGING
 
-        #####   OLD CODE vvvvv
-        #System = systems.system.System(args)
-        #self.create_subdirs(System)
-        #if args.cutoff != None:
-        #    print "Using cutoff", args.cutoff
-        #    cutoff = args.cutoff
-        #else:
-        #    cutoff = 5.5
-        #if args.R_CD != None:
-        #    print "Using R_CD = ",args.R_CD
-        #    self.prepare_system(Model,System,R_CD=args.R_CD,cutoff=cutoff)
-        #else:
-        #    self.prepare_system(Model,System,cutoff=cutoff)
-        #self.save_model_system_info(Model,System,subdirs)
-        #self.load_model_system_info(System)
-        #####   OLD CODE ^^^^^
-
+        ## Not implemented yet.
         if args.temparray != None:
             System.initial_T_array = args.temparray
 
@@ -350,17 +318,12 @@ class ModelBuilder(object):
                 if args.dryrun == True:
                     print "Dry run complete. Exiting."
                 else:
-                    simulation.Tf_loop.new_folding_temperature_loop(Model,System,self.append_log)
-                simulation.Tf_loop.new_folding_temperature_loop(Model,System,self.append_log)
+                    simulation.Tf_loop.folding_temperature_loop(Model,System,self.append_log)
         elif args.type == "DMC":
             pass
 
-        #self.append_log("Analysis T_array")
-        #analysis.analyze_temperature_array(System)
-        #self.append_log("Finished: T_array")
         self.save_model_system_info(Model,System,subdirs)
         print "Success"
-        #raise SystemExit
 
     def load_model_system_info(self,System):
         ''' Save the model and system info strings.'''

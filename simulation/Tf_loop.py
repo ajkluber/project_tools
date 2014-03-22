@@ -17,19 +17,18 @@ Description:
 '''
 
 
-def check_completion(System,i,append_log,equil=False):
+def check_completion(System,append_log,equil=False):
     ''' Checks to see if the previous Tf_loop simulation completed. First 
         checks the desired number of steps in the grompp.mdp file then 
         checks to see if md.log has recorded that number of steps.'''
     cwd = os.getcwd()
     if equil == True:
-        sub = System.subdirs[i]+"/"+System.mutation_active_directory[i]
+        sub = System.subdir+"/"+System.mutation_active_directory
     else:
-        sub = System.subdirs[i]+"/"+System.Tf_active_directory[i]
+        sub = System.subdir+"/"+System.Tf_active_directory
     os.chdir(cwd+"/"+sub)
     tempfile = open("T_array_last.txt","r").readlines()
     temperatures = [ temp[:-1] for temp in tempfile  ]
-    print " Checking simulation completion..."
     error = 0
     for k in range(len(temperatures)):
         tdir = temperatures[k]
@@ -41,9 +40,9 @@ def check_completion(System,i,append_log,equil=False):
         finish_line = "Statistics over " + str(nsteps)
         ## Check if md.log has finished the required number of steps.
         if finish_line in open(tdir+"/md.log","r").read():
-            System.append_log(System.subdirs[i],"  %s finished." % tdir)
+            System.append_log("  %s finished." % tdir)
         else:
-            print "    check %s. simulation did not finish."
+            print "    Check %s simulation did not finish." % tdir
             #print "    Cannot continue with errors."
             ## Try to restart the run if possible.
             if os.path.exists(tdir+"/rst.pbs"):
@@ -51,27 +50,27 @@ def check_completion(System,i,append_log,equil=False):
                 qrst = "qsub rst.pbs"
                 sb.call(qrst.split(),stdout=open("rst.out","w"),stderr=open("rst.err","w"))
                 os.chdir(cwd+"/"+sub)
-                System.append_log(System.subdirs[i],"  %s did not finish. restarting" % tdir)
+                System.append_log("  %s did not finish. restarting" % tdir)
                 print "  %s did not finish. Restarting: submitting rst.pbs. " % tdir
             else:
-                System.append_log(System.subdirs[i],"  %s did not finish. did not find a rst.pbs. skipping." % tdir)
+                System.append_log("  %s did not finish. did not find a rst.pbs. skipping." % tdir)
             error = 1
 
     if error == 1:
-        print "    Cannot continue until simulations complete. Check if all unfinished runs were restarted properly."
+        print "  Cannot continue until simulations complete. Check if all unfinished runs were restarted properly."
         pass 
     else:
         if equil == True:
-            append_log(System.subdirs[i],"Finished: Equil_Tf")
+            append_log(System.subdir,"Finished: Equil_Tf")
         else:
-            append_log(System.subdirs[i],"Finished: Tf_loop_iteration")
-    System.error[i] = error
+            append_log(System.subdir,"Finished: Tf_loop_iteration")
+    System.error = error
     os.chdir(cwd)
 
 def determine_new_T_array():
     ''' Find the temperatures which bracket the folding temperature.
         This takes the temperatures at which the average fraction of
-        native contacts falls below 0.5 as bracketing the folding 
+        nonhelical contacts falls below 0.5 as bracketing the folding 
         temperature. A more complicated calculation is probably 
         needed for more complicated systems (proteins with intermediates)'''
     temps = open("T_array_last.txt","r").readlines()
@@ -84,7 +83,7 @@ def determine_new_T_array():
     ## fraction of native contacts goes from greater than 0.5 to less
     ## than 0.5.
     for tdir in temperatures:
-        Q = np.loadtxt(tdir+"/Qprob.dat")
+        Q = np.loadtxt(tdir+"/Qnhprob.dat")
         avgQ = np.mean(Q[len(Q)/2:])
         if avgQ > Q[0]/2:
             lowerT = int(tdir.split("_")[0])
@@ -111,7 +110,7 @@ def determine_new_T_array():
     print "##DEBUGGING: New Ti, Tf, dT", newTi, newTf, newdT
     return newTi, newTf, newdT
 
-def new_folding_temperature_loop(Model,System,append_log):
+def folding_temperature_loop(Model,System,append_log):
     ''' The "folding temperature loop" is one of the several large-scale 
         logical structures in modelbuilder. It is entered anytime we want
         to determine the folding temperature. This could be when we have
@@ -127,35 +126,13 @@ def new_folding_temperature_loop(Model,System,append_log):
     ## Check to see if the folding temperature has been found. If yes, then continue.
     if (not os.path.exists(sub+"/Tf.txt")):
         os.chdir(sub)
-        new_folding_temperature_loop_extension(Model,System,append_log)
+        folding_temperature_loop_extension(Model,System,append_log)
     else:
         ## Folding temperature has been found. Continuing.
         pass
     os.chdir(cwd)
 
-def folding_temperature_loop(Model,System,k,append_log):
-    ''' The "folding temperature loop" is one of the several large-scale 
-        logical structures in modelbuilder. It is entered anytime we want
-        to determine the folding temperature. This could be when we have
-        started a new project, refined the paramters, or returned to a 
-        project in progress. The folding temperature loop successively 
-        narrows in on the folding temperature.'''
-
-    cwd = os.getcwd()
-    sub = System.path +"/"+ System.subdirs[k] +"/"+ System.Tf_active_directory[k]
-    #print sub  ## DEBUGGING
-    if (not os.path.exists(sub)):
-        os.mkdir(sub)
-    ## Check to see if the folding temperature has been found. If yes, then continue.
-    if (not os.path.exists(sub+"/Tf.txt")):
-        os.chdir(sub)
-        folding_temperature_loop_extension(Model,System,k,append_log)
-    else:
-        ## Folding temperature has been found. Continuing.
-        pass
-    os.chdir(cwd)
-
-def new_folding_temperature_loop_extension(Model,System,append_log):
+def folding_temperature_loop_extension(Model,System,append_log):
     ''' This is for doing an additional loop in the Tf_loop. It either starts
         an initial temperature array or refines the temperature range according
         to previous data. '''
@@ -167,97 +144,66 @@ def new_folding_temperature_loop_extension(Model,System,append_log):
             Tf = System.initial_T_array[1]
             dT = System.initial_T_array[2]
         else:
-            Ti = 50; Tf = 200; dT = 50
+            Ti = 128; Tf = 168; dT = 2  ## RESET
     else:
         ## Use previous range to determine new range. 
         Ti, Tf, dT = determine_new_T_array()
         System.Tf_refinements[System.Tf_iteration] += 1
     print "  Running temperature array: T_initial = %.2f   T_final = %.2f   dT = %.2f " % (Ti,Tf,dT)
-    new_run_temperature_array(Model,System,Ti,Tf,dT)
+    run_temperature_array(Model,System,Ti,Tf,dT)
     append_log(System.subdir,"Submitting T_array iteration %d ; refinement %d" % \
                     (System.Tf_iteration,System.Tf_refinements[System.Tf_iteration]))
     append_log(System.subdir,"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
     append_log(System.subdir,"Starting: Tf_loop_iteration")
 
-def folding_temperature_loop_extension(Model,System,k,append_log):
-    ''' This is for doing an additional loop in the Tf_loop. It either starts
-        an initial temperature array or refines the temperature range according
-        to previous data. '''
-    ## Check to see if a previous temperature range was used.
-    if (not os.path.exists("T_array_last.txt")):
-        ## For initial exploration use very broad temperature increments.
-        if System.initial_T_array != None:
-            Ti = System.initial_T_array[0]
-            Tf = System.initial_T_array[1]
-            dT = System.initial_T_array[2]
-        else:
-            Ti = 50; Tf = 200; dT = 50
-        append_log(System.subdirs[k],"Submitting T_array iteration %d ; refinement %d" % \
-                        (System.Tf_iteration[k],System.Tf_refinements[k][System.Tf_iteration[k]]))
-        append_log(System.subdirs[k],"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
-        run_temperature_array(Model,System,k,Ti,Tf,dT)
-        append_log(System.subdirs[k],"Starting: Tf_loop_iteration")
-    else:
-        ## Use previous range to determine new range. 
-        newTi, newTf, newdT = determine_new_T_array()
-        System.Tf_refinements[k][System.Tf_iteration[k]] += 1
-        run_temperature_array(Model,System,k,newTi,newTf,newdT)
-        append_log(System.subdirs[k],"Submitting T_array iteration %d ; refinement %d" % \
-                        (System.Tf_iteration[k],System.Tf_refinements[k][System.Tf_iteration[k]]))
-        append_log(System.subdirs[k],"  Ti = %d , Tf = %d , dT = %d" % (newTi, newTf, newdT))
-        append_log(System.subdirs[k],"Starting: Tf_loop_iteration")
-
-def manually_add_temperature_array(Model,System,k,append_log,Ti,Tf,dT):
+def manually_add_temperature_array(Model,System,append_log,Ti,Tf,dT):
     ''' To manually set the next temperature array.'''
     cwd = os.getcwd()
-    sub = System.path +"/"+ System.subdirs[k] +"/"+ System.Tf_active_directory[k]
+    sub = System.path+"/"+ System.subdir+"/"+System.Tf_active_directory
     os.chdir(sub)
-
-    System.Tf_refinements[k][System.Tf_iteration[k]] += 1
-    append_log(System.subdirs[k],"Submitting T_array iteration %d ; refinement %d" % \
-                (System.Tf_iteration[k],System.Tf_refinements[k][System.Tf_iteration[k]]))
-    append_log(System.subdirs[k],"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
-    run_temperature_array(Model,System,k,Ti,Tf,dT)
-    append_log(System.subdirs[k],"Starting: Tf_loop_iteration")
+    System.Tf_refinements[System.Tf_iteration] += 1
+    append_log(System.subdir,"Submitting T_array iteration %d ; refinement %d" % \
+                (System.Tf_iteration,System.Tf_refinements[System.Tf_iteration]))
+    append_log(System.subdir,"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
+    run_temperature_array(Model,System,Ti,Tf,dT)
+    append_log(System.subdir,"Starting: Tf_loop_iteration")
 
     os.chdir(cwd)
 
-def run_equilibrium_simulations(Model,System,i,append_log):
-    ''' Run very long (equilibrium) simulations at the determined folding 
+def run_equilibrium_simulations(Model,System,append_log):
+    ''' Run very long (equilibrium) simulations at the estimated folding 
         temperature.'''
 
-    if System.mutation_active_directory[i] == '':
-        System.mutation_active_directory[i] = 'Mut_0'
-        System.append_log(System.subdirs[i],"Creating mutational directory Mut_0" )
+    if System.mutation_active_directory == '':
+        System.mutation_active_directory = 'Mut_0'
+        System.append_log("Creating mutational directory Mut_0" )
     
     cwd = os.getcwd()
-    mutsub = System.path +"/"+ System.subdirs[i] +"/"+ System.mutation_active_directory[i]
-    Tfsub = System.path +"/"+ System.subdirs[i] +"/"+ System.Tf_active_directory[i]
+    mutsub = System.path+"/"+System.subdir+"/"+System.mutation_active_directory
+    Tfsub = System.path+"/"+System.subdir+"/"+System.Tf_active_directory
     Tf = open(Tfsub+"/Tf.txt","r").read().split()[0]
 
-    System.append_log(System.subdirs[i],"Starting Equil_Tf")
+    System.append_log("Starting Equil_Tf")
 
     if not os.path.exists(mutsub):
         os.mkdir(mutsub)
-
     os.chdir(mutsub)
-
     T_string = ''
-    for n in range(5):
+    for n in range(7):
         #T = "%.2f" % (float(Tf)+float(Tf)*(0.003*(n-1)))
-        T = "%.2f" % (float(Tf)+float(Tf)*(0.003*n))
-
-        for simnum in range(1,5):
+        T = "%.2f" % (float(Tf)+float(Tf)*(0.003*(n-2)))
+        for simnum in range(1,6):
             simpath = T+"_"+str(simnum)
             ## Only start the simulation if directory doesn't exist.
             if (not os.path.exists(simpath)):
                 T_string += "%s\n" % simpath
                 os.mkdir(simpath)
                 os.chdir(simpath)
-                System.append_log(System.subdirs[i],"  running T=%s" % simpath)
+                System.append_log("  running T=%s" % simpath)
                 #np.savetxt("Qref_cryst.dat",System.Qrefs[i],fmt="%1d",delimiter=" ")
                 #print "Number of contacts: ", sum(sum(System.Qrefs[i]))
-                run_constant_temp(Model,System,i,float(T),nsteps=1000000000,walltime="60:00:00",queue="serial_long")
+                print "    Running temperature ", T_string
+                run_constant_temp(Model,System,float(T),nsteps=1000000000,walltime="60:00:00",queue="serial_long")
                 os.chdir("..")
             else:
                 ## Directory exists for this temperature: continue.
@@ -265,7 +211,7 @@ def run_equilibrium_simulations(Model,System,i,append_log):
 
     open("T_array.txt","a").write(T_string)
     open("T_array_last.txt","w").write(T_string)
-    append_log(System.subdirs[i],"Starting: Equil_Tf")
+    append_log(System.subdir,"Starting: Equil_Tf")
     os.chdir(cwd)
 
 def determine_walltime(Model):
@@ -286,15 +232,13 @@ def determine_walltime(Model):
             queue="serial"
     return walltime, queue
 
-def new_run_temperature_array(Model,System,Ti,Tf,dT):
+def run_temperature_array(Model,System,Ti,Tf,dT):
     ''' Run many constant temperature runs over a range of temperatures to
         find the folding temperature. '''
 
+    System.append_log("Starting Tf_loop_iteration %d " % System.Tf_iteration)
     Temperatures = range(Ti,Tf+dT,dT)
-    #print "##DEBUGGING: New Ti, Tf, dT", Ti, Tf, dT
-    #print "##DEBUGGING: Temperatures ",Temperatures
-    System.append_log(System.subdir,"Starting Tf_loop_iteration %d " % System.Tf_iteration)
-
+    ## Run for longer if the protein is really big.
     walltime, queue = determine_walltime(Model)
 
     T_string = ''
@@ -305,14 +249,9 @@ def new_run_temperature_array(Model,System,Ti,Tf,dT):
             T_string += "%d_0\n" % T
             os.mkdir(simpath)
             os.chdir(simpath)
-            System.append_log(System.subdir,"  running T=%d" % T)
-            print "    Running temperature ", T
-            #np.savetxt("Qref_cryst.dat",System.Qrefs[i],fmt="%1d",delimiter=" ")
-            #print "Number of contacts: ", sum(sum(System.Qrefs[i]))
-
-            new_run_constant_temp(Model,System,T,walltime=walltime,queue=queue)
-
-            ## Run for longer if the protein is really big.
+            System.append_log("  running T=%d" % T)
+            print "  Running temperature ", T
+            run_constant_temp(Model,System,T,walltime=walltime,queue=queue)
             os.chdir("..")
         else:
             ## Directory exists for this temperature: continue.
@@ -322,46 +261,12 @@ def new_run_temperature_array(Model,System,Ti,Tf,dT):
     open("T_array_last.txt","w").write(T_string)
     open("Ti_Tf_dT.txt","w").write("%d %d %d" % (Ti, Tf, dT))
 
-def run_temperature_array(Model,System,i,Ti,Tf,dT):
-    ''' Run many constant temperature runs over a range of temperatures to
-        find the folding temperature. '''
-
-    Temperatures = range(Ti,Tf+dT,dT)
-    #print "##DEBUGGING: New Ti, Tf, dT", Ti, Tf, dT
-    #print "##DEBUGGING: Temperatures ",Temperatures
-    System.append_log(System.subdirs[i],"Starting Tf_loop_iteration %d " % System.Tf_iteration[i])
-    T_string = ''
-    for T in Temperatures:
-        simpath = str(T)+"_0"
-        ## Only start the simulation is directory doesn't exist.
-        if (not os.path.exists(simpath)):
-            T_string += "%d_0\n" % T
-            os.mkdir(simpath)
-            os.chdir(simpath)
-            System.append_log(System.subdirs[i],"  running T=%d" % T)
-            #np.savetxt("Qref_cryst.dat",System.Qrefs[i],fmt="%1d",delimiter=" ")
-            #print "Number of contacts: ", sum(sum(System.Qrefs[i]))
-            if (len(System.Qrefs[i]) > 160) and (len(System.Qrefs[i]) < 250):
-                run_constant_temp(Model,System,i,T,walltime="48:00:00",queue="serial_long")
-            elif len(System.Qrefs[i]) > 250:
-                run_constant_temp(Model,System,i,T,walltime="60:00:00",queue="serial_long")
-            else:
-                run_constant_temp(Model,System,i,T)
-            os.chdir("..")
-        else:
-            ## Directory exists for this temperature: continue.
-            print "##DEBUGGING: skipped ",T
-            continue
-    open("T_array.txt","a").write(T_string)
-    open("T_array_last.txt","w").write(T_string)
-    open("Ti_Tf_dT.txt","w").write("%d %d %d" % (Ti, Tf, dT))
-
-def new_run_constant_temp(Model,System,T,nsteps=400000000,walltime="23:00:00",queue="serial"):
+def run_constant_temp(Model,System,T,nsteps=400000000,walltime="23:00:00",queue="serial"):
     ''' Start a constant temperature simulation with Gromacs. First it has
         to write the gromacs files stored in the System object, then it
         calls a function to submit the job.'''
     ## Loading and writing grompp.
-    grompp_mdp = mdp.get_constant_temperature_mdp(Model,T,nsteps=1000000)
+    grompp_mdp = mdp.get_constant_temperature_mdp(Model,T,nsteps=nsteps)
     open("grompp.mdp","w").write(grompp_mdp)
 
     ## Writing topology files.
@@ -383,28 +288,6 @@ def new_run_constant_temp(Model,System,T,nsteps=400000000,walltime="23:00:00",qu
         print "    Dryrun Success! Successfully saved simulation files." 
     else:
         submit_run(jobname,walltime=walltime,queue=queue)
-
-def run_constant_temp(Model,System,k,T,nsteps=400000000,walltime="23:00:00",queue="serial"):
-    ''' Start a constant temperature simulation with Gromacs. First it has
-        to write the gromacs files stored in the System object, then it
-        calls a function to submit the job.'''
-    grompp_mdp = mdp.get_constant_temperature_mdp(Model,T,nsteps=nsteps)
-    for filename in System.topology_files[k].iterkeys():
-        #print "Writing: ", filename    ## DEBUGGING
-        open(filename,"w").write(System.topology_files[k][filename])
-    open("grompp.mdp","w").write(grompp_mdp)
-    open("Native.pdb","w").write(System.native_pdbs[k])
-    for m in range(len(Model.interaction_groups)):
-        tablefile = "table_%s.xvg" % Model.interaction_groups[m]
-        np.savetxt(tablefile,Model.tables[m],fmt="%16.15e",delimiter=" ")
-    np.savetxt("table.xvg",Model.other_table,fmt="%16.15e",delimiter=" ")
-    np.savetxt("Qref_cryst.dat",System.Qrefs[k],fmt="%1d",delimiter=" ")
-    ## Start simulation
-    jobname = System.subdirs[k]+"_"+str(T)
-    if len(System.R_CD) != 0:
-        if type(System.R_CD[k]) == float:
-            jobname += "_Rcd_"+str(System.R_CD[k])
-    submit_run(jobname,walltime=walltime,queue=queue)
     
 def submit_run(jobname,walltime="23:00:00",queue="serial"):
     ''' Executes the constant temperature runs.'''
@@ -452,30 +335,3 @@ def submit_run(jobname,walltime="23:00:00",queue="serial"):
     rst_string +="mdrun -nt 1 -s topol.tpr -cpi state.cpt"
 
     open("rst.pbs","w").write(rst_string)
-
-def tail(f, window=1):
-    ''' Quickly reads last line of long file.'''
-    BUFSIZ = 1024
-    f.seek(0, 2)
-    bytes = f.tell()
-    size = window
-    block = -1
-    data = []
-    while size > 0 and bytes > 0:
-        if (bytes - BUFSIZ > 0):
-            # Seek back one whole BUFSIZ
-            f.seek(block*BUFSIZ, 2)
-            # read BUFFER
-            data.append(f.read(BUFSIZ))
-        else:
-            # file too small, start from begining
-            f.seek(0,0)
-            # only read what was not read
-            data.append(f.read(bytes))
-        linesFound = data[-1].count('\n')
-        size -= linesFound
-        bytes -= BUFSIZ
-        block -= 1
-    return '\n'.join(''.join(data).splitlines()[-window:])
-
-
