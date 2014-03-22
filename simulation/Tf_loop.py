@@ -111,6 +111,27 @@ def determine_new_T_array():
     print "##DEBUGGING: New Ti, Tf, dT", newTi, newTf, newdT
     return newTi, newTf, newdT
 
+def new_folding_temperature_loop(Model,System,append_log):
+    ''' The "folding temperature loop" is one of the several large-scale 
+        logical structures in modelbuilder. It is entered anytime we want
+        to determine the folding temperature. This could be when we have
+        started a new project, refined the paramters, or returned to a 
+        project in progress. The folding temperature loop successively 
+        narrows in on the folding temperature.'''
+
+    cwd = os.getcwd()
+    sub = System.path+"/"+System.subdir+"/"+System.Tf_active_directory
+    #print sub  ## DEBUGGING
+    if (not os.path.exists(sub)):
+        os.mkdir(sub)
+    ## Check to see if the folding temperature has been found. If yes, then continue.
+    if (not os.path.exists(sub+"/Tf.txt")):
+        os.chdir(sub)
+        new_folding_temperature_loop_extension(Model,System,append_log)
+    else:
+        ## Folding temperature has been found. Continuing.
+        pass
+    os.chdir(cwd)
 
 def folding_temperature_loop(Model,System,k,append_log):
     ''' The "folding temperature loop" is one of the several large-scale 
@@ -133,6 +154,30 @@ def folding_temperature_loop(Model,System,k,append_log):
         ## Folding temperature has been found. Continuing.
         pass
     os.chdir(cwd)
+
+def new_folding_temperature_loop_extension(Model,System,append_log):
+    ''' This is for doing an additional loop in the Tf_loop. It either starts
+        an initial temperature array or refines the temperature range according
+        to previous data. '''
+    ## Check to see if a previous temperature range was used.
+    if (not os.path.exists("T_array_last.txt")):
+        ## For initial exploration use very broad temperature increments.
+        if System.initial_T_array != None:
+            Ti = System.initial_T_array[0]
+            Tf = System.initial_T_array[1]
+            dT = System.initial_T_array[2]
+        else:
+            Ti = 50; Tf = 200; dT = 50
+    else:
+        ## Use previous range to determine new range. 
+        Ti, Tf, dT = determine_new_T_array()
+        System.Tf_refinements[System.Tf_iteration] += 1
+    print "  Running temperature array: T_initial = %.2f   T_final = %.2f   dT = %.2f " % (Ti,Tf,dT)
+    new_run_temperature_array(Model,System,Ti,Tf,dT)
+    append_log(System.subdir,"Submitting T_array iteration %d ; refinement %d" % \
+                    (System.Tf_iteration,System.Tf_refinements[System.Tf_iteration]))
+    append_log(System.subdir,"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
+    append_log(System.subdir,"Starting: Tf_loop_iteration")
 
 def folding_temperature_loop_extension(Model,System,k,append_log):
     ''' This is for doing an additional loop in the Tf_loop. It either starts
@@ -223,13 +268,67 @@ def run_equilibrium_simulations(Model,System,i,append_log):
     append_log(System.subdirs[i],"Starting: Equil_Tf")
     os.chdir(cwd)
 
+def determine_walltime(Model):
+    ''' Estimate an efficient walltime.'''
+    Length = len(Model.Qref)
+    if Length < 60:
+        walltime="12:00:00"
+        queue="serial"
+    else:
+        if len(Model.Qref) > 160:
+            if len(Model.Qref) > 250:
+                walltime="60:00:00"
+            else:
+                walltime="48:00:00"
+            queue="serial_long"
+        else:
+            walltime="24:00:00"
+            queue="serial"
+    return walltime, queue
+
+def new_run_temperature_array(Model,System,Ti,Tf,dT):
+    ''' Run many constant temperature runs over a range of temperatures to
+        find the folding temperature. '''
+
+    Temperatures = range(Ti,Tf+dT,dT)
+    #print "##DEBUGGING: New Ti, Tf, dT", Ti, Tf, dT
+    #print "##DEBUGGING: Temperatures ",Temperatures
+    System.append_log(System.subdir,"Starting Tf_loop_iteration %d " % System.Tf_iteration)
+
+    walltime, queue = determine_walltime(Model)
+
+    T_string = ''
+    for T in Temperatures:
+        simpath = str(T)+"_0"
+        ## Only start the simulation is directory doesn't exist.
+        if (not os.path.exists(simpath)):
+            T_string += "%d_0\n" % T
+            os.mkdir(simpath)
+            os.chdir(simpath)
+            System.append_log(System.subdir,"  running T=%d" % T)
+            print "    Running temperature ", T
+            #np.savetxt("Qref_cryst.dat",System.Qrefs[i],fmt="%1d",delimiter=" ")
+            #print "Number of contacts: ", sum(sum(System.Qrefs[i]))
+
+            new_run_constant_temp(Model,System,T,walltime=walltime,queue=queue)
+
+            ## Run for longer if the protein is really big.
+            os.chdir("..")
+        else:
+            ## Directory exists for this temperature: continue.
+            #print "##DEBUGGING: skipped ",T
+            continue
+    open("T_array.txt","a").write(T_string)
+    open("T_array_last.txt","w").write(T_string)
+    open("Ti_Tf_dT.txt","w").write("%d %d %d" % (Ti, Tf, dT))
+
 def run_temperature_array(Model,System,i,Ti,Tf,dT):
     ''' Run many constant temperature runs over a range of temperatures to
         find the folding temperature. '''
 
-    print "##DEBUGGING: New Ti, Tf, dT", Ti, Tf, dT
     Temperatures = range(Ti,Tf+dT,dT)
-    print "##DEBUGGING: Temperatures ",Temperatures
+    #print "##DEBUGGING: New Ti, Tf, dT", Ti, Tf, dT
+    #print "##DEBUGGING: Temperatures ",Temperatures
     System.append_log(System.subdirs[i],"Starting Tf_loop_iteration %d " % System.Tf_iteration[i])
     T_string = ''
     for T in Temperatures:
@@ -256,6 +355,34 @@ def run_temperature_array(Model,System,i,Ti,Tf,dT):
     open("T_array.txt","a").write(T_string)
     open("T_array_last.txt","w").write(T_string)
     open("Ti_Tf_dT.txt","w").write("%d %d %d" % (Ti, Tf, dT))
+
+def new_run_constant_temp(Model,System,T,nsteps=400000000,walltime="23:00:00",queue="serial"):
+    ''' Start a constant temperature simulation with Gromacs. First it has
+        to write the gromacs files stored in the System object, then it
+        calls a function to submit the job.'''
+    ## Loading and writing grompp.
+    grompp_mdp = mdp.get_constant_temperature_mdp(Model,T,nsteps=1000000)
+    open("grompp.mdp","w").write(grompp_mdp)
+
+    ## Writing topology files.
+    for filename in System.topology_files.iterkeys():
+        print "    Writing: ", filename    ## DEBUGGING
+        open(filename,"w").write(System.topology_files[filename])
+
+    ## Writing interaction tables. Writing native contact map.
+    for m in range(len(Model.interaction_groups)):
+        tablefile = "table_%s.xvg" % Model.interaction_groups[m]
+        np.savetxt(tablefile,Model.tables[m],fmt="%16.15e",delimiter=" ")
+    np.savetxt("table.xvg",Model.other_table,fmt="%16.15e",delimiter=" ")
+    np.savetxt("Qref_cryst.dat",Model.Qref,fmt="%1d",delimiter=" ")
+    ## Start simulation
+    jobname = System.subdir+"_"+str(T)
+    if Model.R_CD != None:
+        jobname += "_Rcd_%.2f" % Model.R_CD
+    if Model.dryrun == True:
+        print "    Dryrun Success! Successfully saved simulation files." 
+    else:
+        submit_run(jobname,walltime=walltime,queue=queue)
 
 def run_constant_temp(Model,System,k,T,nsteps=400000000,walltime="23:00:00",queue="serial"):
     ''' Start a constant temperature simulation with Gromacs. First it has

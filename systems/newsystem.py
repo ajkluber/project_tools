@@ -7,7 +7,7 @@ class NewSystem(System):
                  Mut_it=0,Mut_act_dir='Mut_0'):
         self.path = os.getcwd()
         self.subdir = subdir 
-        self.pdb = subdir + ".pdb" 
+        self.pdb = subdir+".pdb" 
         self.error = 0 
 
         self.initial_T_array = None

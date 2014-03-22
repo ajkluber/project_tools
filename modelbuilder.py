@@ -83,9 +83,13 @@ def get_args():
 
     args = parser.parse_args()
 
+    if args.dryrun != False:
+        options = {"Dry_Run":True}
+    else:
+        options = {"Dry_Run":False}
+
     if args.action == "new":
         ## Check if options for model make sense.
-        options = {}
         options["Model_Code"] = args.type
         options["Bead_Model"] = args.beads
         options["Solvent"] = args.solvent
@@ -93,19 +97,12 @@ def get_args():
         options["Disulfides"] = args.disulfides
         options["Contact_Energies"] = args.contact_energies
         modeloptions = models.check_options(options)
-
     elif args.action == "continue":
-        modeloptions = {}
-        pass
-        ##
+        modeloptions = options
     else:
-        modeloptions = {}
+        modeloptions = options
 
-    if args.dryrun != False:
-        modeloptions["Dry_Run"] = True
-    else:
-        modeloptions["Dry_Run"] = False
-
+    
     return args, modeloptions
 
 
@@ -197,16 +194,15 @@ class ModelBuilder(object):
 
     def continue_project(self,args):
         ''' Checks where something left off and continues it.'''
-        args.pdbs = [ name+'.pdb' for name in  args.subdirs ]
-        subdirs = args.subdirs
-
         ## Read in options for each directory.
-        Models = models.load_models(subdirs)
+        subdirs = args.subdirs
+        Models = models.load_models(subdirs,dryrun=args.dryrun)
         Systems = systems.load_systems(subdirs)
         Model = Models[0]       ## Temporary for backwards compatibility.
         System = Systems[0]     ## Temporary for backwards compatibility.
 
         self.prepare_systems(Models,Systems)
+
         self.save_model_system_info(Model,System,subdirs)
 
         raise SystemExit
@@ -227,20 +223,20 @@ class ModelBuilder(object):
         #####   OLD CODE ^^^^^
 
         if args.dryrun == True:
-            print "Dry run complete. Exiting."
+            print "  Dry run complete. Saving and Exiting."
         else:
             for i in range(len(System.subdirs)):
                 ## Desired format:
                 ## Model = Models[i]        # Access Model from list
                 ## System = Systems[i]      # Access System from list
-                sub = System.subdirs[i]
-                lasttime,action,task = self.check_modelbuilder_log(sub)
-                print "Checking progress for directory:  ", sub
+                subdir = System.subdirs[i]
+                lasttime,action,task = self.check_modelbuilder_log(subdir)
+                print "Checking progress for directory:  ", subdir
                 print "Last task was %s %s at %s" % (action,task,lasttime) ## DEBUGGING
                 if action == "Starting:":
-                    logical_flowchart_starting(System,Model,i,sub,task)
+                    logical_flowchart_starting(System,Model,i,subdir,task)
                 elif action == "Finished:":
-                    logical_flowchart_finished(System,Model,i,sub,task)
+                    logical_flowchart_finished(System,Model,i,subdir,task)
                 elif action == "Error":
                     pass
 
@@ -312,53 +308,59 @@ class ModelBuilder(object):
         print "Starting a new simulation project..."
         ## Transitioning to using list of Model objects instead of one singluar
         ## Model object. 3-10-14 AK
-        Models = models.new_models(subdirs,modeloptions)
-        Model = Models[0]
         ## Transistioning to using a list of System objects
+        Models = models.new_models(subdirs,modeloptions)
         Systems = systems.new_systems(subdirs)
+        Model = Models[0]
         System = Systems[0]
 
         self.prepare_systems(Models,Systems)
-
         self.save_model_system_info(Model,System,subdirs)
+
         #print dir(System) ## DEBUGGING
         #print System.topology_files.keys() ## DEBUGGING
-        raise SystemExit
 
-        System = systems.system.System(args)
+        #####   OLD CODE vvvvv
+        #System = systems.system.System(args)
+        #self.create_subdirs(System)
+        #if args.cutoff != None:
+        #    print "Using cutoff", args.cutoff
+        #    cutoff = args.cutoff
+        #else:
+        #    cutoff = 5.5
+        #if args.R_CD != None:
+        #    print "Using R_CD = ",args.R_CD
+        #    self.prepare_system(Model,System,R_CD=args.R_CD,cutoff=cutoff)
+        #else:
+        #    self.prepare_system(Model,System,cutoff=cutoff)
+        #self.save_model_system_info(Model,System,subdirs)
+        #self.load_model_system_info(System)
+        #####   OLD CODE ^^^^^
 
-        self.create_subdirs(System)
-        if args.cutoff != None:
-            print "Using cutoff", args.cutoff
-            cutoff = args.cutoff
-        else:
-            cutoff = 5.5
-        if args.R_CD != None:
-            print "Using R_CD = ",args.R_CD
-            self.prepare_system(Model,System,R_CD=args.R_CD,cutoff=cutoff)
-        else:
-            self.prepare_system(Model,System,cutoff=cutoff)
-        self.save_model_system_info(Model,System,subdirs)
-        self.load_model_system_info(System)
         if args.temparray != None:
             System.initial_T_array = args.temparray
 
         ## The first step depends on the type of model.
         if args.type in ["HomGo","HetGo"]:
-            for k in range(len(System.subdirs)):
+            for k in range(len(subdirs)):
+                print "Starting Tf_loop_iteration for subdirectory: ", subdirs[k]
                 ## To Do: Prepare each Model System pair. 
-                print "Starting the first Tf_loop_iteration..."
+                Model = Models[k]
+                System = Systems[k]
                 if args.dryrun == True:
                     print "Dry run complete. Exiting."
                 else:
-                    simulation.Tf_loop.folding_temperature_loop(Model,System,k,self.append_log)
+                    simulation.Tf_loop.new_folding_temperature_loop(Model,System,self.append_log)
+                simulation.Tf_loop.new_folding_temperature_loop(Model,System,self.append_log)
         elif args.type == "DMC":
             pass
 
         #self.append_log("Analysis T_array")
         #analysis.analyze_temperature_array(System)
         #self.append_log("Finished: T_array")
+        self.save_model_system_info(Model,System,subdirs)
         print "Success"
+        #raise SystemExit
 
     def load_model_system_info(self,System):
         ''' Save the model and system info strings.'''
