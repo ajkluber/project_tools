@@ -48,8 +48,6 @@ def print_header():
 
 def get_args():
     ''' Get command line arguments and check that they are consistent/allowed.
-        Maybe also do a cursory check of stored data for the 'continue' option
-        to ensure integrity of data. 
     '''
     print_header()
 
@@ -100,37 +98,19 @@ def get_args():
         modeloptions = options
     else:
         modeloptions = options
-    
     return args, modeloptions
 
 
 class ModelBuilder(object):
     def __init__(self,args,modeloptions):
-        ''' Model Initialization.''' 
         self.path = os.getcwd()
         
-        ## Not used 
-        procedure = {'HomGo':["Prepping system","Submitting T_array",
-                              "Analyzing T_array"],
-                     'HetGo':["Prepping system","Submitting T_array",
-                              "Analyzing T_array","Mutations"],
-                     'DMC':["Prepping system","Submitting T_array",
-                              "Analyzing T_array","Mutations"]}
-
-        go_model_procedure = ["Prepping system","Submitting T_array","Analyzing T_array"]
-
         if args.action == 'new':
-            ## This option creates a new project with the specifications given
-            ## on the command line. Then saves all that info in a format that 
-            ## can be automatically loaded the next time around.
             self.new_project(args,modeloptions)
         elif args.action == 'continue':
-            ## project where you don't remember where it left off. Outputs a nice
-            ## summary of the state of the simulation.
             self.continue_project(args)
         elif args.action == 'add':
             self.add_temperature_array(args)
-
 
     def append_log(self,sub,string):
         open(self.path+'/'+sub+'/modelbuilder.log','a').write(self.append_time_label()+' '+string+'\n')
@@ -159,23 +139,9 @@ class ModelBuilder(object):
         Systems = systems.load_systems(subdirs)
         self.prepare_systems(Models,Systems)
 
-        ## STILL NEED TO UPDATE THIS
-        #System = system.System(args)
-        #self.load_model_system_info(System)
-        #Models = models.load_models(System.subdirs)
-        #modelinfo = open(args.subdirs[0]+'/model.info','r').readlines()
-        #modeltype = modelinfo[3].split()[0]
-        #Model = models.get_model(modeltype)
-        #self.prepare_system(Model,System)
-
         Ti = args.temparray[0] 
         Tf = args.temparray[1] 
         dT = args.temparray[2] 
-
-        ## DEBUGGING 
-        #print Ti, Tf, dT       
-        #print type(Ti), type(Tf), type(dT)
-        #raise SystemExit
 
         for i in range(len(subdirs)):
             sub = subdirs[i]
@@ -200,7 +166,6 @@ class ModelBuilder(object):
 
     def continue_project(self,args):
         ''' Checks where something left off and continues it.'''
-        ## Read in options for each directory.
         subdirs = args.subdirs
         Models = models.load_models(subdirs,dryrun=args.dryrun)
         Systems = systems.load_systems(subdirs)
@@ -216,7 +181,7 @@ class ModelBuilder(object):
                 
                 lasttime,action,task = self.check_modelbuilder_log(subdir)
                 print "Checking progress for directory:  ", subdir
-                print "Last task was %s %s at %s" % (action,task,lasttime) ## DEBUGGING
+                print "Last task was %s %s at %s" % (action,task,lasttime)
                 if action == "Starting:":
                     self.logical_flowchart_starting(System,Model,subdir,task)
                 elif action == "Finished:":
@@ -243,7 +208,6 @@ class ModelBuilder(object):
             print "Starting to check if wham_Cv completed..."
             analysis.Tf_loop.continue_wham(System,self.append_log)
         elif task == "wham_FreeEnergy":
-            ## Start equilibrium runs.
             print "Starting Equil_Tf..."
             simulation.Tf_loop.run_equilibrium_simulations(Model,System,self.append_log)
         elif task == "Equil_Tf":
@@ -290,9 +254,6 @@ class ModelBuilder(object):
                 print "Subdirectory: ", sub, " already exists! just fyi"
 
         print "Starting a new simulation project..."
-        ## Transitioning to using list of Model objects instead of one singluar
-        ## Model object. 3-10-14 AK
-        ## Transistioning to using a list of System objects
         Models = models.new_models(subdirs,modeloptions)
         Systems = systems.new_systems(subdirs)
         Model = Models[0]
@@ -300,9 +261,6 @@ class ModelBuilder(object):
 
         self.prepare_systems(Models,Systems)
         self.save_model_system_info(Model,System,subdirs)
-
-        #print dir(System) ## DEBUGGING
-        #print System.topology_files.keys() ## DEBUGGING
 
         ## Not implemented yet.
         if args.temparray != None:
@@ -325,61 +283,23 @@ class ModelBuilder(object):
         self.save_model_system_info(Model,System,subdirs)
         print "Success"
 
-    def load_model_system_info(self,System):
-        ''' Save the model and system info strings.'''
-        print "Loading system.info and model.info ..."
-        for i in range(len(System.subdirs)):
-            #print System.subdirs[i]
-            System.load_info_file(i)
-            #modelname = ''
-        #print System.__repr__(i)
-
     def save_model_system_info(self,Model,System,subdirs):
         ''' Save the model and system info strings.'''
         print "Saving system.info progress..."
         for i in range(len(subdirs)):
-            open(subdirs[i] + "/system.info","w").write(System.__repr__())
-            open(subdirs[i] + "/model.info","w").write(Model.__repr__())
+            open(subdirs[i]+"/system.info","w").write(System.__repr__())
+            open(subdirs[i]+"/model.info","w").write(Model.__repr__())
 
     def prepare_systems(self,Models,Systems):
         ''' New style of preparing files: on subdirectory basis.'''
         for i in range(len(Models)):
-            if os.path.exists(Systems[i].path + "/" + Systems[i].subdir + "/" + Systems[i].subdir + ".pdb") == False:
-                shutil.copy(Systems[i].subdir + ".pdb", Systems[i].subdir)
-            #print os.path.exists(Systems[i].path+"/"+Systems[i].subdir+"/Qref_shadow")     ## DEBUGGING
-
+            if os.path.exists(Systems[i].path+"/"+Systems[i].subdir+"/"+Systems[i].subdir+".pdb") == False:
+                shutil.copy(Systems[i].subdir+".pdb",Systems[i].subdir)
             if os.path.exists(Systems[i].path+"/"+Systems[i].subdir+"/Qref_shadow") == False:
                 os.mkdir(Systems[i].path+"/"+Systems[i].subdir+"/Qref_shadow")
             Models[i].new_prepare_system(Systems[i])
             print "Done preparing systems."
 
-    def prepare_system(self,Model,System,R_CD=None,cutoff=5.5):
-        ''' Extract all the topology files from Model. 
-            SOON TO BE MOVED INTO THE MODEL CLASS.
-        '''
-        print "Preparing files..."
-        prots_Qref = System.shadow_contacts()
-        System.write_Native_pdb_CA()
-        if R_CD != None:
-            for i in range(len(System.subdirs)):
-                Nc = float(sum(sum(prots_Qref[i])))
-                Nd = float(len(prots_Qref[i])-4)
-                System.nonbond_params.append((R_CD*Nd/Nc)*Model.backbone_param_vals["Kd"])
-                System.R_CD.append(R_CD)
-        else:
-            for i in range(len(System.subdirs)):
-                N = len(prots_Qref[i])
-                Nc = float(sum(sum(prots_Qref[i])))
-                Nd = float(len(prots_Qref[i])-4)
-                print "Num contacts per residue: ",Nc/N
-                System.nonbond_params.append(Model.nonbond_param)
-                System.R_CD.append(None)
-        prots_indices, prots_residues, prots_coords = System.get_atom_indices(Model.beadmodel)
-        prots_ndxs = Model.get_index_string(prots_indices)
-        topology_files = Model.get_itp_strings(prots_indices, prots_residues, prots_coords,prots_ndxs,prots_Qref,R_CD=R_CD)
-        System.topology_files = topology_files
-
-    
 def main():
     args, modeloptions = get_args()
     ModelBuilder(args,modeloptions)
