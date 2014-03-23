@@ -1,11 +1,12 @@
 import numpy as np
 import subprocess as sb
 import os
-
+import shutil
 
 import contacts
 import crunch_coordinates
 import wham
+import plot
 
 
 def aggregate_equilibrium_runs(System,append_log,reagg=False):
@@ -47,19 +48,22 @@ def aggregate_equilibrium_runs(System,append_log,reagg=False):
         else:
             print "  Skipping trajectory concatenation for", T
 
+        shutil.copy(T+"_1/Native.pdb",T+"_agg/Native.pdb")
+        shutil.copy(T+"_1/BeadBead.pdb",T+"_agg/BeadBead.pdb")
+
         for cord in coords:
             if (not os.path.exists(T+"_agg/"+cord)) or reagg:
                 print "    Aggregating", cord
                 for i in range(1,counts[k]+1):
                     x = np.loadtxt(T+"_"+str(i)+"/"+cord)
-                    print i, x.shape
                     if i == 1:
                         X = x
                     else:
-                        X = np.vstack([X,x])
+                        X = np.concatenate((X,x),axis=0)
                 np.savetxt(T+"_agg/"+cord, X)
             else:
                 print "    Skipping",cord
+         
     os.chdir(cwd)
 
 def analyze_temperature_array(System,append_log,equil=False):

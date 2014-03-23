@@ -246,8 +246,12 @@ class ModelBuilder(object):
             ## Aggregrate equil_Tf data for each temperature and plot PMFs
             print "Starting aggregate data..."
             analysis.Tf_loop.aggregate_equilibrium_runs(System,self.append_log,reagg=True)
-            mutations.prep.prep_mutants(System,self.append_log)
-            #analysis.Tf_loop.analyze_temperature_array(System,self.append_log,equil=True)
+            print "Plotting aggregated data PMFS..."
+             
+            print "Starting prepping mutant pdbs..."
+            mutations.preppdbs.prep_mutants(System,self.append_log)
+            print "Starting calculating dH for mutants..."
+            #mutations.phi_values.calculate_dH_for_mutants(Model,System,self.append_log)
 
 
     def new_project(self,args,modeloptions):

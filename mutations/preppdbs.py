@@ -3,7 +3,7 @@ import subprocess as sb
 import os
 import shutil
 
-import mutate
+import mutatepdbs
 
 '''
 Feb 14 2014
@@ -41,7 +41,7 @@ def prep_mutants(System,append_log):
     os.chdir(sub)
 
     print "  Mutating pdbs with MODELLER..."
-    mutate.make_all_mutations() 
+    mutatepdbs.make_all_mutations() 
     print "  Calculating fraction of contact loss fij..."
     calculate_contacts_lost_for_mutants()
 
