@@ -11,11 +11,7 @@ Purpose:
     This module will be the library for submitting the simulation jobs
 for the Tf_loop (folding temperature loop).
 
-Description:
-    To be used as a library.
-
 '''
-
 
 def check_completion(System,append_log,equil=False):
     ''' Checks to see if the previous Tf_loop simulation completed. First 

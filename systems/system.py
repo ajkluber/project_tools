@@ -1,7 +1,7 @@
 import os
 import time
 
-class NewSystem(object):
+class System(object):
     def __init__(self,subdir,Tf_it=0,Tf_act_dir='Tf_0',Tf_refine=[0],
                  Mut_it=0,Mut_act_dir='Mut_0'):
         self.path = os.getcwd()

@@ -9,13 +9,13 @@ the cleaning style will enable it to be more.
 '''
 
 def get_system(opts):
-    System = newsystem.NewSystem(opts["Subdir"],Tf_it=opts["Tf_Iteration"],
+    System = system.System(opts["Subdir"],Tf_it=opts["Tf_Iteration"],
                                 Tf_act_dir=opts["Tf_Active_Directory"],Tf_refine=opts["Tf_Refinements"],
                                 Mut_it=opts["Mut_Iteration"],Mut_act_dir=opts["Mut_Active_Directory"])
     return System
 
 def new_system(subdir):
-    System = newsystem.NewSystem(subdir)
+    System = system.System(subdir)
     return System
 
 def load_systems(subdirs):
@@ -49,9 +49,10 @@ def load_system(subdir):
         if field == "Tf_refinements":
             temp = [int(value[:-1].split()[0])]
             line = info_file.readline()
-            print line
             while (line[:1] != '[') and (line != ''):
-               temp.append(int(line[:-1].split()[0]))
+                temp.append(int(line[:-1].split()[0]))
+                line = info_file.readline()
+                print line
             options[field] = temp
         else:
             options[field] = value[:-1]
@@ -83,7 +84,7 @@ def check_fields(fields):
         
     fields["Tf_Iteration"] = int(fields["Tf_Iteration"])
     fields["Mut_Iteration"] = int(fields["Mut_Iteration"])
-    fields["Tf_Refinements"] = [ int(x) for x in fields["Tf_Refinements"].split() ]
+    #fields["Tf_Refinements"] = [ int(x) for x in fields["Tf_Refinements"].split() ]
 
     print "Using system info:"
     for key in fields.keys():

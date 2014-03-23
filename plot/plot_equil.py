@@ -73,6 +73,60 @@ def get_equil_data(T,path=".",numsub=3):
     Nh /= float(max(Nh))
     return Q,Qh,Qnh,Nh
 
+def get_data(coord):
+    if coord in ["Q","Qh","Qnh"]:
+        x = np.loadtxt(coord+"prob.dat")
+        x /= max(x)
+    elif coord == "Nh":
+        x = np.loadtxt(coord+".dat") 
+        x /= max(x)
+    elif coord == "rmsd":
+        dummy, x = np.loadtxt(coord+".xvg",unpack=True)
+    elif coord == "Rg":
+        dummy, x = np.loadtxt("radius_cropped.xvg",unpack=True)
+    else:
+        print "ERROR!"
+        print "  Coordinate: ",coord," not found"
+    return x
+
+def plot_2D_pmf(coord1,coord2,T,):
+
+    path = os.getcwd()
+    savedir = path+"/pmfs"
+    if os.path.exists(savedir) == False:
+        os.mkdir(savedir)
+
+    x = get_data(coord1)
+    y = get_data(coord2)
+
+    xvals = np.unique(list(x))[::4]
+    yvals = np.unique(list(y))[::4]
+
+    hist,xedges,yedges = np.histogram2d(x,y,bins=[xvals,yvals],normed=True)
+    hist[hist == 0.0] == 1.0
+    pmf = -np.log(hist)
+    pmf -= min(pmf.ravel())
+    X,Y = np.meshgrid(yedges[:-1],xedges[:-1])
+
+    levels = np.arange(0,6,0.5)
+
+    plt.figure()
+    plt.subplot(1,1,1,aspect=1)
+    plt.contourf(X,Y,pmf,levels=levels)
+    if (coord1.startswith("Q")) or (coord2.startswith("Q")) or (coord1 == "Nh") or (coord2 == "Nh"):
+        plt.xlim(0,1)
+        plt.ylim(0,1)
+    else: 
+        plt.xlim(0,max(x))
+        plt.ylim(0,max(y))
+    plt.xlabel(coord1,fontsize="xx-large")
+    plt.ylabel(coord2,fontsize="xx-large")
+    plt.title("F("+coord1+","+coord2+")",fontsize="xx-large")
+    cbar = plt.colorbar()
+    cbar.set_label("F / kT",fontsize="xx-large")
+    #plt.savefig(path+"/Q_Qh_"+T+"_pmf.pdf")
+    plt.savefig(savedir+"/"+coord1+"_"coord2+"_pmf.pdf")
+
 def plot_2D_equil_pmfs(name,T,num):
     ''' Plot 2D pmfs.'''
 

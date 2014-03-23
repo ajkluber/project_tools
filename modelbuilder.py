@@ -154,7 +154,7 @@ class ModelBuilder(object):
             print "Starting Tf_loop_iteration..."
             simulation.Tf_loop.manually_add_temperature_array(Model,System,self.append_log,Ti,Tf,dT)
             
-        self.save_model_system_info(Model,System,subdirs)
+        self.save_model_system_info(Models,Systems,subdirs)
         print "Success"
 
     def check_modelbuilder_log(self,sub):
@@ -189,7 +189,7 @@ class ModelBuilder(object):
                 elif action == "Error":
                     pass
 
-        self.save_model_system_info(Model,System,subdirs)
+        self.save_model_system_info(Models,Systems,subdirs)
         print "Success"
 
     def logical_flowchart_starting(self,System,Model,sub,task):
@@ -242,6 +242,11 @@ class ModelBuilder(object):
         elif task == "Equil_Tf":
             print "Starting Equil_Tf_analysis..."
             analysis.Tf_loop.analyze_temperature_array(System,self.append_log,equil=True)
+        elif task == "Equil_Tf_analysis...":
+            ## Aggregrate equil_Tf data for each temperature and plot PMFs
+            #print "Starting Equil_Tf_analysis..."
+            analysis.Tf_loop.aggregate_equilibrium_runs(System,self.append_log)
+            #analysis.Tf_loop.analyze_temperature_array(System,self.append_log,equil=True)
 
 
     def new_project(self,args,modeloptions):
@@ -260,7 +265,7 @@ class ModelBuilder(object):
         System = Systems[0]
 
         self.prepare_systems(Models,Systems)
-        self.save_model_system_info(Model,System,subdirs)
+        self.save_model_system_info(Models,Systems,subdirs)
 
         ## Not implemented yet.
         if args.temparray != None:
@@ -280,15 +285,15 @@ class ModelBuilder(object):
         elif args.type == "DMC":
             pass
 
-        self.save_model_system_info(Model,System,subdirs)
+        self.save_model_system_info(Models,Systems,subdirs)
         print "Success"
 
-    def save_model_system_info(self,Model,System,subdirs):
+    def save_model_system_info(self,Models,Systems,subdirs):
         ''' Save the model and system info strings.'''
         print "Saving system.info progress..."
         for i in range(len(subdirs)):
-            open(subdirs[i]+"/system.info","w").write(System.__repr__())
-            open(subdirs[i]+"/model.info","w").write(Model.__repr__())
+            open(subdirs[i]+"/system.info","w").write(Systems[i].__repr__())
+            open(subdirs[i]+"/model.info","w").write(Models[i].__repr__())
 
     def prepare_systems(self,Models,Systems):
         ''' New style of preparing files: on subdirectory basis.'''
@@ -297,7 +302,7 @@ class ModelBuilder(object):
                 shutil.copy(Systems[i].subdir+".pdb",Systems[i].subdir)
             if os.path.exists(Systems[i].path+"/"+Systems[i].subdir+"/Qref_shadow") == False:
                 os.mkdir(Systems[i].path+"/"+Systems[i].subdir+"/Qref_shadow")
-            Models[i].new_prepare_system(Systems[i])
+            Models[i].prepare_system(Systems[i])
             print "Done preparing systems."
 
 def main():

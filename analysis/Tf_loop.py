@@ -6,6 +6,53 @@ import crunch_coordinates
 import wham
 
 
+def aggregate_equilibrium_runs(System,append_log):
+    ''' Aggregate equilibrium simulation data into one directory for    
+        ease of access.'''
+
+    cwd = os.getcwd()
+
+    sub = System.subdir+"/"+System.mutation_active_directory
+    os.chdir(cwd+"/"+sub)
+    temps = [ x.split('_')[0] for x in open("T_array.txt","r").readlines() ] 
+    unique_temps = []
+    counts = []
+    for t in temps:
+        if t not in unique_temps:
+            unique_temps.append(t)
+            counts.append(temps.count(t))
+        else:
+            pass
+    print "##DEBUGGING ",unique_temps, counts
+
+    coords = ["Qprob.dat","Qhprob.dat","Qnhprob.dat","Nh.dat","radius_cropped.xvg",
+              "Qhres.dat","Qhi5res.dat","Qres.dat","rmsd.xvg","energyterms.xvg",
+              "phis.xvg"]
+
+    for k in range(len(unique_temps)):
+        T = unique_temps[k]
+        print "  Aggregating data into directory %s_agg" % T
+        if os.path.exists(T+"_agg") == False:
+            os.mkdir(T+"_agg")
+
+        print "  Concatenating trajectories..."
+        xtcfiles = ''
+        for n in range(1,counts[k]+1):
+            xtcfiles += " "+T+"_"+str(n)+"/traj.xtc "
+        cmd1 = "trjcat -f "+xtcfiles+" -o "+T+"_agg/traj.xtc -cat"
+        sb.call(cmd1,shell=True,stderr=open(T+"_agg/trjcat.err","w"),stdout=open(T+"_agg/trjcat.out","w"))
+
+        for cord in coords:
+            print "    Aggregating", cord
+            for i in range(1,counts[k]+1):
+                x = np.loadtxt(T+"_"+str(i)+"/"+cord)
+                if i == 1:
+                    X = x
+                else:
+                    X = np.hstack([X,x])
+            np.savetxt(T+"_agg/"+cord, X)
+    os.chdir(cwd)
+
 def analyze_temperature_array(System,append_log,equil=False):
     ''' Analyze the previously simulated temperatures of a Tf_loop iteration.
         Goes into the active Tf_loop directory and crunches all coordinates.
