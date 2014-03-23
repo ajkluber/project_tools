@@ -61,13 +61,15 @@ def make_all_mutations():
     for i in range(len(mut_indx)):
 
         saveas = wt_res[i]+mut_indx[i]+mut_res[i]+".pdb"
-        if os.path.exists(saveas) == False:
-            print "Performing mutation: %s%s%s" % (wt_res[i],mut_indx[i],mut_res[i])
+        if not os.path.exists(saveas):
+            print "    Performing mutation: %s%s%s" % (wt_res[i],mut_indx[i],mut_res[i])
 
             respos = mut_indx[i]
             restyp = residue_three_letter_code(mut_res[i])
             saveas = wt_res[i]+mut_indx[i]+mut_res[i]+".pdb"
             modeller_mutate_pdb(modelname,respos,restyp,saveas)
+        else:
+            print "    Skipping mutation: %s%s%s" % (wt_res[i],mut_indx[i],mut_res[i])
         
 
 

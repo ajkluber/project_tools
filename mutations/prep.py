@@ -1,8 +1,9 @@
 import numpy as np
-import os
 import subprocess as sb
-import numpy as np
+import os
+import shutil
 
+import mutate
 
 '''
 Feb 14 2014
@@ -21,6 +22,30 @@ https://docs.rice.edu/confluence/display/ITDIY/How+to+use+BLAS+and+LAPACK+librar
 '''
 
 
+def prep_mutants(System,append_log):
+
+    cwd = os.getcwd()
+    sub = cwd+"/"+System.subdir+"/mutants"
+    if not os.path.exists(sub):
+        print "  Creating direcotory",sub
+        os.mkdir(sub)
+    if (not os.path.exists(sub+"/mutations.txt")):
+        if os.path.exists(System.subdir+"/mutations.txt"):
+            shutil.copy(System.subdir+"/mutatins.txt",sub+"/mutations.txt")
+        else:
+            print "ERROR!"
+            print "  Didn't find mutations.txt in either ",System.subdir, " or ",sub
+            print "  Exiting."
+            raise SystemExit
+
+    os.chdir(sub)
+
+    print "  Mutating pdbs with MODELLER..."
+    mutate.make_all_mutations() 
+    print "  Calculating fraction of contact loss fij..."
+    calculate_contacts_lost_for_mutants()
+
+    os.chdir(cwd)
 
 def get_shadow_pdb_atoms(name):
     ''' Parse the pdb file output by Shadow Jar.'''
@@ -92,7 +117,7 @@ def calculate_fraction_contact_loss(name):
     Cwt = get_res_res_conts("wt.cutoff")
     C90 = get_res_res_conts(name+".cutoff")
     diff = (Cwt - C90)
-    print "Number of contacts lost for ",name,sum(sum(diff))
+    print "    Number of contacts lost for ",name,sum(sum(diff))
     Cwt[ Cwt < 1 ] = 1.
     diff /= Cwt
     np.savetxt("fij_"+name+".dat",diff,fmt="%.5f",delimiter=" ")
@@ -144,10 +169,11 @@ def calculate_contacts_lost_for_mutants():
     ## determine the fraction of heavy-atom contacts lost .
     for i in range(len(mut_indx)):
         name = wt_res[i]+mut_indx[i]+mut_res[i]
-
         if os.path.exists(name+".cutoff.contacts") == False:
+            print "    Calculating contacts for", name
             calculate_contacts_from_pdb(name)
         if os.path.exists("fij_"+name+".dat") == False:
+            print "    Calculating fij for ", name
             calculate_fraction_contact_loss(name)
 
 if __name__ == '__main__':

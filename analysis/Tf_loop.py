@@ -1,12 +1,14 @@
 import numpy as np
+import subprocess as sb
 import os
+
 
 import contacts
 import crunch_coordinates
 import wham
 
 
-def aggregate_equilibrium_runs(System,append_log):
+def aggregate_equilibrium_runs(System,append_log,reagg=False):
     ''' Aggregate equilibrium simulation data into one directory for    
         ease of access.'''
 
@@ -23,7 +25,7 @@ def aggregate_equilibrium_runs(System,append_log):
             counts.append(temps.count(t))
         else:
             pass
-    print "##DEBUGGING ",unique_temps, counts
+    #print "##DEBUGGING ",unique_temps, counts
 
     coords = ["Qprob.dat","Qhprob.dat","Qnhprob.dat","Nh.dat","radius_cropped.xvg",
               "Qhres.dat","Qhi5res.dat","Qres.dat","rmsd.xvg","energyterms.xvg",
@@ -32,25 +34,32 @@ def aggregate_equilibrium_runs(System,append_log):
     for k in range(len(unique_temps)):
         T = unique_temps[k]
         print "  Aggregating data into directory %s_agg" % T
-        if os.path.exists(T+"_agg") == False:
+        if not os.path.exists(T+"_agg"):
             os.mkdir(T+"_agg")
 
-        print "  Concatenating trajectories..."
-        xtcfiles = ''
-        for n in range(1,counts[k]+1):
-            xtcfiles += " "+T+"_"+str(n)+"/traj.xtc "
-        cmd1 = "trjcat -f "+xtcfiles+" -o "+T+"_agg/traj.xtc -cat"
-        sb.call(cmd1,shell=True,stderr=open(T+"_agg/trjcat.err","w"),stdout=open(T+"_agg/trjcat.out","w"))
+        if (not os.path.exists(T+"_agg")) or reagg:
+            print "  Concatenating trajectories for ", T
+            xtcfiles = ''
+            for n in range(1,counts[k]+1):
+                xtcfiles += " "+T+"_"+str(n)+"/traj.xtc "
+            cmd1 = "trjcat -f "+xtcfiles+" -o "+T+"_agg/traj.xtc -cat"
+            sb.call(cmd1,shell=True,stderr=open(T+"_agg/trjcat.err","w"),stdout=open(T+"_agg/trjcat.out","w"))
+        else:
+            print "  Skipping trajectory concatenation for", T
 
         for cord in coords:
-            print "    Aggregating", cord
-            for i in range(1,counts[k]+1):
-                x = np.loadtxt(T+"_"+str(i)+"/"+cord)
-                if i == 1:
-                    X = x
-                else:
-                    X = np.hstack([X,x])
-            np.savetxt(T+"_agg/"+cord, X)
+            if (not os.path.exists(T+"_agg/"+cord)) or reagg:
+                print "    Aggregating", cord
+                for i in range(1,counts[k]+1):
+                    x = np.loadtxt(T+"_"+str(i)+"/"+cord)
+                    print i, x.shape
+                    if i == 1:
+                        X = x
+                    else:
+                        X = np.vstack([X,x])
+                np.savetxt(T+"_agg/"+cord, X)
+            else:
+                print "    Skipping",cord
     os.chdir(cwd)
 
 def analyze_temperature_array(System,append_log,equil=False):
@@ -130,9 +139,12 @@ def check_completion(System,append_log,equil=False):
         if  os.path.exists("rmsd.xvg") and os.path.exists("radius_cropped.xvg") and \
             os.path.exists("energyterms.xvg") and os.path.exists("phis.xvg") and \
             os.path.exists("Qprob.dat"):
-            print "    Crunch coordinates done. Now crunching Nh for "+tdir
-            crunch_coordinates.crunch_Nh()
-            System.append_log("    crunching Nh for "+tdir)
+            if os.path.exists("Nh.dat"): 
+                print "    Crunch coordinates done. "
+            else:
+                print "    Crunch coordinates done. Crunching Nh for "+tdir
+                System.append_log("    crunching Nh for "+tdir)
+                crunch_coordinates.crunch_Nh()
             System.append_log("    analysis done for "+tdir)
             done = 1
         else:
