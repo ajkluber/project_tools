@@ -5,10 +5,11 @@ import subprocess as sb
 import time
 import numpy as np
 
-import systems
-import analysis
-import simulation
 import models
+import systems
+import simulation
+import analysis
+import mutations
 
 '''
 ModelBuilder Class
@@ -247,10 +248,10 @@ class ModelBuilder(object):
             print "Starting aggregate data..."
             analysis.Tf_loop.aggregate_equilibrium_runs(System,self.append_log,reagg=True)
             print "Plotting aggregated data PMFS..."
-             
-            print "Starting prepping mutant pdbs..."
-            mutations.preppdbs.prep_mutants(System,self.append_log)
-            print "Starting calculating dH for mutants..."
+            analysis.plot.pmfs.plot_aggregated_data(System)
+            #print "Starting prepping mutant pdbs..."
+            #mutations.preppdbs.prep_mutants(System,self.append_log)
+            #print "Starting calculating dH for mutants..."
             #mutations.phi_values.calculate_dH_for_mutants(Model,System,self.append_log)
 
 

@@ -14,7 +14,6 @@ def aggregate_equilibrium_runs(System,append_log,reagg=False):
         ease of access.'''
 
     cwd = os.getcwd()
-
     sub = System.subdir+"/"+System.mutation_active_directory
     os.chdir(cwd+"/"+sub)
     temps = [ x.split('_')[0] for x in open("T_array.txt","r").readlines() ] 
@@ -26,7 +25,6 @@ def aggregate_equilibrium_runs(System,append_log,reagg=False):
             counts.append(temps.count(t))
         else:
             pass
-    #print "##DEBUGGING ",unique_temps, counts
 
     coords = ["Qprob.dat","Qhprob.dat","Qnhprob.dat","Nh.dat","radius_cropped.xvg",
               "Qhres.dat","Qhi5res.dat","Qres.dat","rmsd.xvg","energyterms.xvg",

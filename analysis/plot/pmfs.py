@@ -1,0 +1,142 @@
+#!/usr/bin/env python
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import numpy as np
+import os
+import argparse
+import subprocess as sb
+
+'''
+Created 2-12-2014
+Alexander Kluber
+
+    A module under development that plots the 1D, 2D pmfs of equilibrium data
+as well as the contact maps as a function of several coordinates. Calculating
+contact maps over equilibrium trajectories is aided by the
+model_builder.analysis.contacts submodule, but takes really long so it should
+be done from within a PBS script.
+
+To Do:
+- Create command line functionality that can be called from a PBS script.
+- Write a function that submits PBS scripts to plot quantities.
+
+'''
+def get_data(coord):
+    if coord in ["Q","Qh","Qnh"]:
+        x = np.loadtxt(coord+"prob.dat")
+        x /= max(x)
+    elif coord == "Nh":
+        x = np.loadtxt(coord+".dat") 
+        x /= max(x)
+    elif coord == "rmsd":
+        dummy, x = np.loadtxt(coord+".xvg",unpack=True)
+    elif coord == "Rg":
+        dummy, x = np.loadtxt("radius_cropped.xvg",unpack=True)
+    else:
+        print "ERROR!"
+        print "  Coordinate: ",coord," not found"
+    return x
+
+def plot_aggregated_data(System):
+    
+    cwd = os.getcwd()
+    sub = System.subdir+"/"+System.mutation_active_directory
+    os.chdir(cwd+"/"+sub)
+    temps = [ x.split('_')[0] for x in open("T_array.txt","r").readlines() ] 
+    unique_temps = []
+    counts = []
+    for t in temps:
+        if t not in unique_temps:
+            unique_temps.append(t)
+            counts.append(temps.count(t))
+        else:
+            pass
+
+    cwd2 = os.getcwd()
+    coords = ["Q","Qh","Qnh","Nh","Rg","rmsd"]
+    coord_pairs = ["Q","Qh","Qnh","Nh","Rg","rmsd"]
+
+    for i in range(len(unique_temps)):
+        
+        T = unique_temps
+        os.chdir(T+"_agg")
+        print "  Plotting PMFs for ",T
+
+        for crd in coords:
+            if not os.path.exists("pmfs/"+crd+"_pmf.pdf"):
+                print "    Plotting pmf ",crd
+                plot_1D_pmf(crd,System.subdir+" "+T)
+
+        #plot_2D_pmf(
+
+        os.chdir(cwd2)
+
+    os.chdir(cwd)
+
+def plot_1D_pmf(coord,T,title):
+    ''' Plot a 1D pmf for a coordinate.'''
+
+    x = get_data(coord)
+
+    path = os.getcwd()
+    savedir = path+"/pmfs"
+    if os.path.exists(savedir) == False:
+        os.mkdir(savedir)
+
+    vals = np.unique(list(x))
+
+    n,bins = np.histogram(x,bins=vals,density=True)
+    np.savetxt(savedir+"/"+coord+"_n.dat",n,delimiter=" ",fmt="%.4f")
+    np.savetxt(savedir+"/"+coord+"_bins.dat",bins,delimiter=" ",fmt="%.4f")
+
+    pmf = -np.log(n)
+    pmf -= min(pmf)
+
+    plt.figure()
+    plt.plot(bins[1:]/max(bins),pmf)
+    plt.xlabel(coord,fontsize="xx-large")
+    plt.ylabel("F("+coord+") / kT",fontsize="xx-large")
+    plt.title("F("+coord+") "+title,fontsize="xx-large")
+    plt.ylim(0,6)
+    plt.xlim(0,1)
+    plt.savefig(savedir+"/"+coord+"_pmf.pdf")
+
+def plot_2D_pmf(coord1,coord2,title=""):
+
+    path = os.getcwd()
+    savedir = path+"/pmfs"
+    if os.path.exists(savedir) == False:
+        os.mkdir(savedir)
+
+    x = get_data(coord1)
+    y = get_data(coord2)
+
+    xvals = np.unique(list(x))[::4]
+    yvals = np.unique(list(y))[::4]
+
+    hist,xedges,yedges = np.histogram2d(x,y,bins=[xvals,yvals],normed=True)
+    hist[hist == 0.0] == 1.0
+    pmf = -np.log(hist)
+    pmf -= min(pmf.ravel())
+    X,Y = np.meshgrid(yedges[:-1],xedges[:-1])
+
+    levels = np.arange(0,6,0.5)
+
+    plt.figure()
+    plt.subplot(1,1,1,aspect=1)
+    plt.contourf(X,Y,pmf,levels=levels)
+    if (coord1.startswith("Q")) or (coord2.startswith("Q")) or (coord1 == "Nh") or (coord2 == "Nh"):
+        plt.xlim(0,1)
+        plt.ylim(0,1)
+    else: 
+        plt.xlim(0,max(x))
+        plt.ylim(0,max(y))
+    plt.xlabel(coord1,fontsize="xx-large")
+    plt.ylabel(coord2,fontsize="xx-large")
+    plt.title("F("+coord1+","+coord2+") "+title,fontsize="xx-large")
+    cbar = plt.colorbar()
+    cbar.set_label("F / kT",fontsize="xx-large")
+    #plt.savefig(path+"/Q_Qh_"+T+"_pmf.pdf")
+    plt.savefig(savedir+"/"+coord1+"_"+coord2+"_pmf.pdf")
