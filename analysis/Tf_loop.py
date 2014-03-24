@@ -9,7 +9,7 @@ import wham
 import plot
 
 
-def aggregate_equilibrium_runs(System,append_log,reagg=False):
+def aggregate_equilibrium_runs(System,append_log,reagg=True):
     ''' Aggregate equilibrium simulation data into one directory for    
         ease of access.'''
 
@@ -36,7 +36,7 @@ def aggregate_equilibrium_runs(System,append_log,reagg=False):
             os.mkdir(T+"_agg")
         print "  Aggregating data into directory %s_agg" % T
 
-        if (not os.path.exists(T+"_agg")) or reagg:
+        if (not os.path.exists(T+"_agg/traj.xtc")) or reagg:
             print "  Concatenating trajectories for ", T
             xtcfiles = ''
             for n in range(1,counts[k]+1):
