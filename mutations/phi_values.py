@@ -40,26 +40,47 @@ def get_state_bounds(path,coord):
         
 def load_eps_delta_sig_traj(subdir):
     ''' Load in the info from the BeadBead.dat file. Sig_ij, eps_ij, delta_ij and
-        index pairs. This information is constant for a trajectory.'''
+        index pairs. This information is constant for a trajectory. Filter all fields
+        to keep only interactions with nonzero interaction type.'''
     print "  Loading BeadBead.dat"
     beadbead = np.loadtxt(subdir+"/BeadBead.dat",dtype=str) 
     sigij = beadbead[:,5].astype(float)
     epsij = beadbead[:,6].astype(float)
     deltaij = beadbead[:,7].astype(float)
+    int_types = beadbead[:,4].astype(str)
     pairs = beadbead[:,:2].astype(int) 
     pairs -= np.ones(pairs.shape,int)
 
+    keep_interactions = np.zeros(len(int_types),int)
+    for i in range(len(int_types)):
+        if int_types[i] in ["ds","ss"]:
+            pass
+        else:
+            keep_interactions[i] = int(int_types[i])
+
+    #print keep_interactions != 0       ## DEBUGGING
+    #print sum((keep_interactions != 0).astype(int))      ## DEBUGGING
+    sigij = sigij[keep_interactions != 0]
+    epsij = epsij[keep_interactions != 0]
+    deltaij = deltaij[keep_interactions != 0]
+    pairs = pairs[keep_interactions != 0]
+
+    print "  Only modifying ",sum((keep_interactions != 0).astype(int)), " parameters out of ", len(keep_interactions)
     ## Use mdtraj to compute the distances between pairs.
     print "  Loading traj.xtc with mdtraj..."
     traj = md.load(subdir+"/traj.xtc",top=subdir+"/Native.pdb")
     print "  Computing distances with mdtraj..."
     traj_dist = md.compute_distances(traj,pairs)
 
-    return sigij,epsij,deltaij,pairs,traj,traj_dist
+    return sigij,epsij,deltaij,int_types,keep_interactions,pairs,traj,traj_dist
 
 def calculate_dH_for_mutants(Model,System,append_log):
     ''' First task is to calculate the perturbations for each mutation for
-        each frame in the trajectory.'''
+        each frame in the trajectory.
+
+        In calculating the mutations only modify parameters that have interaction_type
+        in the BeadBead.dat =/= [0,ds,ss]. 
+    '''
 
     
     R = 0.00831415
@@ -80,7 +101,7 @@ def calculate_dH_for_mutants(Model,System,append_log):
 
     mutants = [ x.split()[1]+x.split()[0]+x.split()[2] for x in open("mutants/mutations.txt","r").readlines()[1:] ]
 
-    sigij,epsij,deltaij,pairs,traj,traj_dist = load_eps_delta_sig_traj(savedir)
+    sigij,epsij,deltaij,int_types,keep_interactions,pairs,traj,traj_dist = load_eps_delta_sig_traj(savedir)
 
     if Model.interaction_types[0] == "LJ12-10":
         def Qij(r,sig,delta):
@@ -90,29 +111,30 @@ def calculate_dH_for_mutants(Model,System,append_log):
         print "  Unrecognized interaction type ", Model.interaction_types[0]
         print "  Exiting."
         raise SystemExit
+    print "  Number frames:", traj.n_frames,"  Number atoms:",traj.n_atoms
+
+    print "  Calculating Qij..."
+    qij = Qij(traj_dist,sigij,deltaij)
 
     for mut in mutants:
         if not os.path.exists(savedir+"/dH_"+mut+".dat"):
             ## Load fij matrix.
             print "    Loading fij_"+mut+".dat"
             fij_temp = np.loadtxt("mutants/fij_"+mut+".dat")
-            fij = []
+            fij_all = []
             for i in range(len(fij_temp)-4):
-                fij.extend(fij_temp[i,i+4:])
-            fij = np.array(fij)
+                fij_all.extend(fij_temp[i,i+4:])
+            fij = np.array(fij_all)[keep_interactions != 0]
+            
 
-            ## Loop over frames to calculate dH.
-            print "    Computing dH for ", mut
-            dH_k = np.zeros(traj.n_frames,float)
-            for j in range(traj.n_frames):
-                rij = traj_dist[j]
-                #qij = 5.*((sigij/rij)**12) - 6.*deltaij*((sigij/rij)**10)
-                qij = Qij(rij,sigij,deltaij)
-                dH_temp = sum(fij*epsij*qij)
-                dH_k[j]  = dH_temp
+            print "    Computing dH vectorized for ", mut
+            dH_k = np.array([ sum(x) for x in fij*qij ])
+            print "    Saving dH for ",mut
             np.savetxt(savedir+"/dH_"+mut+".dat",dH_k)
 
     os.chdir(cwd)
 
+def submit_dH_calculation():
+    pass
 if __name__ == '__main__':
     pass
