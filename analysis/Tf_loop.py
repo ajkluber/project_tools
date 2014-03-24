@@ -32,9 +32,9 @@ def aggregate_equilibrium_runs(System,append_log,reagg=False):
 
     for k in range(len(unique_temps)):
         T = unique_temps[k]
-        print "  Aggregating data into directory %s_agg" % T
         if not os.path.exists(T+"_agg"):
             os.mkdir(T+"_agg")
+        print "  Aggregating data into directory %s_agg" % T
 
         if (not os.path.exists(T+"_agg")) or reagg:
             print "  Concatenating trajectories for ", T
@@ -43,11 +43,9 @@ def aggregate_equilibrium_runs(System,append_log,reagg=False):
                 xtcfiles += " "+T+"_"+str(n)+"/traj.xtc "
             cmd1 = "trjcat -f "+xtcfiles+" -o "+T+"_agg/traj.xtc -cat"
             sb.call(cmd1,shell=True,stderr=open(T+"_agg/trjcat.err","w"),stdout=open(T+"_agg/trjcat.out","w"))
-        else:
-            print "  Skipping trajectory concatenation for", T
 
         shutil.copy(T+"_1/Native.pdb",T+"_agg/Native.pdb")
-        shutil.copy(T+"_1/BeadBead.pdb",T+"_agg/BeadBead.pdb")
+        shutil.copy(T+"_1/BeadBead.dat",T+"_agg/BeadBead.dat")
 
         for cord in coords:
             if (not os.path.exists(T+"_agg/"+cord)) or reagg:
@@ -59,8 +57,6 @@ def aggregate_equilibrium_runs(System,append_log,reagg=False):
                     else:
                         X = np.concatenate((X,x),axis=0)
                 np.savetxt(T+"_agg/"+cord, X)
-            else:
-                print "    Skipping",cord
          
     os.chdir(cwd)
 

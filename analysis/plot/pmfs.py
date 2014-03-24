@@ -40,6 +40,7 @@ def get_data(coord):
     return x
 
 def plot_aggregated_data(System):
+    ''' Plot 1D and 2D pmfs for aggregated equilibrium simulations.'''
     
     cwd = os.getcwd()
     sub = System.subdir+"/"+System.mutation_active_directory
@@ -56,11 +57,11 @@ def plot_aggregated_data(System):
 
     cwd2 = os.getcwd()
     coords = ["Q","Qh","Qnh","Nh","Rg","rmsd"]
-    coord_pairs = ["Q","Qh","Qnh","Nh","Rg","rmsd"]
+    coord_pairs = [("Qh","Q"),("Qh","Qnh"),("Qnh","Q"),("Nh","Qnh"),("Rg","rmsd")]
 
     for i in range(len(unique_temps)):
         
-        T = unique_temps
+        T = unique_temps[i]
         os.chdir(T+"_agg")
         print "  Plotting PMFs for ",T
 
@@ -69,13 +70,16 @@ def plot_aggregated_data(System):
                 print "    Plotting pmf ",crd
                 plot_1D_pmf(crd,System.subdir+" "+T)
 
-        #plot_2D_pmf(
+        for crd1,crd2 in coord_pairs:
+            if not os.path.exists("pmfs/"+crd1+"_"+crd2+"_pmf.pdf"):
+                print "    Plotting 2D pmf ",crd1, " vs ", crd2
+                plot_2D_pmf(crd1,crd2,System.subdir+" "+T)
 
         os.chdir(cwd2)
 
     os.chdir(cwd)
 
-def plot_1D_pmf(coord,T,title):
+def plot_1D_pmf(coord,title):
     ''' Plot a 1D pmf for a coordinate.'''
 
     x = get_data(coord)
@@ -85,7 +89,11 @@ def plot_1D_pmf(coord,T,title):
     if os.path.exists(savedir) == False:
         os.mkdir(savedir)
 
-    vals = np.unique(list(x))
+    if coord in ["Rg","rmsd"]:
+        skip = 80
+    else:
+        skip = 4 
+    vals = np.unique(list(x))[::skip]
 
     n,bins = np.histogram(x,bins=vals,density=True)
     np.savetxt(savedir+"/"+coord+"_n.dat",n,delimiter=" ",fmt="%.4f")
@@ -113,8 +121,12 @@ def plot_2D_pmf(coord1,coord2,title=""):
     x = get_data(coord1)
     y = get_data(coord2)
 
-    xvals = np.unique(list(x))[::4]
-    yvals = np.unique(list(y))[::4]
+    if (coord1 in ["Rg","rmsd"]) or (coord2 in ["Rg","rmsd"]):
+        skip = 80
+    else:
+        skip = 4 
+    xvals = np.unique(list(x))[::skip]
+    yvals = np.unique(list(y))[::skip]
 
     hist,xedges,yedges = np.histogram2d(x,y,bins=[xvals,yvals],normed=True)
     hist[hist == 0.0] == 1.0
@@ -133,8 +145,8 @@ def plot_2D_pmf(coord1,coord2,title=""):
     else: 
         plt.xlim(0,max(x))
         plt.ylim(0,max(y))
-    plt.xlabel(coord1,fontsize="xx-large")
-    plt.ylabel(coord2,fontsize="xx-large")
+    plt.xlabel(coord2,fontsize="xx-large")
+    plt.ylabel(coord1,fontsize="xx-large")
     plt.title("F("+coord1+","+coord2+") "+title,fontsize="xx-large")
     cbar = plt.colorbar()
     cbar.set_label("F / kT",fontsize="xx-large")

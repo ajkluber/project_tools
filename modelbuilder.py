@@ -246,13 +246,13 @@ class ModelBuilder(object):
         elif task == "Equil_Tf_analysis":
             ## Aggregrate equil_Tf data for each temperature and plot PMFs
             print "Starting aggregate data..."
-            analysis.Tf_loop.aggregate_equilibrium_runs(System,self.append_log,reagg=True)
+            analysis.Tf_loop.aggregate_equilibrium_runs(System,self.append_log)
             print "Plotting aggregated data PMFS..."
             analysis.plot.pmfs.plot_aggregated_data(System)
-            #print "Starting prepping mutant pdbs..."
-            #mutations.preppdbs.prep_mutants(System,self.append_log)
-            #print "Starting calculating dH for mutants..."
-            #mutations.phi_values.calculate_dH_for_mutants(Model,System,self.append_log)
+            print "Starting prepping mutant pdbs..."
+            mutations.preppdbs.prep_mutants(System,self.append_log)
+            print "Starting calculating dH for mutants..."
+            mutations.phi_values.calculate_dH_for_mutants(Model,System,self.append_log)
 
 
     def new_project(self,args,modeloptions):

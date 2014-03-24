@@ -68,8 +68,8 @@ def make_all_mutations():
             restyp = residue_three_letter_code(mut_res[i])
             saveas = wt_res[i]+mut_indx[i]+mut_res[i]+".pdb"
             modeller_mutate_pdb(modelname,respos,restyp,saveas)
-        else:
-            print "    Skipping mutation: %s%s%s" % (wt_res[i],mut_indx[i],mut_res[i])
+        #else:
+        #    print "    Skipping mutation: %s%s%s" % (wt_res[i],mut_indx[i],mut_res[i])
         
 
 
