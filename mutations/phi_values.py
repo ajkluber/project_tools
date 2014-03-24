@@ -47,16 +47,16 @@ def load_eps_delta_sig_traj(subdir):
     sigij = beadbead[:,5].astype(float)
     epsij = beadbead[:,6].astype(float)
     deltaij = beadbead[:,7].astype(float)
-    int_types = beadbead[:,4].astype(str)
+    interaction_numbers = beadbead[:,4].astype(str)
     pairs = beadbead[:,:2].astype(int) 
     pairs -= np.ones(pairs.shape,int)
 
-    keep_interactions = np.zeros(len(int_types),int)
-    for i in range(len(int_types)):
-        if int_types[i] in ["ds","ss"]:
+    keep_interactions = np.zeros(len(interaction_numbers),int)
+    for i in range(len(interaction_numbers)):
+        if interaction_numbers[i] in ["ds","ss"]:
             pass
         else:
-            keep_interactions[i] = int(int_types[i])
+            keep_interactions[i] = int(interaction_numbers[i])
 
     #print keep_interactions != 0       ## DEBUGGING
     #print sum((keep_interactions != 0).astype(int))      ## DEBUGGING
@@ -72,7 +72,7 @@ def load_eps_delta_sig_traj(subdir):
     print "  Computing distances with mdtraj..."
     traj_dist = md.compute_distances(traj,pairs)
 
-    return sigij,epsij,deltaij,int_types,keep_interactions,pairs,traj,traj_dist
+    return sigij,epsij,deltaij,interaction_numbers,keep_interactions,pairs,traj,traj_dist
 
 def calculate_dH_for_mutants(Model,System,append_log):
     ''' First task is to calculate the perturbations for each mutation for
@@ -81,9 +81,7 @@ def calculate_dH_for_mutants(Model,System,append_log):
         In calculating the mutations only modify parameters that have interaction_type
         in the BeadBead.dat =/= [0,ds,ss]. 
     '''
-
     
-    R = 0.00831415
     cwd = os.getcwd()
     sub = cwd+"/"+System.subdir+"/"+System.mutation_active_directory
     if not os.path.exists(sub+"/Tf_choice.txt"):
@@ -101,7 +99,7 @@ def calculate_dH_for_mutants(Model,System,append_log):
 
     mutants = [ x.split()[1]+x.split()[0]+x.split()[2] for x in open("mutants/mutations.txt","r").readlines()[1:] ]
 
-    sigij,epsij,deltaij,int_types,keep_interactions,pairs,traj,traj_dist = load_eps_delta_sig_traj(savedir)
+    sigij,epsij,deltaij,interaction_numbers,keep_interactions,pairs,traj,traj_dist = load_eps_delta_sig_traj(savedir)
 
     if Model.interaction_types[0] == "LJ12-10":
         def Qij(r,sig,delta):
@@ -118,7 +116,6 @@ def calculate_dH_for_mutants(Model,System,append_log):
 
     for mut in mutants:
         if not os.path.exists(savedir+"/dH_"+mut+".dat"):
-            ## Load fij matrix.
             print "    Loading fij_"+mut+".dat"
             fij_temp = np.loadtxt("mutants/fij_"+mut+".dat")
             fij_all = []
@@ -128,13 +125,11 @@ def calculate_dH_for_mutants(Model,System,append_log):
             
 
             print "    Computing dH vectorized for ", mut
-            dH_k = np.array([ sum(x) for x in fij*qij ])
+            dH_k = -1.*np.array([ sum(x) for x in fij*qij ])
             print "    Saving dH for ",mut
             np.savetxt(savedir+"/dH_"+mut+".dat",dH_k)
 
     os.chdir(cwd)
 
-def submit_dH_calculation():
-    pass
 if __name__ == '__main__':
     pass
