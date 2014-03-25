@@ -84,7 +84,10 @@ def check_fields(fields):
         
     fields["Tf_Iteration"] = int(fields["Tf_Iteration"])
     fields["Mut_Iteration"] = int(fields["Mut_Iteration"])
-    #fields["Tf_Refinements"] = [ int(x) for x in fields["Tf_Refinements"].split() ]
+    if type(fields["Tf_Refinements"]) == str:
+        fields["Tf_Refinements"] = [ int(fields["Tf_Refinements"]) ]
+    elif type(fields["Tf_Refinements"]) == list:
+        pass
 
     print "Using system info:"
     for key in fields.keys():
