@@ -12,6 +12,8 @@ Alexander Kluber
 Seed script to figure out how to calculate Phi-values.
 '''
 
+global GAS_CONSTANT_KJ_MOL
+GAS_CONSTANT_KJ_MOL = 0.0083144621
 
 
 def get_state_bounds(path,coord):
@@ -206,13 +208,25 @@ def calculate_phi_values(Model,System,append_log,coord="Q"):
     if not os.path.exists(savedir+"/phi"):
         os.mkdir(savedir+"/phi")
 
+    print "  Getting state bounds for coordinate:",coord
     states = get_state_bounds(savedir,coord)
     #print states
     print "  Loading dH for mutants"
     dH = get_mutant_dH(savedir,mutants[:10])
-    print "  Getting state bounds for coordinate:",coord
 
-    print dH.shape
+    print "  Computing phi values..."
+    n_frames = float(dH.shape[1])
+    beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
+    bracket_exp_D = sum(np.exp(-beta*dH[:,states[0]]).T)/n_frames
+    bracket_exp_TS = sum(np.exp(-beta*dH[:,states[1]]).T)/n_frames
+    bracket_exp_N = sum(np.exp(-beta*dH[:,states[2]]).T)/n_frames
+
+    ddG_dagger = (1./beta)*np.log(bracket_exp_D/bracket_exp_TS)
+    ddG_circ = (1./beta)*np.log(bracket_exp_D/bracket_exp_N)
+    print "Mutant ddG_dagger  ddG_circ  Phi"
+    for i in range(len(ddG_dagger)):
+        print "%6s%11.7f%10.7f%10.7f" % (mutants[i],ddG_dagger[i],ddG_circ[i],ddG_dagger[i]/ddG_circ[i])
+    
     #for j in range(len(fij)):
     #    mut = mutants[j]
     #    if not os.path.exists(savedir+"/dH_"+mut+".dat"):
