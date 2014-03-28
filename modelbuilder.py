@@ -10,6 +10,7 @@ import systems
 import simulation
 import analysis
 import mutations
+import parsepdb
 
 '''
 ModelBuilder Class
@@ -33,6 +34,9 @@ See development_notes.txt for chronological list of changes and development
 plan.
 
 '''
+
+global GAS_CONSTANT_KJ_MOL
+GAS_CONSTANT_KJ_MOL = 0.0083144621
 
 def print_header():
 
@@ -77,7 +81,12 @@ def get_args():
     add_parser = sp.add_parser('add')
     add_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
     add_parser.add_argument('--temparray', type=int, nargs='+', help='T_initial T_final dT for new temp array',required=True)
-    add_parser.add_argument('--dryrun', action='store_true', help='Add this option for solvent.')
+    add_parser.add_argument('--mutarray', type=int, nargs='+', help='T_initial T_final dT for new mutational sims array',required=True)
+    add_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
+
+    ## Options for just printing out some useful info about the pdb.
+    add_parser = sp.add_parser('parsepdb')
+    add_parser.add_argument('--pdbs', type=str, nargs='+', help='pdbs to parse for useful info',required=True)
 
     args = parser.parse_args()
 
@@ -112,6 +121,8 @@ class ModelBuilder(object):
             self.continue_project(args)
         elif args.action == 'add':
             self.add_temperature_array(args)
+        elif args.action == 'parsepdb':
+            self.parse_pdbs(args.pdbs)
 
     def append_log(self,sub,string):
         open(self.path+'/'+sub+'/modelbuilder.log','a').write(self.append_time_label()+' '+string+'\n')
@@ -249,10 +260,15 @@ class ModelBuilder(object):
             analysis.Tf_loop.aggregate_equilibrium_runs(System,self.append_log)
             print "Plotting aggregated data PMFS..."
             analysis.plot.pmfs.plot_aggregated_data(System)
-            print "Starting prepping mutant pdbs..."
-            mutations.preppdbs.prep_mutants(System,self.append_log)
-            print "Starting calculating dH for mutants..."
-            mutations.phi_values.calculate_dH_for_mutants(Model,System,self.append_log)
+            if Model.modelnameshort in ["HetGo","DMC"]:
+                print "Starting prepping mutant pdbs..."
+                mutations.preppdbs.prep_mutants(System,self.append_log)
+                print "Starting calculating dH for mutants..."
+                mutations.phi_values.calculate_dH_for_mutants(Model,System,self.append_log)
+        elif task == "Calculating_dH":
+            pass
+            #mutations.phi_values.calculate_phi_values(Model,System,self.append_log)
+            #mutations.phi_values.calculate_new_epsilons(Model,System,self.append_log)
 
 
     def new_project(self,args,modeloptions):
@@ -284,10 +300,7 @@ class ModelBuilder(object):
                 ## To Do: Prepare each Model System pair. 
                 Model = Models[k]
                 System = Systems[k]
-                if args.dryrun == True:
-                    print "Dry run complete. Exiting."
-                else:
-                    simulation.Tf_loop.folding_temperature_loop(Model,System,self.append_log)
+                simulation.Tf_loop.folding_temperature_loop(Model,System,self.append_log,new=True)
         elif args.type == "DMC":
             pass
 

@@ -13,6 +13,7 @@ def aggregate_equilibrium_runs(System,append_log,reagg=True):
     ''' Aggregate equilibrium simulation data into one directory for    
         ease of access.'''
 
+    append_log(System.subdir,"Starting: Aggregating_Equil_Runs")
     cwd = os.getcwd()
     sub = System.subdir+"/"+System.mutation_active_directory
     os.chdir(cwd+"/"+sub)
@@ -59,6 +60,7 @@ def aggregate_equilibrium_runs(System,append_log,reagg=True):
                 np.savetxt(T+"_agg/"+cord, X)
          
     os.chdir(cwd)
+    append_log(System.subdir,"Finished: Aggregating_Equil_Runs")
 
 def analyze_temperature_array(System,append_log,equil=False):
     ''' Analyze the previously simulated temperatures of a Tf_loop iteration.

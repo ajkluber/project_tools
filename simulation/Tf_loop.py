@@ -106,7 +106,7 @@ def determine_new_T_array():
     print "##DEBUGGING: New Ti, Tf, dT", newTi, newTf, newdT
     return newTi, newTf, newdT
 
-def folding_temperature_loop(Model,System,append_log):
+def folding_temperature_loop(Model,System,append_log,new=False):
     ''' The "folding temperature loop" is one of the several large-scale 
         logical structures in modelbuilder. It is entered anytime we want
         to determine the folding temperature. This could be when we have
@@ -122,25 +122,25 @@ def folding_temperature_loop(Model,System,append_log):
     ## Check to see if the folding temperature has been found. If yes, then continue.
     if (not os.path.exists(sub+"/Tf.txt")):
         os.chdir(sub)
-        folding_temperature_loop_extension(Model,System,append_log)
+        folding_temperature_loop_extension(Model,System,append_log,new=new)
     else:
         ## Folding temperature has been found. Continuing.
         pass
     os.chdir(cwd)
 
-def folding_temperature_loop_extension(Model,System,append_log):
+def folding_temperature_loop_extension(Model,System,append_log,new=False):
     ''' This is for doing an additional loop in the Tf_loop. It either starts
         an initial temperature array or refines the temperature range according
         to previous data. '''
     ## Check to see if a previous temperature range was used.
-    if (not os.path.exists("T_array_last.txt")):
+    if (not os.path.exists("T_array_last.txt")) or new:
         ## For initial exploration use very broad temperature increments.
         if System.initial_T_array != None:
             Ti = System.initial_T_array[0]
             Tf = System.initial_T_array[1]
             dT = System.initial_T_array[2]
         else:
-            Ti = 128; Tf = 168; dT = 2  ## RESET
+            Ti = 50; Tf = 250; dT = 50
     else:
         ## Use previous range to determine new range. 
         Ti, Tf, dT = determine_new_T_array()
