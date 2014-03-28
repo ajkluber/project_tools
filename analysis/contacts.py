@@ -7,6 +7,8 @@ import numpy as np
 import argparse
 
 from coord_util import mol_reader
+import mdtraj as md
+
 
 #import dmc_model.beadbead as bb
 #from mpi4py import MPI
@@ -160,6 +162,81 @@ def equil_contacts_for_states(framestate,numstates,savedir,Temp,numtemps,cutoff=
             statesprobij[m] /= float(accum[m])
         np.savetxt(savedir+"/map_%s.dat" % m,statesprobij[m])
     return statesprobij
+
+def new_calculate_Q():
+    ''' A routine to calculate Q, Q_helical, Q_non-helical and A (not-native
+        contacts) probabalistically. Meant to be run from a PBS script that 
+        is submitted in the directory containing all the files. 
+
+        This function is the primary purpose for this submodule.
+    '''
+    
+    traj = md.load("traj.xtc",top="Native.pdb")
+    dist = md.compute_distances(traj)
+
+    Native_cryst, Sig, N = get_beadbead_info()
+    #Native = np.loadtxt("Qref_prob.dat")
+    Native = np.loadtxt("Qref_cryst.dat")
+    ## Define Q_local as the helical contacts (i,i+4) as well as (i,i+5) 
+    ## [and (i,i+6)]. This is assuming that contacts to i+4 and i+5 
+    ## stabilize helices.
+    h_diag = (np.arange(0,N-4),np.arange(4,N))
+    h_diag2 = (np.arange(0,N-5),np.arange(5,N))
+    #h_diag3 = (np.arange(0,N-6),np.arange(6,N))
+    Native_h = np.zeros((N,N),float)
+    Native_hi5 = np.zeros((N,N),float)
+    Native_h[h_diag] = Native[h_diag]
+    #Native_h[h_diag2] = Native[h_diag2]
+    #Native_h[h_diag3] = Native[h_diag3]
+    Native_hi5[h_diag2] = Native[h_diag2]
+
+    Q = []
+    Qh = []
+    Qres = []
+    Qhres = []
+    Qhi5res = []
+    A = []
+    framenum = 0 
+    frames = mol_reader.open("traj.xtc") 
+    for frame in frames.read():
+        D = np.zeros((N,N),float)
+        X = np.reshape(np.array(frame.coordinates), (N,3))
+
+        ## This loops allows the construction of the pairwise distance 
+        ## distance matrix without a second inner loop by computing
+        ## the diagonals. Takes advantage of vectorized operations.
+        for i in range(4,N):
+            diff = X[0:-i,:] - X[i:,:]
+            d = np.sqrt(diff[:,0]**2 + diff[:,1]**2 + diff[:,2]**2)
+            ## Slice to insert values on the diagonal   
+            diag = (np.arange(0,N-i),np.arange(i,N))
+            D[diag] = d
+
+        ## Contact matrix. Distances are within 125% of equilibrium 
+        ## distance. Sum up contacts to get Q, Q_helical, Q_non-helical.
+        Contact1 = (D <= 1.25*10*Sig).astype(int)
+        Contact2 = (D > 0.01).astype(int)
+        Contact = Contact1*Contact2
+        Q.append(sum(sum(Native*Contact)))
+        Qres.append(sum(Native*Contact))
+        Qhres.append(sum(Native_h*Contact))
+        Qhi5res.append(sum(Native_hi5*Contact))
+        A.append(sum(sum((1 - Native)*Contact)))
+        Qh.append(sum(sum(Native_h*Contact)))
+
+        framenum += 1
+        #if (framenum % 1000) == 0:
+        #    print "Frame #", framenum 
+
+    ## Save all the data files!
+    np.savetxt("Qprob.dat",np.array(Q))
+    np.savetxt("Qres.dat",np.array(Qres),delimiter=" ",fmt="%d")
+    np.savetxt("Qhres.dat",np.array(Qhres),delimiter=" ",fmt="%d")
+    np.savetxt("Qhi5res.dat",np.array(Qhi5res),delimiter=" ",fmt="%d")
+    np.savetxt("Qhprob.dat",np.array(Qh))
+    np.savetxt("Qnhprob.dat",np.array(Q)-np.array(Qh))
+    np.savetxt("Aprob.dat",np.array(A))
+    return Q, Qh
 
 def calculate_Q():
     ''' A routine to calculate Q, Q_helical, Q_non-helical and A (not-native
