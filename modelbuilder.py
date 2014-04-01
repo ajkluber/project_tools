@@ -233,6 +233,12 @@ class ModelBuilder(object):
         elif task == "Equil_Tf_analysis":
             print "Starting to check if Equil_Tf_analysis completed..."
             analysis.Tf_loop.check_completion(System,self.append_log,equil=True)
+        else:
+            print "ERROR!"
+            print "  Couldn't find next option for task:",task
+            print "  Please check that things are ok."
+            print "  Exiting."
+            raise SystemExit
 
     def logical_flowchart_finished(self,System,Model,sub,task):
         if task == "Tf_loop_iteration":
@@ -266,9 +272,16 @@ class ModelBuilder(object):
                 print "Starting calculating dH for mutants..."
                 mutations.phi_values.calculate_dH_for_mutants(Model,System,self.append_log)
         elif task == "Calculating_dH":
-            pass
+            ## To Do: Save Phi values, ddG values to file.
+            pass 
             #mutations.phi_values.calculate_phi_values(Model,System,self.append_log)
             #mutations.phi_values.calculate_new_epsilons(Model,System,self.append_log)
+        else:
+            print "ERROR!"
+            print "  Couldn't find next option for task:",task
+            print "  Please check that things are ok."
+            print "  Exiting."
+            raise SystemExit
 
 
     def new_project(self,args,modeloptions):

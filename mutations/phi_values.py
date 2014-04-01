@@ -215,11 +215,10 @@ def calculate_phi_values(Model,System,append_log,coord="Q"):
     dH = get_mutant_dH(savedir,mutants[:10])
 
     print "  Computing phi values..."
-    n_frames = float(dH.shape[1])
     beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
-    bracket_exp_D = sum(np.exp(-beta*dH[:,states[0]]).T)/n_frames
-    bracket_exp_TS = sum(np.exp(-beta*dH[:,states[1]]).T)/n_frames
-    bracket_exp_N = sum(np.exp(-beta*dH[:,states[2]]).T)/n_frames
+    bracket_exp_D = sum(np.exp(-beta*dH[:,states[0]]).T)/float(dH[:,states[0]].shape)
+    bracket_exp_TS = sum(np.exp(-beta*dH[:,states[1]]).T)/float(dH[:,states[1]].shape)
+    bracket_exp_N = sum(np.exp(-beta*dH[:,states[2]]).T)/float(dH[:,states[2]].shape)
 
     ddG_dagger = (1./beta)*np.log(bracket_exp_D/bracket_exp_TS)
     ddG_circ = (1./beta)*np.log(bracket_exp_D/bracket_exp_N)
