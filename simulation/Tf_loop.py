@@ -187,7 +187,7 @@ def run_equilibrium_simulations(Model,System,append_log):
     T_string = ''
     for n in range(7):
         #T = "%.2f" % (float(Tf)+float(Tf)*(0.003*(n-1)))
-        T = "%.2f" % (float(Tf)+float(Tf)*(0.003*(n-2)))
+        T = "%.2f" % (float(Tf)+float(Tf)*(0.003*(n-3)))
         for simnum in range(1,6):
             simpath = T+"_"+str(simnum)
             ## Only start the simulation if directory doesn't exist.

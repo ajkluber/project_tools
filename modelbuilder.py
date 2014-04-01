@@ -266,7 +266,7 @@ class ModelBuilder(object):
             analysis.Tf_loop.aggregate_equilibrium_runs(System,self.append_log)
             print "Plotting aggregated data PMFS..."
             analysis.plot.pmfs.plot_aggregated_data(System)
-            if Model.modelnameshort in ["HetGo","DMC"]:
+            if Model.modelnameshort in ["HomGo","HetGo","DMC"]:
                 print "Starting prepping mutant pdbs..."
                 mutations.preppdbs.prep_mutants(System,self.append_log)
                 print "Starting calculating dH for mutants..."
