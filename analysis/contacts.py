@@ -171,6 +171,25 @@ def new_calculate_Q():
         This function is the primary purpose for this submodule.
     '''
     
+    Qref = np.loadtxt("Qref_cryst.dat")
+    native = []
+    native_helical = []
+    native_local = []
+    for i in range(len(Qref)-4):
+        native.extend(Qref[i,i+4:])
+
+        temp = list(np.zeros(len(Qref[i,i+4:])))
+        temp[4] = 1
+        native_helical.extend(temp)
+
+        temp2 = list(np.zeros(len(Qref[i,i+4:])))
+        temp2[4] = 1
+        temp2[5] = 1
+        temp2[6] = 1
+        native_local.extend(temp2)
+    native = np.array(native)
+    native_helical = np.array(native_helical)
+    native_local = np.array(native_local)
 
     print "  Loading BeadBead.dat"
     beadbead = np.loadtxt("BeadBead.dat",dtype=str) 
@@ -183,72 +202,38 @@ def new_calculate_Q():
 
     print "  Computing distances with mdtraj..."
     traj = md.load("traj.xtc",top="Native.pdb")
-    traj_dist = md.compute_distances(traj,pairs)
+    distances = md.compute_contacts(traj,pairs)
+    contacts = (distances[0][:] <= 1.2*sigij).astype(int)
+    
+    Qres = contacts*native
+    Q = sum(Qres.T)
+    A = sum((contacts*(1-native)).T)
 
-    Qref = np.loadtxt("Qref_cryst.dat")
+    Qhres = contacts*native_helical
+    Qnhres = Qres - Qhres
+    Qh = sum(Qhres.T)
+    Qnh = sum(Qnhres.T)
+    
+    
+    Qlocalres = contacts*native_local
+    Qnonlocalres = Qres - Qlocalres
+    Qlocal = sum(Qlocalres.T)
+    Qnonlocal = sum(Qnonlocalres.T)
 
-    Native_cryst, Sig, N = get_beadbead_info()
-    #Native = np.loadtxt("Qref_prob.da")
-    Native = np.loadtxt("Qref_cryst.dat")
-    ## Define Q_local as the helical contacts (i,i+4) as well as (i,i+5) 
-    ## [and (i,i+6)]. This is assuming that contacts to i+4 and i+5 
-    ## stabilize helices.
-    h_diag = (np.arange(0,N-4),np.arange(4,N))
-    h_diag2 = (np.arange(0,N-5),np.arange(5,N))
-    #h_diag3 = (np.arange(0,N-6),np.arange(6,N))
-    Native_h = np.zeros((N,N),float)
-    Native_hi5 = np.zeros((N,N),float)
-    Native_h[h_diag] = Native[h_diag]
-    #Native_h[h_diag2] = Native[h_diag2]
-    #Native_h[h_diag3] = Native[h_diag3]
-    Native_hi5[h_diag2] = Native[h_diag2]
+    np.savetxt("Qprob.dat",Q)
+    np.savetxt("Q.dat",Q)
+    np.savetxt("Qres.dat",Qres,delimiter=" ",fmt="%d")
+    np.savetxt("Qhres.dat",Qhres,delimiter=" ",fmt="%d")
+    np.savetxt("Qnhres.dat",Qnhres,delimiter=" ",fmt="%d")
+    np.savetxt("Qlocalres.dat",Qlocalres,delimiter=" ",fmt="%d")
+    np.savetxt("Qnonlocalres.dat",Qnonlocalres,delimiter=" ",fmt="%d")
 
-    Q = []
-    Qh = []
-    Qres = []
-    Qhres = []
-    Qhi5res = []
-    A = []
-    framenum = 0 
-    frames = mol_reader.open("traj.xtc") 
-    for frame in frames.read():
-        D = np.zeros((N,N),float)
-        X = np.reshape(np.array(frame.coordinates), (N,3))
+    np.savetxt("Qhprob.dat",Qh)
+    np.savetxt("Qnhprob.dat",Qnh)
+    np.savetxt("Qh.dat",Qh)
+    np.savetxt("Qnh.dat",Qnh)
+    np.savetxt("A.dat",A)
 
-        ## This loops allows the construction of the pairwise distance 
-        ## distance matrix without a second inner loop by computing
-        ## the diagonals. Takes advantage of vectorized operations.
-        for i in range(4,N):
-            diff = X[0:-i,:] - X[i:,:]
-            d = np.sqrt(diff[:,0]**2 + diff[:,1]**2 + diff[:,2]**2)
-            ## Slice to insert values on the diagonal   
-            diag = (np.arange(0,N-i),np.arange(i,N))
-            D[diag] = d
-
-        ## Contact matrix. Distances are within 125% of equilibrium 
-        ## distance. Sum up contacts to get Q, Q_helical, Q_non-helical.
-        Contact1 = (D <= 1.25*10*Sig).astype(int)
-        Contact2 = (D > 0.01).astype(int)
-        Contact = Contact1*Contact2
-        Q.append(sum(sum(Native*Contact)))
-        Qres.append(sum(Native*Contact))
-        Qhres.append(sum(Native_h*Contact))
-        Qhi5res.append(sum(Native_hi5*Contact))
-        A.append(sum(sum((1 - Native)*Contact)))
-        Qh.append(sum(sum(Native_h*Contact)))
-
-        framenum += 1
-        #if (framenum % 1000) == 0:
-        #    print "Frame #", framenum 
-
-    ## Save all the data files!
-    np.savetxt("Qprob.dat",np.array(Q))
-    np.savetxt("Qres.dat",np.array(Qres),delimiter=" ",fmt="%d")
-    np.savetxt("Qhres.dat",np.array(Qhres),delimiter=" ",fmt="%d")
-    np.savetxt("Qhi5res.dat",np.array(Qhi5res),delimiter=" ",fmt="%d")
-    np.savetxt("Qhprob.dat",np.array(Qh))
-    np.savetxt("Qnhprob.dat",np.array(Q)-np.array(Qh))
-    np.savetxt("Aprob.dat",np.array(A))
     return Q, Qh
 
 def calculate_Q():
