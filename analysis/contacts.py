@@ -171,11 +171,24 @@ def new_calculate_Q():
         This function is the primary purpose for this submodule.
     '''
     
+
+    print "  Loading BeadBead.dat"
+    beadbead = np.loadtxt("BeadBead.dat",dtype=str) 
+    sigij = beadbead[:,5].astype(float)
+    epsij = beadbead[:,6].astype(float)
+    deltaij = beadbead[:,7].astype(float)
+    interaction_numbers = beadbead[:,4].astype(str)
+    pairs = beadbead[:,:2].astype(int) 
+    pairs -= np.ones(pairs.shape,int)
+
+    print "  Computing distances with mdtraj..."
     traj = md.load("traj.xtc",top="Native.pdb")
-    dist = md.compute_distances(traj)
+    traj_dist = md.compute_distances(traj,pairs)
+
+    Qref = np.loadtxt("Qref_cryst.dat")
 
     Native_cryst, Sig, N = get_beadbead_info()
-    #Native = np.loadtxt("Qref_prob.dat")
+    #Native = np.loadtxt("Qref_prob.da")
     Native = np.loadtxt("Qref_cryst.dat")
     ## Define Q_local as the helical contacts (i,i+4) as well as (i,i+5) 
     ## [and (i,i+6)]. This is assuming that contacts to i+4 and i+5 

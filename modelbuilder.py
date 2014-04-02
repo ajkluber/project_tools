@@ -260,7 +260,7 @@ class ModelBuilder(object):
         elif task == "Equil_Tf":
             print "Starting Equil_Tf_analysis..."
             analysis.Tf_loop.analyze_temperature_array(System,self.append_log,equil=True)
-        elif task == "Equil_Tf_analysis":
+        elif task == "Equil_Tf_analysis" or task == "Aggregating_Equil_Runs":
             ## Aggregrate equil_Tf data for each temperature and plot PMFs
             print "Starting aggregate data..."
             analysis.Tf_loop.aggregate_equilibrium_runs(System,self.append_log)
