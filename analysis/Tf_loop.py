@@ -126,8 +126,12 @@ def check_completion(System,append_log,equil=False):
     cwd = os.getcwd()
     if equil == True:
         sub = System.subdir+"/"+System.mutation_active_directory
+        qwalltime = "00:20:00"
+        cwalltime = "00:10:00"
     else:
         sub = System.subdir+"/"+System.Tf_active_directory
+        qwalltime = "00:04:00"
+        cwalltime = "00:02:00"
     os.chdir(cwd+"/"+sub)
     cwd2 = os.getcwd()
     print "  Checking analysis in directory "+sub
@@ -148,7 +152,9 @@ def check_completion(System,append_log,equil=False):
             System.append_log("    analysis done for "+tdir)
             done = 1
         else:
-            print "    Crunching not done for "+tdir
+            print "    Crunching not done. Retrying for "+tdir
+            crunch_coordinates.crunch_all(System.subdir+"_"+tdir,walltime=cwalltime)
+            crunch_coordinates.crunch_Q(System.subdir+"_"+tdir,walltime=qwalltime)
             done = 0
         os.chdir(cwd2)
 
