@@ -50,16 +50,14 @@ def main():
     ''' One possible branches: Calculate Q '''
     parser = argparse.ArgumentParser(description='Calculate the (Non)Native contact matrix')
 
-    parser.add_argument('--calcQ', action='store_true', help='calculate Q')
+    parser.add_argument('--calc', action='store_true', help='calculate Q')
 
     args = parser.parse_args()
     
-    if args.calcQ == True:
+    if args.calc == True:
         calculate_Q()
     else:
         pass
-        
-
 
 def contacts_for_states(framestate,numstates,name,cutoff=1.25):
     ''' Calculate contacts given a list of frames to use. This function is to be
@@ -163,29 +161,32 @@ def equil_contacts_for_states(framestate,numstates,savedir,Temp,numtemps,cutoff=
         np.savetxt(savedir+"/map_%s.dat" % m,statesprobij[m])
     return statesprobij
 
-def new_calculate_Q():
-    ''' A routine to calculate Q, Q_helical, Q_non-helical and A (not-native
-        contacts) probabalistically. Meant to be run from a PBS script that 
-        is submitted in the directory containing all the files. 
-
-        This function is the primary purpose for this submodule.
+def calculate_Q():
+    ''' Calculate contacts and save number of native contacts,
+        number of native helical (and non-helical) contacts, 
+        number of native local (and non-local) contacits. Uses
+        MDTraj.
     '''
     
     Qref = np.loadtxt("Qref_cryst.dat")
+    N = len(Qref)
     native = []
     native_helical = []
     native_local = []
-    for i in range(len(Qref)-4):
+    print len(Qref)
+    for i in range(N-4):
         native.extend(Qref[i,i+4:])
-
         temp = list(np.zeros(len(Qref[i,i+4:])))
-        temp[4] = 1
-        native_helical.extend(temp)
-
         temp2 = list(np.zeros(len(Qref[i,i+4:])))
-        temp2[4] = 1
-        temp2[5] = 1
-        temp2[6] = 1
+        
+        if len(temp) >= 5:
+            temp[4] = 1
+            temp2[4] = 1
+            if len(temp2) >= 6:
+                temp2[5] = 1
+                if len(temp2) >= 7:
+                    temp2[6] = 1
+        native_helical.extend(temp)
         native_local.extend(temp2)
     native = np.array(native)
     native_helical = np.array(native_helical)
@@ -205,43 +206,68 @@ def new_calculate_Q():
     distances = md.compute_contacts(traj,pairs)
     contacts = (distances[0][:] <= 1.2*sigij).astype(int)
     
-    Qres = contacts*native
-    Q = sum(Qres.T)
+    Qall = contacts*native
+    Q = sum(Qall.T)
     A = sum((contacts*(1-native)).T)
 
-    Qhres = contacts*native_helical
-    Qnhres = Qres - Qhres
+    Qres = np.zeros((traj.n_frames,N),int) 
+    Qhres = np.zeros((traj.n_frames,N),int) 
+    Qlocalres = np.zeros((traj.n_frames,N),int) 
+    print "  Summing native contacts per residue..."
+    for k in range(N-4):
+        slice = np.zeros(Qall.shape[1],int)
+        sliceh = np.zeros(Qall.shape[1],int)
+        slicelocal = np.zeros(Qall.shape[1],int)
+        accum = 0
+        for n in range(k+1):
+            slice[accum+k-n] = 1
+            sliceh[accum] = 1
+            slicelocal[accum] = 1
+            accum += N-4-n
+
+        accum -= N-4-n
+        Qres[:,k+4] = sum(Qall[:,slice==1].T)
+        Qhres[:,k+4] = Qall[:,accum]
+        if k >= N-6:
+            if k < (N-5):
+                Qlocalres[:,k+4] += Qall[:,accum]
+                Qlocalres[:,k+4] += Qall[:,accum+1]
+            else:
+                Qlocalres[:,k+4] += Qall[:,accum]
+        else:
+            Qlocalres[:,k+4] += Qall[:,accum]
+            Qlocalres[:,k+4] += Qall[:,accum+1]
+            Qlocalres[:,k+4] += Qall[:,accum+2]
+
+    Qnhres = Qres - Qhres  
+    Qnonlocalres = Qres - Qlocalres 
+
+    print "  Summing native contacts..."
     Qh = sum(Qhres.T)
     Qnh = sum(Qnhres.T)
-    
-    
-    Qlocalres = contacts*native_local
-    Qnonlocalres = Qres - Qlocalres
     Qlocal = sum(Qlocalres.T)
     Qnonlocal = sum(Qnonlocalres.T)
 
-    np.savetxt("Qprob.dat",Q)
+    print "  Saving..."
     np.savetxt("Q.dat",Q)
+    np.savetxt("A.dat",A)
+    np.savetxt("Qh.dat",Qh)
+    np.savetxt("Qnh.dat",Qnh)
+    np.savetxt("Qlocal.dat",Qlocal)
+    np.savetxt("Qnonlocal.dat",Qnonlocal)
     np.savetxt("Qres.dat",Qres,delimiter=" ",fmt="%d")
     np.savetxt("Qhres.dat",Qhres,delimiter=" ",fmt="%d")
     np.savetxt("Qnhres.dat",Qnhres,delimiter=" ",fmt="%d")
     np.savetxt("Qlocalres.dat",Qlocalres,delimiter=" ",fmt="%d")
     np.savetxt("Qnonlocalres.dat",Qnonlocalres,delimiter=" ",fmt="%d")
 
+    ## Saving old filenames for backwards compatibility.
+    np.savetxt("Qprob.dat",Q)
     np.savetxt("Qhprob.dat",Qh)
     np.savetxt("Qnhprob.dat",Qnh)
-    np.savetxt("Qh.dat",Qh)
-    np.savetxt("Qnh.dat",Qnh)
-    np.savetxt("A.dat",A)
 
-    return Q, Qh
-
-def calculate_Q():
-    ''' A routine to calculate Q, Q_helical, Q_non-helical and A (not-native
-        contacts) probabalistically. Meant to be run from a PBS script that 
-        is submitted in the directory containing all the files. 
-
-        This function is the primary purpose for this submodule.
+def old_calculate_Q():
+    '''   DEPRECATED AK 4-2-2014
     '''
     
     Native_cryst, Sig, N = get_beadbead_info()
@@ -356,6 +382,8 @@ def probabilistic_reference(cutoff=1.25):
         a big difference. 
         
         **Currently not used models based on Go model. 1-23-14 AK**
+
+        coord_util mol_reader DEPRECATED 4-2-2014 AK
 
     '''
     Native_cryst, Sig, N = get_beadbead_info()
