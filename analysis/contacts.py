@@ -270,6 +270,7 @@ def old_calculate_Q():
     '''   DEPRECATED AK 4-2-2014
     '''
     
+    print "********** YOU SHOULDNT SEE THIS MESSAGE 1 **************"
     Native_cryst, Sig, N = get_beadbead_info()
     #Native = np.loadtxt("Qref_prob.dat")
     Native = np.loadtxt("Qref_cryst.dat")
@@ -340,6 +341,7 @@ def get_beadbead_info(path='.'):
     pairs = []
     #pdb = np.loadtxt("Native.pdb",dtype=str)
     #coords = pdb[:,6:9].astype(float)
+    print "********* YOU SHOULDN'T SEE THIS MESSAGE!!! *************"
     coords = get_pdb_coords(path+"/Native.pdb")
     N = len(coords)
     Sig = np.zeros((N,N),float)
