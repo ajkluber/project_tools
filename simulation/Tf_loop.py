@@ -28,6 +28,7 @@ def check_completion(System,append_log,equil=False):
     error = 0
     for k in range(len(temperatures)):
         tdir = temperatures[k]
+        check_error = run_gmxcheck(tdir)
         ## Determine the number of steps for completed run.
         for line in open(tdir+"/"+"grompp.mdp","r"):
             if line[:6] == "nsteps":
@@ -62,6 +63,26 @@ def check_completion(System,append_log,equil=False):
             append_log(System.subdir,"Finished: Tf_loop_iteration")
     System.error = error
     os.chdir(cwd)
+
+def run_gmxcheck(dir):
+    cwd = os.getcwd()
+    os.chdir(dir)
+
+    print "  Running gmxcheck"
+    check = "gmxcheck -f traj.xtc"
+    sb.call(check.split(),stdout=open("check.out","w"),stderr=open("check.err","w")) 
+    
+    error = "Fatal error"
+    if (error in open("check.err","r").read()) or (error in open("check.out","r").read()):
+        print "  FATAL ERROR in directory: ",dir
+        print "  somethings wrong with Gromacs traj.xtc file. See %s/check.err" % dir
+        print open("check.err","r").read()
+        error = 1
+    else:
+        error = 0
+      
+    os.chdir(cwd)
+    return error
 
 def determine_new_T_array():
     ''' Find the temperatures which bracket the folding temperature.

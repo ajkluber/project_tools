@@ -353,7 +353,9 @@ def run_wham(outputstyle):
     reaction_coord_pairs = ((0,1),(2,1),(3,4),(2,3))
     cwd = os.getcwd()
     #copy_WHAM_executable = "cp /projects/cecilia/ajk8/dmc_model/free_energy_analysis/WHAM " + cwd + "/wham/"
-    copy_WHAM_executable = "cp /projects/cecilia/ajk8/model_builder/analysis/WHAM " + cwd + "/wham/"
+    #copy_WHAM_executable = "cp /projects/cecilia/ajk8/model_builder/analysis/WHAM " + cwd + "/wham/"
+    ## Trying to remove references to ajk8 directory.
+    copy_WHAM_executable = "cp ${PROJECTS}/model_builder/analysis/WHAM " + cwd + "/wham/"
     sb.call(copy_WHAM_executable.split())
     if outputstyle == "HeatCap":
         submit_heat_capacity_job()

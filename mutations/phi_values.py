@@ -144,12 +144,13 @@ def calculate_dH_for_mutants(Model,System,append_log):
     '''
     
     append_log(System.subdir,"Starting: Calculating_dH")
-    os.chdir(System.subdir)
 
     cwd = os.getcwd()
     sub = cwd+"/"+System.subdir+"/"+System.mutation_active_directory
     T = get_Tf_choice(sub)
     savedir = sub+"/"+T+"_agg"
+
+    os.chdir(System.subdir)
 
     mutants = [ x.split()[1]+x.split()[0]+x.split()[2] for x in open("mutants/mutations.txt","r").readlines()[1:] ]
 
