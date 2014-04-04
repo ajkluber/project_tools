@@ -9,7 +9,7 @@ import wham
 import plot
 
 
-def aggregate_equilibrium_runs(System,append_log,reagg=True):
+def aggregate_equilibrium_runs(System,append_log,reagg=False):
     ''' Aggregate equilibrium simulation data into one directory for    
         ease of access.'''
 

@@ -15,6 +15,120 @@ Seed script to figure out how to calculate Phi-values.
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
+def calculate_dH_for_mutants(Model,System,append_log):
+    ''' First task is to calculate the perturbations for each mutation for
+        each frame in the trajectory.   May be generalized in the future or 
+        moved inside Model to deal with Models with multiple parameters per
+        interaction (e.g. desolvation barrier, etc.)
+    '''
+    
+    append_log(System.subdir,"Starting: Calculating_dH")
+
+    cwd = os.getcwd()
+    sub = cwd+"/"+System.subdir+"/"+System.mutation_active_directory
+    T = get_Tf_choice(sub)
+    savedir = sub+"/"+T+"_agg"
+
+    os.chdir(System.subdir)
+
+    mutants = [ x.split()[1]+x.split()[0]+x.split()[2] for x in open("mutants/mutations.txt","r").readlines()[1:] ]
+
+    sigij,epsij,deltaij,interaction_nums,keep_interactions,pairs,traj,traj_dist = load_eps_delta_sig_traj(savedir)
+    Fij = get_mutant_fij(mutants,keep_interactions)
+    qij = get_Qij(Model,traj_dist,sigij,deltaij,interaction_nums)
+
+    for j in range(len(Fij)):
+        mut = mutants[j]
+        if not os.path.exists(savedir+"/dH_"+mut+".dat"):
+            fij = Fij[j]
+            print "    Computing dH vectorized for ", mut
+            dH_k = -1.*np.array([ sum(x) for x in fij*qij ])
+            print "    Saving dH for ",mut
+            np.savetxt(savedir+"/dH_"+mut+".dat",dH_k)
+    os.chdir(cwd)
+    append_log(System.subdir,"Finished: Calculating_dH")
+
+def calculate_phi_values(Model,System,append_log,coord):
+    ''' Calculate the phi values for a trajectory. Requires only state 
+        definitions and dH (energetic perturbation for each mutation).
+    '''
+    
+    append_log(System.subdir,"Starting: Calculating_phi_values")
+    cwd = os.getcwd()
+    sub = cwd+"/"+System.subdir+"/"+System.mutation_active_directory
+    T = get_Tf_choice(sub)
+    savedir = sub+"/"+T+"_agg"
+    beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
+    os.chdir(System.subdir)
+    if not os.path.exists(savedir+"/phi"):
+        os.mkdir(savedir+"/phi")
+
+    print "  Loading mutations.txt"
+    mutants = [ x.split()[1]+x.split()[0]+x.split()[2] for x in open("mutants/mutations.txt","r").readlines()[1:] ]
+    print "  Getting state bounds for coordinate:",coord
+    bounds, states = get_state_bounds(savedir,coord)
+    num_states = len(states)
+    print "  Loading dH for mutants"
+    dH = get_mutant_dH(savedir,mutants)
+
+    ## Compute deltaG for each state. Then DeltaDelta G with 
+    ## respect to the first state (assumed to be the denatured state).
+    ## Units of kT.
+    print "  Computing ddG and phi values..."
+    dG = [ -np.log(sum(np.exp(-beta*dH[:,states[X]]).T)/float(len(dH[:,states[X]]))) for X in range(num_states) ]
+    ddG = [ dG[X]-dG[0] for X in range(1,num_states) ]
+
+    ## Compute the phi value for each mutation. Phi is the ratio
+    ## of DeltaDeltaG of the transition state(s) to DeltaDelta G
+    ## of the native state (assumed to be the last state). unitless.
+    phi = [ ddG[X]/ddG[-1] for X in range(len(ddG)-1) ]
+    
+    save_phi_values(savedir,mutants,coord,bounds,dG,ddG,phi)
+    os.chdir(cwd)
+    append_log(System.subdir,"Finished: Calculating_phi_values")
+
+def get_mutant_dH(path,mutants):
+    ''' Load the mutant energy perturbations dH_<mut>.dat'''
+
+    i = 0
+    for mut in mutants:
+        temp = np.loadtxt(path+"/dH_"+mut+".dat")
+        print "    Loading:",mut
+        if i == 0:
+            dH = np.zeros((len(mutants),len(temp)),float)
+            dH[i,:] = temp
+        else:
+            dH[i,:] = temp
+        i += 1
+    
+    return dH
+
+def get_mutant_fij(mutants,keep_interactions):
+    ''' Load in the fraction of contact loss for each mutation.
+        The matrix needs to be filtered to include only pair 
+        interactions that correspond to parameters that are going
+        to be mutated.'''
+    k = 0
+    for mut in mutants:
+        fij_temp = np.loadtxt("mutants/fij_"+mut+".dat")
+        fij_all = []
+        for i in range(len(fij_temp)-4):
+            fij_all.extend(fij_temp[i,i+4:])
+        fij = np.array(fij_all)[keep_interactions != 0]
+        if k == 0:
+            Fij = np.zeros((len(mutants),len(fij)),float)
+            Fij[0,:] = fij
+        else:
+            Fij[k,:] = fij
+        k += 1
+        
+    return Fij
+
+def get_Qij(Model,r,sig,delta,interaction_nums):
+    ''' Calculates the normalized interaction betwen nonbonded pairs.'''
+    print "  Calculating Qij..."
+    qij = Model.nonbond_interaction(r,sig,delta)
+    return qij
 
 def get_state_bounds(path,coord):
     ''' Get bounds for each state for specified coordinate. Return a list of boolean
@@ -60,31 +174,14 @@ def get_Tf_choice(sub):
         print "  Calculating dH for temp ",Tf_choice
     return Tf_choice
 
-def get_mutant_fij(mutants,keep_interactions):
-    Fij = []
-    i = 0
-    for mut in mutants:
-        fij_temp = np.loadtxt("mutants/fij_"+mut+".dat")
-        fij_all = []
-        for i in range(len(fij_temp)-4):
-            fij_all.extend(fij_temp[i,i+4:])
-        fij = np.array(fij_all)[keep_interactions != 0]
-        if i == 0:
-            Fij = np.zeros((len(mutants),len(fij)),float)
-            Fij[0,:] = fij
-        else:
-            Fij[i,:] = fij
-        i += 1
-        
-    return Fij
         
 def load_eps_delta_sig_traj(subdir):
     ''' Load in the info from the BeadBead.dat file. Sig_ij, eps_ij, delta_ij and
         index pairs. This information is constant for a trajectory. Filter all fields
         to keep only interactions with nonzero interaction type.
 
-        May be generalized in the future or moved inside Model to deal with Models with
-        multiple parameters per interaction (e.g. desolvation barrier, etc.)
+        In calculating the mutations only modify parameters that have interaction_type
+        in the BeadBead.dat =/= [0,ds,ss]. 
     '''
     print "  Loading BeadBead.dat"
     beadbead = np.loadtxt(subdir+"/BeadBead.dat",dtype=str) 
@@ -118,122 +215,15 @@ def load_eps_delta_sig_traj(subdir):
 
     return sigij,epsij,deltaij,interaction_numbers,keep_interactions,pairs,traj,traj_dist
 
-def calculate_Qij(Model,r,sig,delta,interaction_nums):
-    ''' Calculates the normalized interaction betwen nonbonded pairs.'''
-    #if Model.interaction_types[0] == "LJ12-10":
-    #    def Qij(r,sig,delta):
-    #        return 5.*((sig/r)**12) - 6.*delta*((sig/r)**10)
-    #else:
-    #    print "ERROR!"
-    #    print "  Unrecognized interaction type ", Model.interaction_types[0]
-    #    print "  Exiting."
-    #    raise SystemExit
-    #print "  Number frames:", traj.n_frames,"  Number atoms:",traj.n_atoms
-
-    print "  Calculating Qij..."
-    qij = Model.nonbond_interaction(traj_dist,sigij,deltaij)
-    return qij
-
-def calculate_dH_for_mutants(Model,System,append_log):
-    ''' First task is to calculate the perturbations for each mutation for
-        each frame in the trajectory.
-
-        In calculating the mutations only modify parameters that have interaction_type
-        in the BeadBead.dat =/= [0,ds,ss]. 
-    '''
-    
-    append_log(System.subdir,"Starting: Calculating_dH")
-
-    cwd = os.getcwd()
-    sub = cwd+"/"+System.subdir+"/"+System.mutation_active_directory
-    T = get_Tf_choice(sub)
-    savedir = sub+"/"+T+"_agg"
-
-    os.chdir(System.subdir)
-
-    mutants = [ x.split()[1]+x.split()[0]+x.split()[2] for x in open("mutants/mutations.txt","r").readlines()[1:] ]
-
-    sigij,epsij,deltaij,interaction_nums,keep_interactions,pairs,traj,traj_dist = load_eps_delta_sig_traj(savedir)
-    Fij = get_mutant_fij(mutants,keep_interactions)
-    qij = calculate_Qij(Model,traj_dist,sigij,deltaij,interaction_nums)
-
-    for j in range(len(fij)):
-        mut = mutants[j]
-        if not os.path.exists(savedir+"/dH_"+mut+".dat"):
-            fij = Fij[j]
-            print "    Computing dH vectorized for ", mut
-            dH_k = -1.*np.array([ sum(x) for x in fij*qij ])
-            print "    Saving dH for ",mut
-            np.savetxt(savedir+"/dH_"+mut+".dat",dH_k)
-    os.chdir(cwd)
-     
-    append_log(System.subdir,"Finished: Calculating_dH")
-
-def get_mutant_dH(path,mutants):
-
-    i = 0
-    for mut in mutants:
-        temp = np.loadtxt(path+"/dH_"+mut+".dat")
-        print "    Loading:",mut
-        if i == 0:
-            dH = np.zeros((len(mutants),len(temp)),float)
-            dH[i,:] = temp
-        else:
-            dH[i,:] = temp
-        i += 1
-    
-    return dH
-
-def calc_phi_values_thermodynamic_perturbation():
-    pass
-
-def calculate_phi_values(Model,System,append_log,coord="Q"):
-    ''' Calculate the phi values for a trajectory.
-        In calculating the mutations only modify parameters that have interaction_type
-        in the BeadBead.dat =/= [0,ds,ss]. 
-    '''
-    
-    append_log(System.subdir,"Starting: Calculating_phi_values")
-    cwd = os.getcwd()
-    sub = cwd+"/"+System.subdir+"/"+System.mutation_active_directory
-    T = get_Tf_choice(sub)
-    savedir = sub+"/"+T+"_agg"
-    beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
-    os.chdir(System.subdir)
-    if not os.path.exists(savedir+"/phi"):
-        os.mkdir(savedir+"/phi")
-
-    print "  Loading mutations.txt"
-    mutants = [ x.split()[1]+x.split()[0]+x.split()[2] for x in open("mutants/mutations.txt","r").readlines()[1:] ]
-    print "  Getting state bounds for coordinate:",coord
-    bounds, states = get_state_bounds(savedir,coord)
-    num_states = len(states)
-    print "  Loading dH for mutants"
-    dH = get_mutant_dH(savedir,mutants)
-
-    ## Compute deltaG for each state. Then DeltaDelta G with 
-    ## respect to the first state (assumed to be the denatured state).
-    ## Units of kT.
-    print "  Computing ddG and phi values..."
-    dG = [ -np.log(sum(np.exp(-beta*dH[:,states[X]]).T)/float(len(dH[:,states[X]]))) for X in range(num_states) ]
-    ddG = [ dG[X]-dG[0] for X in range(1,num_states) ]
-
-    ## Compute the phi value for each mutation. Phi is the ratio
-    ## of DeltaDeltaG of the transition state(s) to DeltaDelta G
-    ## of the native state (assumed to be the last state). unitless.
-    phi = [ ddG[X]/ddG[-1] for X in range(len(ddG)-1) ]
-    
-    save_phi_values(savedir,mutants,coord,bounds,dG,ddG,phi)
-    os.chdir(cwd)
-    append_log(System.subdir,"Finished: Calculating_phi_values")
-
 def save_phi_values(savedir,mutants,coord,bounds,dG,ddG,phi):
+    ''' Save the calculated dG, ddG, and phi values for states'''
 
     header_string = "# mut" 
     for i in range(len(bounds)):
         header_string += "     dG_"+bounds[i][0]+"(kT)"
+    header_string += "    "
     for i in range(1,len(bounds)):
-        header_string += "     ddG_"+bounds[i][0]+"-"+bounds[0][0]+"(kT)"
+        header_string += " ddG_"+bounds[i][0]+"-"+bounds[0][0]+"(kT)"
     for i in range(1,len(bounds)-1):
         header_string += "   Phi_"+bounds[i][0]+"/"+bounds[-1][0]
 
@@ -245,7 +235,7 @@ def save_phi_values(savedir,mutants,coord,bounds,dG,ddG,phi):
         for i in range(len(ddG)):
             line += "  %10.5f " % ddG[i][j]
         for i in range(len(phi)):
-            line += "  %5.3f  " % phi[i][j]
+            line += "  %10.5f  " % phi[i][j]
         data_string += line+"\n"
     print "ddG and Phi values:"
     print header_string

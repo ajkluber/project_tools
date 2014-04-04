@@ -272,9 +272,7 @@ class ModelBuilder(object):
                 print "Starting calculating dH for mutants..."
                 mutations.phi_values.calculate_dH_for_mutants(Model,System,self.append_log)
         elif task == "Calculating_dH":
-            ## To Do: Save Phi values, ddG values to file.
-            pass 
-            #mutations.phi_values.calculate_phi_values(Model,System,self.append_log)
+            mutations.phi_values.calculate_phi_values(Model,System,self.append_log,"Q")
             #mutations.phi_values.calculate_new_epsilons(Model,System,self.append_log)
         else:
             print "ERROR!"
