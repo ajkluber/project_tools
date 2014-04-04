@@ -61,7 +61,6 @@ def get_Tf_choice(sub):
     return Tf_choice
 
 def get_mutant_fij(mutants,keep_interactions):
-    print "    Loading fij_"+mut+".dat"[1:]
     Fij = []
     i = 0
     for mut in mutants:
