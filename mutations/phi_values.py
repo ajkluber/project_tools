@@ -19,8 +19,8 @@ GAS_CONSTANT_KJ_MOL = 0.0083144621
 def get_state_bounds(path,coord):
     ''' Get bounds for each state for specified coordinate. Return a list of boolean
         arrays that specifies if each frame is in the given state or not.'''
-    print path+"/"+coord+"_states.txt"
-    print open(path+"/"+coord+"_states.txt","r").read()
+    #print path+"/"+coord+"_states.txt" ## DEBUGGING
+    #print open(path+"/"+coord+"_states.txt","r").read() ## DEBUGGING
 
     statefile = open(path+"/"+coord+"_states.txt","r").readlines()[1:]
     bounds = []
@@ -47,7 +47,7 @@ def get_state_bounds(path,coord):
         print "  State: ", bounds[i][0], " is defined as between: ",bounds[i][2], bounds[i][3]
         states.append((bounds[i][2] <= data)*(data <= bounds[i][3]))
 
-    return states
+    return bounds,states
 
 def get_Tf_choice(sub):
     if not os.path.exists(sub+"/Tf_choice.txt"):
@@ -184,9 +184,11 @@ def get_mutant_dH(path,mutants):
     
     return dH
 
+def calc_phi_values_thermodynamic_perturbation():
+    pass
+
 def calculate_phi_values(Model,System,append_log,coord="Q"):
     ''' Calculate the phi values for a trajectory.
-
         In calculating the mutations only modify parameters that have interaction_type
         in the BeadBead.dat =/= [0,ds,ss]. 
     '''
@@ -196,47 +198,63 @@ def calculate_phi_values(Model,System,append_log,coord="Q"):
     sub = cwd+"/"+System.subdir+"/"+System.mutation_active_directory
     T = get_Tf_choice(sub)
     savedir = sub+"/"+T+"_agg"
+    beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
     os.chdir(System.subdir)
-    print "  Entering subdirecotory"
-
-    mutants = [ x.split()[1]+x.split()[0]+x.split()[2] for x in open("mutants/mutations.txt","r").readlines()[1:] ]
-
-    #sigij,epsij,deltaij,interaction_nums,keep_interactions,pairs,traj,traj_dist = load_eps_delta_sig_traj(savedir)
-    #Fij = get_mutant_fij(mutants,keep_interactions)
-    #qij = calculate_Qij(Model,traj_dist,sigij,deltaij,interaction_nums)
-
     if not os.path.exists(savedir+"/phi"):
         os.mkdir(savedir+"/phi")
 
+    print "  Loading mutations.txt"
+    mutants = [ x.split()[1]+x.split()[0]+x.split()[2] for x in open("mutants/mutations.txt","r").readlines()[1:] ]
     print "  Getting state bounds for coordinate:",coord
-    states = get_state_bounds(savedir,coord)
-    #print states
+    bounds, states = get_state_bounds(savedir,coord)
+    num_states = len(states)
     print "  Loading dH for mutants"
-    dH = get_mutant_dH(savedir,mutants[:10])
+    dH = get_mutant_dH(savedir,mutants)
 
-    print "  Computing phi values..."
-    beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
-    bracket_exp_D = sum(np.exp(-beta*dH[:,states[0]]).T)/float(dH[:,states[0]].shape)
-    bracket_exp_TS = sum(np.exp(-beta*dH[:,states[1]]).T)/float(dH[:,states[1]].shape)
-    bracket_exp_N = sum(np.exp(-beta*dH[:,states[2]]).T)/float(dH[:,states[2]].shape)
+    ## Compute deltaG for each state. Then DeltaDelta G with 
+    ## respect to the first state (assumed to be the denatured state).
+    ## Units of kT.
+    print "  Computing ddG and phi values..."
+    dG = [ -np.log(sum(np.exp(-beta*dH[:,states[X]]).T)/float(len(dH[:,states[X]]))) for X in range(num_states) ]
+    ddG = [ dG[X]-dG[0] for X in range(1,num_states) ]
 
-    ddG_dagger = (1./beta)*np.log(bracket_exp_D/bracket_exp_TS)
-    ddG_circ = (1./beta)*np.log(bracket_exp_D/bracket_exp_N)
-    print "Mutant ddG_dagger  ddG_circ  Phi"
-    for i in range(len(ddG_dagger)):
-        print "%6s%11.7f%10.7f%10.7f" % (mutants[i],ddG_dagger[i],ddG_circ[i],ddG_dagger[i]/ddG_circ[i])
+    ## Compute the phi value for each mutation. Phi is the ratio
+    ## of DeltaDeltaG of the transition state(s) to DeltaDelta G
+    ## of the native state (assumed to be the last state). unitless.
+    phi = [ ddG[X]/ddG[-1] for X in range(len(ddG)-1) ]
     
-    #for j in range(len(fij)):
-    #    mut = mutants[j]
-    #    if not os.path.exists(savedir+"/dH_"+mut+".dat"):
-    #        fij = Fij[j]
-    #        print "    Computing dH vectorized for ", mut
-    #        dH_k = -1.*np.array([ sum(x) for x in fij*qij ])
-    #        print "    Saving dH for ",mut
+    save_phi_values(savedir,mutants,coord,bounds,dG,ddG,phi)
     os.chdir(cwd)
-     
     append_log(System.subdir,"Finished: Calculating_phi_values")
-    return dH,states
+
+def save_phi_values(savedir,mutants,coord,bounds,dG,ddG,phi):
+
+    header_string = "# mut" 
+    for i in range(len(bounds)):
+        header_string += "     dG_"+bounds[i][0]+"(kT)"
+    for i in range(1,len(bounds)):
+        header_string += "     ddG_"+bounds[i][0]+"-"+bounds[0][0]+"(kT)"
+    for i in range(1,len(bounds)-1):
+        header_string += "   Phi_"+bounds[i][0]+"/"+bounds[-1][0]
+
+    data_string = ''
+    for j in range(len(mutants)):
+        line = "%6s"%mutants[j]
+        for i in range(len(dG)):
+            line += "  %10.5f " % dG[i][j]
+        for i in range(len(ddG)):
+            line += "  %10.5f " % ddG[i][j]
+        for i in range(len(phi)):
+            line += "  %5.3f  " % phi[i][j]
+        data_string += line+"\n"
+    print "ddG and Phi values:"
+    print header_string
+    print data_string
+
+    outputfile = open(savedir+"/phi/"+coord+"_phi.dat","w")
+    outputfile.write(header_string+"\n"+data_string)
+    outputfile.close()
+
 
 if __name__ == '__main__':
     def dummy_func(sub,string):
@@ -249,5 +267,5 @@ if __name__ == '__main__':
     System = Systems[0]
 
     path = System.subdir+"/"+System.mutation_active_directory+"/131.17_agg"
-    #states = get_state_bounds(path,"Q") ## DEBUGGING
+    #bounds, states = get_state_bounds(path,"Q") ## DEBUGGING
     dH, states = calculate_phi_values(Model,System,dummy_func)

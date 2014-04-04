@@ -212,3 +212,35 @@ model.info files can be updated to new format using the --dryrun option on the
 command line.
 
 ------------------------------------------------------------------------------
+Fri Apr  4 11:36:50 CDT 2014
+Alexander Kluber
+
+    Replaced coord_util with MDTraj for computing native contacts. Much
+faster! Moving forward to finish phi value calculation and MC2004
+thermodynamic perturbation.
+
+    Run into an error that some traj.xtc files were corrupted with the
+following 'magic number' error, output from gmxcheck:
+
+------------------ vvvvv ERROR vvvvv -------------------
+Program gmxcheck, VERSION 4.5.5
+Source code file: xtcio.c, line: 84
+
+Fatal error:
+Magic Number Error in XTC file (read 0, should be 1995)
+For more information and tips for troubleshooting, please check the GROMACS
+website at http://www.gromacs.org/Documentation/Errors
+------------------ ^^^^^ ERROR ^^^^^ ------------------
+
+    The magic number is a number at the beginning of each frame indicates to
+gromacs that the file is indeed an XTC file (as opposed to a different
+filetype with an .xtc extension). 
+
+    Wrote a command line utility to check all traj.xtc files in subdirectories
+with gmxcheck.
+
+To Do Now:
+    - Finish incorporating phi value calculation into main flow.
+    - Start on thermodynamic pertrubation.
+
+------------------------------------------------------------------------------
