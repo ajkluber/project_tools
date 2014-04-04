@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import os
 import numpy as np
@@ -165,7 +163,7 @@ def calculate_Q():
     ''' Calculate contacts and save number of native contacts,
         number of native helical (and non-helical) contacts, 
         number of native local (and non-local) contacits. Uses
-        MDTraj.
+        MDTraj. WORKS!
     '''
     
     Qref = np.loadtxt("Qref_cryst.dat")
@@ -173,7 +171,6 @@ def calculate_Q():
     native = []
     native_helical = []
     native_local = []
-    print len(Qref)
     for i in range(N-4):
         native.extend(Qref[i,i+4:])
         temp = list(np.zeros(len(Qref[i,i+4:])))
@@ -221,23 +218,21 @@ def calculate_Q():
         accum = 0
         for n in range(k+1):
             slice[accum+k-n] = 1
-            sliceh[accum] = 1
-            slicelocal[accum] = 1
+            
+            if n == k:
+                sliceh[accum+k-n] = 1
+                slicelocal[accum+k-n] = 1
+            elif (n == k-1) or (n == k-2):
+                slicelocal[accum+k-n] = 1
+            else:
+                pass
+
             accum += N-4-n
 
         accum -= N-4-n
         Qres[:,k+4] = sum(Qall[:,slice==1].T)
-        Qhres[:,k+4] = Qall[:,accum]
-        if k >= N-6:
-            if k < (N-5):
-                Qlocalres[:,k+4] += Qall[:,accum]
-                Qlocalres[:,k+4] += Qall[:,accum+1]
-            else:
-                Qlocalres[:,k+4] += Qall[:,accum]
-        else:
-            Qlocalres[:,k+4] += Qall[:,accum]
-            Qlocalres[:,k+4] += Qall[:,accum+1]
-            Qlocalres[:,k+4] += Qall[:,accum+2]
+        Qhres[:,k+4] = sum(Qall[:,sliceh==1].T)
+        Qlocalres[:,k+4] = sum(Qall[:,slicelocal==1].T)
 
     Qnhres = Qres - Qhres  
     Qnonlocalres = Qres - Qlocalres 
