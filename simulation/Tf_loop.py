@@ -1,5 +1,6 @@
 import numpy as np
 import subprocess as sb
+from glob import glob
 import os
 import argparse
 
@@ -12,6 +13,16 @@ Purpose:
 for the Tf_loop (folding temperature loop).
 
 '''
+
+def main():
+    ''' Use gmxcheck on subdirectories.  '''
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--check', action='store_true', help='use gmxcheck on all subdirectories')
+    args = parser.parse_args()
+    if args.check == True:
+        gmxcheck_subdirectories()
+    else:
+        pass
 
 def check_completion(System,append_log,equil=False):
     ''' Checks to see if the previous Tf_loop simulation completed. First 
@@ -64,11 +75,18 @@ def check_completion(System,append_log,equil=False):
     System.error = error
     os.chdir(cwd)
 
+def gmxcheck_subdirectories():
+    ''' Run gmxcheck on all traj.xtc files in subdirecories. '''
+    runs = glob("*/traj.xtc")
+    dirs = [ x[:-9] for x in runs ]
+    for subdir in dirs:
+        run_gmxcheck(subdir)
+    
+
 def run_gmxcheck(dir):
     cwd = os.getcwd()
     os.chdir(dir)
-
-    print "  Running gmxcheck"
+    print "  Running gmxcheck on ",dir
     check = "gmxcheck -f traj.xtc"
     sb.call(check.split(),stdout=open("check.out","w"),stderr=open("check.err","w")) 
     
@@ -76,11 +94,10 @@ def run_gmxcheck(dir):
     if (error in open("check.err","r").read()) or (error in open("check.out","r").read()):
         print "  FATAL ERROR in directory: ",dir
         print "  somethings wrong with Gromacs traj.xtc file. See %s/check.err" % dir
-        print open("check.err","r").read()
+        #print open("check.err","r").read()
         error = 1
     else:
         error = 0
-      
     os.chdir(cwd)
     return error
 
@@ -352,3 +369,6 @@ def submit_run(jobname,walltime="23:00:00",queue="serial"):
     rst_string +="mdrun -nt 1 -s topol.tpr -cpi state.cpt"
 
     open("rst.pbs","w").write(rst_string)
+
+if __name__ == '__main__':
+    main()
