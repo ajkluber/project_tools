@@ -27,9 +27,10 @@ def aggregate_equilibrium_runs(System,append_log,reagg=False):
         else:
             pass
 
-    coords = ["Qprob.dat","Qhprob.dat","Qnhprob.dat","Nh.dat","radius_cropped.xvg",
-              "Qhres.dat","Qhi5res.dat","Qres.dat","rmsd.xvg","energyterms.xvg",
-              "phis.xvg"]
+    coords = ["Q.dat","A.dat","Qh.dat","Qnh.dat","Qlocal.dat","Qnonlocal.dat","Nh.dat",
+              "Qres.dat","Qhres.dat","Qnhres.dat","Qlocalres.dat","Qnonlocalres.dat",
+              "rmsd.xvg","radius_cropped.xvg","energyterms.xvg","phis.xvg",
+              "Qprob.dat","Qhprob.dat","Qnhprob.dat"]
 
     for k in range(len(unique_temps)):
         T = unique_temps[k]
