@@ -142,7 +142,7 @@ def get_state_bounds(path,coord):
         bounds.append([line.split()[0],float(line.split()[1]),float(line.split()[2]),float(line.split()[3])])
 
     if coord in ["Q","Qnh","Qh"]:
-        data = np.loadtxt(path+"/"+coord+"prob.dat")
+        data = np.loadtxt(path+"/"+coord+".dat")
         data /= max(data)
     elif coord == "Nh":
         data = np.loadtxt(path+"/Nh.dat")
