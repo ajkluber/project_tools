@@ -61,7 +61,7 @@ def crunch_Nh(tol=40.):
 
     dih1 = (phis[:,:-1] > (50-tol)).astype(int)*(phis[:,:-1] < (50+tol)).astype(int)
     dih2 = (phis[:,1:] > (50-tol)).astype(int)*(phis[:,1:] < (50+tol)).astype(int)
-    Nh = dih1*dih2*Qh[:,4:]
+    Nh = dih1*dih2*Qh[:,:-4]
 
     #Nh_norm = sum(Nh.T)/float(num_nat_Nh)
 
