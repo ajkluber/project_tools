@@ -73,7 +73,7 @@ def analyze_temperature_array(System,append_log,equil=False):
     if System.error == 0:
         if equil == True:
             sub = System.subdir+"/"+System.mutation_active_directory
-            qwalltime = "00:20:00"
+            qwalltime = "00:08:00"
             cwalltime = "00:10:00"
         else:
             sub = System.subdir+"/"+System.Tf_active_directory

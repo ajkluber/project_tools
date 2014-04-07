@@ -14,7 +14,7 @@ def crunch_Q(name,walltime="00:10:00"):
     contact_pbs = "#!/bin/bash\n"
     contact_pbs +="#PBS -N Q_"+name+"\n"
     contact_pbs +="#PBS -q serial\n"
-    contact_pbs +="#PBS -l nodes=1:ppn=1,walltime=%s\n" % walltime
+    contact_pbs +="#PBS -l nodes=1:ppn=4,walltime=%s\n" % walltime
     contact_pbs +="#PBS -j oe\n"
     contact_pbs +="#PBS -V\n\n"
     contact_pbs +="cd $PBS_O_WORKDIR\n"
@@ -33,7 +33,7 @@ def crunch_all(name,walltime="00:02:00"):
     energy_pbs = "#!/bin/bash\n"
     energy_pbs +="#PBS -N Eng_"+name+"\n"
     energy_pbs +="#PBS -q serial\n"
-    energy_pbs +="#PBS -l nodes=1:ppn=1,walltime=%s\n" % walltime
+    energy_pbs +="#PBS -l nodes=1:ppn=4,walltime=%s\n" % walltime
     energy_pbs +="#PBS -j oe\n"
     energy_pbs +="#PBS -V\n\n"
     energy_pbs +="cd $PBS_O_WORKDIR\n"
