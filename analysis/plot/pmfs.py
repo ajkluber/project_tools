@@ -42,6 +42,7 @@ def get_data(coord):
 def plot_aggregated_data(System):
     ''' Plot 1D and 2D pmfs for aggregated equilibrium simulations.'''
     
+    append_log(System.subdir,"Starting: Plotting_Agg_Data")
     cwd = os.getcwd()
     sub = System.subdir+"/"+System.mutation_active_directory
     os.chdir(cwd+"/"+sub)
@@ -78,6 +79,8 @@ def plot_aggregated_data(System):
         os.chdir(cwd2)
 
     os.chdir(cwd)
+
+    append_log(System.subdir,"Finished: Plotting_Agg_Data")
 
 def plot_1D_pmf(coord,title):
     ''' Plot a 1D pmf for a coordinate.'''
