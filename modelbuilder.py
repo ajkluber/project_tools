@@ -269,7 +269,7 @@ class ModelBuilder(object):
         elif task == "Plotting_Agg_Data":
             if Model.modelnameshort in ["HomGo","HetGo","DMC"]:
                 print "Starting prepping mutant pdbs..."
-                mutations.preppdbs.prep_mutants(System,self.append_log)
+                #mutations.preppdbs.prep_mutants(System,self.append_log)
                 print "Starting calculating dH for mutants..."
                 mutations.phi_values.calculate_dH_for_mutants(Model,System,self.append_log)
         elif task == "Calculating_dH":

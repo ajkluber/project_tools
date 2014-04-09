@@ -3,7 +3,6 @@ import os
 
 from modeller import *
 
-
 '''
 Feb 12 2014 
 Alexander Kluber
@@ -62,6 +61,7 @@ def make_all_mutations():
 
         saveas = wt_res[i]+mut_indx[i]+mut_res[i]+".pdb"
         if not os.path.exists(saveas):
+
             print "    Performing mutation: %s%s%s" % (wt_res[i],mut_indx[i],mut_res[i])
 
             respos = mut_indx[i]
