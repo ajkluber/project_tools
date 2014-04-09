@@ -57,7 +57,7 @@ def make_all_mutations():
     mut_indx = [ mutation_data[i].split()[0] for i in range(len(mutation_data)) ]
     wt_res = [ mutation_data[i].split()[1] for i in range(len(mutation_data)) ]
     mut_res = [ mutation_data[i].split()[2] for i in range(len(mutation_data)) ]
-
+    
     for i in range(len(mut_indx)):
 
         saveas = wt_res[i]+mut_indx[i]+mut_res[i]+".pdb"

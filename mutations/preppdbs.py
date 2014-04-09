@@ -31,7 +31,7 @@ def prep_mutants(System,append_log):
         os.mkdir(sub)
     if (not os.path.exists(sub+"/mutations.txt")):
         if os.path.exists(System.subdir+"/mutations.txt"):
-            shutil.copy(System.subdir+"/mutatins.txt",sub+"/mutations.txt")
+            shutil.copy(System.subdir+"/mutations.txt",sub+"/mutations.txt")
         else:
             print "ERROR!"
             print "  Didn't find mutations.txt in either ",System.subdir, " or ",sub
