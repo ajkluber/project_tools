@@ -15,6 +15,66 @@ Seed script to figure out how to calculate Phi-values.
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
+def calculate_thermodynamic_perturbation(Model,System,append_log,coord="Q"):
+    ''' First task is to calculate the perturbations for each mutation for
+        each frame in the trajectory.   May be generalized in the future or 
+        moved inside Model to deal with Models with multiple parameters per
+        interaction (e.g. desolvation barrier, etc.)
+    '''
+    
+    #append_log(System.subdir,"Starting: Calculating_MC2004")
+
+    cwd = os.getcwd()
+    sub = cwd+"/"+System.subdir+"/"+System.mutation_active_directory
+    T = get_Tf_choice(sub)
+    savedir = sub+"/"+T+"_agg"
+
+    print "  Getting state bounds for coordinate:",coord
+    bounds, states = get_state_bounds(savedir,coord)
+    num_states = len(states)
+
+    os.chdir(System.subdir)
+
+    print "  Loading mutants"
+    mutants = [ x.split()[1]+x.split()[0]+x.split()[2] for x in open("mutants/mutations.txt","r").readlines()[1:] ]
+
+    print "  Loading trajectory, epsij, deltaij, sigij"
+    sigij,epsij,deltaij,interaction_nums,keep_interactions,pairs,traj,traj_dist = load_eps_delta_sig_traj(savedir)
+    Fij = get_mutant_fij(mutants,keep_interactions)
+    #print "  Calculating Qij "
+    qij = get_Qij(Model,traj_dist,sigij,deltaij,interaction_nums)
+    print "  Loading dH for mutants"
+    #dH = get_mutant_dH(savedir,mutants)
+
+    print "  Loading ddG from simulation"
+    ddGsim_TS_D, ddGsim_N_D = get_sim_ddG(savedir,coord,bounds)
+    print "  Loading ddG from experiment"
+    ddGexp_TS_D, ddGexp_N_D = get_exp_ddG()
+
+    ## Need to concatenate the data for change in stability and barrier height. 
+    ddG_all = np.concatenate(((ddGexp_TS_D - ddGsim_TS_D),(ddGexp_N_D - ddGsim_N_D)), axis=0)
+    
+    ## Then compute each term of MC2004 equation (9) in a vectorized fashion.
+    A_l = sum(qij[states[1],:]) - sum(qij[states[0],:])
+    B_l = sum(qij[states[2],:]) - sum(qij[states[0],:])
+    B_l = 0
+    C_kl = 0
+    D_kl = 0
+    E_kl = 0
+
+    ## Then contruct the matrix M. 
+    M = 0
+
+    ## Then solve for the new parameters with the constraint that the parameters 
+    ## don't change sign.
+    
+
+    ## Save new parameters in a BeadBead.dat file and indicate to use the path
+    ## to the file in the System object.
+
+    os.chdir(cwd)
+    #append_log(System.subdir,"Finished: Calculating_MC2004")
+
 def calculate_dH_for_mutants(Model,System,append_log):
     ''' First task is to calculate the perturbations for each mutation for
         each frame in the trajectory.   May be generalized in the future or 
@@ -102,6 +162,30 @@ def get_mutant_dH(path,mutants):
         i += 1
     
     return dH
+
+def get_exp_ddG():
+    ''' Get experimental ddG data from mutants/mutations.dat'''
+
+    ddG_exp_all = np.loadtxt("mutants/mutations.dat",skiprows=1,usecols=())
+     
+    ddG_exp_TS_D = ddG_exp_all[:,0]
+    ddG_exp_N_D = ddG_exp_all[:,1]
+
+    return ddG_exp_TS_D, ddG_exp_N_D
+
+def get_sim_ddG(savedir,coord,bounds):
+    ''' Get the saved ddG from simulation that should have been computed already.'''
+
+    index_sim = len(bounds)+1
+    num = len(bounds)-1
+    
+    ddG_sim_all = np.loadtxt(savedir+"/phi/"+coord+"_phi.dat",skiprows=1,usecols=(4,5))
+     
+    ddG_sim_TS_D = ddG_sim_all[:,0]
+    ddG_sim_N_D = ddG_sim_all[:,1]
+
+    return ddG_sim_TS_D, ddG_sim_N_D
+
 
 def get_mutant_fij(mutants,keep_interactions):
     ''' Load in the fraction of contact loss for each mutation.
@@ -247,6 +331,7 @@ def save_phi_values(savedir,mutants,coord,bounds,dG,ddG,phi):
 
 
 if __name__ == '__main__':
+    ## TESTING calculating ddG, phi values.
     def dummy_func(sub,string):
         pass 
     
@@ -255,7 +340,11 @@ if __name__ == '__main__':
     Systems = systems.load_systems(subdirs)
     Model = Models[0]
     System = Systems[0]
-
     path = System.subdir+"/"+System.mutation_active_directory+"/131.17_agg"
+
+    '''
     #bounds, states = get_state_bounds(path,"Q") ## DEBUGGING
     dH, states = calculate_phi_values(Model,System,dummy_func)
+    '''
+
+    calculate_thermodynamic_perturbation(Model,System,dummy_func)
