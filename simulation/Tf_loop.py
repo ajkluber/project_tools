@@ -251,6 +251,7 @@ def run_equilibrium_simulations(Model,System,append_log):
 def determine_walltime(Model):
     ''' Estimate an efficient walltime.'''
     Length = len(Model.Qref)
+    ppn = "1"
     if Length < 60:
         walltime="12:00:00"
         queue="serial"
@@ -258,13 +259,15 @@ def determine_walltime(Model):
         if len(Model.Qref) > 160:
             if len(Model.Qref) > 250:
                 walltime="60:00:00"
+                ppn = "4"
             else:
                 walltime="48:00:00"
+                ppn = "2"
             queue="serial_long"
         else:
             walltime="24:00:00"
             queue="serial"
-    return walltime, queue
+    return walltime, queue, ppn
 
 def run_temperature_array(Model,System,Ti,Tf,dT):
     ''' Run many constant temperature runs over a range of temperatures to
@@ -273,7 +276,7 @@ def run_temperature_array(Model,System,Ti,Tf,dT):
     System.append_log("Starting Tf_loop_iteration %d " % System.Tf_iteration)
     Temperatures = range(Ti,Tf+dT,dT)
     ## Run for longer if the protein is really big.
-    walltime, queue = determine_walltime(Model)
+    walltime, queue, ppn = determine_walltime(Model)
 
     T_string = ''
     for T in Temperatures:
@@ -285,7 +288,7 @@ def run_temperature_array(Model,System,Ti,Tf,dT):
             os.chdir(simpath)
             System.append_log("  running T=%d" % T)
             print "  Running temperature ", T
-            run_constant_temp(Model,System,T,walltime=walltime,queue=queue)
+            run_constant_temp(Model,System,T,walltime=walltime,queue=queue,ppn=ppn)
             os.chdir("..")
         else:
             ## Directory exists for this temperature: continue.
@@ -295,7 +298,7 @@ def run_temperature_array(Model,System,Ti,Tf,dT):
     open("T_array_last.txt","w").write(T_string)
     open("Ti_Tf_dT.txt","w").write("%d %d %d" % (Ti, Tf, dT))
 
-def run_constant_temp(Model,System,T,nsteps=400000000,walltime="23:00:00",queue="serial"):
+def run_constant_temp(Model,System,T,nsteps=400000000,walltime="23:00:00",queue="serial",ppn="1"):
     ''' Start a constant temperature simulation with Gromacs. First it has
         to write the gromacs files stored in the System object, then it
         calls a function to submit the job.'''
@@ -321,9 +324,9 @@ def run_constant_temp(Model,System,T,nsteps=400000000,walltime="23:00:00",queue=
     if Model.dryrun == True:
         print "    Dryrun Success! Successfully saved simulation files." 
     else:
-        submit_run(jobname,walltime=walltime,queue=queue)
+        submit_run(jobname,walltime=walltime,queue=queue,ppn=ppn)
     
-def submit_run(jobname,walltime="23:00:00",queue="serial"):
+def submit_run(jobname,walltime="23:00:00",queue="serial",ppn="1"):
     ''' Executes the constant temperature runs.'''
 
     prep_step1 = 'trjconv -f Native.pdb -o Native.xtc'
@@ -338,7 +341,7 @@ def submit_run(jobname,walltime="23:00:00",queue="serial"):
 
     pbs_string = "#!/bin/bash \n"
     pbs_string +="### Number of nodes and procs/node \n"
-    pbs_string +="#PBS -l nodes=1:ppn=1,walltime=%s \n" % walltime
+    pbs_string +="#PBS -l nodes=1:ppn=%s,walltime=%s \n" % (ppn,walltime)
     pbs_string +="###PBS -W group_list=pbc \n"
     pbs_string +="#PBS -q %s \n" % queue
     pbs_string +="#PBS -V \n"
@@ -356,7 +359,7 @@ def submit_run(jobname,walltime="23:00:00",queue="serial"):
 
     rst_string = "#!/bin/bash \n"
     rst_string +="### Number of nodes and procs/node \n"
-    rst_string +="#PBS -l nodes=1:ppn=1,walltime=%s \n" % walltime
+    rst_string +="#PBS -l nodes=1:ppn=%s,walltime=%s \n" % (ppn,walltime)
     rst_string +="###PBS -W group_list=pbc \n"
     rst_string +="#PBS -q %s \n" % queue
     rst_string +="#PBS -V \n"
