@@ -72,6 +72,7 @@ def get_args():
     new_parser.add_argument('--solvent', action='store_true', help='Add this option for solvent.')
     new_parser.add_argument('--dryrun', action='store_true', help='Add this option for dry run. No simulations started.')
     new_parser.add_argument('--R_CD', type=float, help='Optional specific ratio of contact to dihedral energy.')
+    new_parser.add_argument('--epsilon_bar', type=float, help='Optional, average strength of contacts. epsilon bar.')
     new_parser.add_argument('--cutoff', type=float, help='Optional cutoff for heavy atom determination of native contacts.')
     new_parser.add_argument('--disulfides', type=int, nargs='+', help='Optional pairs of disulfide linked residues.')
 
@@ -87,7 +88,7 @@ def get_args():
     add_parser.add_argument('--mutarray', type=int, nargs='+', help='T_initial T_final dT for new mutational sims array',required=True)
     add_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
 
-    ## Options for just printing out some useful info about the pdb.
+    ## Options for just printing out some useful info about the pdb. Not currently implemented.
     add_parser = sp.add_parser('parsepdb')
     add_parser.add_argument('--pdbs', type=str, nargs='+', help='pdbs to parse for useful info',required=True)
 
@@ -104,6 +105,7 @@ def get_args():
         options["Bead_Model"] = args.beads
         options["Solvent"] = args.solvent
         options["R_CD"] = args.R_CD
+        options["Epsilon_Bar"] = args.epsilon_bar
         options["Disulfides"] = args.disulfides
         options["Contact_Energies"] = args.contact_energies
         modeloptions = models.check_options(options)
