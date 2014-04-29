@@ -63,6 +63,36 @@ def aggregate_equilibrium_runs(System,append_log,reagg=False):
     os.chdir(cwd)
     append_log(System.subdir,"Finished: Aggregating_Equil_Runs")
 
+def determine_walltime(System,long=False):
+    ''' Estimate an efficient walltime.'''
+    Length = len(np.loadtxt(System.subdir+"/Qref_cryst.dat"))
+    ppn = "4"
+    if Length < 60:
+        qwalltime = "00:04:00"
+        cwalltime = "00:02:00"
+    else:
+        if Length > 160:
+            if Length > 250:
+                if long:
+                    qwalltime = "00:16:00"
+                    cwalltime = "00:10:00"
+                else:
+                    qwalltime = "00:10:00"
+                    cwalltime = "00:08:00"
+                ppn = "8"
+            else:
+                if long:
+                    qwalltime = "00:16:00"
+                    cwalltime = "00:10:00"
+                else:
+                    qwalltime = "00:12:00"
+                    cwalltime = "00:10:00"
+                ppn = "6"
+        else:
+            qwalltime = "00:08:00"
+            cwalltime = "00:10:00"
+    return qwalltime, cwalltime, ppn
+
 def analyze_temperature_array(System,append_log,equil=False):
     ''' Analyze the previously simulated temperatures of a Tf_loop iteration.
         Goes into the active Tf_loop directory and crunches all coordinates.
@@ -73,12 +103,10 @@ def analyze_temperature_array(System,append_log,equil=False):
     if System.error == 0:
         if equil == True:
             sub = System.subdir+"/"+System.mutation_active_directory
-            qwalltime = "00:08:00"
-            cwalltime = "00:10:00"
+            qwalltime, cwalltime, ppn = determine_walltime(System,long=True)
         else:
             sub = System.subdir+"/"+System.Tf_active_directory
-            qwalltime = "00:04:00"
-            cwalltime = "00:02:00"
+            qwalltime, cwalltime, ppn = determine_walltime(System)
         print "  Analyzing temperature array for", sub
         os.chdir(cwd+"/"+sub)
         tempfile = open("T_array_last.txt","r").readlines()
@@ -96,8 +124,8 @@ def analyze_temperature_array(System,append_log,equil=False):
             flag = all([ os.path.exists(file) for file in crunchfiles ])
             if not flag:
                 print "    Crunching coordinates for ",tdir
-                crunch_coordinates.crunch_all(System.subdir+"_"+tdir,walltime=cwalltime)
-                crunch_coordinates.crunch_Q(System.subdir+"_"+tdir,walltime=qwalltime)
+                crunch_coordinates.crunch_all(System.subdir+"_"+tdir,walltime=cwalltime,ppn=ppn)
+                crunch_coordinates.crunch_Q(System.subdir+"_"+tdir,walltime=qwalltime,ppn=ppn)
             else:
                 print "    Skipping directory ",tdir
             os.chdir(cwd2)

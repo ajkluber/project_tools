@@ -28,6 +28,7 @@ def calculate_thermodynamic_perturbation(Model,System,append_log,coord="Q"):
     sub = cwd+"/"+System.subdir+"/"+System.mutation_active_directory
     T = get_Tf_choice(sub)
     savedir = sub+"/"+T+"_agg"
+    beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
 
     print "  Getting state bounds for coordinate:",coord
     bounds, states = get_state_bounds(savedir,coord)
@@ -36,15 +37,20 @@ def calculate_thermodynamic_perturbation(Model,System,append_log,coord="Q"):
     os.chdir(System.subdir)
 
     print "  Loading mutants"
-    mutants = [ x.split()[1]+x.split()[0]+x.split()[2] for x in open("mutants/mutations.txt","r").readlines()[1:] ]
+    mutants = [ x.split()[1]+x.split()[0]+x.split()[2] for x in open("mutants/mutations.dat","r").readlines()[1:] ]
 
     print "  Loading trajectory, epsij, deltaij, sigij"
     sigij,epsij,deltaij,interaction_nums,keep_interactions,pairs,traj,traj_dist = load_eps_delta_sig_traj(savedir)
     Fij = get_mutant_fij(mutants,keep_interactions)
-    #print "  Calculating Qij "
     qij = get_Qij(Model,traj_dist,sigij,deltaij,interaction_nums)
     print "  Loading dH for mutants"
-    #dH = get_mutant_dH(savedir,mutants)
+    dH = get_mutant_dH(savedir,mutants)
+
+    print qij.shape, dH.shape, Fij.shape
+    #print qij.shape, dH.shape
+    #print "Qij shape",qij[states[1],:].shape
+    #print "dH shape",dH[:,states[1]].shape
+    #print "dH shape",sum(dH[:,states[1]])
 
     print "  Loading ddG from simulation"
     ddGsim_TS_D, ddGsim_N_D = get_sim_ddG(savedir,coord,bounds)
@@ -55,15 +61,33 @@ def calculate_thermodynamic_perturbation(Model,System,append_log,coord="Q"):
     ddG_all = np.concatenate(((ddGexp_TS_D - ddGsim_TS_D),(ddGexp_N_D - ddGsim_N_D)), axis=0)
     
     ## Then compute each term of MC2004 equation (9) in a vectorized fashion.
-    A_l = sum(qij[states[1],:]) - sum(qij[states[0],:])
-    B_l = sum(qij[states[2],:]) - sum(qij[states[0],:])
-    B_l = 0
-    C_kl = 0
-    D_kl = 0
-    E_kl = 0
+    termA_TS_D = np.ones(Fij.shape,float)*(sum(qij[states[1],:]) - sum(qij[states[0],:]))
+    termA_N_D = np.ones(Fij.shape,float)*(sum(qij[states[2],:]) - sum(qij[states[0],:]))
+    termA_all = np.concatenate((termA_TS_D,termA_N_D),axis=0)
+    
+    termB_all = 1. - np.concatenate((Fij,Fij),axis=0) 
+
+    termC_TS_D = ((np.dot(np.exp(beta*dH[:,states[1]]),qij[states[1],:])).T/sum(np.exp(beta*dH[:,states[1]]).T)).T \
+              - ((np.dot(np.exp(beta*dH[:,states[0]]),qij[states[0],:])).T/sum(np.exp(beta*dH[:,states[0]]).T)).T
+    termC_N_D = ((np.dot(np.exp(beta*dH[:,states[2]]),qij[states[2],:])).T/sum(np.exp(beta*dH[:,states[2]]).T)).T \
+              - ((np.dot(np.exp(beta*dH[:,states[0]]),qij[states[0],:])).T/sum(np.exp(beta*dH[:,states[0]]).T)).T
+    termC_all = np.concatenate((termC_TS_D,termC_N_D),axis=0)
 
     ## Then contruct the matrix M. 
-    M = 0
+    M = -beta*( termA_all -  termB_all*termC_all)
+
+    print "Term A", termA_all.shape
+    print "Term B", termB_all.shape
+    print "Term C", termC_all.shape
+    print "M", M.shape
+    print "ddG", ddG_all.shape
+
+    Mpinv = np.linalg.pinv(M)
+    delta_eps= np.dot(Mpinv,ddG_all)
+    print delta_eps
+    return delta_eps
+
+    raise SystemExit
 
     ## Then solve for the new parameters with the constraint that the parameters 
     ## don't change sign.
@@ -166,7 +190,7 @@ def get_mutant_dH(path,mutants):
 def get_exp_ddG():
     ''' Get experimental ddG data from mutants/mutations.dat'''
 
-    ddG_exp_all = np.loadtxt("mutants/mutations.dat",skiprows=1,usecols=())
+    ddG_exp_all = np.loadtxt("mutants/mutations.dat",skiprows=1,usecols=(3,4))
      
     ddG_exp_TS_D = ddG_exp_all[:,0]
     ddG_exp_N_D = ddG_exp_all[:,1]
@@ -347,4 +371,4 @@ if __name__ == '__main__':
     dH, states = calculate_phi_values(Model,System,dummy_func)
     '''
 
-    calculate_thermodynamic_perturbation(Model,System,dummy_func)
+    delta_eps = calculate_thermodynamic_perturbation(Model,System,dummy_func)

@@ -8,13 +8,13 @@ import argparse
     angles.'''
 
 
-def crunch_Q(name,walltime="00:10:00"):
+def crunch_Q(name,walltime="00:10:00",ppn="4"):
     ''' Calculate the fraction of native contacts, non-native contacts.'''
 
     contact_pbs = "#!/bin/bash\n"
     contact_pbs +="#PBS -N Q_"+name+"\n"
     contact_pbs +="#PBS -q serial\n"
-    contact_pbs +="#PBS -l nodes=1:ppn=4,walltime=%s\n" % walltime
+    contact_pbs +="#PBS -l nodes=1:ppn=%s,walltime=%s\n" % (ppn,walltime)
     contact_pbs +="#PBS -j oe\n"
     contact_pbs +="#PBS -V\n\n"
     contact_pbs +="cd $PBS_O_WORKDIR\n"
@@ -24,7 +24,7 @@ def crunch_Q(name,walltime="00:10:00"):
     sb.call(qsub.split(),stdout=open("contacts.out","w"),stderr=open("contacts.err","w"))
     
 
-def crunch_all(name,walltime="00:02:00"):
+def crunch_all(name,walltime="00:02:00",ppn="4"):
     ''' Crunch the following reaction coordinates with Gromacs: rmsd, radius
         gyration, dihedrals, and potential energy terms.'''
     cmd1 = 'echo -e "CA\nCA" | g_rms -f traj.xtc -s topol.tpr -o rmsd.xvg -nomw -xvg none -n index.ndx'
@@ -33,7 +33,7 @@ def crunch_all(name,walltime="00:02:00"):
     energy_pbs = "#!/bin/bash\n"
     energy_pbs +="#PBS -N Eng_"+name+"\n"
     energy_pbs +="#PBS -q serial\n"
-    energy_pbs +="#PBS -l nodes=1:ppn=4,walltime=%s\n" % walltime
+    energy_pbs +="#PBS -l nodes=1:ppn=%s,walltime=%s\n" % (ppn,walltime)
     energy_pbs +="#PBS -j oe\n"
     energy_pbs +="#PBS -V\n\n"
     energy_pbs +="cd $PBS_O_WORKDIR\n"
