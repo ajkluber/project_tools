@@ -36,7 +36,11 @@ def plot_kinetic_mechanism():
             if (Q[i] > left_bound) and (Q[i-1] < left_bound):
                 folding = 1
 
-def plot_thermodynamic_mechanism():
+#def plot_thermodynamic_mechanism(bins):
+
+if __name__ == "__main__":
+
+    bins = 10
 
     print "Loading Q.dat, Qres.dat"
     Q = np.loadtxt("Q.dat")
@@ -44,7 +48,6 @@ def plot_thermodynamic_mechanism():
 
     minQ = min(Q)
     maxQ = max(Q)
-    bins = 50
     incQ = (float(maxQ) - float(minQ))/bins
 
     Qprogress = np.zeros((bins,len(Qres[0])),float)
@@ -66,6 +69,7 @@ def plot_thermodynamic_mechanism():
 
     print "Plotting thermodynamic mechanism"
     plt.figure()
+    #plt.subplot(1,1,1,aspect=1)
     plt.pcolor(Qprogress,edgecolors='k')
     cbar = plt.colorbar()
     cbar.set_label("Fraction local contacts formed $Q_{local}$")
@@ -73,14 +77,8 @@ def plot_thermodynamic_mechanism():
     plt.ylabel("Sequence index")
     plt.title("Thermodynamic Folding Progress")
     plt.savefig("mechanism_profile.pdf")
+    #plt.savefig("mechanism_profile_square.pdf")
     plt.show()
 
 
-if __name__ == "__main__":
-
-    plot_thermodynamic_mechanism()
-
-
-
-
-
+    #plot_thermodynamic_mechanism(5)
