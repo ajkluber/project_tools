@@ -47,12 +47,13 @@ def calculate_thermodynamic_perturbation(Model,System,append_log,coord="Q"):
         ddG = np.loadtxt(savedir+"/mut/ddG.dat")
         eps = np.loadtxt(savedir+"/mut/eps.dat")
         M = np.loadtxt(savedir+"/mut/M.dat")
-    LP_problem, solution, x_particular, N = apply_linear_constraints(Model,System,savedir,ddG,eps,M)
+    #LP_problem, solution, x_particular, N = apply_constraints_linear_objective(Model,System,savedir,ddG,eps,M)
+    LP_problem, solution, x_particular, N = apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M)
 
     return LP_problem, solution, x_particular, eps, N
     #append_log(System.subdir,"Finished: Calculating_MC2004")
 
-def apply_linear_constraints(Model,System,savedir,ddG,eps,M):
+def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M):
     ''' Search the nullspace dimensions for a solution that minimizes 
         the change in stability and keeps the contacts attractive. Uses
         cplex linear programming package.
@@ -62,7 +63,91 @@ def apply_linear_constraints(Model,System,savedir,ddG,eps,M):
 
     ## The general solution is a sum of the particular solution and an
     ## arbitrary vector from the nullspace of M.
-    Mpinv = np.linalg.pinv(M)
+    Mpinv = np.linalg.pinv(M,rcond=.5)
+    x_particular = np.dot(Mpinv,ddG)
+    np.savetxt(savedir+"/mut/x_p.dat",x_particular)
+    #print x_particular     ## DEBUGGING
+
+    ## Singular value decomposition. As a test you can recover M by,
+    ## S = np.zeros(M.shape)
+    ## S[:M.shape[1],:M.shape[1]] = np.diag(s)
+    ## np.allclose(M,np.dot(u,np.dot(S,v))) --> should be True
+    u,s,v = np.linalg.svd(M)
+    rank = len(s)
+
+    ## Nullspace basis vectors are the last n-r columns of the matrix v.T. As a check
+    ## all entries of the matrix np.dot(M,N) should be extremely small ~0. Because 
+    ## they've been sent to the nullspace.
+    N = v.T[:,M.shape[0]:]
+
+    print N.shape
+    ## Objective coefficients are sum of nullspace vectors. This comes from
+    ## requiring the same average contact strength.
+    #objective_coeff = list(sum(N))
+    objective_coeff = list(2.*np.dot(x_particular.T,N))
+
+    ## Further constraints come from requiring that native contacts remain
+    ## attractive.
+    right_hand_side = list(eps + x_particular)
+    column_names = [ "x"+str(i) for i in range(N.shape[1]) ]
+    row_names = [ "c"+str(i) for i in range(N.shape[0]) ]
+    rows = [ [column_names,list(-N[i,:])]  for i in range(len(N)) ]
+    senses = "L"*len(right_hand_side)
+
+    ## Set quadratic terms in objective.
+    objective_quadratic_coefficients = [ 1. for j in range(N.shape[1]) ]
+
+    ## DEBUGGING
+    #print len(objective_coeff),len(names)
+    #print right_hand_side
+    #print rows
+    #print rows[0]
+    #print senses
+    #print N
+    #print len(rows), len(senses), len(rows[0][0]), len(rows[0][1])
+
+    ## Set upper and lower bounds on the solution. Arbitrary. Hopefullly these 
+    ## don't matter.
+    upper_bounds = list(10000.*np.ones(N.shape[1]))
+    lower_bounds = list(-10000.*np.ones(N.shape[1]))
+
+    ## DEBUGGING
+    #print len(upper_bounds)
+
+    ## Populate cplex linear programming problem
+    LP_problem = cplex.Cplex()
+    LP_problem.objective.set_sense(LP_problem.objective.sense.minimize)
+    LP_problem.variables.add(obj=objective_coeff, ub=upper_bounds, lb=lower_bounds, names=column_names)
+    LP_problem.linear_constraints.add(lin_expr=rows, senses=senses, rhs=right_hand_side, names=row_names)
+    LP_problem.objective.set_quadratic(objective_quadratic_coefficients)
+
+    ## Let cplex do the hard work.
+    LP_problem.solve()
+    status = LP_problem.solution.get_status()
+    solution_lambda = LP_problem.solution.get_values()
+
+    print "Cplex summary:"
+    print "status: ",status
+    print "solution:",solution_lambda
+    
+    #epsilon_new = eps + np.dot(N,np.array(solution))
+
+    return LP_problem, solution_lambda, x_particular, N
+
+    ## Save new parameters in a BeadBead.dat file and indicate to use the path
+    ## to the file in the System object.
+
+def apply_constraints_linear_objective(Model,System,savedir,ddG,eps,M):
+    ''' Search the nullspace dimensions for a solution that minimizes 
+        the change in stability and keeps the contacts attractive. Uses
+        cplex linear programming package.
+
+        status 4-29-2014 WORKS.
+    '''
+
+    ## The general solution is a sum of the particular solution and an
+    ## arbitrary vector from the nullspace of M.
+    Mpinv = np.linalg.pinv(M,rcond=0.5)
     x_particular = np.dot(Mpinv,ddG)
     np.savetxt(savedir+"/mut/x_p.dat",x_particular)
     #print x_particular     ## DEBUGGING
