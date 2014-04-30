@@ -47,14 +47,18 @@ def calculate_thermodynamic_perturbation(Model,System,append_log,coord="Q"):
         ddG = np.loadtxt(savedir+"/mut/ddG.dat")
         eps = np.loadtxt(savedir+"/mut/eps.dat")
         M = np.loadtxt(savedir+"/mut/M.dat")
-    apply_linear_constraints(Model,System,savedir,ddG,eps,M)
+    LP_problem, solution, x_particular, N = apply_linear_constraints(Model,System,savedir,ddG,eps,M)
 
+    return LP_problem, solution, x_particular, eps, N
     #append_log(System.subdir,"Finished: Calculating_MC2004")
 
 def apply_linear_constraints(Model,System,savedir,ddG,eps,M):
     ''' Search the nullspace dimensions for a solution that minimizes 
         the change in stability and keeps the contacts attractive. Uses
-        cplex linear programming package.'''
+        cplex linear programming package.
+
+        status 4-29-2014 DOESN"T WORK.
+    '''
 
     ## The general solution is a sum of the particular solution and an
     ## arbitrary vector from the nullspace of M.
@@ -75,6 +79,7 @@ def apply_linear_constraints(Model,System,savedir,ddG,eps,M):
     ## they've been sent to the nullspace.
     N = v.T[:,M.shape[0]:]
 
+    print N.shape
     ## Objective coefficients are sum of nullspace vectors. This comes from
     ## requiring the same average contact strength.
     objective_coeff = list(sum(N))
@@ -82,33 +87,53 @@ def apply_linear_constraints(Model,System,savedir,ddG,eps,M):
     ## Further constraints come from requiring that native contacts remain
     ## attractive.
     right_hand_side = list(eps + x_particular)
-    rows = [ list(-N[i,:])  for i in range(len(N)) ] 
+    column_names = [ "x"+str(i) for i in range(N.shape[1]) ]
+    row_names = [ "c"+str(i) for i in range(N.shape[0]) ]
+    rows = [ [column_names,list(-N[i,:])]  for i in range(len(N)) ]
     senses = "L"*len(right_hand_side)
-   
+
+    ## DEBUGGING
+    #print len(objective_coeff),len(names)
+    #print right_hand_side
+    #print rows
+    #print rows[0]
+    #print senses
+    #print N
+    #print len(rows), len(senses), len(rows[0][0]), len(rows[0][1])
+
     ## Set upper and lower bounds on the solution. Arbitrary. Hopefullly these 
     ## don't matter.
     upper_bounds = list(10000.*np.ones(N.shape[1]))
     lower_bounds = list(-10000.*np.ones(N.shape[1]))
 
+    ## DEBUGGING
+    #print len(upper_bounds)
+
     ## Populate cplex linear programming problem
     LP_problem = cplex.Cplex()
     LP_problem.objective.set_sense(LP_problem.objective.sense.minimize)
-    LP_problem.variables.add(obj=objective_coeff, ub=upper_bounds, lb=lower_bounds)
-    LP_problem.linear_constraints.add(lin_expr=rows, senses=senses, rhs=right_hand_side)
+    LP_problem.variables.add(obj=objective_coeff, ub=upper_bounds, lb=lower_bounds, names=column_names)
+    LP_problem.linear_constraints.add(lin_expr=rows, senses=senses, rhs=right_hand_side, names=row_names)
 
     ## Let cplex do the hard work.
     LP_problem.solve()
     status = LP_problem.solution.get_status()
-    solution = LP_problem.solution.get_values()
+    solution_lambda = LP_problem.solution.get_values()
 
     print "Cplex summary:"
     print "status: ",status
-    print "solution:",solutions
+    print "solution:",solution_lambda
+    
+    #epsilon_new = eps + np.dot(N,np.array(solution))
+
+    return LP_problem, solution_lambda, x_particular, N
 
     ## Save new parameters in a BeadBead.dat file and indicate to use the path
     ## to the file in the System object.
     
 def calculate_matrix_ddG_eps_M(Model,System,savedir,beta,coord):
+    ''' Calculates and saves and returns the matrix from equation (9) in 
+        Matysiak Clementi 2004. '''
 
     print "  Getting state bounds for coordinate:",coord
     bounds, states = get_state_bounds(savedir,coord)
@@ -144,7 +169,8 @@ def calculate_matrix_ddG_eps_M(Model,System,savedir,beta,coord):
 
     np.savetxt(savedir+"/mut/ddG.dat",ddG_all)
     
-    ## Then compute each term of MC2004 equation (9) in a vectorized fashion.
+    ## Then compute each term of MC2004 equation (9) in a vectorized fashion. 
+    ## This is the formula derived from thermodynamic perturbation.
     termA_TS_D = np.ones(Fij.shape,float)*(sum(qij[states[1],:])/float(len(qij[states[1],:])) - sum(qij[states[0],:])/float(len(qij[states[0],:])))
     termA_N_D = np.ones(Fij.shape,float)*(sum(qij[states[2],:])/float(len(qij[states[2],:])) - sum(qij[states[0],:])/float(len(qij[states[0],:])))
     termA_all = np.concatenate((termA_TS_D,termA_N_D),axis=0)
@@ -447,4 +473,4 @@ if __name__ == '__main__':
     dH, states = calculate_phi_values(Model,System,dummy_func)
     '''
 
-    delta_eps = calculate_thermodynamic_perturbation(Model,System,dummy_func)
+    LP_problem, solution, x_particular, eps, N = calculate_thermodynamic_perturbation(Model,System,dummy_func)
