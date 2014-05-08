@@ -1,10 +1,8 @@
 import numpy as np
-#import matplotlib 
-#matplotlib.use('Agg')
-#import matplotlib.pyplot as plt
 import subprocess as sb
 import argparse
 import os
+
 from whamdata import WhamData
 
 '''
@@ -355,7 +353,8 @@ def run_wham(outputstyle):
     #copy_WHAM_executable = "cp /projects/cecilia/ajk8/dmc_model/free_energy_analysis/WHAM " + cwd + "/wham/"
     #copy_WHAM_executable = "cp /projects/cecilia/ajk8/model_builder/analysis/WHAM " + cwd + "/wham/"
     ## Trying to remove references to ajk8 directory.
-    copy_WHAM_executable = "cp ${PROJECTS}/model_builder/analysis/WHAM " + cwd + "/wham/"
+    projects = os.environ["PROJECTS"]
+    copy_WHAM_executable = "cp "+projects+"/model_builder/analysis/WHAM " + cwd + "/wham/"
     sb.call(copy_WHAM_executable.split())
     if outputstyle == "HeatCap":
         submit_heat_capacity_job()
