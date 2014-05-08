@@ -30,7 +30,7 @@ def calculate_thermodynamic_perturbation(Model,System,append_log,coord="Q"):
 
     cwd = os.getcwd()
     sub = cwd+"/"+System.subdir+"/"+System.mutation_active_directory
-    T = get_Tf_choice(sub)
+    T = phi.get_Tf_choice(sub)
     savedir = sub+"/"+T+"_agg"
     beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
 
@@ -49,16 +49,24 @@ def calculate_thermodynamic_perturbation(Model,System,append_log,coord="Q"):
         ddG = np.loadtxt(savedir+"/mut/ddG.dat")
         eps = np.loadtxt(savedir+"/mut/eps.dat")
         M = np.loadtxt(savedir+"/mut/M.dat")
-    #LP_problem, solution, x_particular, N = apply_constraints_linear_objective(Model,System,savedir,ddG,eps,M)
-    LP_problem, solution, x_particular, N = apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M)
 
-    ## New Parameters
-    epsilon_prime = eps + x_particular + np.dot(N,solution)
+    for cutoff in [1.25]:
+        LP_problem, solution, x_particular, N = apply_constraints_linear_objective(Model,System,savedir,ddG,eps,M,cutoff=cutoff)
+        #LP_problem, solution, x_particular, N = apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff=cutoff)
+
+        ## New Parameters
+        epsilon_prime = eps + x_particular + np.dot(N,solution)
+
+        np.savetxt(savedir+"/mut/line_delta_eps_"+str(cutoff)+".dat",x_particular+np.dot(N,solution))
+        np.savetxt(savedir+"/mut/line_eps_prime_"+str(cutoff)+".dat",epsilon_prime)
+        #np.savetxt(savedir+"/mut/quad_delta_eps_"+str(cutoff)+".dat",x_particular+np.dot(N,solution))
+        #np.savetxt(savedir+"/mut/quad_eps_prime_"+str(cutoff)+".dat",epsilon_prime)
+    
 
     return LP_problem, solution, x_particular, eps, N
     #append_log(System.subdir,"Finished: Calculating_MC2004")
 
-def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M):
+def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff=0.5):
     ''' Search the nullspace dimensions for a solution that minimizes 
         the change in stability and keeps the contacts attractive. Uses
         cplex linear programming package.
@@ -68,7 +76,7 @@ def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M):
 
     ## The general solution is a sum of the particular solution and an
     ## arbitrary vector from the nullspace of M.
-    Mpinv = np.linalg.pinv(M,rcond=.5)
+    Mpinv = np.linalg.pinv(M,rcond=cutoff)
     x_particular = np.dot(Mpinv,ddG)
     np.savetxt(savedir+"/mut/x_p.dat",x_particular)
     #print x_particular     ## DEBUGGING
@@ -140,7 +148,7 @@ def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M):
     return LP_problem, solution_lambda, x_particular, N
 
 
-def apply_constraints_linear_objective(Model,System,savedir,ddG,eps,M):
+def apply_constraints_linear_objective(Model,System,savedir,ddG,eps,M,cutoff=0.5):
     ''' Search the nullspace dimensions for a solution that minimizes 
         the change in stability and keeps the contacts attractive. Uses
         cplex linear programming package.
@@ -150,7 +158,7 @@ def apply_constraints_linear_objective(Model,System,savedir,ddG,eps,M):
 
     ## The general solution is a sum of the particular solution and an
     ## arbitrary vector from the nullspace of M.
-    Mpinv = np.linalg.pinv(M,rcond=0.5)
+    Mpinv = np.linalg.pinv(M,rcond=cutoff)
     x_particular = np.dot(Mpinv,ddG)
     np.savetxt(savedir+"/mut/x_p.dat",x_particular)
     #print x_particular     ## DEBUGGING

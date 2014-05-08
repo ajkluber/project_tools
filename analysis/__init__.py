@@ -3,3 +3,4 @@ import contacts
 import crunch_coordinates
 import wham
 import plot
+import pathway

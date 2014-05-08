@@ -6,7 +6,6 @@ import os
 import numpy as np
 import argparse
 
-from coord_util import mol_reader
 import mdtraj as md
 
 
@@ -59,107 +58,6 @@ def main():
     else:
         pass
 
-def contacts_for_states(framestate,numstates,name,cutoff=1.25):
-    ''' Calculate contacts given a list of frames to use. This function is to be
-        used by other programs. This function is still a little experimental.
-    '''
-    Native_cryst, Sig, N = get_beadbead_info()
-
-    statesprobij = [ np.zeros((N,N),float) for i in range(numstates) ]
-    #accum = [0,0,0]
-    accum = np.zeros(numstates)
-    frameidx = 0
-    numframesused = 0
-    frames = mol_reader.open("traj.xtc") 
-
-    ## Loops over frames in trajectory.
-    for frame in frames.read():
-        state = framestate[frameidx] 
-        if state == -1:
-            pass
-        else:
-            D = np.ones((N,N),float)
-            X = np.reshape(np.array(frame.coordinates), (N,3))
-            for i in range(4,N):
-                diff = X[0:-i,:] - X[i:,:]
-                d = np.sqrt(diff[:,0]**2 + diff[:,1]**2 + diff[:,2]**2)
-                ## Slice to insert values on the diagonal   
-                diag = (np.arange(0,N-i),np.arange(i,N))
-                D[diag] = d
-            Contact = (D <= cutoff*10*Sig).astype(int)
-            statesprobij[state] += Contact
-            accum[state] += 1
-
-        frameidx += 1
-        if (frameidx % 20000) == 0:
-            #print "Finished"
-            #break
-            print "Frame # ", frameidx
-            #if frameidx == 60000:
-            #    break
-
-    ## PROBABLY CHANGE TO JUST RETURN THE CONTACT MAPS
-    for m in range(len(statesprobij)):
-        #print "Accum ", m , " ", accum[m], "   Length ", len(statesprobij[m]), " Counted ", list(framestate).count(m)
-        if accum[m] != 0:
-            statesprobij[m] /= float(accum[m])
-        np.savetxt(name+"_%s.dat" % m,statesprobij[m])
-    return statesprobij
-
-def equil_contacts_for_states(framestate,numstates,savedir,Temp,numtemps,cutoff=1.25):
-    ''' Calculate contacts given a list of frames to use. This function is to be
-        used by other programs. This function is still a little experimental.
-    '''
-
-    Native_cryst, Sig, N = get_beadbead_info(path=Temp+"_1")
-
-    statesprobij = [ np.zeros((N,N),float) for i in range(numstates) ]
-    #accum = [0,0,0]
-    accum = np.zeros(numstates)
-    frameidx = 0
-    numframesused = 0
-    cwd = os.getcwd()
-    ## Loop over subdirectories with same temp.
-    for tnum in range(1,numtemps+1):
-        T = Temp+"_"+str(tnum)
-        
-        os.chdir(T)
-
-        frames = mol_reader.open("traj.xtc") 
-        ## Loops over frames in trajectory.
-        for frame in frames.read():
-            state = framestate[frameidx] 
-            if state == -1:
-                pass
-            else:
-                D = np.ones((N,N),float)
-                X = np.reshape(np.array(frame.coordinates), (N,3))
-                for i in range(4,N):
-                    diff = X[0:-i,:] - X[i:,:]
-                    d = np.sqrt(diff[:,0]**2 + diff[:,1]**2 + diff[:,2]**2)
-                    ## Slice to insert values on the diagonal   
-                    diag = (np.arange(0,N-i),np.arange(i,N))
-                    D[diag] = d
-                Contact = (D <= cutoff*10*Sig).astype(int)
-                statesprobij[state] += Contact
-                accum[state] += 1
-
-            frameidx += 1
-            if (frameidx % 20000) == 0:
-                #print "Finished"
-                #break
-                print "Frame # ", frameidx
-                #if frameidx == 60000:
-                #    break
-        os.chdir(cwd)
-
-    ## PROBABLY CHANGE TO JUST RETURN THE CONTACT MAPS
-    for m in range(len(statesprobij)):
-        #print "Accum ", m , " ", accum[m], "   Length ", len(statesprobij[m]), " Counted ", list(framestate).count(m)
-        if accum[m] != 0:
-            statesprobij[m] /= float(accum[m])
-        np.savetxt(savedir+"/map_%s.dat" % m,statesprobij[m])
-    return statesprobij
 
 def calculate_Q():
     ''' Calculate contacts and save number of native contacts,
@@ -263,75 +161,6 @@ def calculate_Q():
     np.savetxt("Qhprob.dat",Qh)
     np.savetxt("Qnhprob.dat",Qnh)
 
-def old_calculate_Q():
-    '''   DEPRECATED AK 4-2-2014
-    '''
-    
-    print "********** YOU SHOULDNT SEE THIS MESSAGE 1 **************"
-    Native_cryst, Sig, N = get_beadbead_info()
-    #Native = np.loadtxt("Qref_prob.dat")
-    Native = np.loadtxt("Qref_cryst.dat")
-    ## Define Q_local as the helical contacts (i,i+4) as well as (i,i+5) 
-    ## [and (i,i+6)]. This is assuming that contacts to i+4 and i+5 
-    ## stabilize helices.
-    h_diag = (np.arange(0,N-4),np.arange(4,N))
-    h_diag2 = (np.arange(0,N-5),np.arange(5,N))
-    #h_diag3 = (np.arange(0,N-6),np.arange(6,N))
-    Native_h = np.zeros((N,N),float)
-    Native_hi5 = np.zeros((N,N),float)
-    Native_h[h_diag] = Native[h_diag]
-    #Native_h[h_diag2] = Native[h_diag2]
-    #Native_h[h_diag3] = Native[h_diag3]
-    Native_hi5[h_diag2] = Native[h_diag2]
-
-    Q = []
-    Qh = []
-    Qres = []
-    Qhres = []
-    Qhi5res = []
-    A = []
-    framenum = 0 
-    frames = mol_reader.open("traj.xtc") 
-    for frame in frames.read():
-        D = np.zeros((N,N),float)
-        X = np.reshape(np.array(frame.coordinates), (N,3))
-
-        ## This loops allows the construction of the pairwise distance 
-        ## distance matrix without a second inner loop by computing
-        ## the diagonals. Takes advantage of vectorized operations.
-        for i in range(4,N):
-            diff = X[0:-i,:] - X[i:,:]
-            d = np.sqrt(diff[:,0]**2 + diff[:,1]**2 + diff[:,2]**2)
-            ## Slice to insert values on the diagonal   
-            diag = (np.arange(0,N-i),np.arange(i,N))
-            D[diag] = d
-
-        ## Contact matrix. Distances are within 125% of equilibrium 
-        ## distance. Sum up contacts to get Q, Q_helical, Q_non-helical.
-        Contact1 = (D <= 1.25*10*Sig).astype(int)
-        Contact2 = (D > 0.01).astype(int)
-        Contact = Contact1*Contact2
-        Q.append(sum(sum(Native*Contact)))
-        Qres.append(sum(Native*Contact))
-        Qhres.append(sum(Native_h*Contact))
-        Qhi5res.append(sum(Native_hi5*Contact))
-        A.append(sum(sum((1 - Native)*Contact)))
-        Qh.append(sum(sum(Native_h*Contact)))
-
-        framenum += 1
-        #if (framenum % 1000) == 0:
-        #    print "Frame #", framenum 
-
-    ## Save all the data files!
-    np.savetxt("Qprob.dat",np.array(Q))
-    np.savetxt("Qres.dat",np.array(Qres),delimiter=" ",fmt="%d")
-    np.savetxt("Qhres.dat",np.array(Qhres),delimiter=" ",fmt="%d")
-    np.savetxt("Qhi5res.dat",np.array(Qhi5res),delimiter=" ",fmt="%d")
-    np.savetxt("Qhprob.dat",np.array(Qh))
-    np.savetxt("Qnhprob.dat",np.array(Q)-np.array(Qh))
-    np.savetxt("Aprob.dat",np.array(A))
-    return Q, Qh
-
 def get_beadbead_info(path='.'):
     ''' Extract the native crystal structure contacts, equilibrium 
         contact distance (sigij), and number of residues N.'''
@@ -369,82 +198,6 @@ def get_pdb_coords(pdbname):
 
     return np.array(coords)
 
-def probabilistic_reference(cutoff=1.25):
-    ''' Calculate reference matrix probabilistically. Considers native 
-        contacts as those that are formed in >=90% of the frames in 
-        the native state ensemble. This is a subset of the crystal 
-        structure contacts.
-
-        The native ensemble is defined as all frames within 2.5 Angstrom
-        RMSD to native (Note: the folded basin no longer has its minimum 
-        at rmsd=0). Varying this cutoff between 2-3 Angstrom doesn't make
-        a big difference. 
-        
-        **Currently not used models based on Go model. 1-23-14 AK**
-
-        coord_util mol_reader DEPRECATED 4-2-2014 AK
-
-    '''
-    Native_cryst, Sig, N = get_beadbead_info()
-    numframes = -1
-    numframesused = 0
-    probij = np.zeros((N,N),float)
-    print "## DEBUGGING: Crystal contacts", sum(sum(Native_cryst))
-    print "## DEBUGGING: N = ", N
-    print "## DEBUGGING: Initial probij", sum(sum(probij))
-
-    frames = mol_reader.open("traj.xtc") 
-    time, rmsd = np.loadtxt("rmsd.xvg",unpack=True)
-    ## Loop over frames in trajectory.
-    for frame in frames.read():
-        numframes += 1
-        if rmsd[numframes] > 0.25:
-            continue
-        else:
-            #D = np.ones((N,N),float)  ## Why is D = ones((N,N))?
-            D = np.zeros((N,N),float)
-            X = np.reshape(np.array(frame.coordinates), (N,3))
-            ## This loops allows the construction of the pairwise distance 
-            ## distance matrix without a second inner loop by computing
-            ## the diagonals. Takes advantage of vectorized operations.
-            for i in range(4,N):
-                diff = X[0:-i,:] - X[i:,:]
-                d = np.sqrt(diff[:,0]**2 + diff[:,1]**2 + diff[:,2]**2)
-                ## Slice to insert values on the diagonal   
-                diag = (np.arange(0,N-i),np.arange(i,N))
-                D[diag] = d
-
-            ## Contact matrix. Distances are within cutoff of equilibrium 
-            ## distance.
-            Contact1 = (D <= 1.25*10*Sig).astype(int)
-            Contact2 = (D > 0.01).astype(int)
-            Contact = Contact1*Contact2
-            #Contact = (D <= cutoff*10.*Sig).astype(int)
-
-            probij += Contact
-            if numframesused >= 1000:
-                break
-            numframesused+= 1
-
-    probij /= float(numframesused)
-    Native = (probij >= .9).astype(int)
-    #print Native
-    print "## DEBUGGING: Final probij", sum(sum(probij))
-    print "## DEBUGGING: Probabalistic contacts: ",sum(sum(Native))
-    print "## DEBUGGING: Type native",type(Native)
-    print "## DEBUGGING: Native shape ", Native.shape
-    #np.savetxt("probij.dat",probij,delimiter=" ")
-    np.savetxt("Qref_prob.dat",Native,delimiter=" ")
-
-    plt.pcolor(Native_cryst + probij.T)
-    plt.xlim(0,len(Native_cryst))
-    plt.ylim(0,len(Native_cryst))
-    plt.ylabel("Contact Probability")
-    plt.xlabel("Crystal Contacts")
-    plt.title("1000 frames within 2.5A of Crystal")
-    plt.savefig("crystal_vs_prob.pdf")
-    
-    return Native,probij
 
 if __name__ == "__main__":
     main()
