@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
 import os
+import argparse
 
 import mdtraj as md
 
@@ -71,17 +72,20 @@ def plot_native_state_contact_map(title):
 
 if __name__ == "__main__":
     
-    ebar = "0.9"
-    temps = [ t[:-1] for t in open("T_array.txt","r").readlines() ]
-    print temps
-    cwd = os.getcwd()
+    parser = argparse.ArgumentParser(description='Perform WHAM.')
+    parser.add_argument('--title', type=str, help='Method',required=True)
+    args = parser.parse_args()
+    print args
 
+    temps = [ t[:-1] for t in open("T_array.txt","r").readlines() ]
+
+    cwd = os.getcwd()
     for tdir in temps:
         print "Entering directory ",tdir
         os.chdir(tdir)
         if os.path.exists("native_state_contact_map.pdf"):
             print "  Skipping"
         else:
-            title = "No disulfides $\\epsilon = %s$  $T = %sK$" % (ebar,t.split("_")[0])
+            title = "%s $T = %sK$" % (args.title,tdir.split("_")[0])
             plot_native_state_contact_map(title)
         os.chdir(cwd)

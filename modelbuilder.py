@@ -85,7 +85,7 @@ def get_args():
     add_parser = sp.add_parser('add')
     add_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
     add_parser.add_argument('--temparray', type=int, nargs='+', help='T_initial T_final dT for new temp array',required=True)
-    add_parser.add_argument('--mutarray', type=int, nargs='+', help='T_initial T_final dT for new mutational sims array',required=True)
+    add_parser.add_argument('--mutarray', type=int, nargs='+', help='T_initial T_final dT for new mutational sims array')
     add_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
 
     ## Options for just printing out some useful info about the pdb. Not currently implemented.
