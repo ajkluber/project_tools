@@ -244,3 +244,11 @@ To Do Now:
     - Start on thermodynamic pertrubation.
 
 ------------------------------------------------------------------------------
+Fri May  9 21:55:40 CDT 2014
+
+    Moving all the simulation tools into a different module called
+project_tools. Only going to keep the models and systems submodules in this
+repository.
+
+
+------------------------------------------------------------------------------

@@ -39,7 +39,7 @@ def get_data(coord):
         print "  Coordinate: ",coord," not found"
     return x
 
-def plot_aggregated_data(System):
+def plot_aggregated_data(System,append_log):
     ''' Plot 1D and 2D pmfs for aggregated equilibrium simulations.'''
     
     append_log(System.subdir,"Starting: Plotting_Agg_Data")
