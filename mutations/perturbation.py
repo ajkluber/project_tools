@@ -4,9 +4,10 @@ import os
 import mdtraj as md
 import cplex
 
+import phi_values as phi
+
 import model_builder.models as models
 import model_builder.systems as systems
-import model_builder.mutations.phi_values as phi
 
 '''
 April 30 2014

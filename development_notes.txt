@@ -252,3 +252,12 @@ repository.
 
 
 ------------------------------------------------------------------------------
+Fri May 16 15:23:45 CDT 2014
+Alexander Kluber
+    
+    Split models/ and systems/ submodules into a new repository called
+model_builder which will take care of prepping Gromacs input files for coarse
+grain models. This repository is now called project_tools and will handle
+running simulations according to different project 'recipes' (e.g. MC2004).
+
+------------------------------------------------------------------------------

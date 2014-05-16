@@ -5,21 +5,22 @@ import subprocess as sb
 import time
 import numpy as np
 
-import models
-import systems
 import simulation
 import analysis
 import mutations
 import parsepdb
 
+from model_builder import models
+from model_builder import systems
+
 '''
-ModelBuilder Class
+ProjectManager Class
 
 Purpose:
-    The ModelBuilder class is top-level helper class to track and execute
+    The ProjectManager class is top-level helper class to track and execute
 varied procedures for structure-based modeling. At this level the tasks that
 need to be done are abstract (such as 'determining folding temperature' or
-'refining parameter'), so ModelBuilder relies on the internal machinery of
+'refining parameter'), so ProjectManager relies on the internal machinery of
 the Model and System classes to handle the details.
     The goal is to conceal as much of the details as possible away from the
 user, so that the user can focus on top-level questions. For this reason any
@@ -88,10 +89,6 @@ def get_args():
     add_parser.add_argument('--mutarray', type=int, nargs='+', help='T_initial T_final dT for new mutational sims array')
     add_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
 
-    ## Options for just printing out some useful info about the pdb. Not currently implemented.
-    add_parser = sp.add_parser('parsepdb')
-    add_parser.add_argument('--pdbs', type=str, nargs='+', help='pdbs to parse for useful info',required=True)
-
     args = parser.parse_args()
 
     if args.dryrun != False:
@@ -116,7 +113,7 @@ def get_args():
     return args, modeloptions
 
 
-class ModelBuilder(object):
+class ProjectManager(object):
     def __init__(self,args,modeloptions):
         self.path = os.getcwd()
         
@@ -126,8 +123,6 @@ class ModelBuilder(object):
             self.continue_project(args)
         elif args.action == 'add':
             self.add_temperature_array(args)
-        elif args.action == 'parsepdb':
-            self.parse_pdbs(args.pdbs)
 
     def append_log(self,sub,string):
         open(self.path+'/'+sub+'/modelbuilder.log','a').write(self.append_time_label()+' '+string+'\n')
@@ -334,16 +329,16 @@ class ModelBuilder(object):
     def prepare_systems(self,Models,Systems):
         ''' New style of preparing files: on subdirectory basis.'''
         for i in range(len(Models)):
-            if os.path.exists(Systems[i].path+"/"+Systems[i].subdir+"/"+Systems[i].subdir+".pdb") == False:
+            if not os.path.exists(Systems[i].path+"/"+Systems[i].subdir+"/"+Systems[i].subdir+".pdb"):
                 shutil.copy(Systems[i].subdir+".pdb",Systems[i].subdir)
-            if os.path.exists(Systems[i].path+"/"+Systems[i].subdir+"/Qref_shadow") == False:
+            if not os.path.exists(Systems[i].path+"/"+Systems[i].subdir+"/Qref_shadow"):
                 os.mkdir(Systems[i].path+"/"+Systems[i].subdir+"/Qref_shadow")
             Models[i].prepare_system(Systems[i])
             print "Done preparing systems."
 
 def main():
     args, modeloptions = get_args()
-    ModelBuilder(args,modeloptions)
+    ProjectManager(args,modeloptions)
 
 if __name__ == '__main__':
     main()
