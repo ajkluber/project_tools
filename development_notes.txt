@@ -260,4 +260,9 @@ model_builder which will take care of prepping Gromacs input files for coarse
 grain models. This repository is now called project_tools and will handle
 running simulations according to different project 'recipes' (e.g. MC2004).
 
+    TO DO:
+- Potentially use logging module to replace print statements.
+- Write unit tests.
+- Write consistent docstrings.
+
 ------------------------------------------------------------------------------

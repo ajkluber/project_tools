@@ -1,3 +1,28 @@
+''' Basic project manager class automates projects at top level.
+
+Description:
+
+ProjectManager
+    The ProjectManager class is top-level helper class to track and execute
+varied procedures for structure-based modeling. At this level the tasks that
+need to be done are abstract (such as 'determining folding temperature' or
+'refining parameter'). 
+    ProjectManager relies on model_builder to generate the proper Gromacs input
+files for the desired coarse-grain model, but doesn't need to know of the
+details.
+    The goal is to conceal as much of the details as possible away from the
+user, so that the user can focus on top-level questions. For this reason any
+function that requires manipulating the data is best moved to a different 
+module. 
+
+    
+See Also: 
+
+    development_notes.txt cfor chronological list of changes and development
+plan.
+
+'''
+
 import argparse
 import os
 import shutil
@@ -12,29 +37,6 @@ import parsepdb
 
 from model_builder import models
 from model_builder import systems
-
-'''
-ProjectManager Class
-
-Purpose:
-    The ProjectManager class is top-level helper class to track and execute
-varied procedures for structure-based modeling. At this level the tasks that
-need to be done are abstract (such as 'determining folding temperature' or
-'refining parameter'), so ProjectManager relies on the internal machinery of
-the Model and System classes to handle the details.
-    The goal is to conceal as much of the details as possible away from the
-user, so that the user can focus on top-level questions. For this reason any
-function that requires manipulating the data is best moved to a different 
-module. 
-    
-Description:
-    This module contains the logical flow for running simulations for 
-several coarse-grain models.
-    
-See development_notes.txt for chronological list of changes and development
-plan.
-
-'''
 
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621

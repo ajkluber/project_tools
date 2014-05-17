@@ -133,3 +133,6 @@ class MatysiakClementi2004(ProjectManager):
 
         self.save_model_system_info(Models,Systems,subdirs)
         print "Success"
+
+if __name__ == "__main__":
+    pass
