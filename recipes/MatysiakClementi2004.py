@@ -1,24 +1,26 @@
 import os
 
 from project_tools.manager import ProjectManager
-from project_tools import simulation, analysis, mutations
+#from project_tools import simulation, analysis, mutations
+from project_tools import simulation, analysis
 
 
 class MatysiakClementi2004(ProjectManager):
     
-    ''' A project manager to reproduce Matysiak Clementi 2004 algorithm. 
+    """ A project manager to reproduce Matysiak Clementi 2004 algorithm. 
 
     Description:
         This project manager is intended to automate the generation of a
     heterogeneous Go-model via the thermodynamic perturbation algorithm
     put forth by Matysiak & Clementi (1).
         
+
     Reference:
+
     (1) Matysiak, S.; Clementi, C. Optimal Combination of Theory and Experiment for
     the Characterization of the Protein Folding Landscape of S6: How Far Can a
-    Minimalist Model Go? J. Mol. Biol. 2004, 343, 235–248.
-    '''
-
+    Minimalist Model Go? J. Mol. Biol. 2004, 343, 235-248.
+    """
 
     def logical_flowchart_starting(self,System,Model,sub,task):
         if task == "Tf_loop_iteration":

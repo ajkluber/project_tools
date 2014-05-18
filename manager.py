@@ -32,8 +32,7 @@ import numpy as np
 
 import simulation
 import analysis
-import mutations
-import parsepdb
+#import mutations
 
 from model_builder import models
 from model_builder import systems
@@ -67,7 +66,7 @@ def get_args():
 
     ## Options for initializing a new simulation project.
     new_parser = sp.add_parser('new')
-    new_parser.add_argument('--type', type=str, required=True, help='Choose model type: HetGo, HomGo, DMC')
+    new_parser.add_argument('--model', type=str, required=True, help='Choose model type: HetGo, HomGo, DMC')
     new_parser.add_argument('--beads', type=str, required=True, help='Choose model beads: CA, CACB.')
     new_parser.add_argument('--pdbs', type=str, required=True, nargs='+',help='PDBs to start simulations.')
     new_parser.add_argument('--contact_energies', type=str, help='HetGo Contact energies: MJ, Bach, MC2004, from file.')
@@ -100,7 +99,7 @@ def get_args():
 
     if args.action == "new":
         ## Check if options for model make sense.
-        options["Model_Code"] = args.type
+        options["Model_Code"] = args.model
         options["Bead_Model"] = args.beads
         options["Solvent"] = args.solvent
         options["R_CD"] = args.R_CD
@@ -295,10 +294,13 @@ class ProjectManager(object):
                 print "Subdirectory: ", sub, " already exists! just fyi"
 
         print "Starting a new simulation project..."
+
+
+        print subdirs
+        print modeloptions
+        raise SystemExit
         Models = models.new_models(subdirs,modeloptions)
         Systems = systems.new_systems(subdirs)
-        Model = Models[0]
-        System = Systems[0]
 
         self.prepare_systems(Models,Systems)
         self.save_model_system_info(Models,Systems,subdirs)
@@ -308,14 +310,14 @@ class ProjectManager(object):
             System.initial_T_array = args.temparray
 
         ## The first step depends on the type of model.
-        if args.type in ["HomGo","HetGo"]:
+        if args.model in ["HomGo","HetGo"]:
             for k in range(len(subdirs)):
                 print "Starting Tf_loop_iteration for subdirectory: ", subdirs[k]
                 ## To Do: Prepare each Model System pair. 
                 Model = Models[k]
                 System = Systems[k]
                 simulation.Tf_loop.folding_temperature_loop(Model,System,self.append_log,new=True)
-        elif args.type == "DMC":
+        elif args.model == "DMC":
             pass
 
         self.save_model_system_info(Models,Systems,subdirs)
