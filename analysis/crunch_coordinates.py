@@ -1,15 +1,22 @@
+""" Functions for submitted analysis scripts as PBS jobs
+
+Description:
+
+    Utility to submit PBS jobs to calculate simulation observables
+such as rmsd, Q, R_g, potential energy, dihedral angles, and number
+of helical residues for Gromacs trajectories.
+"""
+
 import subprocess as sb
 import numpy as np
 import os 
 import argparse
 
-''' Library and command line utility for computing common reaction
-    coordinates, such as rmsd, Q, R_g, potential energy, dihedral
-    angles.'''
-
-
 def crunch_Q(name,walltime="00:10:00",ppn="4"):
-    ''' Calculate the fraction of native contacts, non-native contacts.'''
+    """ Submit PBS job to calculate sets of residue-residue contacts.
+
+    Calculates contacts in python with mdtraj module. See contacts.py.
+    """
 
     contact_pbs = "#!/bin/bash\n"
     contact_pbs +="#PBS -N Q_"+name+"\n"
@@ -25,8 +32,11 @@ def crunch_Q(name,walltime="00:10:00",ppn="4"):
     
 
 def crunch_all(name,walltime="00:02:00",ppn="4"):
-    ''' Crunch the following reaction coordinates with Gromacs: rmsd, radius
-        gyration, dihedrals, and potential energy terms.'''
+    """ Submit PBS job to calculate observables
+
+    Calculates rmsd, radius gyration, dihedrals, and potential energy by 
+    calling Gromacs utilities.
+    """
     cmd1 = 'echo -e "CA\nCA" | g_rms -f traj.xtc -s topol.tpr -o rmsd.xvg -nomw -xvg none -n index.ndx'
     cmd2 = 'echo "1" | g_gyrate -f traj.xtc -s topol.tpr -o radius_gyration.xvg -xvg none'
     cmd3 = 'g_angle -n dihedrals.ndx -ov phis.xvg -all -type dihedral -xvg none'
@@ -49,9 +59,12 @@ def crunch_all(name,walltime="00:02:00",ppn="4"):
     sb.call(qsub.split(),stdout=open("energyterms.out","w"),stderr=open("energyterms.err","w"))
 
 def crunch_Nh(tol=40.):
-    ''' Calculate number of helical residues per frame by the following criterion:
-        if a residue is making an i+4 contact and the two dihedral angles between
-        it and its contact'''
+    """ Compute number of helical residues 
+
+    A residue is in a helical conformation if it is making an i+4 contact and
+    the two dihedral angles between it and its contact are within tol of 50 
+    degrees (the 'helical' dihedral).
+    """
     Qh = np.loadtxt("Qhres.dat")
     phis = np.loadtxt("phis.xvg")
     phis = phis[:,2:]

@@ -1,4 +1,21 @@
-#!/usr/bin/env python
+""" Library for plotting free energy surfaces (or pmfs). 
+
+Description:
+
+    Functions that read output data files from WHAM calculations and
+plot 1D or 2D free energy surfaces (aka potentials of mean force (1)). 
+
+
+To Do:
+
+- Create command line functionality that can be called from a PBS script.
+- Write a function that submits PBS scripts to plot quantities.
+
+
+References:
+(1) http://en.wikipedia.org/wiki/Potential_of_mean_force
+"""
+
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -8,24 +25,10 @@ import os
 import argparse
 import subprocess as sb
 
-'''
-Created 2-12-2014
-Alexander Kluber
-
-    A module under development that plots the 1D, 2D pmfs of equilibrium data
-as well as the contact maps as a function of several coordinates. Calculating
-contact maps over equilibrium trajectories is aided by the
-model_builder.analysis.contacts submodule, but takes really long so it should
-be done from within a PBS script.
-
-To Do:
-- Create command line functionality that can be called from a PBS script.
-- Write a function that submits PBS scripts to plot quantities.
-
-'''
 def get_data(coord):
     if coord in ["Q","Qh","Qnh"]:
-        x = np.loadtxt(coord+"prob.dat")
+        #x = np.loadtxt(coord+"prob.dat")
+        x = np.loadtxt(coord+".dat")
         x /= max(x)
     elif coord == "Nh":
         x = np.loadtxt(coord+".dat") 

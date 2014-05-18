@@ -1,4 +1,17 @@
-#!/usr/bin/env python
+""" Plots data from 'equilibrium' simulations (i.e. really long).
+
+**** Probably soon to be DEPRECATED 
+
+Description:
+
+    Collects and plots data from really long (hopefully equilibrium) simulations 
+around the folding temperature. Plots 1D and 2D pmfs (1).
+
+
+References:
+(1) http://en.wikipedia.org/wiki/Potential_of_mean_force
+"""
+
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -10,22 +23,6 @@ import subprocess as sb
 
 import model_builder.analysis.contacts as ct
 
-
-'''
-Created 2-12-2014
-Alexander Kluber
-
-    A module under development that plots the 1D, 2D pmfs of equilibrium data
-as well as the contact maps as a function of several coordinates. Calculating
-contact maps over equilibrium trajectories is aided by the
-model_builder.analysis.contacts submodule, but takes really long so it should
-be done from within a PBS script.
-
-To Do:
-- Create command line functionality that can be called from a PBS script.
-- Write a function that submits PBS scripts to plot quantities.
-
-'''
 def main():
     ''' Two possible branches: 1. Calculate reference matrix, 2. Calculate Q '''
     parser = argparse.ArgumentParser(description='Calculate the (Non)Native contact matrix')
