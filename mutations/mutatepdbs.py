@@ -52,7 +52,7 @@ def make_all_mutations():
         the mutational data files will probably use single-letter code.
     '''
     modelname = 'wt'
-    mutation_data = open("mutations.txt","r").readlines()[1:]
+    mutation_data = open("mutations.dat","r").readlines()[1:]
     mut_indx = [ mutation_data[i].split()[0] for i in range(len(mutation_data)) ]
     wt_res = [ mutation_data[i].split()[1] for i in range(len(mutation_data)) ]
     mut_res = [ mutation_data[i].split()[2] for i in range(len(mutation_data)) ]

@@ -32,7 +32,7 @@ def prep_mutants(System,append_log):
         os.mkdir(sub)
     if not os.path.exists("wt.pdb"):
         print "  Copying wt"
-        shutil.copy(System.subdir+"/clean.pdb","wt.pdb")
+        shutil.copy(System.subdir+"/clean_noH.pdb","wt.pdb")
     if (not os.path.exists(sub+"/mutations.txt")):
         if os.path.exists(System.subdir+"/mutations.txt"):
             shutil.copy(System.subdir+"/mutations.txt",sub+"/mutations.txt")
