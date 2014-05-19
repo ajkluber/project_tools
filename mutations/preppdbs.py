@@ -24,11 +24,15 @@ https://docs.rice.edu/confluence/display/ITDIY/How+to+use+BLAS+and+LAPACK+librar
 
 def prep_mutants(System,append_log):
     ''' Creates a mutated pdb for every mutant.'''
+
     cwd = os.getcwd()
     sub = cwd+"/"+System.subdir+"/mutants"
     if not os.path.exists(sub):
         print "  Creating direcotory",sub
         os.mkdir(sub)
+    if not os.path.exists("wt.pdb"):
+        print "  Copying wt"
+        shutil.copy(System.subdir+"/clean.pdb","wt.pdb")
     if (not os.path.exists(sub+"/mutations.txt")):
         if os.path.exists(System.subdir+"/mutations.txt"):
             shutil.copy(System.subdir+"/mutations.txt",sub+"/mutations.txt")

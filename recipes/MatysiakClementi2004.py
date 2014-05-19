@@ -106,11 +106,10 @@ class MatysiakClementi2004(ProjectManager):
             print "Plotting aggregated data PMFS..."
             analysis.plot.pmfs.plot_aggregated_data(System,self.append_log)
         elif task == "Plotting_Agg_Data":
-            if Model.modelnameshort in ["HomGo","HetGo","DMC"]:
-                print "Starting prepping mutant pdbs..."
-                mutations.preppdbs.prep_mutants(System,self.append_log)
-                print "Starting calculating dH for mutants..."
-                mutations.phi_values.calculate_dH_for_mutants(Model,System,self.append_log)
+            print "Starting prepping mutant pdbs..."
+            mutations.preppdbs.prep_mutants(System,self.append_log)
+            print "Starting calculating dH for mutants..."
+            mutations.phi_values.calculate_dH_for_mutants(Model,System,self.append_log)
         elif task == "Calculating_dH":
             mutations.phi_values.calculate_phi_values(Model,System,self.append_log,"Q")
             #mutations.phi_values.calculate_new_epsilons(Model,System,self.append_log)
@@ -195,5 +194,4 @@ def get_args():
 if __name__ == "__main__":
     
     args, options = get_args()
-    
     MatysiakClementi2004(args,options)
