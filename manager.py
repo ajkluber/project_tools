@@ -1,4 +1,4 @@
-''' Basic project manager class automates projects at top level.
+""" Basic project manager class automates projects at top level.
 
 Description:
 
@@ -21,7 +21,7 @@ See Also:
     development_notes.txt cfor chronological list of changes and development
 plan.
 
-'''
+"""
 
 import argparse
 import os
@@ -32,7 +32,7 @@ import numpy as np
 
 import simulation
 import analysis
-#import mutations
+import mutations
 
 from model_builder import models
 from model_builder import systems
@@ -115,6 +115,11 @@ def get_args():
 
 
 class ProjectManager(object):
+    """ A shell class to 
+
+
+    """
+
     def __init__(self,args,modeloptions):
         self.path = os.getcwd()
         
@@ -205,83 +210,83 @@ class ProjectManager(object):
         self.save_model_system_info(Models,Systems,subdirs)
         print "Success"
 
-    def logical_flowchart_starting(self,System,Model,sub,task):
-        if task == "Tf_loop_iteration":
-            print "Checking if Tf_loop_iteration completed..."
-            simulation.Tf_loop.check_completion(System,self.append_log)
-            lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
-            if action2 == "Finished:":
-                print "Finished Tf_loop_iteration..."
-                print "Starting Tf_loop_analysis..."
-                analysis.Tf_loop.analyze_temperature_array(System,self.append_log)
-        elif task == "Tf_loop_analysis":
-            print "Checking if Tf_loop_analysis completed..."
-            analysis.Tf_loop.check_completion(System,self.append_log)
-        elif task == "wham_Cv":
-            print "Starting to check if wham_Cv completed..."
-            analysis.Tf_loop.continue_wham(System,self.append_log)
-        elif task == "wham_FreeEnergy":
-            print "Starting Equil_Tf..."
-            simulation.Tf_loop.run_equilibrium_simulations(Model,System,self.append_log)
-        elif task == "Equil_Tf":
-            print "Starting to check if Equil_Tf completed..."
-            simulation.Tf_loop.check_completion(System,self.append_log,equil=True)
-            lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
-            if action2 == "Finished:":
-                print "Finished Equil_Tf_iteration..."
-                print "Starting Equil_Tf_analysis..."
-                analysis.Tf_loop.analyze_temperature_array(System,self.append_log,equil=True)
-        elif task == "Equil_Tf_analysis":
-            print "Starting to check if Equil_Tf_analysis completed..."
-            analysis.Tf_loop.check_completion(System,self.append_log,equil=True)
-        else:
-            print "ERROR!"
-            print "  Couldn't find next option for task:",task
-            print "  Please check that things are ok."
-            print "  Exiting."
-            raise SystemExit
+#    def logical_flowchart_starting(self,System,Model,sub,task):
+#        if task == "Tf_loop_iteration":
+#            print "Checking if Tf_loop_iteration completed..."
+#            simulation.Tf_loop.check_completion(System,self.append_log)
+#            lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
+#            if action2 == "Finished:":
+#                print "Finished Tf_loop_iteration..."
+#                print "Starting Tf_loop_analysis..."
+#                analysis.Tf_loop.analyze_temperature_array(System,self.append_log)
+#        elif task == "Tf_loop_analysis":
+#            print "Checking if Tf_loop_analysis completed..."
+#            analysis.Tf_loop.check_completion(System,self.append_log)
+#        elif task == "wham_Cv":
+#            print "Starting to check if wham_Cv completed..."
+#            analysis.Tf_loop.continue_wham(System,self.append_log)
+#        elif task == "wham_FreeEnergy":
+#            print "Starting Equil_Tf..."
+#            simulation.Tf_loop.run_equilibrium_simulations(Model,System,self.append_log)
+#        elif task == "Equil_Tf":
+#            print "Starting to check if Equil_Tf completed..."
+#            simulation.Tf_loop.check_completion(System,self.append_log,equil=True)
+#            lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
+#            if action2 == "Finished:":
+#                print "Finished Equil_Tf_iteration..."
+#                print "Starting Equil_Tf_analysis..."
+#                analysis.Tf_loop.analyze_temperature_array(System,self.append_log,equil=True)
+#        elif task == "Equil_Tf_analysis":
+#            print "Starting to check if Equil_Tf_analysis completed..."
+#            analysis.Tf_loop.check_completion(System,self.append_log,equil=True)
+#        else:
+#            print "ERROR!"
+#            print "  Couldn't find next option for task:",task
+#            print "  Please check that things are ok."
+#            print "  Exiting."
+#            raise SystemExit
 
-    def logical_flowchart_finished(self,System,Model,sub,task):
-        if task == "Tf_loop_iteration":
-            print "Finished Tf_loop_iteration..."
-            print "Starting Tf_loop_analysis..."
-            analysis.Tf_loop.analyze_temperature_array(System,self.append_log)
-        elif task == "Tf_loop_analysis":
-            print "Finished Tf_loop_analysis..."
-            flag = analysis.Tf_loop.check_if_wham_is_next(System,self.append_log)
-            if flag == 1:
-                pass 
-            else:
-                print "Starting Tf_loop_iteration..."
-                simulation.Tf_loop.folding_temperature_loop(Model,System,self.append_log)
-        elif task == "wham_Cv":
-            print "Finished wham_Cv..."
-            print "Stating wham_FreeEnergy..."
-            analysis.Tf_loop.continue_wham(System,self.append_log)
-        elif task == "Equil_Tf":
-            print "Starting Equil_Tf_analysis..."
-            analysis.Tf_loop.analyze_temperature_array(System,self.append_log,equil=True)
-        elif task == "Equil_Tf_analysis" or task == "Aggregating_Equil_Runs":
-            ## Aggregrate equil_Tf data for each temperature and plot PMFs
-            print "Starting aggregate data..."
-            analysis.Tf_loop.aggregate_equilibrium_runs(System,self.append_log)
-            print "Plotting aggregated data PMFS..."
-            analysis.plot.pmfs.plot_aggregated_data(System,self.append_log)
-        elif task == "Plotting_Agg_Data":
-            if Model.modelnameshort in ["HomGo","HetGo","DMC"]:
-                print "Starting prepping mutant pdbs..."
-                #mutations.preppdbs.prep_mutants(System,self.append_log)
-                print "Starting calculating dH for mutants..."
-                mutations.phi_values.calculate_dH_for_mutants(Model,System,self.append_log)
-        elif task == "Calculating_dH":
-            mutations.phi_values.calculate_phi_values(Model,System,self.append_log,"Q")
-            #mutations.phi_values.calculate_new_epsilons(Model,System,self.append_log)
-        else:
-            print "ERROR!"
-            print "  Couldn't find next option for task:",task
-            print "  Please check that things are ok."
-            print "  Exiting."
-            raise SystemExit
+#    def logical_flowchart_finished(self,System,Model,sub,task):
+#        if task == "Tf_loop_iteration":
+#            print "Finished Tf_loop_iteration..."
+#            print "Starting Tf_loop_analysis..."
+#            analysis.Tf_loop.analyze_temperature_array(System,self.append_log)
+#        elif task == "Tf_loop_analysis":
+#            print "Finished Tf_loop_analysis..."
+#            flag = analysis.Tf_loop.check_if_wham_is_next(System,self.append_log)
+#            if flag == 1:
+#                pass 
+#            else:
+#                print "Starting Tf_loop_iteration..."
+#                simulation.Tf_loop.folding_temperature_loop(Model,System,self.append_log)
+#        elif task == "wham_Cv":
+#            print "Finished wham_Cv..."
+#            print "Stating wham_FreeEnergy..."
+#            analysis.Tf_loop.continue_wham(System,self.append_log)
+#        elif task == "Equil_Tf":
+#            print "Starting Equil_Tf_analysis..."
+#            analysis.Tf_loop.analyze_temperature_array(System,self.append_log,equil=True)
+#        elif task == "Equil_Tf_analysis" or task == "Aggregating_Equil_Runs":
+#            ## Aggregrate equil_Tf data for each temperature and plot PMFs
+#            print "Starting aggregate data..."
+#            analysis.Tf_loop.aggregate_equilibrium_runs(System,self.append_log)
+#            print "Plotting aggregated data PMFS..."
+#            analysis.plot.pmfs.plot_aggregated_data(System,self.append_log)
+#        elif task == "Plotting_Agg_Data":
+#            if Model.modelnameshort in ["HomGo","HetGo","DMC"]:
+#                print "Starting prepping mutant pdbs..."
+#                #mutations.preppdbs.prep_mutants(System,self.append_log)
+#                print "Starting calculating dH for mutants..."
+#                mutations.phi_values.calculate_dH_for_mutants(Model,System,self.append_log)
+#        elif task == "Calculating_dH":
+#            mutations.phi_values.calculate_phi_values(Model,System,self.append_log,"Q")
+#            #mutations.phi_values.calculate_new_epsilons(Model,System,self.append_log)
+#        else:
+#            print "ERROR!"
+#            print "  Couldn't find next option for task:",task
+#            print "  Please check that things are ok."
+#            print "  Exiting."
+#            raise SystemExit
 
 
     def new_project(self,args,modeloptions):
@@ -305,7 +310,6 @@ class ProjectManager(object):
         self.prepare_systems(Models,Systems)
         self.save_model_system_info(Models,Systems,subdirs)
 
-        ## Not implemented yet.
         if args.temparray != None:
             System.initial_T_array = args.temparray
 
