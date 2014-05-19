@@ -18,8 +18,9 @@ import os
 import argparse
 
 from project_tools.manager import ProjectManager
-#from project_tools import simulation, analysis, mutations
-from project_tools import simulation, analysis
+from project_tools import simulation, analysis, mutations
+from model_builder import models
+from model_builder import systems
 
 
 class MatysiakClementi2004(ProjectManager):
@@ -107,7 +108,7 @@ class MatysiakClementi2004(ProjectManager):
         elif task == "Plotting_Agg_Data":
             if Model.modelnameshort in ["HomGo","HetGo","DMC"]:
                 print "Starting prepping mutant pdbs..."
-                #mutations.preppdbs.prep_mutants(System,self.append_log)
+                mutations.preppdbs.prep_mutants(System,self.append_log)
                 print "Starting calculating dH for mutants..."
                 mutations.phi_values.calculate_dH_for_mutants(Model,System,self.append_log)
         elif task == "Calculating_dH":
@@ -187,10 +188,12 @@ def get_args():
     options["Disulfides"] = None
     options["Contact_Energies"] = "MC2004"
 
-    return args, options
+    modeloptions = models.check_options(options)
+
+    return args, modeloptions
 
 if __name__ == "__main__":
     
     args, options = get_args()
     
-    MatysiakClementi2004(options)
+    MatysiakClementi2004(args,options)
