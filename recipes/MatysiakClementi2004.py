@@ -175,6 +175,13 @@ def get_args():
     run_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to continue',required=True)
     run_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
 
+    ## Options for manually adding a temperature array.
+    add_parser = sp.add_parser('add')
+    add_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
+    add_parser.add_argument('--temparray', type=int, nargs='+', help='T_initial T_final dT for new temp array',required=True)
+    add_parser.add_argument('--mutarray', type=int, nargs='+', help='T_initial T_final dT for new mutational sims array')
+    add_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
+
     args = parser.parse_args()
 
     if args.dryrun != False:
@@ -182,7 +189,6 @@ def get_args():
     else:
         options = {"Dry_Run":False}
 
-    options = {"Dry_Run":False}
     options["Model_Code"] = "HetGo"
     options["Bead_Model"] = "CA"
     options["Solvent"] = None
