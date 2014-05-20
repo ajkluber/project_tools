@@ -71,13 +71,19 @@ def plot_aggregated_data(System,append_log):
 
         for crd in coords:
             if not os.path.exists("pmfs/"+crd+"_pmf.pdf"):
-                print "    Plotting pmf ",crd
-                plot_1D_pmf(crd,System.subdir+" "+T)
+                try:
+                    plot_1D_pmf(crd,System.subdir+" "+T)
+                    print "    Plotted pmf ",crd
+                except:
+                    print "    Plotting pmf ",crd, " ** didn't work **. skipping."
 
         for crd1,crd2 in coord_pairs:
             if not os.path.exists("pmfs/"+crd1+"_"+crd2+"_pmf.pdf"):
-                print "    Plotting 2D pmf ",crd1, " vs ", crd2
-                plot_2D_pmf(crd1,crd2,System.subdir+" "+T)
+                try:
+                    plot_2D_pmf(crd1,crd2,System.subdir+" "+T)
+                    print "    Plotted 2D pmf ",crd1, " vs ", crd2
+                except:
+                    print "    Plotting 2D pmf ",crd1, " vs ", crd2," ** didn't work **. skipping."
 
         os.chdir(cwd2)
 
