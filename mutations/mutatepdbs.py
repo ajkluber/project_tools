@@ -23,7 +23,7 @@ Also, several paths need to be in your PYTHONPATH and LD_LIBRARY_PATH. See
 MODELLER install script for specific paths.
 
 Requires that the wild-type clean.pdb be present in the mutants/ directory
-along with the mutations.txt file. 
+along with the mutations.dat file. 
 
 Resulting pdbs will be named: <wt_res><mut_indx><mut_res>.pdb
 For example mutating PHE (F) at position 90 in the wild-type structure to ALA

@@ -9,7 +9,7 @@ import mutatepdbs
 Feb 14 2014
 Alexander Kluber
 
-    This submodule uses information in a mutations.txt file and the wild type
+    This submodule uses information in a mutations.dat file and the wild type
 structure wt.pdb to create mutated pdbs and resulting contact maps. The contact
 maps are then used to calculate the fraction of heavy-atom contact loss between
 residues i and j for mutation k.
@@ -33,12 +33,12 @@ def prep_mutants(System,append_log):
     if not os.path.exists("wt.pdb"):
         print "  Copying wt"
         shutil.copy(System.subdir+"/clean_noH.pdb","wt.pdb")
-    if (not os.path.exists(sub+"/mutations.txt")):
-        if os.path.exists(System.subdir+"/mutations.txt"):
-            shutil.copy(System.subdir+"/mutations.txt",sub+"/mutations.txt")
+    if (not os.path.exists(sub+"/mutations.dat")):
+        if os.path.exists(System.subdir+"/mutations.dat"):
+            shutil.copy(System.subdir+"/mutations.dat",sub+"/mutations.dat")
         else:
             print "ERROR!"
-            print "  Didn't find mutations.txt in either ",System.subdir, " or ",sub
+            print "  Didn't find mutations.dat in either ",System.subdir, " or ",sub
             print "  Exiting."
             raise SystemExit
 
@@ -147,11 +147,11 @@ def calculate_contacts_from_pdb(name):
 def calculate_contacts_lost_for_mutants():
     ''' Calculates the fraction of heavy-atom contact loss between residues i and j
         for mutant k:  f^k_ij . Must be in mutants directory which holds wild-type 
-        pdb wt.pdb, a file hold mutations information mutations.txt.'''
+        pdb wt.pdb, a file hold mutations information mutations.dat.'''
     ## Start by reading the mutations file. Should be an attribute of System
     ## object.
     modelname = 'wt.pdb'
-    mutation_data = open("mutations.txt","r").readlines()[1:]
+    mutation_data = open("mutations.dat","r").readlines()[1:]
     mut_indx = [ mutation_data[i].split()[0] for i in range(len(mutation_data)) ]
     wt_res = [ mutation_data[i].split()[1] for i in range(len(mutation_data)) ]
     mut_res = [ mutation_data[i].split()[2] for i in range(len(mutation_data)) ]

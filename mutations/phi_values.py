@@ -35,7 +35,7 @@ def calculate_dH_for_mutants(Model,System,append_log):
 
     os.chdir(System.subdir)
 
-    mutants = [ x.split()[1]+x.split()[0]+x.split()[2] for x in open("mutants/mutations.txt","r").readlines()[1:] ]
+    mutants = [ x.split()[1]+x.split()[0]+x.split()[2] for x in open("mutants/mutations.dat","r").readlines()[1:] ]
 
     sigij,epsij,deltaij,interaction_nums,keep_interactions,pairs,traj,traj_dist = load_eps_delta_sig_traj(savedir)
     Fij = get_mutant_fij(mutants,keep_interactions)
@@ -67,8 +67,8 @@ def calculate_phi_values(Model,System,append_log,coord):
     if not os.path.exists(savedir+"/phi"):
         os.mkdir(savedir+"/phi")
 
-    print "  Loading mutations.txt"
-    mutants = [ x.split()[1]+x.split()[0]+x.split()[2] for x in open("mutants/mutations.txt","r").readlines()[1:] ]
+    print "  Loading mutations.dat"
+    mutants = [ x.split()[1]+x.split()[0]+x.split()[2] for x in open("mutants/mutations.dat","r").readlines()[1:] ]
     print "  Getting state bounds for coordinate:",coord
     bounds, states = get_state_bounds(savedir,coord)
     num_states = len(states)
