@@ -72,6 +72,12 @@ class MatysiakClementi2004(ProjectManager):
         elif task == "Equil_Tf_analysis":
             print "Starting to check if Equil_Tf_analysis completed..."
             analysis.Tf_loop.check_completion(System,self.append_log,equil=True)
+        elif task == "Calculating_MC2004":
+            print "ERROR!"
+            print "  ",task, " should have finished!"
+            print "  Please check that things are ok."
+            print "  Exiting."
+            raise SystemExit
         else:
             print "ERROR!"
             print "  Couldn't find next option for task:",task
@@ -116,7 +122,12 @@ class MatysiakClementi2004(ProjectManager):
             mutations.phi_values.calculate_dH_for_mutants(Model,System,self.append_log)
         elif task == "Calculating_dH":
             mutations.phi_values.calculate_phi_values(Model,System,self.append_log,"Q")
-            #mutations.phi_values.calculate_new_epsilons(Model,System,self.append_log)
+        elif task == "Calculating_phi_values":
+            pass
+            #mutations.perturbation.calculate_new_epsilons(Model,System,self.append_log)
+        elif task == "Calculating_MC2004":
+            ## Start the next round of simulations with new parameters.
+            pass
         else:
             print "ERROR!"
             print "  Couldn't find next option for task:",task

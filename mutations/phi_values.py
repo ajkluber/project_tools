@@ -53,9 +53,9 @@ def calculate_dH_for_mutants(Model,System,append_log):
     append_log(System.subdir,"Finished: Calculating_dH")
 
 def calculate_phi_values(Model,System,append_log,coord):
-    ''' Calculate the phi values for a trajectory. Requires only state 
+    """ Calculate the phi values for a trajectory. Requires only state 
         definitions and dH (energetic perturbation for each mutation).
-    '''
+    """
     
     append_log(System.subdir,"Starting: Calculating_phi_values")
     cwd = os.getcwd()

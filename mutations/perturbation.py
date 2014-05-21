@@ -1,3 +1,15 @@
+""" Apply thermodynamic perturbation via MC2004 algorithm
+
+Description:
+
+    Submodule to solve for the new parameter set using the thermodynamic
+perturbation technique outlined in Matysiak Clementi 2004.
+
+
+References:
+
+"""
+
 import numpy as np
 import os
 
@@ -9,23 +21,17 @@ import phi_values as phi
 import model_builder.models as models
 import model_builder.systems as systems
 
-'''
-April 30 2014
-Alexander Kluber
-
-Submodule to solve for the new parameter set using the thermodynamic
-perturbation technique outlined in Matysiak Clementi 2004.
-'''
-
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
 def calculate_thermodynamic_perturbation(Model,System,append_log,coord="Q"):
-    ''' First task is to calculate the perturbations for each mutation for
+    """ Calculate the new epsilon values.
+
+        First task is to calculate the perturbations for each mutation for
         each frame in the trajectory.   May be generalized in the future or 
         moved inside Model to deal with Models with multiple parameters per
         interaction (e.g. desolvation barrier, etc.)
-    '''
+    """
     
     #append_log(System.subdir,"Starting: Calculating_MC2004")
 
@@ -51,29 +57,34 @@ def calculate_thermodynamic_perturbation(Model,System,append_log,coord="Q"):
         eps = np.loadtxt(savedir+"/mut/eps.dat")
         M = np.loadtxt(savedir+"/mut/M.dat")
 
-    for cutoff in [1.25]:
-        LP_problem, solution, x_particular, N = apply_constraints_linear_objective(Model,System,savedir,ddG,eps,M,cutoff=cutoff)
-        #LP_problem, solution, x_particular, N = apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff=cutoff)
+    LP_problem, solution, x_particular, N = apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M)
 
-        ## New Parameters
-        epsilon_prime = eps + x_particular + np.dot(N,solution)
+    ## New Parameters
+    epsilon_prime = eps + x_particular + np.dot(N,solution)
 
-        np.savetxt(savedir+"/mut/line_delta_eps_"+str(cutoff)+".dat",x_particular+np.dot(N,solution))
-        np.savetxt(savedir+"/mut/line_eps_prime_"+str(cutoff)+".dat",epsilon_prime)
-        #np.savetxt(savedir+"/mut/quad_delta_eps_"+str(cutoff)+".dat",x_particular+np.dot(N,solution))
-        #np.savetxt(savedir+"/mut/quad_eps_prime_"+str(cutoff)+".dat",epsilon_prime)
+    np.savetxt(savedir+"/mut/epsilon_new.dat", epsilon_prime)
+
+    ## This block was for comparing the linear and quadratic objective functions.
+    #LP_problem, solution, x_particular, N = apply_constraints_linear_objective(Model,System,savedir,ddG,eps,M,cutoff=cutoff)
+    #LP_problem, solution, x_particular, N = apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff=cutoff)
+
+    #epsilon_prime = eps + x_particular + np.dot(N,solution)
+
+    #np.savetxt(savedir+"/mut/line_delta_eps_"+str(cutoff)+".dat",x_particular+np.dot(N,solution))
+    #np.savetxt(savedir+"/mut/line_eps_prime_"+str(cutoff)+".dat",epsilon_prime)
+    #np.savetxt(savedir+"/mut/quad_delta_eps_"+str(cutoff)+".dat",x_particular+np.dot(N,solution))
+    #np.savetxt(savedir+"/mut/quad_eps_prime_"+str(cutoff)+".dat",epsilon_prime)
     
-
-    return LP_problem, solution, x_particular, eps, N
     #append_log(System.subdir,"Finished: Calculating_MC2004")
+    return LP_problem, solution, x_particular, eps, N
 
-def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff=0.5):
-    ''' Search the nullspace dimensions for a solution that minimizes 
+def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff=0.25):
+    """ Search the nullspace dimensions for a solution that minimizes 
         the change in stability and keeps the contacts attractive. Uses
         cplex linear programming package.
 
         status 4-29-2014 WORKS!
-    '''
+    """
 
     ## The general solution is a sum of the particular solution and an
     ## arbitrary vector from the nullspace of M.
@@ -296,6 +307,11 @@ def calculate_matrix_ddG_eps_M(Model,System,savedir,beta,coord):
     np.savetxt(savedir+"/mut/M.dat",M)
     
     return ddG_all,epsij,M
+
+def calculate_new_epsilons(Model,System,append_log):
+    """ Calculate the new contact strengths."""
+
+    pass
 
 if __name__ == '__main__':
     ## TESTING calculating ddG, phi values.
