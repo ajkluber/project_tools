@@ -145,14 +145,11 @@ class SecondaryTertiaryGo(ProjectManager):
         self.save_model_system_info(Models,Systems,subdirs)
 
         if args.temparray != None:
-            System.initial_T_array = args.temparray
-
-
-        ## Estimate the folding temperature and run
+            for n in range(len(subdirs)):
+                Systems[n].initial_T_array = args.temparray
 
         for k in range(len(subdirs)):
             print "Starting Tf_loop_iteration for subdirectory: ", subdirs[k]
-            ## To Do: Prepare each Model System pair. 
             Model = Models[k]
             System = Systems[k]
             simulation.Tf_loop.folding_temperature_loop(Model,System,self.append_log,new=True)
