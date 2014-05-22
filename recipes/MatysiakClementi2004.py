@@ -1,4 +1,4 @@
-""" A recipe to apply the Matysiak Clementi 2004
+""" A recipe to apply the Matysiak Clementi 2004 algorithm
 
 
 Description:
@@ -168,10 +168,8 @@ class MatysiakClementi2004(ProjectManager):
 
 
 def get_args():
-    """ Get command line arguments
-        
+    """ Get command line arguments """
 
-    """
     parser = argparse.ArgumentParser(description='Run .')
     sp = parser.add_subparsers(dest='action')
 

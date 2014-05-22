@@ -1,11 +1,17 @@
-""" A recipe to apply the FRETFit algorithm
+""" A recipe to run the Secondary Tertiary Go-model
 
 
 Description:
 
     This recipes performs an algorithm to add energetic heterogeneity to a
-Go-model in order to reproduce a FRET pairwise distance distribution.
+Go-model considering secondary interactions (backbone H-bonds) and tertiary
+interactions (sidechain contacts) separately.
 
+    The hope is that by treating backbone H-bonding by a set of weaker,
+triangulating contacts between adjacent residues the secondary structure will
+become more 'cooperative'. Cooperative in this case is in the sense of
+helix-coil theory where forming one helical residue somewhat preorganizes the
+next H-bond to add on.
 
 Reference:
 """
@@ -19,17 +25,22 @@ from model_builder import models
 from model_builder import systems
 
 
-class FRETFit(ProjectManager):
+class SecondaryTertiaryGo(ProjectManager):
     
-    """ A recipe to apply the FRETFit algorithm
+    """ A recipe to run the Secondary Tertiary Go-model
 
 
     Description:
 
         This recipes performs an algorithm to add energetic heterogeneity to a
-    Go-model in order to reproduce a FRET pairwise distance distribution. The
-    algorithm was inspired by Matysiak
+    Go-model considering secondary interactions (backbone H-bonds) and tertiary
+    interactions (sidechain contacts) separately.
 
+        The hope is that by treating backbone H-bonding by a set of weaker,
+    triangulating contacts between adjacent residues the secondary structure will
+    become more 'cooperative'. Cooperative in this case is in the sense of
+    helix-coil theory where forming one helical residue somewhat preorganizes the
+    next H-bond to add on.
 
     Reference:
     """
@@ -47,23 +58,23 @@ class FRETFit(ProjectManager):
         elif task == "Tf_loop_analysis":
             print "Checking if Tf_loop_analysis completed..."
             analysis.Tf_loop.check_completion(System,self.append_log)
-#        elif task == "wham_Cv":
-#            print "Starting to check if wham_Cv completed..."
-#            analysis.Tf_loop.continue_wham(System,self.append_log)
-#        elif task == "wham_FreeEnergy":
-#            print "Starting Equil_Tf..."
-#            simulation.Tf_loop.run_equilibrium_simulations(Model,System,self.append_log)
-#        elif task == "Equil_Tf":
-#            print "Starting to check if Equil_Tf completed..."
-#            simulation.Tf_loop.check_completion(System,self.append_log,equil=True)
-#            lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
-#            if action2 == "Finished:":
-#                print "Finished Equil_Tf_iteration..."
-#                print "Starting Equil_Tf_analysis..."
-#                analysis.Tf_loop.analyze_temperature_array(System,self.append_log,equil=True)
-#        elif task == "Equil_Tf_analysis":
-#            print "Starting to check if Equil_Tf_analysis completed..."
-#            analysis.Tf_loop.check_completion(System,self.append_log,equil=True)
+        elif task == "wham_Cv":
+            print "Starting to check if wham_Cv completed..."
+            analysis.Tf_loop.continue_wham(System,self.append_log)
+        elif task == "wham_FreeEnergy":
+            print "Starting Equil_Tf..."
+            simulation.Tf_loop.run_equilibrium_simulations(Model,System,self.append_log)
+        elif task == "Equil_Tf":
+            print "Starting to check if Equil_Tf completed..."
+            simulation.Tf_loop.check_completion(System,self.append_log,equil=True)
+            lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
+            if action2 == "Finished:":
+                print "Finished Equil_Tf_iteration..."
+                print "Starting Equil_Tf_analysis..."
+                analysis.Tf_loop.analyze_temperature_array(System,self.append_log,equil=True)
+        elif task == "Equil_Tf_analysis":
+            print "Starting to check if Equil_Tf_analysis completed..."
+            analysis.Tf_loop.check_completion(System,self.append_log,equil=True)
         else:
             print "ERROR!"
             print "  Couldn't find next option for task:",task
@@ -76,39 +87,39 @@ class FRETFit(ProjectManager):
             print "Finished Tf_loop_iteration..."
             print "Starting Tf_loop_analysis..."
             analysis.Tf_loop.analyze_temperature_array(System,self.append_log)
-#        elif task == "Tf_loop_analysis":
-#            print "Finished Tf_loop_analysis..."
-#            flag = analysis.Tf_loop.check_if_wham_is_next(System,self.append_log)
-#            if flag == 1:
-#                pass 
-#            else:
-#                print "Starting Tf_loop_iteration..."
-#                simulation.Tf_loop.folding_temperature_loop(Model,System,self.append_log)
-#        elif task == "wham_Cv":
-#            print "Finished wham_Cv..."
-#            print "Stating wham_FreeEnergy..."
-#            analysis.Tf_loop.continue_wham(System,self.append_log)
-#        elif task == "Equil_Tf":
-#            print "Starting Equil_Tf_analysis..."
-#            analysis.Tf_loop.analyze_temperature_array(System,self.append_log,equil=True)
-#        elif task == "Equil_Tf_analysis":
-#            ## Aggregrate equil_Tf data for each temperature and plot PMFs
-#            print "Starting aggregate data..."
-#            analysis.Tf_loop.aggregate_equilibrium_runs(System,self.append_log)
-#            print "Plotting aggregated data PMFS..."
-#            analysis.plot.pmfs.plot_aggregated_data(System,self.append_log)
-#        elif task == "Aggregating_Equil_Runs":
-#            ## If plotting diddn't work before
-#            print "Plotting aggregated data PMFS..."
-#            analysis.plot.pmfs.plot_aggregated_data(System,self.append_log)
-#        elif task == "Plotting_Agg_Data":
-#            print "Starting prepping mutant pdbs..."
-#            mutations.preppdbs.prep_mutants(System,self.append_log)
-#            print "Starting calculating dH for mutants..."
-#            mutations.phi_values.calculate_dH_for_mutants(Model,System,self.append_log)
-#        elif task == "Calculating_dH":
-#            mutations.phi_values.calculate_phi_values(Model,System,self.append_log,"Q")
-#            #mutations.phi_values.calculate_new_epsilons(Model,System,self.append_log)
+        elif task == "Tf_loop_analysis":
+            print "Finished Tf_loop_analysis..."
+            flag = analysis.Tf_loop.check_if_wham_is_next(System,self.append_log)
+            if flag == 1:
+                pass 
+            else:
+                print "Starting Tf_loop_iteration..."
+                simulation.Tf_loop.folding_temperature_loop(Model,System,self.append_log)
+        elif task == "wham_Cv":
+            print "Finished wham_Cv..."
+            print "Stating wham_FreeEnergy..."
+            analysis.Tf_loop.continue_wham(System,self.append_log)
+        elif task == "Equil_Tf":
+            print "Starting Equil_Tf_analysis..."
+            analysis.Tf_loop.analyze_temperature_array(System,self.append_log,equil=True)
+        elif task == "Equil_Tf_analysis":
+            ## Aggregrate equil_Tf data for each temperature and plot PMFs
+            print "Starting aggregate data..."
+            analysis.Tf_loop.aggregate_equilibrium_runs(System,self.append_log)
+            print "Plotting aggregated data PMFS..."
+            analysis.plot.pmfs.plot_aggregated_data(System,self.append_log)
+        elif task == "Aggregating_Equil_Runs":
+            ## If plotting diddn't work before
+            print "Plotting aggregated data PMFS..."
+            analysis.plot.pmfs.plot_aggregated_data(System,self.append_log)
+        #elif task == "Plotting_Agg_Data":
+        #    print "Starting prepping mutant pdbs..."
+        #    mutations.preppdbs.prep_mutants(System,self.append_log)
+        #    print "Starting calculating dH for mutants..."
+        #    mutations.phi_values.calculate_dH_for_mutants(Model,System,self.append_log)
+        #elif task == "Calculating_dH":
+        #    mutations.phi_values.calculate_phi_values(Model,System,self.append_log,"Q")
+        #    #mutations.phi_values.calculate_new_epsilons(Model,System,self.append_log)
         else:
             print "ERROR!"
             print "  Couldn't find next option for task:",task
@@ -187,7 +198,7 @@ def get_args():
     options["R_CD"] = None
     options["Epsilon_Bar"] = 1.0
     options["Disulfides"] = None
-    options["Contact_Energies"] = "FRETFit"
+    options["Contact_Energies"] = "SecTer"
 
     modeloptions = models.check_options(options)
 
@@ -196,4 +207,4 @@ def get_args():
 if __name__ == "__main__":
     
     args, options = get_args()
-    FRETFit(args,options)
+    SecondaryTertiaryGo(args,options)
