@@ -80,6 +80,34 @@ def get_shadow_pdb_atoms(name):
     atms_per_res.append(temp_num_atoms)
     return atoms,num_heavy,heavy_indices,atms_per_res
 
+def get_core_mutations():
+    """ Extract mutational data. Only return info for useable mutations """
+    mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
+    useable_and_core = [ all([(mutation_data[i,0] == "core"), bool(mutation_data[i,8])]) for i in range(mutation_data.shape[0]) ]
+    
+    mut_indx = mutation_data[(useable_and_core == True),1] 
+    wt_res = mutation_data[(useable_and_core == True),2] 
+    mut_res = mutation_data[(useable_and_core == True),3] 
+
+    ddG_N_D = mutation_data[(useable_and_core == True),4] 
+    ddG_N_D_err = mutation_data[(useable_and_core == True),5] 
+    ddG_TS_D = mutation_data[(useable_and_core == True),6] 
+    ddG_TS_D_err = mutation_data[(useable_and_core == True),7] 
+    
+    return mut_indx,wt_res,mut_res,ddG_
+
+def get_core_mutation_ddG():
+    """ Extract mutational data. Only return info for useable mutations """
+    mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
+    useable_and_core = [ all([(mutation_data[i,0] == "core"), bool(mutation_data[i,8])]) for i in range(mutation_data.shape[0]) ]
+    
+    ddG_N_D = mutation_data[(useable_and_core == True),4] 
+    ddG_N_D_err = mutation_data[(useable_and_core == True),5] 
+    ddG_TS_D = mutation_data[(useable_and_core == True),6] 
+    ddG_TS_D_err = mutation_data[(useable_and_core == True),7] 
+    
+    return ddG_N_D,ddG_N_D_err,ddG_TS_D,ddG_TS_D_err
+
 def get_mutational_data():
     """ Extract mutational data. Only return info for useable mutations """
     mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
@@ -131,7 +159,7 @@ def calculate_contacts_lost_for_mutants():
         for mutant k:  f^k_ij . Must be in mutants directory which holds wild-type 
         pdb wt.pdb, a file hold mutations information mutations.dat."""
 
-    mutation_data,useable,mut_indx,wt_res,mut_res = get_mutational_data()
+    mut_indx,wt_res,mut_res = get_core_mutations()
 
     if os.path.exists("SCM.1.31.jar") == False:
         cmd0 = 'cp /projects/cecilia/SCM.1.31.jar .'
@@ -165,7 +193,7 @@ def make_all_mutations():
     """
 
     modelname = 'wt'
-    mutation_data,useable,mut_indx,wt_res,mut_res = get_mutational_data()
+    mut_indx,wt_res,mut_res = get_core_mutations()
 
     for i in range(len(mut_indx)):
 
@@ -279,6 +307,7 @@ def modeller_mutate_pdb(modelname,respos,restyp,saveas,chain='A'):
 def prepare_mutants(System,append_log):
     """ Creates a mutated pdb for every mutant."""
 
+    append_log("Starting: Preparing_Mutants")
     cwd = os.getcwd()
     sub = cwd+"/"+System.subdir+"/mutants"
     mut_filename = System.subdir+"_calculated_ddG.dat"
@@ -306,6 +335,7 @@ def prepare_mutants(System,append_log):
     print "  Calculating fraction of contact loss fij..."
     calculate_contacts_lost_for_mutants()
     os.chdir(cwd)
+    append_log("Finished: Preparing_Mutants")
 
 if __name__ == '__main__':
     prepare_mutants()

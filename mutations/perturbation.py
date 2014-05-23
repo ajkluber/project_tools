@@ -17,6 +17,7 @@ import mdtraj as md
 import cplex
 
 import phi_values as phi
+import mutatepdbs as mut
 
 import model_builder.models as models
 import model_builder.systems as systems
@@ -24,7 +25,7 @@ import model_builder.systems as systems
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
-def calculate_thermodynamic_perturbation(Model,System,append_log,coord="Q"):
+def calculate_MC2004_perturbation(Model,System,append_log,coord="Q"):
     """ Calculate the new epsilon values.
 
         First task is to calculate the perturbations for each mutation for
@@ -57,10 +58,32 @@ def calculate_thermodynamic_perturbation(Model,System,append_log,coord="Q"):
         eps = np.loadtxt(savedir+"/mut/eps.dat")
         M = np.loadtxt(savedir+"/mut/M.dat")
 
-    LP_problem, solution, x_particular, N = apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M)
+
+    ## Binary search for best singular value cutoff between 0.0 and 0.5 
+    ## Stopping criteria is when the perturbation is 'small' i.e. the
+    ## ratio of the perturbation to the norm of the current parameters is
+    ## less than 1, so around 0.95 ==> |depsilon|/|epsilon| ~ 0.95 < 1 
+
+    upper_bound = 0.5
+    lower_bound = 0.0
+    tolerance = 0.04
+    target_ratio = 0.95
+    ratio = 0
+    iteration = 1 
+
+    print "Iteration  Cutoff    Ratio "
+    for cutoff in np.arange(0.,0.5,0.001):
+        LP_problem, solution, x_particular, N = apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff)
+        delta_eps = x_particular + np.dot(N,solution)
+        ratio = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
+        print iteration, cutoff, ratio
+        iteration += 1 
+        if ratio < target_ratio:
+            break
+
 
     ## New Parameters
-    epsilon_prime = eps + x_particular + np.dot(N,solution)
+    epsilon_prime = eps + delta_eps
 
     np.savetxt(savedir+"/mut/epsilon_new.dat", epsilon_prime)
 
@@ -77,9 +100,9 @@ def calculate_thermodynamic_perturbation(Model,System,append_log,coord="Q"):
     #np.savetxt(savedir+"/mut/quad_eps_prime_"+str(cutoff)+".dat",epsilon_prime)
     
     #append_log(System.subdir,"Finished: Calculating_MC2004")
-    return LP_problem, solution, x_particular, eps, N
+    #return LP_problem, solution, x_particular, eps, N
 
-def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff=0.25):
+def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff):
     """ Search the nullspace dimensions for a solution that minimizes 
         the change in stability and keeps the contacts attractive. Uses
         cplex linear programming package.
@@ -106,7 +129,8 @@ def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff=
     ## they've been sent to the nullspace.
     N = v.T[:,M.shape[0]:]
 
-    print N.shape
+    #print N.shape
+
     ## Objective coefficients are sum of nullspace vectors. This comes from
     ## requiring the same average contact strength.
     #objective_coeff = list(sum(N))
@@ -142,6 +166,7 @@ def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff=
 
     ## Populate cplex linear programming problem
     LP_problem = cplex.Cplex()
+    LP_problem.set_results_stream(None)
     LP_problem.objective.set_sense(LP_problem.objective.sense.minimize)
     LP_problem.variables.add(obj=objective_coeff, ub=upper_bounds, lb=lower_bounds, names=column_names)
     LP_problem.linear_constraints.add(lin_expr=rows, senses=senses, rhs=right_hand_side, names=row_names)
@@ -152,9 +177,10 @@ def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff=
     status = LP_problem.solution.get_status()
     solution_lambda = LP_problem.solution.get_values()
 
-    print "Cplex summary:"
-    print "status: ",status
-    print "solution:",solution_lambda
+    ## Print cplex summary
+    #print "Cplex summary:"
+    #print "status: ",status
+    #print "solution:",solution_lambda
     
     #epsilon_new = eps + np.dot(N,np.array(solution))
 
@@ -249,7 +275,11 @@ def calculate_matrix_ddG_eps_M(Model,System,savedir,beta,coord):
     num_states = len(states)
 
     print "  Loading mutants"
-    mutants = [ x.split()[1]+x.split()[0]+x.split()[2] for x in open("mutants/mutations.dat","r").readlines()[1:] ]
+    os.chdir("mutants")
+    mut_indx,wt_res,mut_res = mut.get_core_mutations()
+    ddG_N_D,ddG_N_D_err,ddG_TS_D,ddG_TS_D_err = get_core_mutation_ddG()
+    os.chdir("..")
+    mutants = [ wt_res[i]+mut_indx[i]+mut_res[i] for i in range(mut_indx.shape[0]) ]
 
     print "  Loading trajectory, epsij, deltaij, sigij"
     sigij,epsij,deltaij,interaction_nums,keep_interactions,pairs,traj,traj_dist = phi.load_eps_delta_sig_traj(savedir)
@@ -309,11 +339,6 @@ def calculate_matrix_ddG_eps_M(Model,System,savedir,beta,coord):
     
     return ddG_all,epsij,M
 
-def calculate_new_epsilons(Model,System,append_log):
-    """ Calculate the new contact strengths."""
-
-    pass
-
 if __name__ == '__main__':
     ## TESTING calculating ddG, phi values.
     def dummy_func(sub,string):
@@ -331,4 +356,4 @@ if __name__ == '__main__':
     dH, states = calculate_phi_values(Model,System,dummy_func)
     '''
 
-    LP_problem, solution, x_particular, eps, N = calculate_thermodynamic_perturbation(Model,System,dummy_func)
+    LP_problem, solution, x_particular, eps, N = calculate_MC2004_perturbation(Model,System,dummy_func)
