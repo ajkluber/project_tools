@@ -198,7 +198,7 @@ def start_next_Tf_loop_iteration(Model,System,append_log):
     """ To manually set the next temperature array."""
 
     Tf_choice = System.path+"/"+System.subdir+"/"+System.mutation_active_directory+"/Tf_choice.txt"
-    Tf_guess = int(open(Tf_choice,"r").read()[:-1])
+    Tf_guess = int(round(open(Tf_choice,"r").read()[:-1]))
 
     System.Tf_iteration += 1
     System.Tf_active_directory = "Tf_"+str(System.Tf_iteration)
