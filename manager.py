@@ -18,7 +18,7 @@ module.
     
 See Also: 
 
-    development_notes.txt cfor chronological list of changes and development
+    development_notes.txt for chronological list of changes and development
 plan.
 
 """
@@ -47,13 +47,13 @@ def print_header():
     print " Gromacs. More coming soon!"
     print " Version 0.1 "
     print " Words to live by:\n"
-    #print "             'If you can calculate it, you should calculate it' - PGW \n"
+    print "             'If you can calculate it, you should calculate it' - PGW \n"
     #print "               'One never notices what has been done; "
     #print "                one can only see what remains to be done' - Marie Curie \n"
     #print "  'The best way to have a good idea is to have a lot of ideas' - Linus Pauling\n"
     #print "'A ship in port is safe, but that's not what ships are built for' - Grace Hopper'\n"
-    print "                 'Science and everyday life cannot and"
-    print "                  should not be separated' - Rosalind Franklin\n"
+    #print "                 'Science and everyday life cannot and"
+    #print "                  should not be separated' - Rosalind Franklin\n"
     print "-------------------------------- Good Luck! ----------------------------------"
 
 def get_args():
@@ -77,11 +77,13 @@ def get_args():
     new_parser.add_argument('--epsilon_bar', type=float, help='Optional, average strength of contacts. epsilon bar.')
     new_parser.add_argument('--cutoff', type=float, help='Optional cutoff for heavy atom determination of native contacts.')
     new_parser.add_argument('--disulfides', type=int, nargs='+', help='Optional pairs of disulfide linked residues.')
+    new_parser.add_argument('--email', type=str, help='Optional email address for PBS to send sim details.')
 
     ## Options for continuing from a previously saved simulation project.
     run_parser = sp.add_parser('continue')
     run_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to continue',required=True)
     run_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
+    run_parser.add_argument('--email', type=str, help='Optional email address for PBS to send sim details.')
 
     ## Options for manually adding a temperature array.
     add_parser = sp.add_parser('add')
@@ -89,6 +91,7 @@ def get_args():
     add_parser.add_argument('--temparray', type=int, nargs='+', help='T_initial T_final dT for new temp array',required=True)
     add_parser.add_argument('--mutarray', type=int, nargs='+', help='T_initial T_final dT for new mutational sims array')
     add_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
+    add_parser.add_argument('--email', type=str, help='Optional email address for PBS to send sim details.')
 
     args = parser.parse_args()
 
@@ -206,123 +209,6 @@ class ProjectManager(object):
                     self.logical_flowchart_finished(System,Model,subdir,task)
                 elif action == "Error":
                     pass
-
-        self.save_model_system_info(Models,Systems,subdirs)
-        print "Success"
-
-#    def logical_flowchart_starting(self,System,Model,sub,task):
-#        if task == "Tf_loop_iteration":
-#            print "Checking if Tf_loop_iteration completed..."
-#            simulation.Tf_loop.check_completion(System,self.append_log)
-#            lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
-#            if action2 == "Finished:":
-#                print "Finished Tf_loop_iteration..."
-#                print "Starting Tf_loop_analysis..."
-#                analysis.Tf_loop.analyze_temperature_array(System,self.append_log)
-#        elif task == "Tf_loop_analysis":
-#            print "Checking if Tf_loop_analysis completed..."
-#            analysis.Tf_loop.check_completion(System,self.append_log)
-#        elif task == "wham_Cv":
-#            print "Starting to check if wham_Cv completed..."
-#            analysis.Tf_loop.continue_wham(System,self.append_log)
-#        elif task == "wham_FreeEnergy":
-#            print "Starting Equil_Tf..."
-#            simulation.Tf_loop.run_equilibrium_simulations(Model,System,self.append_log)
-#        elif task == "Equil_Tf":
-#            print "Starting to check if Equil_Tf completed..."
-#            simulation.Tf_loop.check_completion(System,self.append_log,equil=True)
-#            lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
-#            if action2 == "Finished:":
-#                print "Finished Equil_Tf_iteration..."
-#                print "Starting Equil_Tf_analysis..."
-#                analysis.Tf_loop.analyze_temperature_array(System,self.append_log,equil=True)
-#        elif task == "Equil_Tf_analysis":
-#            print "Starting to check if Equil_Tf_analysis completed..."
-#            analysis.Tf_loop.check_completion(System,self.append_log,equil=True)
-#        else:
-#            print "ERROR!"
-#            print "  Couldn't find next option for task:",task
-#            print "  Please check that things are ok."
-#            print "  Exiting."
-#            raise SystemExit
-
-#    def logical_flowchart_finished(self,System,Model,sub,task):
-#        if task == "Tf_loop_iteration":
-#            print "Finished Tf_loop_iteration..."
-#            print "Starting Tf_loop_analysis..."
-#            analysis.Tf_loop.analyze_temperature_array(System,self.append_log)
-#        elif task == "Tf_loop_analysis":
-#            print "Finished Tf_loop_analysis..."
-#            flag = analysis.Tf_loop.check_if_wham_is_next(System,self.append_log)
-#            if flag == 1:
-#                pass 
-#            else:
-#                print "Starting Tf_loop_iteration..."
-#                simulation.Tf_loop.folding_temperature_loop(Model,System,self.append_log)
-#        elif task == "wham_Cv":
-#            print "Finished wham_Cv..."
-#            print "Stating wham_FreeEnergy..."
-#            analysis.Tf_loop.continue_wham(System,self.append_log)
-#        elif task == "Equil_Tf":
-#            print "Starting Equil_Tf_analysis..."
-#            analysis.Tf_loop.analyze_temperature_array(System,self.append_log,equil=True)
-#        elif task == "Equil_Tf_analysis" or task == "Aggregating_Equil_Runs":
-#            ## Aggregrate equil_Tf data for each temperature and plot PMFs
-#            print "Starting aggregate data..."
-#            analysis.Tf_loop.aggregate_equilibrium_runs(System,self.append_log)
-#            print "Plotting aggregated data PMFS..."
-#            analysis.plot.pmfs.plot_aggregated_data(System,self.append_log)
-#        elif task == "Plotting_Agg_Data":
-#            if Model.modelnameshort in ["HomGo","HetGo","DMC"]:
-#                print "Starting prepping mutant pdbs..."
-#                #mutations.preppdbs.prep_mutants(System,self.append_log)
-#                print "Starting calculating dH for mutants..."
-#                mutations.phi_values.calculate_dH_for_mutants(Model,System,self.append_log)
-#        elif task == "Calculating_dH":
-#            mutations.phi_values.calculate_phi_values(Model,System,self.append_log,"Q")
-#            #mutations.phi_values.calculate_new_epsilons(Model,System,self.append_log)
-#        else:
-#            print "ERROR!"
-#            print "  Couldn't find next option for task:",task
-#            print "  Please check that things are ok."
-#            print "  Exiting."
-#            raise SystemExit
-
-
-    def new_project(self,args,modeloptions):
-        ''' Starting a new simulation project.'''
-        subdirs = [ x[:-4] for x in args.pdbs ]
-        for sub in subdirs:
-            if os.path.exists(sub) == False:
-                os.mkdir(sub)
-            else:
-                print "Subdirectory: ", sub, " already exists! just fyi"
-
-        print "Starting a new simulation project..."
-
-
-        print subdirs
-        print modeloptions
-        raise SystemExit
-        Models = models.new_models(subdirs,modeloptions)
-        Systems = systems.new_systems(subdirs)
-
-        self.prepare_systems(Models,Systems)
-        self.save_model_system_info(Models,Systems,subdirs)
-
-        if args.temparray != None:
-            System.initial_T_array = args.temparray
-
-        ## The first step depends on the type of model.
-        if args.model in ["HomGo","HetGo"]:
-            for k in range(len(subdirs)):
-                print "Starting Tf_loop_iteration for subdirectory: ", subdirs[k]
-                ## To Do: Prepare each Model System pair. 
-                Model = Models[k]
-                System = Systems[k]
-                simulation.Tf_loop.folding_temperature_loop(Model,System,self.append_log,new=True)
-        elif args.model == "DMC":
-            pass
 
         self.save_model_system_info(Models,Systems,subdirs)
         print "Success"

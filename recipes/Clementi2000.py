@@ -138,7 +138,6 @@ class Clementi2000(ProjectManager):
         ## The first step depends on the type of model.
         for k in range(len(subdirs)):
             print "Starting Tf_loop_iteration for subdirectory: ", subdirs[k]
-            ## To Do: Prepare each Model System pair. 
             Model = Models[k]
             System = Systems[k]
             simulation.Tf_loop.folding_temperature_loop(Model,System,self.append_log,new=True)

@@ -266,3 +266,11 @@ running simulations according to different project 'recipes' (e.g. MC2004).
 - Write consistent docstrings.
 
 ------------------------------------------------------------------------------
+Thu May 22 18:24:54 CDT 2014
+Alexander Kluber
+
+    project_tools now holds several "recipes", pre-written procedures to
+execute a particular logical flow. For example, to run the Matysiak Clementi
+2004 algorithm one would run the MatysiakClementi2004.py recipe in recipes/.
+
+------------------------------------------------------------------------------

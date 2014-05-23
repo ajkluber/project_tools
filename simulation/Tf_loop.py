@@ -1,3 +1,15 @@
+""" Start simulations in the folding temperature loop. Tf_loop
+
+Description:
+
+    This module will be the library for submitting the simulation jobs for the
+Tf_loop (folding temperature loop). The Tf_loop tries to find the folding
+temperature by determining the melting curve over a large spread in
+temperatures then narrowing in on the transition point. The goal is to obtain
+equilibrium simulations at the folding temperature.
+
+"""
+
 import numpy as np
 import subprocess as sb
 from glob import glob
@@ -6,16 +18,8 @@ import argparse
 
 import mdp
 
-'''
-Created: November 17, 2013
-Purpose:
-    This module will be the library for submitting the simulation jobs
-for the Tf_loop (folding temperature loop).
-
-'''
-
 def main():
-    ''' Use gmxcheck on subdirectories.  '''
+    """ Use gmxcheck on subdirectories.  """
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--check', action='store_true', help='use gmxcheck on all subdirectories')
     args = parser.parse_args()
@@ -25,9 +29,9 @@ def main():
         pass
 
 def check_completion(System,append_log,equil=False):
-    ''' Checks to see if the previous Tf_loop simulation completed. First 
+    """ Checks to see if the previous Tf_loop simulation completed. First 
         checks the desired number of steps in the grompp.mdp file then 
-        checks to see if md.log has recorded that number of steps.'''
+        checks to see if md.log has recorded that number of steps."""
     cwd = os.getcwd()
     if equil == True:
         sub = System.subdir+"/"+System.mutation_active_directory
@@ -76,7 +80,7 @@ def check_completion(System,append_log,equil=False):
     os.chdir(cwd)
 
 def gmxcheck_subdirectories():
-    ''' Run gmxcheck on all traj.xtc files in subdirecories. '''
+    """ Run gmxcheck on all traj.xtc files in subdirecories. """
     runs = glob("*/traj.xtc")
     dirs = [ x[:-9] for x in runs ]
     for subdir in dirs:
@@ -102,11 +106,11 @@ def run_gmxcheck(dir):
     return error
 
 def determine_new_T_array():
-    ''' Find the temperatures which bracket the folding temperature.
+    """ Find the temperatures which bracket the folding temperature.
         This takes the temperatures at which the average fraction of
         nonhelical contacts falls below 0.5 as bracketing the folding 
         temperature. A more complicated calculation is probably 
-        needed for more complicated systems (proteins with intermediates)'''
+        needed for more complicated systems (proteins with intermediates)"""
     temps = open("T_array_last.txt","r").readlines()
     temperatures = [ temp[:-1] for temp in temps ]
     temperatures.sort()
@@ -145,12 +149,12 @@ def determine_new_T_array():
     return newTi, newTf, newdT
 
 def folding_temperature_loop(Model,System,append_log,new=False):
-    ''' The "folding temperature loop" is one of the several large-scale 
+    """ The "folding temperature loop" is one of the several large-scale 
         logical structures in modelbuilder. It is entered anytime we want
         to determine the folding temperature. This could be when we have
         started a new project, refined the paramters, or returned to a 
         project in progress. The folding temperature loop successively 
-        narrows in on the folding temperature.'''
+        narrows in on the folding temperature."""
 
     cwd = os.getcwd()
     sub = System.path+"/"+System.subdir+"/"+System.Tf_active_directory
@@ -167,9 +171,9 @@ def folding_temperature_loop(Model,System,append_log,new=False):
     os.chdir(cwd)
 
 def folding_temperature_loop_extension(Model,System,append_log,new=False):
-    ''' This is for doing an additional loop in the Tf_loop. It either starts
+    """ This is for doing an additional loop in the Tf_loop. It either starts
         an initial temperature array or refines the temperature range according
-        to previous data. '''
+        to previous data. """
     ## Check to see if a previous temperature range was used.
     if (not os.path.exists("T_array_last.txt")) or new:
         ## For initial exploration use very broad temperature increments.
@@ -191,7 +195,7 @@ def folding_temperature_loop_extension(Model,System,append_log,new=False):
     append_log(System.subdir,"Starting: Tf_loop_iteration")
 
 def manually_add_temperature_array(Model,System,append_log,Ti,Tf,dT):
-    ''' To manually set the next temperature array.'''
+    """ To manually set the next temperature array."""
     cwd = os.getcwd()
     sub = System.path+"/"+ System.subdir+"/"+System.Tf_active_directory
     os.chdir(sub)
@@ -205,8 +209,8 @@ def manually_add_temperature_array(Model,System,append_log,Ti,Tf,dT):
     os.chdir(cwd)
 
 def run_equilibrium_simulations(Model,System,append_log):
-    ''' Run very long (equilibrium) simulations at the estimated folding 
-        temperature.'''
+    """ Run very long (equilibrium) simulations at the estimated folding 
+        temperature."""
 
     if System.mutation_active_directory == '':
         System.mutation_active_directory = 'Mut_0'
@@ -249,7 +253,7 @@ def run_equilibrium_simulations(Model,System,append_log):
     os.chdir(cwd)
 
 def determine_walltime(Model):
-    ''' Estimate an efficient walltime.'''
+    """ Estimate an efficient walltime."""
     Length = len(Model.Qref)
     ppn = "1"
     if Length < 60:
@@ -258,7 +262,7 @@ def determine_walltime(Model):
     else:
         if len(Model.Qref) > 160:
             if len(Model.Qref) > 250:
-                walltime="60:00:00"
+                walltime="72:00:00"
                 ppn = "4"
             else:
                 walltime="48:00:00"
@@ -270,8 +274,8 @@ def determine_walltime(Model):
     return walltime, queue, ppn
 
 def run_temperature_array(Model,System,Ti,Tf,dT):
-    ''' Run many constant temperature runs over a range of temperatures to
-        find the folding temperature. '''
+    """ Run many constant temperature runs over a range of temperatures to
+        find the folding temperature. """
 
     System.append_log("Starting Tf_loop_iteration %d " % System.Tf_iteration)
     Temperatures = range(Ti,Tf+dT,dT)
@@ -340,16 +344,11 @@ def submit_run(jobname,walltime="23:00:00",queue="serial",ppn="1"):
     #sb.call(prep_step4.split())
 
     pbs_string = "#!/bin/bash \n"
-    pbs_string +="### Number of nodes and procs/node \n"
-    pbs_string +="#PBS -l nodes=1:ppn=%s,walltime=%s \n" % (ppn,walltime)
-    pbs_string +="###PBS -W group_list=pbc \n"
+    pbs_string +="#PBS -N %s \n" % jobname
     pbs_string +="#PBS -q %s \n" % queue
-    pbs_string +="#PBS -V \n"
-    pbs_string +="### output files \n"
-    pbs_string +="#PBS -o out \n"
-    pbs_string +="#PBS -e err \n"
-    pbs_string +="### Job Name (max 15 chars.) \n"
-    pbs_string +="#PBS -N %s \n\n" % jobname
+    pbs_string +="#PBS -l nodes=1:ppn=%s \n" % ppn
+    pbs_string +="#PBS -l walltime=%s \n" % walltime
+    pbs_string +="#PBS -V \n\n"
     pbs_string +="cd $PBS_O_WORKDIR\n"
     pbs_string +="mdrun -nt 1"
 
@@ -358,16 +357,11 @@ def submit_run(jobname,walltime="23:00:00",queue="serial",ppn="1"):
     sb.call(qsub.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
 
     rst_string = "#!/bin/bash \n"
-    rst_string +="### Number of nodes and procs/node \n"
-    rst_string +="#PBS -l nodes=1:ppn=%s,walltime=%s \n" % (ppn,walltime)
-    rst_string +="###PBS -W group_list=pbc \n"
+    rst_string +="#PBS -N %s_rst \n" % jobname
     rst_string +="#PBS -q %s \n" % queue
-    rst_string +="#PBS -V \n"
-    rst_string +="### output files \n"
-    rst_string +="#PBS -o out \n"
-    rst_string +="#PBS -e err \n"
-    rst_string +="### Job Name (max 15 chars.) \n"
-    rst_string +="#PBS -N %s_rst \n\n" % jobname
+    rst_string +="#PBS -l nodes=1:ppn=%s \n" % ppn
+    rst_string +="#PBS -l walltime=%s \n" % walltime
+    rst_string +="#PBS -V \n\n"
     rst_string +="cd $PBS_O_WORKDIR\n"
     rst_string +="mdrun -nt 1 -s topol.tpr -cpi state.cpt"
 
