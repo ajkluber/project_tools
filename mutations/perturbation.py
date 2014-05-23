@@ -64,6 +64,7 @@ def calculate_thermodynamic_perturbation(Model,System,append_log,coord="Q"):
 
     np.savetxt(savedir+"/mut/epsilon_new.dat", epsilon_prime)
 
+    ## TESTING
     ## This block was for comparing the linear and quadratic objective functions.
     #LP_problem, solution, x_particular, N = apply_constraints_linear_objective(Model,System,savedir,ddG,eps,M,cutoff=cutoff)
     #LP_problem, solution, x_particular, N = apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff=cutoff)

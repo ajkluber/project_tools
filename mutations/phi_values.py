@@ -1,30 +1,32 @@
+""" Submodule to calculate the simulation phi values
+
+Description:
+
+    Submodule to calculate the energetic perturbation from each mutation and
+the results DeltaDetla G's for simulation.
+
+
+References:
+"""
+
 import numpy as np
 import os
 
 import mdtraj as md
-import cplex
 
 import model_builder.models as models
 import model_builder.systems as systems
 
 
-'''
-April 30 2014
-Alexander Kluber
-
-Submodule to calculate the energetic perturbation from each mutation and the
-results DeltaDetla G's for simulation.
-'''
-
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
 def calculate_dH_for_mutants(Model,System,append_log):
-    ''' First task is to calculate the perturbations for each mutation for
+    """ First task is to calculate the perturbations for each mutation for
         each frame in the trajectory.   May be generalized in the future or 
         moved inside Model to deal with Models with multiple parameters per
         interaction (e.g. desolvation barrier, etc.)
-    '''
+    """
     
     append_log(System.subdir,"Starting: Calculating_dH")
 
@@ -92,7 +94,7 @@ def calculate_phi_values(Model,System,append_log,coord):
     append_log(System.subdir,"Finished: Calculating_phi_values")
 
 def get_mutant_dH(path,mutants):
-    ''' Load the mutant energy perturbations dH_<mut>.dat'''
+    """ Load the mutant energy perturbations dH_<mut>.dat"""
 
     i = 0
     for mut in mutants:
@@ -108,7 +110,7 @@ def get_mutant_dH(path,mutants):
     return dH
 
 def get_exp_ddG():
-    ''' Get experimental ddG data from mutants/mutations.dat'''
+    """ Get experimental ddG data from mutants/mutations.dat"""
 
     ddG_exp_all = np.loadtxt("mutants/mutations.dat",skiprows=1,usecols=(3,4))
      
@@ -118,7 +120,7 @@ def get_exp_ddG():
     return ddG_exp_TS_D, ddG_exp_N_D
 
 def get_sim_ddG(savedir,coord,bounds):
-    ''' Get the saved ddG from simulation that should have been computed already.'''
+    """ Get the saved ddG from simulation that should have been computed already."""
 
     index_sim = len(bounds)+1
     num = len(bounds)-1
@@ -132,10 +134,11 @@ def get_sim_ddG(savedir,coord,bounds):
 
 
 def get_mutant_fij(mutants,keep_interactions):
-    ''' Load in the fraction of contact loss for each mutation.
+    """ Load in the fraction of contact loss for each mutation.
         The matrix needs to be filtered to include only pair 
         interactions that correspond to parameters that are going
-        to be mutated.'''
+        to be mutated.
+    """
     k = 0
     for mut in mutants:
         fij_temp = np.loadtxt("mutants/fij_"+mut+".dat")
@@ -153,14 +156,14 @@ def get_mutant_fij(mutants,keep_interactions):
     return Fij
 
 def get_Qij(Model,r,sig,delta,interaction_nums):
-    ''' Calculates the normalized interaction betwen nonbonded pairs.'''
+    """ Calculates the normalized interaction betwen nonbonded pairs."""
     print "  Calculating Qij..."
     qij = Model.nonbond_interaction(r,sig,delta)
     return qij
 
 def get_state_bounds(path,coord):
-    ''' Get bounds for each state for specified coordinate. Return a list of boolean
-        arrays that specifies if each frame is in the given state or not.'''
+    """ Get bounds for each state for specified coordinate. Return a list of boolean
+        arrays that specifies if each frame is in the given state or not."""
     #print path+"/"+coord+"_states.txt" ## DEBUGGING
     #print open(path+"/"+coord+"_states.txt","r").read() ## DEBUGGING
 
@@ -204,13 +207,13 @@ def get_Tf_choice(sub):
 
         
 def load_eps_delta_sig_traj(subdir):
-    ''' Load in the info from the BeadBead.dat file. Sig_ij, eps_ij, delta_ij and
+    """ Load in the info from the BeadBead.dat file. Sig_ij, eps_ij, delta_ij and
         index pairs. This information is constant for a trajectory. Filter all fields
         to keep only interactions with nonzero interaction type.
 
         In calculating the mutations only modify parameters that have interaction_type
         in the BeadBead.dat =/= [0,ds,ss]. 
-    '''
+    """
     print "  Loading BeadBead.dat"
     beadbead = np.loadtxt(subdir+"/BeadBead.dat",dtype=str) 
     sigij = beadbead[:,5].astype(float)
@@ -244,7 +247,7 @@ def load_eps_delta_sig_traj(subdir):
     return sigij,epsij,deltaij,interaction_numbers,keep_interactions,pairs,traj,traj_dist
 
 def save_phi_values(savedir,mutants,coord,bounds,dG,ddG,phi):
-    ''' Save the calculated dG, ddG, and phi values for states'''
+    """ Save the calculated dG, ddG, and phi values for states"""
 
     header_string = "# mut" 
     for i in range(len(bounds)):
