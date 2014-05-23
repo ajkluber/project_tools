@@ -127,7 +127,7 @@ class MatysiakClementi2004(ProjectManager):
             mutations.perturbation.calculate_MC2004_perturbation(Model,System,self.append_log)
         elif task == "Calculating_MC2004":
             ## Start the next round of simulations with new parameters.
-            pass
+            simulation.Tf_loop.start_next_Tf_loop_iteration(Model,System,self.append_log)
         else:
             print "ERROR!"
             print "  Couldn't find next option for task:",task
