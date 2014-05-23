@@ -201,8 +201,9 @@ def start_next_Tf_loop_iteration(Model,System,append_log):
     Tf_guess = int(open(Tf_choice,"r").read()[:-1])
 
     System.Tf_iteration += 1
-    System.mutation_iteration += 1
     System.Tf_active_directory = "Tf_"+str(System.Tf_iteration)
+    System.mutation_iteration += 1
+    System.mutation_active_directory = "Mut_"+str(System.mutation_iteration)
     cwd = os.getcwd()
     sub = System.path+"/"+ System.subdir+"/"+System.Tf_active_directory
     if os.path.exists(sub):
