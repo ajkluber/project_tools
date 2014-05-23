@@ -194,7 +194,7 @@ def folding_temperature_loop_extension(Model,System,append_log,new=False):
     append_log(System.subdir,"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
     append_log(System.subdir,"Starting: Tf_loop_iteration")
 
-def start_next_Tf_loop_iteration(Model,System,self.append_log):
+def start_next_Tf_loop_iteration(Model,System,append_log):
     """ To manually set the next temperature array."""
 
     Tf_choice = System.path+"/"+System.subdir+"/"+System.mutation_active_directory+"/Tf_choice.txt"
