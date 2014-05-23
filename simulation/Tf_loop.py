@@ -194,6 +194,36 @@ def folding_temperature_loop_extension(Model,System,append_log,new=False):
     append_log(System.subdir,"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
     append_log(System.subdir,"Starting: Tf_loop_iteration")
 
+def start_next_Tf_loop_iteration(Model,System,self.append_log)
+    """ To manually set the next temperature array."""
+
+    Tf_choice = System.path+"/"+System.subdir+"/"+System.mutation_active_directory+"/Tf_choice.txt"
+    Tf_guess = int(open(Tf_choice,"r").read()[:-1])
+
+    System.Tf_iteration += 1
+    System.mutation_iteration += 1
+    System.Tf_active_directory = "Tf_"+str(System.Tf_iteration)
+    cwd = os.getcwd()
+    sub = System.path+"/"+ System.subdir+"/"+System.Tf_active_directory
+    if os.path.exists(sub):
+        print "ERROR!"
+        print "  The next Tf iteration directory exists. "
+        print "  exiting"
+        raise SystemExit
+    else:
+        os.makedirs(sub)
+    os.chdir(sub)
+    Ti = int(Tf_guess - 20)
+    Tf = int(Tf_guess + 20)
+    dT = 2
+    append_log(System.subdir,"Submitting T_array iteration %d ; refinement %d" % \
+                (System.Tf_iteration,System.Tf_refinements[System.Tf_iteration]))
+    append_log(System.subdir,"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
+    run_temperature_array(Model,System,Ti,Tf,dT)
+    append_log(System.subdir,"Starting: Tf_loop_iteration")
+
+    os.chdir(cwd)
+
 def manually_add_temperature_array(Model,System,append_log,Ti,Tf,dT):
     """ To manually set the next temperature array."""
     cwd = os.getcwd()

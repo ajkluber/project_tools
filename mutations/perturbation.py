@@ -29,12 +29,12 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q"):
     """ Calculate the new epsilon values.
 
         First task is to calculate the perturbations for each mutation for
-        each frame in the trajectory.   May be generalized in the future or 
-        moved inside Model to deal with Models with multiple parameters per
-        interaction (e.g. desolvation barrier, etc.)
+    each frame in the trajectory.   May be generalized in the future or 
+    moved inside Model to deal with Models with multiple parameters per
+    interaction (e.g. desolvation barrier, etc.)
     """
     
-    #append_log(System.subdir,"Starting: Calculating_MC2004")
+    append_log(System.subdir,"Starting: Calculating_MC2004")
 
     cwd = os.getcwd()
     sub = cwd+"/"+System.subdir+"/"+System.mutation_active_directory
@@ -80,27 +80,30 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q"):
         iteration += 1 
         if ratio < target_ratio:
             break
-
-
     ## New Parameters
     epsilon_prime = eps + delta_eps
 
-    np.savetxt(savedir+"/mut/epsilon_new.dat", epsilon_prime)
-
-    ## TESTING
-    ## This block was for comparing the linear and quadratic objective functions.
-    #LP_problem, solution, x_particular, N = apply_constraints_linear_objective(Model,System,savedir,ddG,eps,M,cutoff=cutoff)
-    #LP_problem, solution, x_particular, N = apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff=cutoff)
-
-    #epsilon_prime = eps + x_particular + np.dot(N,solution)
-
-    #np.savetxt(savedir+"/mut/line_delta_eps_"+str(cutoff)+".dat",x_particular+np.dot(N,solution))
-    #np.savetxt(savedir+"/mut/line_eps_prime_"+str(cutoff)+".dat",epsilon_prime)
-    #np.savetxt(savedir+"/mut/quad_delta_eps_"+str(cutoff)+".dat",x_particular+np.dot(N,solution))
-    #np.savetxt(savedir+"/mut/quad_eps_prime_"+str(cutoff)+".dat",epsilon_prime)
+    beadbead, keep_interactions = phi.load_beadbead(sub)
     
-    #append_log(System.subdir,"Finished: Calculating_MC2004")
-    #return LP_problem, solution, x_particular, eps, N
+    epsij = beadbead[:,6].astype(float)
+    epsij[keep_interactions != 0] = epsilon_prime
+    
+    beadbead_string = ''
+    for rownum in range(beadbead.shape[0]): 
+        i_idx = int(beadbead[rownum,0])
+        j_idx = int(beadbead[rownum,1])
+        resi_id = beadbead[rownum,2]
+        resj_id = beadbead[rownum,3]
+        interaction_num = str(beadbead[rownum,4])
+        sig = float(beadbead[rownum,5])
+        Knb = epsij[rownum]
+        delta = float(beadbead[rownum,7])
+        beadbead_string += '%5d%5d%8s%8s%5s%16.8E%16.8E%16.8E\n' % \
+                (i_idx,j_idx,resi_id,resj_id,interaction_num,sig,Knb,delta)
+        open(savedir+"/mut/NewBeadBead.dat","w").write(beadbead_string)
+    Model.contact_energies = savedir+"/mut/NewBeadBead.dat"
+
+    append_log(System.subdir,"Finished: Calculating_MC2004")
 
 def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff):
     """ Search the nullspace dimensions for a solution that minimizes 
@@ -356,4 +359,4 @@ if __name__ == '__main__':
     dH, states = calculate_phi_values(Model,System,dummy_func)
     '''
 
-    LP_problem, solution, x_particular, eps, N = calculate_MC2004_perturbation(Model,System,dummy_func)
+    calculate_MC2004_perturbation(Model,System,dummy_func)

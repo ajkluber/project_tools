@@ -205,6 +205,26 @@ def get_Tf_choice(sub):
         print "  Calculating dH for temp ",Tf_choice
     return Tf_choice
 
+
+def load_beadbead(subdir):
+
+    print "  Loading BeadBead.dat"
+    beadbead = np.loadtxt(subdir+"/BeadBead.dat",dtype=str) 
+    sigij = beadbead[:,5].astype(float)
+    epsij = beadbead[:,6].astype(float)
+    deltaij = beadbead[:,7].astype(float)
+    interaction_numbers = beadbead[:,4].astype(str)
+    pairs = beadbead[:,:2].astype(int) 
+    pairs -= np.ones(pairs.shape,int)
+
+    keep_interactions = np.zeros(len(interaction_numbers),int)
+    for i in range(len(interaction_numbers)):
+        if interaction_numbers[i] in ["ds","ss"]:
+            pass
+        else:
+            keep_interactions[i] = int(interaction_numbers[i])
+
+    return beadbead,keep_interactions
         
 def load_eps_delta_sig_traj(subdir):
     """ Load in the info from the BeadBead.dat file. Sig_ij, eps_ij, delta_ij and
