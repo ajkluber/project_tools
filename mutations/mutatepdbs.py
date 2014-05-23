@@ -332,5 +332,19 @@ def prepare_mutants(System,append_log):
     os.chdir(cwd)
     append_log("Finished: Preparing_Mutants")
 
+def command_line_prepare_mutants(System,append_log):
+    """ Creates a mutated pdb for every mutant."""
+
+    if not os.path.exists("calculated_ddG.dat"):
+        print "ERROR!"
+        print "  The file calculated_ddG.dat must exist!"
+        print "  exiting..."
+        raise SystemExit
+
+    print "  Mutating pdbs with MODELLER..."
+    make_all_mutations() 
+    print "  Calculating fraction of contact loss fij..."
+    calculate_contacts_lost_for_mutants()
+
 if __name__ == '__main__':
-    prepare_mutants()
+    command_line_prepare_mutants()
