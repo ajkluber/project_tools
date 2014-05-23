@@ -16,7 +16,7 @@ Works like a charm out of the box.
 ** When on DaVinci (or any Rice server) must use the following calling style to
 execute this:
 
-modpy.sh python mutate.py
+modpy.sh python2.6 mutate.py
 
 Where modpy.sh is a script installed by MODELLER that must be in your PATH.
 Also, several paths need to be in your PYTHONPATH and LD_LIBRARY_PATH. See

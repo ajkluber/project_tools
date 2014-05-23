@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.6
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -30,9 +30,9 @@ Procedure:
     Note: The number of processors requested "mpirun -n 10" by match the number
     of temperatures to calculate.
 1. First calculate the reference matrix at a given temperature (choose low T).
-    python contact_calculator.py ref --method prob --refT ###
+    python2.6 contact_calculator.py ref --method prob --refT ###
 2. Submit a PBS job that executes the following command:
-    mpirun -n 10 python contact_calculator.py  --method prob --refT ### --Ti ### --dT 10 --Tf ###
+    mpirun -n 10 python2.6 contact_calculator.py  --method prob --refT ### --Ti ### --dT 10 --Tf ###
 
 Changelog:
 August 2013 Created
