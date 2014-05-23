@@ -89,12 +89,7 @@ def get_core_mutations():
     wt_res = mutation_data[(useable_and_core == True),2] 
     mut_res = mutation_data[(useable_and_core == True),3] 
 
-    ddG_N_D = mutation_data[(useable_and_core == True),4] 
-    ddG_N_D_err = mutation_data[(useable_and_core == True),5] 
-    ddG_TS_D = mutation_data[(useable_and_core == True),6] 
-    ddG_TS_D_err = mutation_data[(useable_and_core == True),7] 
-    
-    return mut_indx,wt_res,mut_res,ddG_
+    return mut_indx,wt_res,mut_res
 
 def get_core_mutation_ddG():
     """ Extract mutational data. Only return info for useable mutations """
