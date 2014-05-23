@@ -26,18 +26,21 @@ def prep_mutants(System,append_log):
 
     cwd = os.getcwd()
     sub = cwd+"/"+System.subdir+"/mutants"
+    mut_filename = System.subdir+"_calculated_ddG.dat"
     if not os.path.exists(sub):
         print "  Creating direcotory",sub
         os.mkdir(sub)
     if not os.path.exists("wt.pdb"):
         print "  Copying wt"
         shutil.copy(System.subdir+"/clean_noH.pdb","wt.pdb")
-    if (not os.path.exists(sub+"/mutations.dat")):
-        if os.path.exists(System.subdir+"/mutations.dat"):
-            shutil.copy(System.subdir+"/mutations.dat",sub+"/mutations.dat")
+    if (not os.path.exists(sub+"/calculated_ddG.dat")):
+        print "  Didn't find "+sub+"/calculated_ddG.dat. Looking for "+System.path+"/"+mut_filename
+        if os.path.exists(System.path+"/"+mut_filename):
+            shutil.copy(System.path+"/"+mut_filename,sub+"/calculated_ddG.dat")
         else:
             print "ERROR!"
-            print "  Didn't find mutations.dat in either ",System.subdir, " or ",sub
+            print "  Didn't find "+mut_filename+" in "+System.path
+            print "  Prepare the mutational data using prepare_ddG.py"
             print "  Exiting."
             raise SystemExit
 
