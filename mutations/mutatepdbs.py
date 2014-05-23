@@ -1,8 +1,3 @@
-import sys
-import os
-
-from modeller import *
-
 '''
 Feb 12 2014 
 Alexander Kluber
@@ -32,8 +27,14 @@ For example mutating PHE (F) at position 90 in the wild-type structure to ALA
 
 '''
 
+import numpy as np
+import sys
+import os
+
+from modeller import *
+
 def residue_three_letter_code(rescode):
-    '''Converting from three letter code to one letter FASTA code.'''
+    """Converting from three letter code to one letter FASTA code."""
     residue_code = {'A': 'ALA', 'R': 'ARG', 'N': 'ASN',
                     'D': 'ASP', 'C': 'CYS', 'Q': 'GLN',
                     'E': 'GLU', 'G': 'GLY', 'H': 'HIS',
@@ -44,18 +45,27 @@ def residue_three_letter_code(rescode):
     return residue_code[rescode]
 
 def make_all_mutations():
-    ''' Read in mutational data from file. Parse the file into lists of mutation
+    """ Read in mutational data from file. Parse the file into lists of mutation
         indices mut_indx, wt residue identity wt_res, and desired mutation 
         mut_res.
         
         MODELLER uses 3-letter amino acid code (e.g. ALA instead of A) whereas 
         the mutational data files will probably use single-letter code.
-    '''
+    """
+
+    ## TO DO: Implement new mutations data file format.
     modelname = 'wt'
-    mutation_data = open("mutations.dat","r").readlines()[1:]
-    mut_indx = [ mutation_data[i].split()[0] for i in range(len(mutation_data)) ]
-    wt_res = [ mutation_data[i].split()[1] for i in range(len(mutation_data)) ]
-    mut_res = [ mutation_data[i].split()[2] for i in range(len(mutation_data)) ]
+
+    mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
+    useable = np.array([ bool(x) for x in mutation_data[:,8] ])
+    mut_indx = mutation_data[(useable == True),1] 
+    wt_res = mutation_data[(useable == True),2] 
+    mut_res = mutation_data[(useable == True),3] 
+
+    #mutation_data = open("mutations.dat","r").readlines()[1:]
+    #mut_indx = [ mutation_data[i].split()[0] for i in range(len(mutation_data)) ]
+    #wt_res = [ mutation_data[i].split()[1] for i in range(len(mutation_data)) ]
+    #mut_res = [ mutation_data[i].split()[2] for i in range(len(mutation_data)) ]
     
     for i in range(len(mut_indx)):
 
@@ -74,12 +84,12 @@ def make_all_mutations():
 
 
 def modeller_mutate_pdb(modelname,respos,restyp,saveas,chain='A'):
-    ''' Function to use MODELLER to mutate a pdb at index repos to residue
+    """ Function to use MODELLER to mutate a pdb at index repos to residue
         restyp, then save the new pdb as saveas.
 
         Taken almost entirely as-is from a sample script in the MODELLER
         documentation. I deleted the final part that does energy minimization
-        so that the backbone coordinates wouldn't be affected.'''
+        so that the backbone coordinates wouldn't be affected."""
 
     log.verbose()
 

@@ -1,11 +1,4 @@
-import numpy as np
-import subprocess as sb
-import os
-import shutil
-
-import mutatepdbs
-
-'''
+"""
 Feb 14 2014
 Alexander Kluber
 
@@ -19,11 +12,17 @@ MODELLER broke my Numpy build :( ===> FIXED by adding library path to LD_LIBRARY
 Follow instructions at:
 https://docs.rice.edu/confluence/display/ITDIY/How+to+use+BLAS+and+LAPACK+libraries
 
-'''
+"""
 
+import numpy as np
+import subprocess as sb
+import os
+import shutil
+
+import mutatepdbs
 
 def prep_mutants(System,append_log):
-    ''' Creates a mutated pdb for every mutant.'''
+    """ Creates a mutated pdb for every mutant."""
 
     cwd = os.getcwd()
     sub = cwd+"/"+System.subdir+"/mutants"
@@ -52,7 +51,7 @@ def prep_mutants(System,append_log):
     os.chdir(cwd)
 
 def get_shadow_pdb_atoms(name):
-    ''' Parse the pdb file output by Shadow Jar.'''
+    """ Parse the pdb file output by Shadow Jar."""
     prev_resid = 1
     num_heavy = 0
     atoms = []
@@ -81,10 +80,10 @@ def get_shadow_pdb_atoms(name):
     return atoms,num_heavy,heavy_indices,atms_per_res
 
 def get_heavy_atom_contact_map(name):
-    ''' Parses the output of shadow.jar to determine heavy atom contact
+    """ Parses the output of shadow.jar to determine heavy atom contact
         map. Works. Requires the following files be present: name.contacts
         name.pdb
-    '''
+    """
     atoms, num_heavy, heavy_indices, atms_per_res = get_shadow_pdb_atoms(name+".wH")
     wt_conts = np.loadtxt(name+".contacts",usecols=(1,3),dtype=int)
     C = np.zeros((num_heavy,num_heavy))
@@ -100,8 +99,8 @@ def get_heavy_atom_contact_map(name):
     return C, atms_per_res
 
 def get_res_res_conts(name):
-    ''' Get number of residue-residue heavy atom contacts from 
-        all-atom contact map output from Shadowmap.'''
+    """ Get number of residue-residue heavy atom contacts from 
+        all-atom contact map output from Shadowmap."""
     C, atms_per_res = get_heavy_atom_contact_map(name)
     N = len(atms_per_res)
     C_res = np.zeros((N,N),float)
@@ -116,7 +115,7 @@ def get_res_res_conts(name):
     return C_res
 
 def calculate_fraction_contact_loss(name):
-    ''' Calculate f^k_ij matrices for mutant.'''
+    """ Calculate f^k_ij matrices for mutant."""
 
     Cwt = get_res_res_conts("wt.cutoff")
     C90 = get_res_res_conts(name+".cutoff")
@@ -137,7 +136,7 @@ def calculate_fraction_contact_loss(name):
     #plt.show()
 
 def calculate_contacts_from_pdb(name):
-    ''' Calls shadow map to calculate'''
+    """ Calls shadow map to calculate"""
     if os.path.exists(name+".gro") == False:
         cmd1 = 'echo -e "9\\n3\\n" | pdb2gmx -f %s.pdb -o %s.gro -p %s.top' % (name,name,name)
         sb.call(cmd1,shell=True,stdout=open("cutoff.out","w"),stderr=open("cutoff.err","w"))
@@ -145,11 +144,12 @@ def calculate_contacts_from_pdb(name):
     sb.call(cmd2,shell=True,stdout=open("cutoff.out","w"),stderr=open("cutoff.err","w"))
 
 def calculate_contacts_lost_for_mutants():
-    ''' Calculates the fraction of heavy-atom contact loss between residues i and j
+    """ Calculates the fraction of heavy-atom contact loss between residues i and j
         for mutant k:  f^k_ij . Must be in mutants directory which holds wild-type 
-        pdb wt.pdb, a file hold mutations information mutations.dat.'''
-    ## Start by reading the mutations file. Should be an attribute of System
-    ## object.
+        pdb wt.pdb, a file hold mutations information mutations.dat."""
+
+    ## TO DO: Implement new mutations data file format.
+
     modelname = 'wt.pdb'
     mutation_data = open("mutations.dat","r").readlines()[1:]
     mut_indx = [ mutation_data[i].split()[0] for i in range(len(mutation_data)) ]
