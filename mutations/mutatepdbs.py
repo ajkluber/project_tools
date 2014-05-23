@@ -83,7 +83,7 @@ def get_shadow_pdb_atoms(name):
 def get_core_mutations():
     """ Extract mutational data. Only return info for useable mutations """
     mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
-    useable_and_core = [ all([(mutation_data[i,0] == "core"), bool(mutation_data[i,8])]) for i in range(mutation_data.shape[0]) ]
+    useable_and_core = np.array([ all([(mutation_data[i,0] == "core"), bool(mutation_data[i,8])]) for i in range(mutation_data.shape[0]) ])
     
     mut_indx = mutation_data[(useable_and_core == True),1] 
     wt_res = mutation_data[(useable_and_core == True),2] 
@@ -94,7 +94,7 @@ def get_core_mutations():
 def get_core_mutation_ddG():
     """ Extract mutational data. Only return info for useable mutations """
     mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
-    useable_and_core = [ all([(mutation_data[i,0] == "core"), bool(mutation_data[i,8])]) for i in range(mutation_data.shape[0]) ]
+    useable_and_core = np.array([ all([(mutation_data[i,0] == "core"), bool(mutation_data[i,8])]) for i in range(mutation_data.shape[0]) ])
     
     ddG_N_D = mutation_data[(useable_and_core == True),4] 
     ddG_N_D_err = mutation_data[(useable_and_core == True),5] 
