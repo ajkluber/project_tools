@@ -114,7 +114,7 @@ class SecondaryTertiaryGo(ProjectManager):
             analysis.plot.pmfs.plot_aggregated_data(System,self.append_log)
         #elif task == "Plotting_Agg_Data":
         #    print "Starting prepping mutant pdbs..."
-        #    mutations.preppdbs.prep_mutants(System,self.append_log)
+        #    mutations.analyzepdbs.prep_mutants(System,self.append_log)
         #    print "Starting calculating dH for mutants..."
         #    mutations.phi_values.calculate_dH_for_mutants(Model,System,self.append_log)
         #elif task == "Calculating_dH":
