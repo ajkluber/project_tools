@@ -83,20 +83,36 @@ def get_shadow_pdb_atoms(name):
 def get_core_mutations():
     """ Extract mutational data. Only return info for useable mutations """
     mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
-    useable_and_core = np.array([ all([(mutation_data[i,0] == "core"), bool(mutation_data[i,8])]) for i in range(mutation_data.shape[0]) ])
-    
-    print useable_and_core
-    raise SystemExit
+    useable_and_core = []
+    for i in range(mutation_data.shape[0]):
+        if (mutation_data[i,0] == "core") and  bool(mutation_data[i,8]):
+            useable_and_core.append(True)
+        else:
+            useable_and_core.append(False)
+            
+    #useable_and_core = np.array([ all([(mutation_data[i,0] == "core"), bool(mutation_data[i,8])]) for i in range(mutation_data.shape[0]) ])
+
     mut_indx = mutation_data[(useable_and_core == True),1] 
     wt_res = mutation_data[(useable_and_core == True),2] 
     mut_res = mutation_data[(useable_and_core == True),3] 
+    
+    for j in range(len(useable_and_core)):
+        print mut_indx[j],wt_res[j],useable_and_core[j]
+        print useable_and_core
+    raise SystemExit
 
     return mut_indx,wt_res,mut_res
 
 def get_core_mutation_ddG():
     """ Extract mutational data. Only return info for useable mutations """
     mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
-    useable_and_core = np.array([ all([(mutation_data[i,0] == "core"), bool(mutation_data[i,8])]) for i in range(mutation_data.shape[0]) ])
+    #useable_and_core = np.array([ all([(mutation_data[i,0] == "core"), bool(mutation_data[i,8])]) for i in range(mutation_data.shape[0]) ])
+    useable_and_core = []
+    for i in range(mutation_data.shape[0]):
+        if (mutation_data[i,0] == "core") and  bool(mutation_data[i,8]):
+            useable_and_core.append(True)
+        else:
+            useable_and_core.append(False)
     
     ddG_N_D = mutation_data[(useable_and_core == True),4] 
     ddG_N_D_err = mutation_data[(useable_and_core == True),5] 
