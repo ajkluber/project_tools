@@ -76,7 +76,7 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q"):
     for cutoff in np.arange(0.,0.5,0.001):
         try:
             LP_problem, solution, x_particular, N = apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff)
-        except CplexSolverError:
+        except cplex.exceptions.CplexSolverError:
             print " CPLEX found no solution for cutoff: ",cutoff, " continuing"
             error = 1
             continue
