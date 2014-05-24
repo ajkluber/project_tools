@@ -119,18 +119,29 @@ def get_exp_ddG():
 
     return ddG_exp_TS_D, ddG_exp_N_D
 
-def get_sim_ddG(savedir,coord,bounds):
+def get_sim_ddG(savedir,mutants,coord,bounds):
     """ Get the saved ddG from simulation that should have been computed already."""
 
     index_sim = len(bounds)+1
     num = len(bounds)-1
     
-    ddG_sim_all = np.loadtxt(savedir+"/phi/"+coord+"_phi.dat",skiprows=1,usecols=(4,5))
-     
-    ddG_sim_TS_D = ddG_sim_all[:,0]
-    ddG_sim_N_D = ddG_sim_all[:,1]
-
-    return ddG_sim_TS_D, ddG_sim_N_D
+    ddGsim_TS_D = ddG = np.zeros(len(mutants),float)
+    ddGsim_N_D = ddG = np.zeros(len(mutants),float)
+    ddG_sim_all = np.loadtxt(savedir+"/phi/"+coord+"_phi.dat",skiprows=1,usecols=(0,4,5),dtype=str)
+    sim_muts = list(ddG_sim_all[:,0])
+    for k in range(len(mutants)):
+        try:
+            temp_indx = sim_muts.index(mutants[k])
+        except:
+            print "ERROR!"
+            print "  The ddG_simulation was not found for mutation ", mutants[k]
+            print "  Double check that ddG's are there for all mutations used."
+            print "  Exiting"
+            raise SystemExit
+        ddGsim_TS_D[k] = float(ddG_sim_all[temp_indx,4])
+        ddGsim_N_D[k] = float(ddG_sim_all[temp_indx,5])
+        
+    return ddGsim_TS_D, ddGsim_N_D
 
 
 def get_mutant_fij(mutants,keep_interactions):
