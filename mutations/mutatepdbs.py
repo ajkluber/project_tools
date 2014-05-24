@@ -85,13 +85,11 @@ def get_core_mutations():
     mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
     useable_and_core = []
     for i in range(mutation_data.shape[0]):
-        if (mutation_data[i,0] == "core") and (mutation_data[i,8] == "True"):
+        if (mutation_data[i,0] == "core") and (mutation_data[i,8] == "True") and (mutation_data[i,9] == 0):
             useable_and_core.append(True)
         else:
             useable_and_core.append(False)
-            
     useable_and_core = np.array(useable_and_core)
-    #useable_and_core = np.array([ all([(mutation_data[i,0] == "core"), bool(mutation_data[i,8])]) for i in range(mutation_data.shape[0]) ])
 
     mut_indx = mutation_data[(useable_and_core == True),1] 
     wt_res = mutation_data[(useable_and_core == True),2] 
@@ -102,10 +100,9 @@ def get_core_mutations():
 def get_core_mutation_ddG():
     """ Extract mutational data. Only return info for useable mutations """
     mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
-    #useable_and_core = np.array([ all([(mutation_data[i,0] == "core"), bool(mutation_data[i,8])]) for i in range(mutation_data.shape[0]) ])
     useable_and_core = []
     for i in range(mutation_data.shape[0]):
-        if (mutation_data[i,0] == "core") and (mutation_data[i,8] == "True"):
+        if (mutation_data[i,0] == "core") and (mutation_data[i,8] == "True") and (mutation_data[i,9] == 0):
             useable_and_core.append(True)
         else:
             useable_and_core.append(False)
@@ -118,15 +115,15 @@ def get_core_mutation_ddG():
     
     return ddG_N_D,ddG_N_D_err,ddG_TS_D,ddG_TS_D_err
 
-def get_mutational_data():
-    """ Extract mutational data. Only return info for useable mutations """
-    mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
-    useable = np.array([ bool(x) for x in mutation_data[:,8] ])
-    mut_indx = mutation_data[(useable == True),1] 
-    wt_res = mutation_data[(useable == True),2] 
-    mut_res = mutation_data[(useable == True),3] 
-    
-    return mutation_data,useable,mut_indx,wt_res,mut_res
+#def get_mutational_data():
+#    """ Extract mutational data. Only return info for useable mutations """
+#    mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
+#    useable = np.array([ bool(x) for x in mutation_data[:,8] ])
+#    mut_indx = mutation_data[(useable == True),1] 
+#    wt_res = mutation_data[(useable == True),2] 
+#    mut_res = mutation_data[(useable == True),3] 
+#    
+#    return mutation_data,useable,mut_indx,wt_res,mut_res
 
 def get_res_res_conts(name):
     """ Get number of residue-residue heavy atom contacts from 
