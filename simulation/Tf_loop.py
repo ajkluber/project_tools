@@ -218,7 +218,7 @@ def start_next_Tf_loop_iteration(Model,System,append_log):
     Tf = int(Tf_guess + 20)
     dT = 2
 
-    append_log(System.subdir,"Submitting T_array iteration %d" % System.Tf_iteration
+    append_log(System.subdir,"Submitting T_array iteration %d" % System.Tf_iteration)
     append_log(System.subdir,"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
     run_temperature_array(Model,System,Ti,Tf,dT)
     append_log(System.subdir,"Starting: Tf_loop_iteration")
@@ -230,7 +230,7 @@ def manually_add_temperature_array(Model,System,append_log,Ti,Tf,dT):
     cwd = os.getcwd()
     sub = System.path+"/"+ System.subdir+"/"+System.Tf_active_directory
     os.chdir(sub)
-    append_log(System.subdir,"Submitting T_array iteration %d " % System.Tf_iteration
+    append_log(System.subdir,"Submitting T_array iteration %d " % System.Tf_iteration)
     append_log(System.subdir,"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
     run_temperature_array(Model,System,Ti,Tf,dT)
     append_log(System.subdir,"Starting: Tf_loop_iteration")
