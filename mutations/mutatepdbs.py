@@ -97,14 +97,6 @@ def get_core_mutations():
     wt_res = mutation_data[(useable_and_core == True),2] 
     mut_res = mutation_data[(useable_and_core == True),3] 
     
-    print mut_indx
-    print wt_res
-    print useable_and_core
-    for j in range(len(useable_and_core)):
-        print mut_indx[j],wt_res[j],useable_and_core[j]
-        print useable_and_core
-    raise SystemExit
-
     return mut_indx,wt_res,mut_res
 
 def get_core_mutation_ddG():
