@@ -1,22 +1,7 @@
-#!/usr/bin/env python2.6
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import os
-import numpy as np
-import argparse
-
-import mdtraj as md
-
-
-#import dmc_model.beadbead as bb
-#from mpi4py import MPI
-
-'''
-Author: Alexander Kluber
-Created: August 2013 
+""" Compute different sets of native contacts
 
 Description:
+
     This program calculates the native contacts of a trajectory (Gromacs .xtc
 trajectory) given a BeadBead.dat file (which contains the equilibrium distances
 for each non-bonded interaction) and Native.pdb (the native/crystal structure;
@@ -24,6 +9,7 @@ which holds the pairwise distances of the crystal structure).
     There are many ways to categorize contacts. For example, we can split
 contacts into Native, Not-Native, Non-Native and sub-divide Native into
 Native-Helical (secondary contacts) and Native-Non-Helical (tertiary contacts).
+
 
 Procedure:
     Note: Must calculate the reference matrix first. 
@@ -34,19 +20,19 @@ Procedure:
 2. Submit a PBS job that executes the following command:
     mpirun -n 10 python2.6 contact_calculator.py  --method prob --refT ### --Ti ### --dT 10 --Tf ###
 
-Changelog:
-August 2013 Created
-- Created to use as a command line utility.
-October 2013
-- Added contacts_for_states to calculate contact maps for a portion of a 
-trajectory given the frame indices.
-December 2013
-** Copied over from dmc_model to model_builder. Changing around some stuff.
+"""
 
-'''
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import os
+import numpy as np
+import argparse
+
+import mdtraj as md
 
 def main():
-    ''' One possible branches: Calculate Q '''
+    """ One possible branches: Calculate Q """
     parser = argparse.ArgumentParser(description='Calculate the (Non)Native contact matrix')
 
     parser.add_argument('--calc', action='store_true', help='calculate Q')
@@ -60,11 +46,11 @@ def main():
 
 
 def calculate_Q():
-    ''' Calculate contacts and save number of native contacts,
+    """ Calculate contacts and save number of native contacts,
         number of native helical (and non-helical) contacts, 
         number of native local (and non-local) contacits. Uses
         MDTraj. WORKS!
-    '''
+    """
     
     Qref = np.loadtxt("Qref_cryst.dat")
     N = len(Qref)
@@ -162,8 +148,8 @@ def calculate_Q():
     np.savetxt("Qnhprob.dat",Qnh)
 
 def get_beadbead_info(path='.'):
-    ''' Extract the native crystal structure contacts, equilibrium 
-        contact distance (sigij), and number of residues N.'''
+    """ Extract the native crystal structure contacts, equilibrium 
+        contact distance (sigij), and number of residues N."""
     pairs = []
     #pdb = np.loadtxt("Native.pdb",dtype=str)
     #coords = pdb[:,6:9].astype(float)
@@ -187,7 +173,7 @@ def get_beadbead_info(path='.'):
     return Native_cryst, Sig, N
 
 def get_pdb_coords(pdbname):
-    ''' Get coordinates from a pdb file.'''
+    """ Get coordinates from a pdb file."""
     coords = []
     for line in open(pdbname,"r"):
         if line[:3] in ['TER','END']:

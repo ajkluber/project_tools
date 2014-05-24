@@ -186,11 +186,9 @@ def folding_temperature_loop_extension(Model,System,append_log,new=False):
     else:
         ## Use previous range to determine new range. 
         Ti, Tf, dT = determine_new_T_array()
-        System.Tf_refinements[System.Tf_iteration] += 1
     print "  Running temperature array: T_initial = %.2f   T_final = %.2f   dT = %.2f " % (Ti,Tf,dT)
     run_temperature_array(Model,System,Ti,Tf,dT)
-    append_log(System.subdir,"Submitting T_array iteration %d ; refinement %d" % \
-                    (System.Tf_iteration,System.Tf_refinements[System.Tf_iteration]))
+    append_log(System.subdir,"Submitting T_array iteration %d " % System.Tf_iteration)
     append_log(System.subdir,"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
     append_log(System.subdir,"Starting: Tf_loop_iteration")
 
@@ -205,7 +203,6 @@ def start_next_Tf_loop_iteration(Model,System,append_log):
     System.Tf_active_directory = "Tf_"+str(System.Tf_iteration)
     System.mutation_iteration += 1
     System.mutation_active_directory = "Mut_"+str(System.mutation_iteration)
-    System.Tf_refinements.append(0)
 
     cwd = os.getcwd()
     sub = System.path+"/"+ System.subdir+"/"+System.Tf_active_directory
@@ -220,8 +217,8 @@ def start_next_Tf_loop_iteration(Model,System,append_log):
     Ti = int(Tf_guess - 20)
     Tf = int(Tf_guess + 20)
     dT = 2
-    append_log(System.subdir,"Submitting T_array iteration %d ; refinement %d" % \
-                (System.Tf_iteration,System.Tf_refinements[System.Tf_iteration]))
+
+    append_log(System.subdir,"Submitting T_array iteration %d" % System.Tf_iteration
     append_log(System.subdir,"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
     run_temperature_array(Model,System,Ti,Tf,dT)
     append_log(System.subdir,"Starting: Tf_loop_iteration")
@@ -233,9 +230,7 @@ def manually_add_temperature_array(Model,System,append_log,Ti,Tf,dT):
     cwd = os.getcwd()
     sub = System.path+"/"+ System.subdir+"/"+System.Tf_active_directory
     os.chdir(sub)
-    System.Tf_refinements[System.Tf_iteration] += 1
-    append_log(System.subdir,"Submitting T_array iteration %d ; refinement %d" % \
-                (System.Tf_iteration,System.Tf_refinements[System.Tf_iteration]))
+    append_log(System.subdir,"Submitting T_array iteration %d " % System.Tf_iteration
     append_log(System.subdir,"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
     run_temperature_array(Model,System,Ti,Tf,dT)
     append_log(System.subdir,"Starting: Tf_loop_iteration")
