@@ -283,6 +283,8 @@ def calculate_matrix_ddG_eps_M(Model,System,savedir,beta,coord):
     ddG_N_D,ddG_N_D_err,ddG_TS_D,ddG_TS_D_err = mut.get_core_mutation_ddG()
     os.chdir("..")
     mutants = [ wt_res[i]+mut_indx[i]+mut_res[i] for i in range(mut_indx.shape[0]) ]
+    print "  Computing perturbation with the following mutants"
+    print mutants
 
     print "  Loading trajectory, epsij, deltaij, sigij"
     sigij,epsij,deltaij,interaction_nums,keep_interactions,pairs,traj,traj_dist = phi.load_eps_delta_sig_traj(savedir)

@@ -1,12 +1,11 @@
-"""
-Feb 14 2014
-Alexander Kluber
+""" Mutate the pdbs with MODLLER
+
+Description:
 
     This submodule uses information in a mutations.dat file and the wild type
 structure wt.pdb to create mutated pdbs and resulting contact maps. The contact
 maps are then used to calculate the fraction of heavy-atom contact loss between
 residues i and j for mutation k.
-    Currently works! 2-14-14
 
 MODELLER broke my Numpy build :( ===> FIXED by adding library path to LD_LIBRARY_PATH.
 Follow instructions at:
