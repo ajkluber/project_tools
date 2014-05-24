@@ -138,8 +138,8 @@ def get_sim_ddG(savedir,mutants,coord,bounds):
             print "  Double check that ddG's are there for all mutations used."
             print "  Exiting"
             raise SystemExit
-        ddGsim_TS_D[k] = float(ddG_sim_all[temp_indx,4])
-        ddGsim_N_D[k] = float(ddG_sim_all[temp_indx,5])
+        ddGsim_TS_D[k] = float(ddG_sim_all[temp_indx,1])
+        ddGsim_N_D[k] = float(ddG_sim_all[temp_indx,2])
         
     return ddGsim_TS_D, ddGsim_N_D
 
