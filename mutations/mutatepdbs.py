@@ -85,7 +85,7 @@ def get_core_mutations():
     mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
     useable_and_core = []
     for i in range(mutation_data.shape[0]):
-        if (mutation_data[i,0] == "core") and  bool(mutation_data[i,8]):
+        if (mutation_data[i,0] == "core") and bool(mutation_data[i,8]):
             useable_and_core.append(True)
         else:
             useable_and_core.append(False)
@@ -96,6 +96,9 @@ def get_core_mutations():
     wt_res = mutation_data[(useable_and_core == True),2] 
     mut_res = mutation_data[(useable_and_core == True),3] 
     
+    print mut_indx
+    print wt_res
+    print useable_and_core
     for j in range(len(useable_and_core)):
         print mut_indx[j],wt_res[j],useable_and_core[j]
         print useable_and_core
