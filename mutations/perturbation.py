@@ -71,15 +71,23 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q"):
     ratio = 0
     iteration = 1 
 
+    error = 0 
     print "Iteration  Cutoff    Ratio "
     for cutoff in np.arange(0.,0.5,0.001):
-        LP_problem, solution, x_particular, N = apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff)
+        try:
+            LP_problem, solution, x_particular, N = apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff)
+        except CplexSolverError:
+            print " CPLEX found no solution for cutoff: ",cutoff, " continuing"
+            error = 1
+            continue
+        error = 0 
         delta_eps = x_particular + np.dot(N,solution)
         ratio = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
         print iteration, cutoff, ratio
         iteration += 1 
         if ratio < target_ratio:
             break
+    
     ## New Parameters
     epsilon_prime = eps + delta_eps
 
