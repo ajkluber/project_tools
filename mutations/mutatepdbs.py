@@ -107,12 +107,36 @@ def get_core_mutation_ddG():
             useable_and_core.append(False)
     useable_and_core = np.array(useable_and_core)
     
-    ddG_N_D = mutation_data[(useable_and_core == True),4] 
-    ddG_N_D_err = mutation_data[(useable_and_core == True),5] 
-    ddG_TS_D = mutation_data[(useable_and_core == True),6] 
-    ddG_TS_D_err = mutation_data[(useable_and_core == True),7] 
+    ddG_N_D = mutation_data[(useable_and_core == True),4].astype(float)
+    ddG_N_D_err = mutation_data[(useable_and_core == True),5].astype(float)
+    ddG_TS_D = mutation_data[(useable_and_core == True),6].astype(float) 
+    ddG_TS_D_err = mutation_data[(useable_and_core == True),7].astype(float) 
     
     return ddG_N_D,ddG_N_D_err,ddG_TS_D,ddG_TS_D_err
+
+def get_sim_ddG(savedir,mutants,coord,bounds):
+    """ Get the saved ddG from simulation that should have been computed already."""
+
+    index_sim = len(bounds)+1
+    num = len(bounds)-1
+    
+    ddGsim_TS_D = ddG = np.zeros(len(mutants),float)
+    ddGsim_N_D = ddG = np.zeros(len(mutants),float)
+    ddG_sim_all = np.loadtxt(savedir+"/phi/"+coord+"_phi.dat",skiprows=1,usecols=(0,4,5),dtype=str)
+    sim_muts = list(ddG_sim_all[:,0])
+    for k in range(len(mutants)):
+        try:
+            temp_indx = sim_muts.index(mutants[k])
+        except:
+            print "ERROR!"
+            print "  The ddG_simulation was not found for mutation ", mutants[k]
+            print "  Double check that ddG's are there for all mutations used."
+            print "  Exiting"
+            raise SystemExit
+        ddGsim_TS_D[k] = float(ddG_sim_all[temp_indx,1])
+        ddGsim_N_D[k] = float(ddG_sim_all[temp_indx,2])
+        
+    return ddGsim_TS_D, ddGsim_N_D
 
 #def get_mutational_data():
 #    """ Extract mutational data. Only return info for useable mutations """

@@ -284,8 +284,8 @@ def calculate_matrix_ddG_eps_M(Model,System,savedir,beta,coord):
     ddGexp_N_D,ddGexp_N_D_err,ddGexp_TS_D,ddGexp_TS_D_err = mut.get_core_mutation_ddG()
     os.chdir("..")
     mutants = [ wt_res[i]+mut_indx[i]+mut_res[i] for i in range(mut_indx.shape[0]) ]
-    print "  Computing perturbation with the following mutants"
-    print mutants
+    #print "  Computing perturbation with the following mutants"
+    #print mutants
 
     print "  Loading trajectory, epsij, deltaij, sigij"
     sigij,epsij,deltaij,interaction_nums,keep_interactions,pairs,traj,traj_dist = phi.load_eps_delta_sig_traj(savedir)
@@ -305,11 +305,10 @@ def calculate_matrix_ddG_eps_M(Model,System,savedir,beta,coord):
     #print "dH shape",dH[:,states[1]].shape
     #print "dH shape",sum(dH[:,states[1]])
 
-    ## Load ddG from experiment and theory. 
+    ## Load ddG from theory. 
     print "  Loading ddG from simulation"
-    ddGsim_TS_D, ddGsim_N_D = phi.get_sim_ddG(savedir,mutants,coord,bounds)
+    ddGsim_TS_D, ddGsim_N_D = mut.get_sim_ddG(savedir,mutants,coord,bounds)
 
-    print "  Loading ddG from experiment"
     ddG_all = np.concatenate(((ddGexp_TS_D - ddGsim_TS_D),(ddGexp_N_D - ddGsim_N_D)), axis=0)
 
     np.savetxt(savedir+"/mut/ddG.dat",ddG_all)
