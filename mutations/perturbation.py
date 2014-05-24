@@ -91,7 +91,7 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q"):
     ## New Parameters
     epsilon_prime = eps + delta_eps
 
-    beadbead, keep_interactions = phi.load_beadbead(sub)
+    beadbead, keep_interactions = phi.load_beadbead(sub+"/"+T+"_1")
     
     epsij = beadbead[:,6].astype(float)
     epsij[keep_interactions != 0] = epsilon_prime
