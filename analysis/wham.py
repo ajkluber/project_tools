@@ -1,11 +1,4 @@
-import numpy as np
-import subprocess as sb
-import argparse
-import os
-
-from whamdata import WhamData
-
-'''
+""" Python wrapper for WHAM code
     Author: Alexander Kluber
     Created: Aug 20, 2013
 
@@ -60,11 +53,18 @@ from whamdata import WhamData
     prep_input_files_command_line and run_wham_command_line for backwards 
     compatibility. 
 
-'''
+"""
+
+import numpy as np
+import subprocess as sb
+import argparse
+import os
+
+from whamdata import WhamData
 
 
 def main():
-    ''' Two possible branches: 1. Prep WHAM inputs; 2. Submit WHAM PBS job.'''
+    """ Two possible branches: 1. Prep WHAM inputs; 2. Submit WHAM PBS job."""
     parser = argparse.ArgumentParser(description='Perform WHAM.')
     sp = parser.add_subparsers(dest='action')
 
@@ -90,10 +90,10 @@ def main():
     F(args)
 
 def prep_input_files_command_line(args):
-    ''' This function collates the proper data files into the Input_for_WHAM
+    """ This function collates the proper data files into the Input_for_WHAM
         files. Then prepares the input.wham file for the desired calculation.
         Requires     
-    '''
+    """
     temps = range(args.Ti,args.Tf+args.dT,args.dT)
     N = len(temps)
     inputs = ("rmsd","Rg","Q","Qh","Qnh","Epot")
@@ -132,11 +132,11 @@ def prep_input_files_command_line(args):
         print "Select a proper output option: --output = [ HeatCap | FreeEnergy ]"
 
 def prep_input_files(Ti,Tf,dT,path,outputstyle):
-    ''' This function collates the proper data files into the Input_for_WHAM
+    """ This function collates the proper data files into the Input_for_WHAM
         files. Then prepares the input.wham file for the desired calculation.
         Requires reaction coordinate data (with specific filenames) to exist 
         or will crash. 
-    '''
+    """
     temps = range(Ti,Tf+dT,dT)
     N = len(temps)
     inputs = ("rmsd","Rg","Q","Qh","Qnh","Epot")
@@ -176,7 +176,7 @@ def prep_input_files(Ti,Tf,dT,path,outputstyle):
         print "Select a proper output option: --output = [ HeatCap | FreeEnergy ]"
 
 def prepare_Input_for_WHAM_for_temperature(t,path,maxs,mins,numinputs):
-    ''' Get reaction coordinates for temperature "t". Note that all these files
+    """ Get reaction coordinates for temperature "t". Note that all these files
         must exist or the program will crash. Format is as follows:
         Input_for_WHAM_###.dat
         rmsd  Rg  Q  Qh  Qnh  Epot
@@ -189,7 +189,7 @@ def prepare_Input_for_WHAM_for_temperature(t,path,maxs,mins,numinputs):
         Qnh = Number of non-helical contacts. Just Qnh = Q - Qh
         Epot = Total potential energy. 
 
-    ''' 
+    """ 
     time,Eb,Eang,Ed,Enonbond,Etot = np.loadtxt(path+"/"+str(t)+"_0/energyterms.xvg",unpack=True)
     time, rmsd = np.loadtxt(path+"/"+str(t)+"_0/rmsd.xvg",unpack=True)
     frames, rg = np.loadtxt(path+"/"+str(t)+"_0/radius_cropped.xvg",unpack=True)
@@ -216,9 +216,9 @@ def prepare_Input_for_WHAM_for_temperature(t,path,maxs,mins,numinputs):
 
 
 def prepare_free_energy_inputs(path,outputstyle,inputs,maxs,mins,firstblock):
-    ''' Note that this requires that the Heat.dat has already finished 
+    """ Note that this requires that the Heat.dat has already finished 
         running. It requires the the Heat capacity curve to find the 
-        folding temperature. '''
+        folding temperature. """
     T, E, Cv, F = np.loadtxt(path+"/wham/Heat_rmsd_Rg.dat",unpack=True)
     maxCv = max(Cv)
     Tf = int(T[list(Cv).index(maxCv)])
@@ -245,7 +245,7 @@ def prepare_free_energy_inputs(path,outputstyle,inputs,maxs,mins,firstblock):
             open(path+"/wham/input_%s_1D_F.wham" % inputs[idx1] ,"w").write(firstblock + secondblock)
 
 def second_block_string_Cv(inputs,maxs,mins,idx1,idx2,Eidx,temps,Tguess,nbins1=150,nbins2=150,Enbins=150):
-    ''' Second block string
+    """ Second block string
     Ex:
     2 3 4
     20 1 210
@@ -257,7 +257,7 @@ def second_block_string_Cv(inputs,maxs,mins,idx1,idx2,Eidx,temps,Tguess,nbins1=1
     0
     23
     0
-    '''
+    """
     stp1 = (maxs[idx1] - mins[idx1])/nbins1
     stp2 = (maxs[idx2] - mins[idx2])/nbins2
     Estp = (maxs[Eidx] - mins[Eidx])/Enbins
@@ -274,7 +274,7 @@ def second_block_string_Cv(inputs,maxs,mins,idx1,idx2,Eidx,temps,Tguess,nbins1=1
     return block
 
 def second_block_string_F(inputs,maxs,mins,idx1,idx2,Eidx,Tf,nbins1=150,nbins2=150,Enbins=150,oneD=False):
-    ''' Second block string 
+    """ Second block string 
     Ex:
     20 1 210
     1.3 0.042 100
@@ -285,7 +285,7 @@ def second_block_string_F(inputs,maxs,mins,idx1,idx2,Eidx,Tf,nbins1=150,nbins2=1
     0
     23
     0
-    '''
+    """
     Qlist = ["Q","Qh","Qnh"] 
     #if (inputs[idx1] in Qlist) or (inputs[idx2] in Qlist):
     if idx1 == 2 or idx1 == 3:
@@ -318,10 +318,10 @@ def second_block_string_F(inputs,maxs,mins,idx1,idx2,Eidx,Tf,nbins1=150,nbins2=1
     return block
 
 def run_wham_command_line(args):
-    ''' Creates and submits PBS jobs to execute WHAM. This should be in the 
+    """ Creates and submits PBS jobs to execute WHAM. This should be in the 
         directory that contains the "wham/" directory. All input and output
         files are written to the "wham/" directory. For the free energy 
-        option, a default list of coordinates is used, called "inputs". '''
+        option, a default list of coordinates is used, called "inputs". """
     inputs = ("rmsd","Rg","Q","Qh","Qnh","Epot")
     #reaction_coord_pairs = (("rmsd","Rg"),("Q","Rg"),("Qh","Qnh"))
     #reaction_coords = ("rmsd","Rg","Q","Qh","Qnh")
@@ -342,10 +342,10 @@ def run_wham_command_line(args):
     print "Finished..."
 
 def run_wham(outputstyle):
-    ''' Creates and submits PBS jobs to execute WHAM. This should be in the 
+    """ Creates and submits PBS jobs to execute WHAM. This should be in the 
         directory that contains the "wham/" directory. All input and output
         files are written to the "wham/" directory. For the free energy 
-        option, a default list of coordinates is used, called "inputs". '''
+        option, a default list of coordinates is used, called "inputs". """
     inputs = ("rmsd","Rg","Q","Qh","Qnh","Epot")
     reaction_coords = (0,1,2,3,4)
     reaction_coord_pairs = ((0,1),(2,1),(3,4),(2,3))
@@ -354,7 +354,7 @@ def run_wham(outputstyle):
     #copy_WHAM_executable = "cp /projects/cecilia/ajk8/model_builder/analysis/WHAM " + cwd + "/wham/"
     ## Trying to remove references to ajk8 directory.
     projects = os.environ["PROJECTS"]
-    copy_WHAM_executable = "cp "+projects+"/model_builder/analysis/WHAM " + cwd + "/wham/"
+    copy_WHAM_executable = "cp "+projects+"/project_tools/analysis/WHAM " + cwd + "/wham/"
     sb.call(copy_WHAM_executable.split())
     if outputstyle == "HeatCap":
         submit_heat_capacity_job()
@@ -365,9 +365,9 @@ def run_wham(outputstyle):
     #print "Finished..."
     
 def submit_heat_capacity_job():
-    ''' Writes and submits the PBS job for calculating the heat capacity as
+    """ Writes and submits the PBS job for calculating the heat capacity as
         a function of temperature. The peak of the heat capacity can be 
-        taken as the folding temperature. '''
+        taken as the folding temperature. """
     cwd = os.getcwd()
     os.chdir(cwd + "/wham")
     print "Writing Cv PBS script..."
