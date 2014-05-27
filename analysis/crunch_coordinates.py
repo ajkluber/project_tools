@@ -25,7 +25,7 @@ def crunch_Q(name,walltime="00:10:00",ppn="4"):
     contact_pbs +="#PBS -j oe\n"
     contact_pbs +="#PBS -V\n\n"
     contact_pbs +="cd $PBS_O_WORKDIR\n"
-    contact_pbs +='python2.6 -m project_tools.analysis.contacts --calc  \n'
+    contact_pbs +='python -m project_tools.analysis.contacts --calc  \n'
     open("contacts.pbs","w").write(contact_pbs)
     qsub = "qsub contacts.pbs"
     sb.call(qsub.split(),stdout=open("contacts.out","w"),stderr=open("contacts.err","w"))

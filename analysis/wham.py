@@ -330,7 +330,9 @@ def run_wham_command_line(args):
 
     cwd = os.getcwd()
     #copy_WHAM_executable = "cp /projects/cecilia/ajk8/dmc_model/free_energy_analysis/WHAM " + cwd + "/wham/"
-    copy_WHAM_executable = "cp /projects/cecilia/ajk8/model_builder/analysis/WHAM " + cwd + "/wham/"
+    #copy_WHAM_executable = "cp /projects/cecilia/ajk8/model_builder/analysis/WHAM " + cwd + "/wham/"
+    projects = os.environ["PROJECTS"]
+    copy_WHAM_executable = "cp "+projects+"/project_tools/analysis/WHAM " + cwd + "/wham/"
     sb.call(copy_WHAM_executable.split())
 
     if args.output == "HeatCap":
