@@ -379,7 +379,7 @@ def submit_run(jobname,walltime="23:00:00",queue="serial",ppn="1"):
     pbs_string +="#PBS -l walltime=%s \n" % walltime
     pbs_string +="#PBS -V \n\n"
     pbs_string +="cd $PBS_O_WORKDIR\n"
-    pbs_string +="mdrun -nt 1"
+    pbs_string +="mdrun -s topol.tpr"
 
     open("run.pbs","w").write(pbs_string)
     qsub = "qsub run.pbs"
@@ -392,7 +392,7 @@ def submit_run(jobname,walltime="23:00:00",queue="serial",ppn="1"):
     rst_string +="#PBS -l walltime=%s \n" % walltime
     rst_string +="#PBS -V \n\n"
     rst_string +="cd $PBS_O_WORKDIR\n"
-    rst_string +="mdrun -nt 1 -s topol.tpr -cpi state.cpt"
+    rst_string +="mdrun -s topol.tpr -cpi state.cpt"
 
     open("rst.pbs","w").write(rst_string)
 

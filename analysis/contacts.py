@@ -54,6 +54,7 @@ def calculate_Q():
     
     Qref = np.loadtxt("Qref_cryst.dat")
     N = len(Qref)
+    ## Turn contact matrix into vector by concatenating each row.
     native = []
     native_helical = []
     native_local = []
