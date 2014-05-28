@@ -2,8 +2,21 @@
 
 Description:
 
-    There are many ways to visualize the folding mechanism.
+    There are many ways to visualize the folding mechanism. For a description
+of several topological measures see reference (1).
 
+
+To Do: 
+    
+- Have option to select particular partitions of contacts
+
+
+
+References:
+
+(1) Chavez, L.; Onuchic, J.; Clementi, C. Quantifying the roughness on the
+free energy landscape: Entropic bottlenecks and protein folding rates. J.
+Am. Chem. Soc. 2004, 126, 8426-8432.
 """
 
 import numpy as np
@@ -49,8 +62,13 @@ def plot_kinetic_mechanism():
                 folding = 1
 
 def plot_thermodynamic_mechanism(bins=10):
-    """ Plot ordering versus reaction
+    """ Plot residue ordering versus folding progress.
 
+    Description:
+
+        This plots the average native structure for each residue as a function
+    of folding progress (overall Q). This visualizes how ordering proceeds at
+    different parts of the chain.
 
     """
     bins = 10
@@ -121,6 +139,14 @@ def get_beadbead_info():
 
 
 def get_contact_pair_distribution_versus_Q():
+    """ Calculate contact probabilities and histogram by foldedness (Q)
+
+    Description:
+        
+        Return a contact probabilities
+
+
+    """
     pairs, epsij, sigij = get_beadbead_info()
     print " Loading trajectory"
     traj = md.load("traj.xtc",top="Native.pdb")
@@ -129,8 +155,6 @@ def get_contact_pair_distribution_versus_Q():
     print " Computing contacts with mdtraj..."
     contacts = (distances[0][:] <= 1.2*sigij).astype(int)
 
-    if not os.path.exists("plots"):
-        os.mkdir("plots")
 
     print " Loading Q.dat"
     bins = 40
@@ -155,6 +179,36 @@ def get_contact_pair_distribution_versus_Q():
     return minQ, maxQ, bins, Q_i_avg
 
 def plot_contact_pair_distribution_versus_Q():
+    """ Plot contact ordering versus folding progress.
+
+    Description:
+
+        This plots the distribution of contact probabilities as a function
+    of folding progress (overall Q). This is useful for discerning if ordering
+    is uniform, i.e. all residues order gradually and together, or 
+    heterogeneous, i.e. a set of contacts form a higher probability. 
+        The distribution of contact probabilities for a given overall Q has a 
+    mean of the overall Q. Therefore a uniform mechanism has a unimodal 
+    distribution whose mean follows the y=x line. Whereas a hetergeneous 
+    mechanism may have a bimodal (or very spread out) distribution where one
+    band of contacts form early before/during transition state and one band of
+    contacts form after.
+        The variance of a slice at a given Q divided by the maximum possible 
+    variance Q*(1-Q) is the route measure at that Q, R(Q). See reference (1)
+    on route measure.
+        This is related to the route entropy discussed by Plotkin et.al. in 
+    reference (2). This plot is like ref (2) fig 2, but with all possible
+    contacts plotted and taking as a density.
+
+
+    References:
+    (1) Chavez, L.; Onuchic, J.; Clementi, C. Quantifying the roughness on the
+    free energy landscape: Entropic bottlenecks and protein folding rates. J.
+    Am. Chem. Soc. 2004, 126, 8426-8432.
+
+    (2) Plotkin, S.; Onuchic, J. Structural and energetic heterogeneity 
+    in protein folding. I. Theory. J. Chem. Phys. 2002, 116, 5263.
+    """
 
     minQ, maxQ, bins, Q_i_avg = get_contact_pair_distribution_versus_Q()
 
@@ -200,7 +254,25 @@ def plot_contact_pair_distribution_versus_Q():
 
 
 def plot_route_measure_versus_Q():
-    """ Plot 
+    """ Plot route measure as defined in ref (1)
+
+    Description:
+
+        Given the distribution of contact probabilities at a given overall
+    degree of foldedness (Q), the route measure is the variance of this 
+    distribution divided by the maximum possible variance at the given Q, which
+    is Q*(1-Q).
+        A route measure R(Q)=1 means that contacts are forming in a binary 
+    manner, i.e. contact probabilities take only values 0 or 1. On the other
+    hand R(Q)=0 means every contact probabilities is equal to Q, i.e. the 
+    mechanism is uniform.
+        See reference (1) for more information.
+
+
+    References:
+    (1) Chavez, L.; Onuchic, J.; Clementi, C. Quantifying the roughness on the
+    free energy landscape: Entropic bottlenecks and protein folding rates. J.
+    Am. Chem. Soc. 2004, 126, 8426-8432.
 
     """
 
@@ -227,37 +299,9 @@ def plot_route_measure_versus_Q():
     plt.savefig("plots/route_measure.pdf")
     plt.show()
 
-def plot_contact_pair_distribution_and_route_measure_versus_Q():
-
-    minQ, maxQ, N_Qbins, Q_i_avg = get_contact_pair_distribution_versus_Q()
-
-    N_Qi_bins = 25 
-    Qbins = np.linspace(minQ,maxQ,N_Qbins-1)
-    Qi_bins = np.linspace(0.,1.0,N_Qi_bins)
-    Q_i_distribution = np.zeros((N_Qbins,N_Qi_bins-1))
-    for j in range(0,N_Qbins):
-        #n,bins,patches = plt.hist(Q_i_avg[j],bins=bins2,alpha=0.3,label=str(j),histtype='stepfilled')
-        #plt.clf()
-        n,tempbins = np.histogram(Q_i_avg[j],bins=Qi_bins,density=True)
-        Q_i_distribution[j,:] = n
-
-    x = np.linspace(minQ,maxQ,N_Qbins+1)
-    y = np.linspace(0.,1.0,N_Qi_bins)
-    X,Y = np.meshgrid(x,y)
-
-    print " Computing route measure"
-    incQ = (float(maxQ) - float(minQ))/N_Qbins
-    route_measure = np.zeros(bins,float)
-    for k in range(bins):
-        qtemp = minQ + k*incQ
-        R_Q = (1./(qtemp*(1.-qtemp)))*np.mean((Q_i_avg[k] - qtemp)**2)
-        route_measure[k] = R_Q
-
-    print " Plotting.."
-    #Qbins = np.arange(N_Qbins)*incQ + minQ
-
 if __name__ == "__main__":
-    pass
+    if not os.path.exists("plots"):
+        os.mkdir("plots")
     #plot_thermodynamic_mechanism(5)
     plot_contact_pair_distribution_versus_Q()
     #plot_route_measure_versus_Q()
