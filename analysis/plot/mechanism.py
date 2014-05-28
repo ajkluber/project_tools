@@ -172,14 +172,29 @@ def plot_contact_pair_distribution_versus_Q():
     y = np.linspace(0.,1.0,Nbins)
     X,Y = np.meshgrid(x,y)
 
-    print " Plotting.."
+    ## Set 
+    Qi_dist = Q_i_distribution.T
+    maxQi_dist = max(Qi_dist[1:-1,:].ravel())
+    minQi_dist = min(Qi_dist[1:-1,:].ravel())
+
+    print "  Saving data..."
+    np.savetxt("plots/Qi_distribution.dat",Qi_dist)
+    np.savetxt("plots/Q_bins.dat",x)
+    np.savetxt("plots/Qi_bins.dat",y)
+
+
+    print "  Plotting.."
     plt.figure()
-    plt.pcolor(X,Y,Q_i_distribution.T)
+    #plt.pcolor(X,Y,Q_i_distribution.T)
+    #plt.pcolor(X,Y,Q_i_distribution.T[1:-1,:])
+    plt.pcolor(X,Y,Qi_dist)
+    plt.clim(minQi_dist,maxQi_dist)
     plt.xlabel("Folding Reaction ($Q$)")
     plt.ylabel("$\\left< Q_i \\right>$ Distribution")
     plt.title("Mechanism Heterogeneity")
     plt.xlim(minQ,maxQ)
     plt.ylim(0.,1)
+    print "  Saving plot..."
     plt.savefig("plots/mechanism_heterogeneity_versus_Q.pdf")
     plt.show()
 
@@ -244,7 +259,7 @@ def plot_contact_pair_distribution_and_route_measure_versus_Q():
 if __name__ == "__main__":
     pass
     #plot_thermodynamic_mechanism(5)
-    #plot_contact_pair_distribution_versus_Q()
-    plot_route_measure_versus_Q()
+    plot_contact_pair_distribution_versus_Q()
+    #plot_route_measure_versus_Q()
     #plot_contact_pair_distribution_and_route_measure_versus_Q()
 
