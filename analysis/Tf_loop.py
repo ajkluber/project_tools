@@ -67,11 +67,13 @@ def determine_walltime(System,long=False):
     ''' Estimate an efficient walltime.'''
     Length = len(np.loadtxt(System.subdir+"/Qref_cryst.dat"))
     ppn = "4"
+    queue = "serial"
     if Length < 60:
         qwalltime = "00:04:00"
         cwalltime = "00:02:00"
     else:
         if Length > 160:
+            queue = "bigmem"
             if Length > 250:
                 if long:
                     qwalltime = "00:16:00"
@@ -91,7 +93,7 @@ def determine_walltime(System,long=False):
         else:
             qwalltime = "00:08:00"
             cwalltime = "00:10:00"
-    return qwalltime, cwalltime, ppn
+    return qwalltime, cwalltime, ppn, queue
 
 def analyze_temperature_array(System,append_log,equil=False):
     ''' Analyze the previously simulated temperatures of a Tf_loop iteration.
@@ -103,10 +105,10 @@ def analyze_temperature_array(System,append_log,equil=False):
     if System.error == 0:
         if equil == True:
             sub = System.subdir+"/"+System.mutation_active_directory
-            qwalltime, cwalltime, ppn = determine_walltime(System,long=True)
+            qwalltime, cwalltime, ppn, queue = determine_walltime(System,long=True)
         else:
             sub = System.subdir+"/"+System.Tf_active_directory
-            qwalltime, cwalltime, ppn = determine_walltime(System)
+            qwalltime, cwalltime, ppn, queue = determine_walltime(System)
         print "  Analyzing temperature array for", sub
         os.chdir(cwd+"/"+sub)
         tempfile = open("T_array_last.txt","r").readlines()
@@ -119,13 +121,18 @@ def analyze_temperature_array(System,append_log,equil=False):
         for k in range(len(temperatures)):
             tdir = temperatures[k]
             os.chdir(cwd2+"/"+tdir)
-            crunchfiles = ["rmsd.xvg","radius_cropped.xvg","energyterms.xvg","phis.xvg",
-                            "Qprob.dat","Qhprob.dat","Qnhprob.dat"]
+            crunchfiles = ["rmsd.xvg","radius_cropped.xvg","energyterms.xvg","phis.xvg"]
+            crunchQfiles = ["Qprob.dat","Qhprob.dat","Qnhprob.dat"]
+
             flag = all([ os.path.exists(file) for file in crunchfiles ])
-            if not flag:
-                print "    Crunching coordinates for ",tdir
-                crunch_coordinates.crunch_all(System.subdir+"_"+tdir,walltime=cwalltime,ppn=ppn)
-                crunch_coordinates.crunch_Q(System.subdir+"_"+tdir,walltime=qwalltime,ppn=ppn)
+            flagQ = all([ os.path.exists(file) for file in crunchQfiles ])
+            if (not flag) or (not flag):
+                if not flag:
+                    print "    Crunching coordinates for ",tdir
+                    crunch_coordinates.crunch_all(System.subdir+"_"+tdir,walltime=cwalltime,ppn=ppn)
+                if not flagQ:
+                    print "    Crunching Q for ",tdir
+                    crunch_coordinates.crunch_Q(System.subdir+"_"+tdir,walltime=qwalltime,ppn=ppn,queue=queue)
             else:
                 print "    Skipping directory ",tdir
             os.chdir(cwd2)

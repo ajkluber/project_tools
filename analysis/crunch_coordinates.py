@@ -12,7 +12,7 @@ import numpy as np
 import os 
 import argparse
 
-def crunch_Q(name,walltime="00:10:00",ppn="4"):
+def crunch_Q(name,walltime="00:10:00",ppn="4",queue="serial"):
     """ Submit PBS job to calculate sets of residue-residue contacts.
 
     Calculates contacts in python with mdtraj module. See contacts.py.
@@ -20,8 +20,9 @@ def crunch_Q(name,walltime="00:10:00",ppn="4"):
 
     contact_pbs = "#!/bin/bash\n"
     contact_pbs +="#PBS -N Q_"+name+"\n"
-    contact_pbs +="#PBS -q serial\n"
-    contact_pbs +="#PBS -l nodes=1:ppn=%s,walltime=%s\n" % (ppn,walltime)
+    contact_pbs +="#PBS -q %s\n" % queue
+    contact_pbs +="#PBS -l nodes=1:ppn=%s\n" % ppn
+    contact_pbs +="#PBS -l walltime=%s\n" % walltime
     contact_pbs +="#PBS -j oe\n"
     contact_pbs +="#PBS -V\n\n"
     contact_pbs +="cd $PBS_O_WORKDIR\n"
@@ -43,7 +44,8 @@ def crunch_all(name,walltime="00:02:00",ppn="4"):
     energy_pbs = "#!/bin/bash\n"
     energy_pbs +="#PBS -N Eng_"+name+"\n"
     energy_pbs +="#PBS -q serial\n"
-    energy_pbs +="#PBS -l nodes=1:ppn=%s,walltime=%s\n" % (ppn,walltime)
+    energy_pbs +="#PBS -l nodes=1:ppn=%s\n" % ppn
+    energy_pbs +="#PBS -l walltime=%s\n" % walltime
     energy_pbs +="#PBS -j oe\n"
     energy_pbs +="#PBS -V\n\n"
     energy_pbs +="cd $PBS_O_WORKDIR\n"
