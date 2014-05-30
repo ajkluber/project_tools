@@ -134,8 +134,8 @@ class FRETFit(ProjectManager):
         self.save_model_system_info(Models,Systems,subdirs)
 
         if args.temparray != None:
-            System.initial_T_array = args.temparray
-
+            for n in range(len(subdirs)):
+                Systems[n].initial_T_array = args.temparray
 
         ## Estimate the folding temperature and run
 
@@ -159,8 +159,10 @@ def get_args():
     ## Options for initializing a new simulation project.
     new_parser = sp.add_parser('new')
     new_parser.add_argument('--pdbs', type=str, required=True, nargs='+',help='PDBs to start simulations.')
-    new_parser.add_argument('--dryrun', action='store_true', help='Add this option for dry run. No simulations started.')
+    new_parser.add_argument('--epsilon_bar', type=float, help='Optional, average strength of contacts. epsilon bar.')
+    new_parser.add_argument('--disulfides', type=int, nargs='+', help='Optional pairs of disulfide linked residues.')
     new_parser.add_argument('--temparray', type=int, nargs='+',help='Optional initial temp array: Ti Tf dT. Default: 50 350 50')
+    new_parser.add_argument('--dryrun', action='store_true', help='Add this option for dry run. No simulations started.')
 
     ## Options for continuing from a previously saved simulation project.
     run_parser = sp.add_parser('continue')
@@ -181,12 +183,16 @@ def get_args():
     else:
         options = {"Dry_Run":False}
 
+    if args.epsilon_bar != False:
+        options["Epsilon_Bar"] = args.epsilon_bar
+    else:
+        options["Epsilon_Bar"] = None
+
     options["Model_Code"] = "HetGo"
     options["Bead_Model"] = "CA"
     options["Solvent"] = None
     options["R_CD"] = None
-    options["Epsilon_Bar"] = 1.0
-    options["Disulfides"] = None
+    options["Disulfides"] = args.disulfides
     options["Contact_Energies"] = "FRETFit"
 
     modeloptions = models.check_options(options)

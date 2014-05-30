@@ -285,12 +285,15 @@ def determine_walltime(Model):
     """ Estimate an efficient walltime."""
     Length = len(Model.Qref)
     ppn = "1"
+    nsteps = "400000000"
     if Length < 60:
         walltime="12:00:00"
         queue="serial"
     else:
         if len(Model.Qref) > 160:
+            nsteps = "600000000"
             if len(Model.Qref) > 250:
+                nsteps = "800000000"
                 walltime="72:00:00"
                 ppn = "4"
             else:
@@ -300,7 +303,7 @@ def determine_walltime(Model):
         else:
             walltime="24:00:00"
             queue="serial"
-    return walltime, queue, ppn
+    return walltime, queue, ppn,nsteps
 
 def run_temperature_array(Model,System,Ti,Tf,dT):
     """ Run many constant temperature runs over a range of temperatures to
@@ -309,7 +312,7 @@ def run_temperature_array(Model,System,Ti,Tf,dT):
     System.append_log("Starting Tf_loop_iteration %d " % System.Tf_iteration)
     Temperatures = range(Ti,Tf+dT,dT)
     ## Run for longer if the protein is really big.
-    walltime, queue, ppn = determine_walltime(Model)
+    walltime, queue, ppn, nsteps = determine_walltime(Model)
 
     T_string = ''
     for T in Temperatures:
@@ -321,7 +324,7 @@ def run_temperature_array(Model,System,Ti,Tf,dT):
             os.chdir(simpath)
             System.append_log("  running T=%d" % T)
             print "  Running temperature ", T
-            run_constant_temp(Model,System,T,walltime=walltime,queue=queue,ppn=ppn)
+            run_constant_temp(Model,System,T,nsteps=nsteps,walltime=walltime,queue=queue,ppn=ppn)
             os.chdir("..")
         else:
             ## Directory exists for this temperature: continue.
@@ -331,17 +334,17 @@ def run_temperature_array(Model,System,Ti,Tf,dT):
     open("T_array_last.txt","w").write(T_string)
     open("Ti_Tf_dT.txt","w").write("%d %d %d" % (Ti, Tf, dT))
 
-def run_constant_temp(Model,System,T,nsteps=400000000,walltime="23:00:00",queue="serial",ppn="1"):
+def run_constant_temp(Model,System,T,nsteps="400000000",walltime="23:00:00",queue="serial",ppn="1"):
     ''' Start a constant temperature simulation with Gromacs. First it has
         to write the gromacs files stored in the System object, then it
         calls a function to submit the job.'''
     ## Loading and writing grompp.
-    grompp_mdp = mdp.get_constant_temperature_mdp(Model,T,nsteps=nsteps)
+    grompp_mdp = mdp.get_constant_temperature_mdp(Model,T,nsteps)
     open("grompp.mdp","w").write(grompp_mdp)
 
     ## Writing topology files.
     for filename in System.topology_files.iterkeys():
-        print "    Writing: ", filename    ## DEBUGGING
+        #print "    Writing: ", filename    ## DEBUGGING
         open(filename,"w").write(System.topology_files[filename])
 
     ## Writing interaction tables. Writing native contact map.

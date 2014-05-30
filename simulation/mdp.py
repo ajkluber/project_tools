@@ -16,13 +16,13 @@ To Do:
 
 '''
 
-def get_constant_temperature_mdp(model,T,nsteps=400000000):
+def get_constant_temperature_mdp(model,T,nsteps):
     ''' Generate grompp.mdp file string. Default is a ~24hr run.'''
     mdp_string = '; RUN CONTROL PARAMETERS \n'
     mdp_string += 'integrator               = sd  \n'
     mdp_string += 'tinit                    = 0 \n'
     mdp_string += 'dt                       = 0.005 \n'
-    mdp_string += 'nsteps                   = %d \n\n' % nsteps
+    mdp_string += 'nsteps                   = %s \n\n' % nsteps
     mdp_string += '; For exact run continuation or redoing part of a run \n'
     mdp_string += 'init_step                = 0 \n'
     mdp_string += 'comm_mode                = angular \n'
