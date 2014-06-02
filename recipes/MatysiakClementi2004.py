@@ -200,16 +200,23 @@ def get_args():
     else:
         options = {"Dry_Run":False}
 
-    if args.epsilon_bar != False:
-        options["Epsilon_Bar"] = args.epsilon_bar
+    if args.action == "new":
+        if args.epsilon_bar != False:
+            options["Epsilon_Bar"] = args.epsilon_bar
+        else:
+            options["Epsilon_Bar"] = None
+        if args.disulfides != False:
+            options["Disulfides"] = args.disulfides
+        else:
+            options["Disulfides"] = None
     else:
         options["Epsilon_Bar"] = None
+        options["Disulfides"] = None
 
     options["Model_Code"] = "HetGo"
     options["Bead_Model"] = "CA"
     options["Solvent"] = None
     options["R_CD"] = None
-    options["Disulfides"] = args.disulfides
     options["Contact_Energies"] = "MC2004"
 
     modeloptions = models.check_options(options)

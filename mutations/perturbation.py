@@ -25,7 +25,7 @@ import model_builder.systems as systems
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
-def calculate_MC2004_perturbation(Model,System,append_log,coord="Q"):
+def calculate_MC2004_perturbation(Model,System,append_log,coord="Q",newbeadbead="NewBeadBead.dat",target_ratio=0.95):
     """ Calculate the new epsilon values.
 
         First task is to calculate the perturbations for each mutation for
@@ -67,7 +67,7 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q"):
     upper_bound = 0.5
     lower_bound = 0.0
     tolerance = 0.04
-    target_ratio = 0.95
+    #target_ratio = 0.95
     ratio = 0
     iteration = 1 
 
@@ -109,7 +109,8 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q"):
         beadbead_string += '%5d%5d%8s%8s%5s%16.8E%16.8E%16.8E\n' % \
                 (i_idx,j_idx,resi_id,resj_id,interaction_num,sig,Knb,delta)
         open(savedir+"/mut/NewBeadBead.dat","w").write(beadbead_string)
-    Model.contact_energies = savedir+"/mut/NewBeadBead.dat"
+    #Model.contact_energies = savedir+"/mut/NewBeadBead.dat"
+    Model.contact_energies = savedir+"/mut/"+newbeadbead
 
     append_log(System.subdir,"Finished: Calculating_MC2004")
 
@@ -357,16 +358,17 @@ if __name__ == '__main__':
     def dummy_func(sub,string):
         pass 
     
-    subdirs = ["r15"]
+    subdirs = ["r16"]
+    Tf_choice = open(subdirs[0]+"/Mut_0/Tf_choice.txt","r").read()[:-1]
     Models = models.load_models(subdirs,dryrun=True)
     Systems = systems.load_systems(subdirs)
     Model = Models[0]
     System = Systems[0]
-    path = System.subdir+"/"+System.mutation_active_directory+"/131.17_agg"
+    path = System.subdir+"/"+System.mutation_active_directory+"/"+Tf_choice+"_agg"
 
     '''
     #bounds, states = phi.get_state_bounds(path,"Q") ## DEBUGGING
     dH, states = calculate_phi_values(Model,System,dummy_func)
     '''
-
-    calculate_MC2004_perturbation(Model,System,dummy_func)
+    target_ratio = 0.8
+    calculate_MC2004_perturbation(Model,System,dummy_func,newbeadbead="test_threshold_"+str(target_ratio)+".dat",target_ratio=target_ratio)
