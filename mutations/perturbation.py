@@ -22,20 +22,18 @@ import mutatepdbs as mut
 import model_builder.models as models
 import model_builder.systems as systems
 
+import matplotlib.pyplot as plt
+
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
 def calculate_MC2004_perturbation(Model,System,append_log,coord="Q",newbeadbead="NewBeadBead.dat",target_ratio=0.95):
-    """ Calculate the new epsilon values.
+    """ Calculate the new contact parameters with Matysiak Clementi 2004 method
 
-        First task is to calculate the perturbations for each mutation for
-    each frame in the trajectory.   May be generalized in the future or 
-    moved inside Model to deal with Models with multiple parameters per
-    interaction (e.g. desolvation barrier, etc.)
+    Description:
+
     """
     
-    append_log(System.subdir,"Starting: Calculating_MC2004")
-
     cwd = os.getcwd()
     sub = cwd+"/"+System.subdir+"/"+System.mutation_active_directory
     T = phi.get_Tf_choice(sub)
@@ -58,36 +56,29 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q",newbeadbead=
         eps = np.loadtxt(savedir+"/mut/eps.dat")
         M = np.loadtxt(savedir+"/mut/M.dat")
 
+    u,s,v = np.linalg.svd(M)
+    s_norm = s/max(s)
+    cutoffs = s_norm - 0.01*np.ones(len(s_norm))
 
-    ## Binary search for best singular value cutoff between 0.0 and 0.5 
-    ## Stopping criteria is when the perturbation is 'small' i.e. the
-    ## ratio of the perturbation to the norm of the current parameters is
-    ## less than 1, so around 0.95 ==> |depsilon|/|epsilon| ~ 0.95 < 1 
+    if not os.path.exists(savedir+"/mut/num_singular_values_include.txt"):
+        print "ERROR!"
+        print "  Need file ", savedir+"/mut/num_singular_values_include.txt", " to proceed"
+        print "  Exiting"
+        raise SystemExit
+    else:
+        num_singular_values = int(open(savedir+"/mut/num_singular_values_include.txt").read()[:-1])
+        cutoff = cutoffs[num_singular_values]
+        print "  Using ",num_singular_values," singular values. Cutoff of = ",cutoff
 
-    upper_bound = 0.5
-    lower_bound = 0.0
-    tolerance = 0.04
-    #target_ratio = 0.95
-    ratio = 0
-    iteration = 1 
+    append_log("Starting:") 
+    LP_problem, solution, x_particular, N = apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff)
+    delta_eps = x_particular + np.dot(N,solution)
+    ratio = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
+    np.savetxt(savedir+"/mut/delta_eps.dat",delta_eps)
+    print "  Solution found!"
+    print "  Norm of perturbation, |deps|/|eps| = ", ratio
 
-    error = 0 
-    print "Iteration  Cutoff    Ratio "
-    for cutoff in np.arange(0.,0.5,0.001):
-        try:
-            LP_problem, solution, x_particular, N = apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff)
-        except cplex.exceptions.CplexSolverError:
-            print " CPLEX found no solution for cutoff: ",cutoff, " continuing"
-            error = 1
-            continue
-        error = 0 
-        delta_eps = x_particular + np.dot(N,solution)
-        ratio = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
-        print iteration, cutoff, ratio
-        iteration += 1 
-        if ratio < target_ratio:
-            break
-    
+    print "  Saving new parameters as: ",savedir+"/mut/"+newbeadbead
     ## New Parameters
     epsilon_prime = eps + delta_eps
 
@@ -108,18 +99,19 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q",newbeadbead=
         delta = float(beadbead[rownum,7])
         beadbead_string += '%5d%5d%8s%8s%5s%16.8E%16.8E%16.8E\n' % \
                 (i_idx,j_idx,resi_id,resj_id,interaction_num,sig,Knb,delta)
-        open(savedir+"/mut/NewBeadBead.dat","w").write(beadbead_string)
-    #Model.contact_energies = savedir+"/mut/NewBeadBead.dat"
+    open(savedir+"/mut/"+newbeadbead,"w").write(beadbead_string)
     Model.contact_energies = savedir+"/mut/"+newbeadbead
-
-    append_log(System.subdir,"Finished: Calculating_MC2004")
+    append_log("Starting:") 
 
 def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff):
-    """ Search the nullspace dimensions for a solution that minimizes 
-        the change in stability and keeps the contacts attractive. Uses
-        cplex linear programming package.
+    """ Construct and solve a linear/quadratic programming problem for new parameters.
 
-        status 4-29-2014 WORKS!
+    Description:
+
+        Use the IMB ILOG Cplex optimization library to search the nullspace 
+    dimensions for a solution that satisfies the given constraints and mimimizes
+    the given objective function
+
     """
 
     ## The general solution is a sum of the particular solution and an
@@ -135,26 +127,83 @@ def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff)
     ## np.allclose(M,np.dot(u,np.dot(S,v))) --> should be True
     u,s,v = np.linalg.svd(M)
     rank = len(s)
+    np.savetxt(savedir+"/mut/singular_values.dat",s)
+    np.savetxt(savedir+"/mut/singular_values_norm.dat",s/max(s))
 
     ## Nullspace basis vectors are the last n-r columns of the matrix v.T. As a check
     ## all entries of the matrix np.dot(M,N) should be extremely small ~0. Because 
     ## they've been sent to the nullspace.
     N = v.T[:,M.shape[0]:]
 
-    #print N.shape
-
+    ############# OBJECTIVE FUNCTION ###############
     ## Objective coefficients are sum of nullspace vectors. This comes from
     ## requiring the same average contact strength.
+
+    ## Objective 1: Linear objective that seeks to minimize the change in 
+    ## average contact strength. Found to give crazy results.
     #objective_coeff = list(sum(N))
+
+    ## Objective 2: Quadratic objective that seeks to minimize the size of the
+    ## perturbation.
     objective_coeff = list(2.*np.dot(x_particular.T,N))
 
-    ## Further constraints come from requiring that native contacts remain
-    ## attractive.
-    right_hand_side = list(eps + x_particular)
+    ############# CONSTRAINTS ###############
+    ## Linear constraints are applied to keep the resulting parameters within
+    ## a certain range. Only uncomment one version of constraints at a time.
+    
+    ## Constraints version 1:
+    ## Require that native contacts remain attractive, 
+    ## i.e. eps'_ij in the interval (0,inf)
+    #right_hand_side = list(eps + x_particular)
+    #column_names = [ "x"+str(i) for i in range(N.shape[1]) ]
+    #row_names = [ "c"+str(i) for i in range(N.shape[0]) ]
+    #rows = [ [column_names,list(-N[i,:])]  for i in range(len(N)) ]
+    #senses = "L"*len(right_hand_side)
+
+    ## Constraints version 2:
+    ## Require that native contacts remain attractive, 
+    ## i.e. eps'_ij in the interval (lower_bound,inf)
+    #a = 0.10
+    #right_hand_side = list(eps + x_particular - a*np.ones(len(eps)) )
+    #column_names = [ "x"+str(i) for i in range(N.shape[1]) ]
+    #row_names = [ "c"+str(i) for i in range(N.shape[0]) ]
+    #rows = [ [column_names,list(-N[i,:])]  for i in range(len(N)) ]
+    #senses = "L"*len(right_hand_side)
+
+    ## Constraints version 3:
+    ## Require that native contacts remain within a range of their previous
+    ## values
+    ## i.e. eps'_ij in the interval (eps_ij/a, a*eps_ij) for some number a.
+    #a = 3.
+    #right_hand_side = list((1./a)*eps + x_particular)
+    #right_hand_side_2 = list((1.-a)*eps + x_particular)
+    #right_hand_side.extend(right_hand_side_2)
+    #column_names = [ "x"+str(i) for i in range(N.shape[1]) ]
+    #row_names = [ "c"+str(i) for i in range(2*N.shape[0]) ]
+    #senses = "L"*len(right_hand_side_2) + "G"*len(right_hand_side_2)
+    #rows = []
+    #for n in range(2):
+    #    for i in range(len(N)):
+    #        rows.append([ column_names, list(-N[i,:]) ])
+
+    ## Constraints version 4:
+    ## Require that native contacts remain within a range of their previous
+    ## values
+    ## i.e. eps'_ij in the interval (eps_ij/a, a*eps_ij) for some number a.
+    eps_lower_bound = 0.1
+    eps_upper_bound = 4.0
+    right_hand_side = list(eps + x_particular - eps_lower_bound*np.ones(len(eps)))
+    right_hand_side_2 = list(eps + x_particular - eps_upper_bound*np.ones(len(eps)))
+    right_hand_side.extend(right_hand_side_2)
+
     column_names = [ "x"+str(i) for i in range(N.shape[1]) ]
-    row_names = [ "c"+str(i) for i in range(N.shape[0]) ]
-    rows = [ [column_names,list(-N[i,:])]  for i in range(len(N)) ]
-    senses = "L"*len(right_hand_side)
+    row_names = [ "c"+str(i) for i in range(2*N.shape[0]) ]
+    senses = "L"*len(right_hand_side_2) + "G"*len(right_hand_side_2)
+
+    rows = []
+    for n in range(2):
+        for i in range(len(N)):
+            rows.append([ column_names, list(-N[i,:]) ])
 
     ## Set quadratic terms in objective.
     objective_quadratic_coefficients = [ 1. for j in range(N.shape[1]) ]
@@ -169,7 +218,7 @@ def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff)
     #print len(rows), len(senses), len(rows[0][0]), len(rows[0][1])
 
     ## Set upper and lower bounds on the solution. Arbitrary. Hopefullly these 
-    ## don't matter.
+    ## don't matter. These are bounds on vector lambda
     upper_bounds = list(10000.*np.ones(N.shape[1]))
     lower_bounds = list(-10000.*np.ones(N.shape[1]))
 
@@ -198,86 +247,6 @@ def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff)
 
     return LP_problem, solution_lambda, x_particular, N
 
-
-def apply_constraints_linear_objective(Model,System,savedir,ddG,eps,M,cutoff=0.5):
-    ''' Search the nullspace dimensions for a solution that minimizes 
-        the change in stability and keeps the contacts attractive. Uses
-        cplex linear programming package.
-
-        status 4-29-2014 WORKS.
-    '''
-
-    ## The general solution is a sum of the particular solution and an
-    ## arbitrary vector from the nullspace of M.
-    Mpinv = np.linalg.pinv(M,rcond=cutoff)
-    x_particular = np.dot(Mpinv,ddG)
-    np.savetxt(savedir+"/mut/x_p.dat",x_particular)
-    #print x_particular     ## DEBUGGING
-
-    ## Singular value decomposition. As a test you can recover M by,
-    ## S = np.zeros(M.shape)
-    ## S[:M.shape[1],:M.shape[1]] = np.diag(s)
-    ## np.allclose(M,np.dot(u,np.dot(S,v))) --> should be True
-    u,s,v = np.linalg.svd(M)
-    rank = len(s)
-
-    ## Nullspace basis vectors are the last n-r columns of the matrix v.T. As a check
-    ## all entries of the matrix np.dot(M,N) should be extremely small ~0. Because 
-    ## they've been sent to the nullspace.
-    N = v.T[:,M.shape[0]:]
-
-    print N.shape
-    ## Objective coefficients are sum of nullspace vectors. This comes from
-    ## requiring the same average contact strength.
-    objective_coeff = list(sum(N))
-
-    ## Further constraints come from requiring that native contacts remain
-    ## attractive.
-    right_hand_side = list(eps + x_particular)
-    column_names = [ "x"+str(i) for i in range(N.shape[1]) ]
-    row_names = [ "c"+str(i) for i in range(N.shape[0]) ]
-    rows = [ [column_names,list(-N[i,:])]  for i in range(len(N)) ]
-    senses = "L"*len(right_hand_side)
-
-    ## DEBUGGING
-    #print len(objective_coeff),len(names)
-    #print right_hand_side
-    #print rows
-    #print rows[0]
-    #print senses
-    #print N
-    #print len(rows), len(senses), len(rows[0][0]), len(rows[0][1])
-
-    ## Set upper and lower bounds on the solution. Arbitrary. Hopefullly these 
-    ## don't matter.
-    upper_bounds = list(10000.*np.ones(N.shape[1]))
-    lower_bounds = list(-10000.*np.ones(N.shape[1]))
-
-    ## DEBUGGING
-    #print len(upper_bounds)
-
-    ## Populate cplex linear programming problem
-    LP_problem = cplex.Cplex()
-    LP_problem.objective.set_sense(LP_problem.objective.sense.minimize)
-    LP_problem.variables.add(obj=objective_coeff, ub=upper_bounds, lb=lower_bounds, names=column_names)
-    LP_problem.linear_constraints.add(lin_expr=rows, senses=senses, rhs=right_hand_side, names=row_names)
-
-    ## Let cplex do the hard work.
-    LP_problem.solve()
-    status = LP_problem.solution.get_status()
-    solution_lambda = LP_problem.solution.get_values()
-
-    print "Cplex summary:"
-    print "status: ",status
-    print "solution:",solution_lambda
-    
-    #epsilon_new = eps + np.dot(N,np.array(solution))
-
-    return LP_problem, solution_lambda, x_particular, N
-
-    ## Save new parameters in a BeadBead.dat file and indicate to use the path
-    ## to the file in the System object.
-    
 def calculate_matrix_ddG_eps_M(Model,System,savedir,beta,coord):
     ''' Calculates and saves and returns the matrix from equation (9) in 
         Matysiak Clementi 2004. '''
@@ -354,7 +323,6 @@ def calculate_matrix_ddG_eps_M(Model,System,savedir,beta,coord):
     return ddG_all,epsij,M
 
 if __name__ == '__main__':
-    ## TESTING calculating ddG, phi values.
     def dummy_func(sub,string):
         pass 
     
@@ -366,9 +334,80 @@ if __name__ == '__main__':
     System = Systems[0]
     path = System.subdir+"/"+System.mutation_active_directory+"/"+Tf_choice+"_agg"
 
+
     '''
     #bounds, states = phi.get_state_bounds(path,"Q") ## DEBUGGING
     dH, states = calculate_phi_values(Model,System,dummy_func)
     '''
-    target_ratio = 0.8
-    calculate_MC2004_perturbation(Model,System,dummy_func,newbeadbead="test_threshold_"+str(target_ratio)+".dat",target_ratio=target_ratio)
+    target_ratio = 1.0
+    calculate_MC2004_perturbation_debug(Model,System,dummy_func,newbeadbead="test_threshold_sing_val_0.2_"+str(target_ratio)+".dat",target_ratio=target_ratio)
+
+    raise SystemExit
+    newbeadbead="test_threshold_lb_0.01_ub_4.0_"+str(target_ratio)+".dat"
+
+    cwd = os.getcwd()
+    sub = cwd+"/"+System.subdir+"/"+System.mutation_active_directory
+    T = phi.get_Tf_choice(sub)
+    savedir = sub+"/"+T+"_agg"
+    beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
+
+    if not os.path.exists(savedir+"/mut"):
+        os.mkdir(savedir+"/mut")
+
+    files = ["M.dat","ddG.dat","eps.dat"] 
+    flag = np.array([ not os.path.exists(savedir+"/mut/"+file) for file in files ])
+    if np.any(flag):
+        print "  One of the following does not exist: M.dat, ddG.dat, eps.dat. Calculating."
+        os.chdir(System.subdir)
+        ddG, eps, M = calculate_matrix_ddG_eps_M(Model,System,savedir,beta,coord)
+        os.chdir(cwd)
+    else:
+        print "  Loading M.dat, ddG.dat, eps.dat"
+        ddG = np.loadtxt(savedir+"/mut/ddG.dat")
+        eps = np.loadtxt(savedir+"/mut/eps.dat")
+        M = np.loadtxt(savedir+"/mut/M.dat")
+
+    u,s,v = np.linalg.svd(M)
+    s_norm = s/max(s)
+
+    cutoffs = s_norm - 0.01*np.ones(len(s_norm))
+
+    ## Linear search for best singular value cutoff between 0.0 and 0.5 
+    ## Stopping criteria is when the perturbation is 'small' i.e. the
+    ## ratio of the perturbation to the norm of the current parameters is
+    ## less than 1, so around 0.95 ==> |depsilon|/|epsilon| ~ 0.95 < 1 
+
+    tolerance = 0.04
+    #target_ratio = 0.95
+    ratio = 0
+    iteration = 1 
+
+    print "Iteration  Cutoff    Ratio "
+    cutoff = 0.8
+    xps = []
+
+    norm_delta_eps = []
+    std_delta_eps = []
+
+    std_eps_prime = []
+    avg_eps_prime = []
+    for cutoff in cutoffs[1:len(cutoffs)/2]:
+        LP_problem, solution, x_particular, N = apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff)
+        delta_eps = x_particular + np.dot(N,solution)
+        eps_prime = delta_eps + eps
+
+        xps.append(x_particular)
+
+        ratio = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
+
+        norm_delta_eps.append(ratio)
+
+        std_eps_prime.append(np.std(eps_prime))
+        avg_eps_prime.append(np.mean(eps_prime))
+
+        print iteration, cutoff, ratio
+        iteration += 1 
+
+
+
+
