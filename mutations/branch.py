@@ -11,6 +11,9 @@ from glob import glob
 from model_builder import models
 from model_builder import systems
 
+import phi_values as phi
+import mutatepdbs as mut
+
 
 def get_args():
     parser = argparse.ArgumentParser(description='')
