@@ -12,7 +12,7 @@ def get_args():
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--subdir', type=str, required=True, help='')
     parser.add_argument('--dest', type=str, required=True, help='')
-    args.parser.parse_args()
+    args = parser.parse_args()
     return args
 
 if __name__ == "__main__":
