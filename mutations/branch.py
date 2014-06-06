@@ -67,6 +67,7 @@ if __name__ == "__main__":
     "/Mut_0/"+Tf_choice+"_agg/phi/Q_phi.dat" ]
 
     shutil.copy(subdir+".pdb",destination+"/")
+    shutil.copy(subdir+"_calculated_ddG.dat",destination+"/")
     for file in files:
         if not os.path.exists(destination+"/"+subdir+file):
             print " copying ",file
