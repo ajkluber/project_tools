@@ -29,8 +29,8 @@ if __name__ == "__main__":
     destination = args.dest
 
     Tf_choice = open(subdir+"/Mut_0/Tf_choice.txt","r").read()[:-1]
-    Models = models.load_models(subdirs,dryrun=True)
-    Systems = systems.load_systems(subdirs)
+    Models = models.load_models([subdir],dryrun=True)
+    Systems = systems.load_systems([subdir])
     Model = Models[0]
     System = Systems[0]
     path = System.subdir+"/"+System.mutation_active_directory+"/"+Tf_choice+"_agg"
@@ -40,11 +40,16 @@ if __name__ == "__main__":
     T = phi.get_Tf_choice(sub)
     savedir = sub+"/"+T+"_agg"
 
-    os.makedirs(destination+"/"+subdir+"/Mut_0/"+Tf_choice+"_agg/mut")
-    os.makedirs(destination+"/"+subdir+"/Mut_0/"+Tf_choice+"_agg/phi")
-    os.makedirs(destination+"/"+subdir+"/mutants")
-    os.makedirs(destination+"/"+subdir+"/Qref_shadow")
+    paths = [ \
+    "/Mut_0/"+Tf_choice+"_agg/mut",
+    "/Mut_0/"+Tf_choice+"_agg/phi",
+    "/mutants",
+    "/Qref_shadow"]
 
+    for P in paths:
+        if not os.path.exists(destination+"/"+subdir+P):
+            print " Making directory ",P
+            os.makedirs(destination+"/"+subdir+P)
 
     files = [ \
     "/mutants/calculated_ddG.dat",
@@ -56,13 +61,15 @@ if __name__ == "__main__":
     "/Mut_0/"+Tf_choice+"_agg/mut/M.dat",
     "/Mut_0/"+Tf_choice+"_agg/mut/eps.dat",
     "/Mut_0/"+Tf_choice+"_agg/mut/ddG.dat",
-    "/Mut_0/"+Tf_choice+"_agg/phi/Q_phi.dat",
-    ]
+    "/Mut_0/"+Tf_choice+"_agg/phi/Q_phi.dat" ]
 
     shutil.copy(subdir+".pdb",destination+"/")
     for file in files:
-        shutil.copy(subdir+file,destination+"/"+subdir+file)
+        if not os.path.exists(destination+"/"+subdir+file):
+            print " copying ",file
+            shutil.copy(subdir+file,destination+"/"+subdir+file)
 
     mutants = glob(subdir+"/mutants/fij*.dat")
+    print " copying mutant fij_*dat"
     for mut in mutants:
         shutil.copy(mut,destination+"/"+subdir+"/mutants/")
