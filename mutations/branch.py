@@ -8,6 +8,10 @@ import os
 import shutil
 from glob import glob
 
+from model_builder import models
+from model_builder import systems
+
+
 def get_args():
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--subdir', type=str, required=True, help='')
