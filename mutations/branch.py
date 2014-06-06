@@ -1,18 +1,28 @@
+""" Copy only necessary sub tree to proceed with mutation
+
+
+"""
+
+import argparse
 import os
 import shutil
 from glob import glob
 
-
+def get_args()
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--subdir', type=str, required=True, help='')
+    parser.add_argument('--dest', type=str, required=True, help='')
+    args.parser.parse_args()
+    return args
 
 if __name__ == "__main__":
-
 
     def dummy_func(sub,string):
         pass 
 
-    subdirs = ["r15"]
-    subdir = subdirs[0]
-    destination = "../new_hetgo_20"
+    args = get_args()
+    subdir = args.subdir
+    destination = args.dest
 
     Tf_choice = open(subdir+"/Mut_0/Tf_choice.txt","r").read()[:-1]
     Models = models.load_models(subdirs,dryrun=True)
@@ -27,6 +37,7 @@ if __name__ == "__main__":
     savedir = sub+"/"+T+"_agg"
 
     os.makedirs(destination+"/"+subdir+"/Mut_0/"+Tf_choice+"_agg/mut")
+    os.makedirs(destination+"/"+subdir+"/Mut_0/"+Tf_choice+"_agg/phi")
     os.makedirs(destination+"/"+subdir+"/mutants")
     os.makedirs(destination+"/"+subdir+"/Qref_shadow")
 
@@ -41,6 +52,7 @@ if __name__ == "__main__":
     "/Mut_0/"+Tf_choice+"_agg/mut/M.dat",
     "/Mut_0/"+Tf_choice+"_agg/mut/eps.dat",
     "/Mut_0/"+Tf_choice+"_agg/mut/ddG.dat",
+    "/Mut_0/"+Tf_choice+"_agg/phi/Q_phi.dat",
     ]
 
     shutil.copy(subdir+".pdb",destination+"/")

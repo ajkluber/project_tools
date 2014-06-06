@@ -70,8 +70,8 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q",newbeadbead=
         cutoff = cutoffs[num_singular_values]
         print "  Using ",num_singular_values," singular values. Cutoff of = ",cutoff
 
-    append_log("Starting:") 
-    LP_problem, solution, x_particular, N = apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff)
+    append_log("Starting: Calculating_MC2004") 
+    LP_problem, solution, x_particular, N = apply_constraints_with_cplex(Model,System,savedir,ddG,eps,M,cutoff)
     delta_eps = x_particular + np.dot(N,solution)
     ratio = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
     np.savetxt(savedir+"/mut/delta_eps.dat",delta_eps)
@@ -101,9 +101,9 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q",newbeadbead=
                 (i_idx,j_idx,resi_id,resj_id,interaction_num,sig,Knb,delta)
     open(savedir+"/mut/"+newbeadbead,"w").write(beadbead_string)
     Model.contact_energies = savedir+"/mut/"+newbeadbead
-    append_log("Starting:") 
+    append_log("Finishing: Calculating_MC2004") 
 
-def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff):
+def apply_constraints_with_cplex(Model,System,savedir,ddG,eps,M,cutoff):
     """ Construct and solve a linear/quadratic programming problem for new parameters.
 
     Description:
@@ -161,7 +161,7 @@ def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff)
     #senses = "L"*len(right_hand_side)
 
     ## Constraints version 2:
-    ## Require that native contacts remain attractive, 
+    ## Require that native contacts remain attractive, with lower bound
     ## i.e. eps'_ij in the interval (lower_bound,inf)
     #a = 0.10
     #right_hand_side = list(eps + x_particular - a*np.ones(len(eps)) )
@@ -187,9 +187,7 @@ def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff)
     #        rows.append([ column_names, list(-N[i,:]) ])
 
     ## Constraints version 4:
-    ## Require that native contacts remain within a range of their previous
-    ## values
-    ## i.e. eps'_ij in the interval (eps_ij/a, a*eps_ij) for some number a.
+    ## Require that native contacts remain within a fixed interval.
     eps_lower_bound = 0.1
     eps_upper_bound = 4.0
     right_hand_side = list(eps + x_particular - eps_lower_bound*np.ones(len(eps)))
@@ -208,22 +206,10 @@ def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff)
     ## Set quadratic terms in objective.
     objective_quadratic_coefficients = [ 1. for j in range(N.shape[1]) ]
 
-    ## DEBUGGING
-    #print len(objective_coeff),len(names)
-    #print right_hand_side
-    #print rows
-    #print rows[0]
-    #print senses
-    #print N
-    #print len(rows), len(senses), len(rows[0][0]), len(rows[0][1])
-
     ## Set upper and lower bounds on the solution. Arbitrary. Hopefullly these 
     ## don't matter. These are bounds on vector lambda
     upper_bounds = list(10000.*np.ones(N.shape[1]))
     lower_bounds = list(-10000.*np.ones(N.shape[1]))
-
-    ## DEBUGGING
-    #print len(upper_bounds)
 
     ## Populate cplex linear programming problem
     LP_problem = cplex.Cplex()
@@ -243,8 +229,6 @@ def apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff)
     #print "status: ",status
     #print "solution:",solution_lambda
     
-    #epsilon_new = eps + np.dot(N,np.array(solution))
-
     return LP_problem, solution_lambda, x_particular, N
 
 def calculate_matrix_ddG_eps_M(Model,System,savedir,beta,coord):
@@ -392,7 +376,7 @@ if __name__ == '__main__':
     std_eps_prime = []
     avg_eps_prime = []
     for cutoff in cutoffs[1:len(cutoffs)/2]:
-        LP_problem, solution, x_particular, N = apply_constraints_quadratic_objective(Model,System,savedir,ddG,eps,M,cutoff)
+        LP_problem, solution, x_particular, N = apply_constraints_with_cplex(Model,System,savedir,ddG,eps,M,cutoff)
         delta_eps = x_particular + np.dot(N,solution)
         eps_prime = delta_eps + eps
 

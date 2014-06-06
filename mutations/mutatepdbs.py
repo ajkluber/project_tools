@@ -138,16 +138,6 @@ def get_sim_ddG(savedir,mutants,coord,bounds):
         
     return ddGsim_TS_D, ddGsim_N_D
 
-#def get_mutational_data():
-#    """ Extract mutational data. Only return info for useable mutations """
-#    mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
-#    useable = np.array([ bool(x) for x in mutation_data[:,8] ])
-#    mut_indx = mutation_data[(useable == True),1] 
-#    wt_res = mutation_data[(useable == True),2] 
-#    mut_res = mutation_data[(useable == True),3] 
-#    
-#    return mutation_data,useable,mut_indx,wt_res,mut_res
-
 def get_res_res_conts(name):
     """ Get number of residue-residue heavy atom contacts from 
         all-atom contact map output from Shadowmap.
