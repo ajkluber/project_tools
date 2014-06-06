@@ -36,10 +36,10 @@ if __name__ == "__main__":
     Systems = systems.load_systems([subdir])
     Model = Models[0]
     System = Systems[0]
-    path = System.subdir+"/"+System.mutation_active_directory+"/"+Tf_choice+"_agg"
+    path = System.subdir+"/Mut_0/"+Tf_choice+"_agg"
 
     cwd = os.getcwd()
-    sub = cwd+"/"+System.subdir+"/"+System.mutation_active_directory
+    sub = cwd+"/"+System.subdir+"/Mut_0"
     T = phi.get_Tf_choice(sub)
     savedir = sub+"/"+T+"_agg"
 
