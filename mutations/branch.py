@@ -46,6 +46,7 @@ if __name__ == "__main__":
     paths = [ \
     "/Mut_0/"+Tf_choice+"_agg/mut",
     "/Mut_0/"+Tf_choice+"_agg/phi",
+    "/Mut_0/"+Tf_choice+"_1",
     "/mutants",
     "/Qref_shadow"]
 
@@ -61,6 +62,7 @@ if __name__ == "__main__":
     "/system.info",
     "/modelbuilder.log",
     "/Mut_0/Tf_choice.txt",
+    "/Mut_0/"+Tf_choice+"_1/BeadBead.dat",
     "/Mut_0/"+Tf_choice+"_agg/mut/M.dat",
     "/Mut_0/"+Tf_choice+"_agg/mut/eps.dat",
     "/Mut_0/"+Tf_choice+"_agg/mut/ddG.dat",
