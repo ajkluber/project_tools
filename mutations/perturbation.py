@@ -70,7 +70,7 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q",newbeadbead=
         cutoff = cutoffs[num_singular_values]
         print "  Using ",num_singular_values," singular values. Cutoff of = ",cutoff
 
-    append_log("Starting: Calculating_MC2004") 
+    append_log(System.subdir,"Starting: Calculating_MC2004") 
     LP_problem, solution, x_particular, N = apply_constraints_with_cplex(Model,System,savedir,ddG,eps,M,cutoff)
     delta_eps = x_particular + np.dot(N,solution)
     ratio = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
@@ -101,7 +101,7 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q",newbeadbead=
                 (i_idx,j_idx,resi_id,resj_id,interaction_num,sig,Knb,delta)
     open(savedir+"/mut/"+newbeadbead,"w").write(beadbead_string)
     Model.contact_energies = savedir+"/mut/"+newbeadbead
-    append_log("Finishing: Calculating_MC2004") 
+    append_log(System.subdir,"Finished: Calculating_MC2004") 
 
 def apply_constraints_with_cplex(Model,System,savedir,ddG,eps,M,cutoff):
     """ Construct and solve a linear/quadratic programming problem for new parameters.
