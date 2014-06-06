@@ -8,7 +8,7 @@ import os
 import shutil
 from glob import glob
 
-def get_args()
+def get_args():
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--subdir', type=str, required=True, help='')
     parser.add_argument('--dest', type=str, required=True, help='')
