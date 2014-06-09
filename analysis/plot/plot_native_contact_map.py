@@ -72,7 +72,7 @@ def plot_native_state_contact_map(title):
 
 if __name__ == "__main__":
     
-    parser = argparse.ArgumentParser(description='Perform WHAM.')
+    parser = argparse.ArgumentParser(description='')
     parser.add_argument('--title', type=str, help='Method',required=True)
     args = parser.parse_args()
     print args

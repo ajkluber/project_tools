@@ -42,7 +42,7 @@ GAS_CONSTANT_KJ_MOL = 0.0083144621
 
 def print_header():
 
-    print "---------------------------- Model Builder v0.1 ------------------------------"
+    print "------------------------------ project_tools ---------------------------------"
     print " Your using model_builder!  A helper module for prepping CG simulations for"
     print " Gromacs. More coming soon!"
     print " Version 0.1 "
@@ -88,10 +88,18 @@ def get_args():
     ## Options for manually adding a temperature array.
     add_parser = sp.add_parser('add')
     add_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
-    add_parser.add_argument('--temparray', type=int, nargs='+', help='T_initial T_final dT for new temp array',required=True)
+    add_parser.add_argument('--temparray', type=int, nargs='+', help='T_initial T_final dT for new temp array')
     add_parser.add_argument('--mutarray', type=int, nargs='+', help='T_initial T_final dT for new mutational sims array')
     add_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
     add_parser.add_argument('--email', type=str, help='Optional email address for PBS to send sim details.')
+
+    ## Options for manually adding a temperature array.
+    ext_parser = sp.add_parser('extend')
+    ext_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
+    ext_parser.add_argument('--factor', type=float, help='Factor by which you want to extend simulations. e.g. --factor 2 doubles length',required=True)
+    ext_parser.add_argument('--Tf_temps', type=str, nargs='+', help='Temperatures that you want extended')
+    ext_parser.add_argument('--mut_temps', type=str, nargs='+', help='T_initial T_final dT for new mutational sims array')
+    ext_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
 
     args = parser.parse_args()
 
@@ -118,9 +126,11 @@ def get_args():
 
 
 class ProjectManager(object):
-    """ A shell class to 
+    """ A shell class to handle the simulations for a project.
 
+    Description:
 
+        A class that can handle simulation projects.
     """
 
     def __init__(self,args,modeloptions):
@@ -132,6 +142,8 @@ class ProjectManager(object):
             self.continue_project(args)
         elif args.action == 'add':
             self.add_temperature_array(args)
+        elif args.action == 'extend':
+            self.extend_temperatures(args)
 
     def append_log(self,sub,string):
         open(self.path+'/'+sub+'/modelbuilder.log','a').write(self.append_time_label()+' '+string+'\n')
@@ -174,6 +186,47 @@ class ProjectManager(object):
             print "Manually adding temperature array Ti=%d Tf=%d dT=%d" % (Ti,Tf,dT)
             print "Starting Tf_loop_iteration..."
             simulation.Tf_loop.manually_add_temperature_array(Model,System,self.append_log,Ti,Tf,dT)
+            
+        self.save_model_system_info(Models,Systems,subdirs)
+        print "Success"
+
+    def extend_temperatures(self,args):
+        ''' Manually extends.'''
+        args.pdbs = [ name+'.pdb' for name in  args.subdirs ]
+        factor = args.factor
+
+        subdirs = args.subdirs
+        Models = models.load_models(subdirs,dryrun=args.dryrun)
+        Systems = systems.load_systems(subdirs)
+        self.prepare_systems(Models,Systems)
+
+        if (args.Tf_temps != None) and (args.mut_temps != None):
+            print "ERROR!"
+            print "  Specify either --Tf_temps or --mut_temps. Not both!"
+            print "  Exiting"
+            raise SystemExit
+        if (args.Tf_temps == None) and (args.mut_temps == None):
+            print "ERROR!"
+            print "  Specify either --Tf_temps or --mut_temps."
+            print "  Exiting"
+            raise SystemExit
+        if (args.Tf_temps != None):
+            temps = args.Tf_temps
+            method = "Tf"
+            print "Extending Tf temps",temps
+        if (args.mut_temps != None):
+            temps = args.mut_temps
+            method = "Mut"
+            print "Extending Mutational temps",temps
+
+        for i in range(len(subdirs)):
+            sub = subdirs[i]
+            Model = Models[i]
+            System = Systems[i]
+            #print Model.dryrun 
+            #print " OPTION NOT DONE! "
+            #raise SystemExit
+            simulation.Tf_loop.manually_extend_temperatures(Model,System,self.append_log,method,temps,factor)
             
         self.save_model_system_info(Models,Systems,subdirs)
         print "Success"

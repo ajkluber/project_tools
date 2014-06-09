@@ -70,11 +70,6 @@ def get_equil_data(T,path=".",numsub=3):
     Nh /= float(max(Nh))
     return Q,Qh,Qnh,Nh
 
-def plot_aggregated_data(System):
-    
-    cwd = os.getcwd()
-    sub = 
-
 def get_data(coord):
     if coord in ["Q","Qh","Qnh"]:
         x = np.loadtxt(coord+"prob.dat")

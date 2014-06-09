@@ -15,6 +15,7 @@ import subprocess as sb
 from glob import glob
 import os
 import argparse
+import shutil
 
 import mdp
 
@@ -29,9 +30,14 @@ def main():
         pass
 
 def check_completion(System,append_log,equil=False):
-    """ Checks to see if the previous Tf_loop simulation completed. First 
-        checks the desired number of steps in the grompp.mdp file then 
-        checks to see if md.log has recorded that number of steps."""
+    """ Checks to see if the previous Tf_loop simulation completed. 
+
+    Description:
+
+        First 
+    checks the desired number of steps in the grompp.mdp file then 
+    checks to see if md.log has recorded that number of steps.
+    """
     cwd = os.getcwd()
     if equil == True:
         sub = System.subdir+"/"+System.mutation_active_directory
@@ -85,7 +91,6 @@ def gmxcheck_subdirectories():
     dirs = [ x[:-9] for x in runs ]
     for subdir in dirs:
         run_gmxcheck(subdir)
-    
 
 def run_gmxcheck(dir):
     cwd = os.getcwd()
@@ -118,12 +123,12 @@ def determine_new_T_array():
     dT = int(temperatures[1].split("_")[0]) - lowerT
     upperT = int(temperatures[-1].split("_")[0])
     ## Temperatures bracket the folding temperature if the average 
-    ## fraction of native contacts goes from greater than 0.5 to less
+    ## fraction of nonlocal native contacts goes from greater than 0.5 to less
     ## than 0.5.
     for tdir in temperatures:
         Q = np.loadtxt(tdir+"/Qnhprob.dat")
         avgQ = np.mean(Q[len(Q)/2:])
-        if avgQ > Q[0]/2:
+        if avgQ > 0.5*max(Q):
             lowerT = int(tdir.split("_")[0])
         else:
             upperT = int(tdir.split("_")[0])
@@ -147,6 +152,78 @@ def determine_new_T_array():
             newTf = upperT - newdT
     print "##DEBUGGING: New Ti, Tf, dT", newTi, newTf, newdT
     return newTi, newTf, newdT
+
+def manually_extend_temperatures(Model,System,append_log,method,temps,factor):
+    """ To manually extend some temperatures."""
+
+    cwd = os.getcwd()
+    ## Determine directory to enter
+    if method == "Tf":
+        sub = System.path+"/"+ System.subdir+"/"+System.Tf_active_directory
+        Tlist = [ x+"_0" for x in temps ]
+    elif method == "Mut":
+        sub = System.path+"/"+ System.subdir+"/"+System.mutation_active_directory
+        Tlist = []
+        for i in range(len(temps)):
+            for j in range(1,6):
+                Tlist.append(temps[i]+"_"+str(j)) 
+
+    os.chdir(sub)
+    check_exist = [ os.path.exists(x) for x in Tlist ]
+    ## Check that all temperaures exist 
+    if not all(check_exist):
+        print "ERROR!"
+        print "  Some temperature does not exist!"
+        for i in range(len(Tlist)):
+            print "  Temp:", Tlist[i], check_exist[i]  
+        print "  Exiting."
+        os.chdir(cwd)
+        raise SystemExit
+
+    cwd2 = os.getcwd()
+    for k in range(len(Tlist)):
+        Tdir = Tlist[k]
+        os.chdir(Tdir)
+        T = Tdir.split("_")[0]
+        if Model.dryrun == True:
+            print "    Dryrun Success! " 
+            os.chdir(cwd)
+            raise SystemExit
+        else:
+            extend_temperature(Model,T,factor)
+            #os.remove("Q.dat")
+            #os.remove("energyterms.xvg")
+        os.chdir(cwd2)
+        raise SystemExit
+
+    append_log(System.subdir,"Starting: Tf_loop_iteration")
+
+    os.chdir(cwd)
+
+def extend_temperature(Model,T,factor):
+    """ Extend individual temperature """
+    ## Calculate new nsteps = factor*old_nsteps
+    for line in open("grompp.mdp","r").readlines():
+        if line.startswith("nsteps"):
+            old_nsteps = int(line.split()[2])
+            new_nsteps = round(factor*old_nsteps)
+            break
+    
+    ## Save old grompp.mdp and topol.tpr as something else.
+    shutil.move("grompp.mdp","old_grompp.mdp")
+    shutil.move("topol.tpr","old_topol.tpr")
+
+    ## Write new grompp and topol.tpr
+    grompp_mdp = mdp.get_constant_temperature_mdp(Model,T,new_nsteps)
+    open("grompp.mdp","w").write(grompp_mdp)
+
+    print "  Extending temp ", T, " to nsteps ",new_nsteps
+    prep_step = 'grompp -n index.ndx -c Native.pdb -maxwarn 1'
+    sb.call(prep_step.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
+
+    ## Submit rst.pbs
+    qsub = "qsub rst.pbs"
+    sb.call(qsub.split(),stdout=open("rst.out","w"),stderr=open("rst.err","w"))
 
 def folding_temperature_loop(Model,System,append_log,new=False):
     """ The "folding temperature loop" is one of the several large-scale 
@@ -193,7 +270,7 @@ def folding_temperature_loop_extension(Model,System,append_log,new=False):
     append_log(System.subdir,"Starting: Tf_loop_iteration")
 
 def start_next_Tf_loop_iteration(Model,System,append_log):
-    """ To manually set the next temperature array."""
+    """ """
 
     Tf_choice = System.path+"/"+System.subdir+"/"+System.mutation_active_directory+"/Tf_choice.txt"
     Tf_guess = int(round(float(open(Tf_choice,"r").read()[:-1])))
@@ -339,7 +416,7 @@ def run_constant_temp(Model,System,T,nsteps="400000000",walltime="23:00:00",queu
         to write the gromacs files stored in the System object, then it
         calls a function to submit the job.'''
     ## Loading and writing grompp.
-    grompp_mdp = mdp.get_constant_temperature_mdp(Model,T,nsteps)
+    grompp_mdp = mdp.get_constant_temperature_mdp(Model,str(T),nsteps)
     open("grompp.mdp","w").write(grompp_mdp)
 
     ## Writing topology files.

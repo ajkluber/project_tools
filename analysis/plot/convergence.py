@@ -7,6 +7,8 @@ Description:
 but there are many ways to tell that a simulations -has not- converged. This
 submodule plots some criteria discussed in reference (1).
 
+    For example, the observables of a system in thermal equilibrium have 
+stationary expectation values <A_i>. 
 
 References:
 
@@ -65,9 +67,10 @@ def plot_avg_versus_window_size():
         plt.show()
 
 if __name__ == "__main__":
-    T = "148.76"
+    #T = "148.76"
     #Q = np.loadtxt(T+"_agg/Q.dat")
     #t, Econ, Etot = np.loadtxt("energyterms.xvg",usecols=(0,4,5),unpack=True)
-    t, Ebond, Eang = np.loadtxt("energyterms.xvg",usecols=(0,1,2),unpack=True)
-    plot_BSE(Ebond)
+    #t, Ebond, Eang = np.loadtxt("energyterms.xvg",usecols=(0,1,2),unpack=True)
+    t,x = np.loadtxt("rmsd.xvg",unpack=True)
+    plot_BSE(x)
 

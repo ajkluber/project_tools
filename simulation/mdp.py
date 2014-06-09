@@ -66,12 +66,12 @@ def get_constant_temperature_mdp(model,T,nsteps):
     mdp_string += 'ld_seed                  = -1 \n'
     mdp_string += 'tc-grps                  = System \n\n'
     mdp_string += 'tau_t                    = 0.2 \n'
-    mdp_string += 'ref_t                    = %d \n\n' % T
+    mdp_string += 'ref_t                    = %s \n\n' % T
     mdp_string += 'Pcoupl                   = no \n\n'
     mdp_string += '; OPTIONS FOR BONDS     \n'
     mdp_string += 'constraints              = none \n\n'
     mdp_string += '; GENERATE VELOCITIES FOR STARTUP RUN \n'
     mdp_string += 'gen-vel                  = yes \n'
-    mdp_string += 'gen_temp                 = %f \n' % T
+    mdp_string += 'gen_temp                 = %s \n' % T
     mdp_string += 'gen_seed                 = -1 \n'
     return mdp_string

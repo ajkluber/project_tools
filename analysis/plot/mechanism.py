@@ -137,6 +137,49 @@ def get_beadbead_info():
 
     return pairs, epsij, sigij
 
+def get_contact_groups_distribution_versus_Q():
+    """ Calculate contact probabilities and histogram by foldedness (Q)
+
+    Description:
+        
+        Return a contact probabilities
+
+
+    """
+    #groups = []
+    #for line in open("","r"):
+    #    pass    
+
+    pairs, epsij, sigij = get_beadbead_info()
+    print " Loading trajectory"
+    traj = md.load("traj.xtc",top="Native.pdb")
+    print " Computing distances with mdtraj..."
+    distances = md.compute_contacts(traj,pairs)
+    print " Computing contacts with mdtraj..."
+    contacts = (distances[0][:] <= 1.2*sigij).astype(int)
+
+
+    print " Loading Q.dat"
+    bins = 40
+    Q = np.loadtxt("Q.dat")
+    Q /= float(max(Q))
+    minQ = min(Q)
+    maxQ = max(Q)
+    incQ = (float(maxQ) - float(minQ))/bins
+
+    Q_i_for_bin = np.zeros((bins,len(contacts[0])),float)
+    counts = np.zeros(bins,float)
+
+    print " Histogram contacts depending on Q"
+    for i in range(traj.n_frames):
+        for n in range(bins):
+            if ((minQ + n*incQ) < Q[i]) and (Q[i] < (minQ + (n+1)*incQ)):
+                Q_i_for_bin[n,:] += contacts[i,:]
+                counts[n] += 1
+
+    print " Averaging contacts for each bin"
+    Q_i_avg = (Q_i_for_bin.T/counts).T
+    return minQ, maxQ, bins, Q_i_avg
 
 def get_contact_pair_distribution_versus_Q():
     """ Calculate contact probabilities and histogram by foldedness (Q)
@@ -177,6 +220,55 @@ def get_contact_pair_distribution_versus_Q():
     print " Averaging contacts for each bin"
     Q_i_avg = (Q_i_for_bin.T/counts).T
     return minQ, maxQ, bins, Q_i_avg
+
+def plot_contact_groups_versus_Q():
+    """ Plot contact group ordering versus folding progress.
+
+    Description:
+
+    """
+
+    minQ, maxQ, bins, Q_i_avg = get_contact_pair_distribution_versus_Q()
+
+    Nbins = 25 
+    Qbins = np.linspace(minQ,maxQ,bins-1)
+    Qi_bins = np.linspace(0.,1.0,Nbins)
+    Q_i_distribution = np.zeros((bins,Nbins-1))
+    for j in range(0,bins):
+        #n,bins,patches = plt.hist(Q_i_avg[j],bins=bins2,alpha=0.3,label=str(j),histtype='stepfilled')
+        #plt.clf()
+        n,tempbins = np.histogram(Q_i_avg[j],bins=Qi_bins,density=True)
+        Q_i_distribution[j,:] = n
+
+    x = np.linspace(minQ,maxQ,bins+1)
+    y = np.linspace(0.,1.0,Nbins)
+    X,Y = np.meshgrid(x,y)
+
+    ## Set 
+    Qi_dist = Q_i_distribution.T
+    maxQi_dist = max(Qi_dist[1:-1,:].ravel())
+    minQi_dist = min(Qi_dist[1:-1,:].ravel())
+
+    print "  Saving data..."
+    np.savetxt("plots/Qi_distribution.dat",Qi_dist)
+    np.savetxt("plots/Q_bins.dat",x)
+    np.savetxt("plots/Qi_bins.dat",y)
+
+
+    print "  Plotting.."
+    plt.figure()
+    #plt.pcolor(X,Y,Q_i_distribution.T)
+    #plt.pcolor(X,Y,Q_i_distribution.T[1:-1,:])
+    plt.pcolor(X,Y,Qi_dist)
+    plt.clim(minQi_dist,maxQi_dist)
+    plt.xlabel("Folding Reaction ($Q$)")
+    plt.ylabel("$\\left< Q_i \\right>$ Distribution")
+    plt.title("Mechanism Heterogeneity")
+    plt.xlim(minQ,maxQ)
+    plt.ylim(0.,1)
+    print "  Saving plot..."
+    plt.savefig("plots/mechanism_heterogeneity_versus_Q.pdf")
+    plt.show()
 
 def plot_contact_pair_distribution_versus_Q():
     """ Plot contact ordering versus folding progress.
@@ -303,7 +395,77 @@ if __name__ == "__main__":
     if not os.path.exists("plots"):
         os.mkdir("plots")
     #plot_thermodynamic_mechanism(5)
-    plot_contact_pair_distribution_versus_Q()
+    #plot_contact_pair_distribution_versus_Q()
     #plot_route_measure_versus_Q()
     #plot_contact_pair_distribution_and_route_measure_versus_Q()
+
+    element_bounds = [0,5,13,21,32,41,49,56]
+    elements = [ "beta_"+str(i+1) for i in range(len(element_bounds)-1) ]
+    Qgroups = {}
+    Qref = np.loadtxt("../../Qref_cryst.dat")
+
+    for i in range(len(Qref)):
+        for j in range(len(Qref)):
+            if Qref[i,j] == 1:
+                elm1 = -1
+                elm2 = -1
+                for k in range(len(element_bounds)-1):
+                    if (i >= element_bounds[k]) and (i < element_bounds[k+1]):
+                        elm1 = k
+                    if (j >= element_bounds[k]) and (j < element_bounds[k+1]):
+                        elm2 = k
+                if (elm1 == -1) or (elm2 == -1):
+                    pass
+                else:
+                    group = elements[elm1]+"-"+elements[elm2]
+                    if Qgroups.has_key(group):
+                        Qgroups[group].append([i,j])
+                    else:
+                        Qgroups[group] = [[i,j]]
+
+    keys = Qgroups.keys()
+    for key in keys:
+        if len(Qgroups[key]) <= 5:
+            small_group = Qgroups.pop(key,None)
+            continue
+
+            #for pair in small_group:
+            #    min_dist = 100000
+            #    new_keys = Qgroups.keys()
+            #    for new_key in new_keys: 
+            #        for pair2 in Qgroups[new_key]:
+            #            dist = np.sqrt((pair[0]-pair2[0])**2 + (pair[1]-pair2[1])**2)
+            #            if dist < min_dist:
+            #                future_group = new_key
+            #    Qgroups[future_group].append(pair)
+
+                
+
+    Qgroups_string = ""
+    for key in Qgroups.keys():
+        Qgroups_string += "[ "+key+"]\n"
+        for contact in Qgroups[key]:
+            Qgroups_string += "%d %d\n" % (contact[0],contact[1])
+
+    open("Qgroups.dat","w").write(Qgroups_string)
+        
+
+    colors = ["blue","green","red","indigo","maroon","chocolate","salmon","darkviolet","lightgreen","sienna","violet","orchid"]
+
+    for i in range(len(Qgroups.keys())):
+        key = Qgroups.keys()[i]
+        j = 0
+        label = "$\\"+key.split("-")[0]+"\\"+key.split("-")[1]+"$"
+        for pair in Qgroups[key]:
+            if j == 0:
+                j += 1
+                plt.plot(pair[1]+1,pair[0]+1,marker='s',markersize=6,markeredgecolor=colors[i],color=colors[i],label=label)
+            else:
+                plt.plot(pair[1]+1,pair[0]+1,marker='s',markersize=6,markeredgecolor=colors[i],color=colors[i])
+
+    plt.legend(loc=2)
+    plt.xlim(0,len(Qref))
+    plt.ylim(0,len(Qref))
+    plt.show()
+
 
