@@ -191,10 +191,9 @@ def manually_extend_temperatures(Model,System,append_log,method,temps,factor):
             raise SystemExit
         else:
             extend_temperature(Model,T,factor)
-            #os.remove("Q.dat")
-            #os.remove("energyterms.xvg")
+            os.remove("Q.dat")
+            os.remove("energyterms.xvg")
         os.chdir(cwd2)
-        raise SystemExit
 
     append_log(System.subdir,"Starting: Tf_loop_iteration")
 
