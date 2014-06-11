@@ -205,7 +205,7 @@ def extend_temperature(Model,T,factor):
     for line in open("grompp.mdp","r").readlines():
         if line.startswith("nsteps"):
             old_nsteps = int(line.split()[2])
-            new_nsteps = round(factor*old_nsteps)
+            new_nsteps = int(round(factor*old_nsteps))
             break
     
     ## Save old grompp.mdp and topol.tpr as something else.
@@ -269,10 +269,18 @@ def folding_temperature_loop_extension(Model,System,append_log,new=False):
     append_log(System.subdir,"Starting: Tf_loop_iteration")
 
 def start_next_Tf_loop_iteration(Model,System,append_log):
-    """ """
+    """ Estimate new folding temperature with calibration data
+
+    Description:
+
+        We made a calibration curve with the following points.
+
+
+    """
 
     Tf_choice = System.path+"/"+System.subdir+"/"+System.mutation_active_directory+"/Tf_choice.txt"
     Tf_guess = int(round(float(open(Tf_choice,"r").read()[:-1])))
+    #Tf_guess = 36.0811*((Model.n_contacts*epsilon_bar)/ Model.n_residues) + 56.2182
 
     ## Update System counters
     System.Tf_iteration += 1
