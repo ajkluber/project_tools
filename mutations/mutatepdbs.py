@@ -212,7 +212,7 @@ def make_all_mutations():
         the mutational data files will probably use single-letter code.
     """
 
-    modelname = 'wt'
+    modelname = 'clean'
     mut_indx,wt_res,mut_res = get_core_mutations()
 
     for i in range(len(mut_indx)):
