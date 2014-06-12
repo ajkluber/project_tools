@@ -73,8 +73,10 @@ def calculate_phi_values(Model,System,append_log,coord):
     if not os.path.exists(savedir+"/phi"):
         os.mkdir(savedir+"/phi")
 
-    print "  Loading mutations.dat"
-    mutants = [ x.split()[1]+x.split()[0]+x.split()[2] for x in open("mutants/mutations.dat","r").readlines()[1:] ]
+    os.chdir("mutants")
+    mut_indx, wt_res, mut_res = get_core_mutations()
+    os.chdir("..")
+    mutants = [ wt_res[i]+mut_indx[i]+mut_res[i]  for i in range(len(mut_indx)) ]
     print "  Getting state bounds for coordinate:",coord
     bounds, states = get_state_bounds(savedir,coord)
     num_states = len(states)
