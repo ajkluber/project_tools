@@ -17,6 +17,7 @@ import mdtraj as md
 import model_builder.models as models
 import model_builder.systems as systems
 
+from mutatepdbs import get_core_mutations
 
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
@@ -36,8 +37,11 @@ def calculate_dH_for_mutants(Model,System,append_log):
     savedir = sub+"/"+T+"_agg"
 
     os.chdir(System.subdir)
-
-    mutants = [ x.split()[1]+x.split()[0]+x.split()[2] for x in open("mutants/mutations.dat","r").readlines()[1:] ]
+    
+    os.chdir("mutants")
+    mut_indx, wt_res, mut_res = get_core_mutations()
+    os.chdir("..")
+    mutants = [ wt_res[i]+mut_indx[i]+mut_res[i]  for i in range(len(mut_indx)) ]
 
     sigij,epsij,deltaij,interaction_nums,keep_interactions,pairs,traj,traj_dist = load_eps_delta_sig_traj(savedir)
     Fij = get_mutant_fij(mutants,keep_interactions)
