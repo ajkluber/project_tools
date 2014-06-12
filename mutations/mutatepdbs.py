@@ -336,7 +336,7 @@ def prepare_mutants(System,append_log):
         os.mkdir(sub)
     if not os.path.exists("wt.pdb"):
         print "  Copying wt"
-        shutil.copy(System.subdir+"/clean_noH.pdb","mutants/wt.pdb")
+        shutil.copy(System.subdir+"/clean_noH.pdb",System.subdir+"/mutants/wt.pdb")
     if (not os.path.exists(sub+"/calculated_ddG.dat")):
         print "  Didn't find "+sub+"/calculated_ddG.dat. Looking for "+System.path+"/"+mut_filename
         if os.path.exists(System.path+"/"+mut_filename):
