@@ -212,7 +212,7 @@ def make_all_mutations():
         the mutational data files will probably use single-letter code.
     """
 
-    modelname = 'clean'
+    modelname = 'wt'
     mut_indx,wt_res,mut_res = get_core_mutations()
 
     for i in range(len(mut_indx)):
@@ -336,7 +336,7 @@ def prepare_mutants(System,append_log):
         os.mkdir(sub)
     if not os.path.exists("wt.pdb"):
         print "  Copying wt"
-        shutil.copy(System.subdir+"/clean_noH.pdb","wt.pdb")
+        shutil.copy(System.subdir+"/clean_noH.pdb","mutants/wt.pdb")
     if (not os.path.exists(sub+"/calculated_ddG.dat")):
         print "  Didn't find "+sub+"/calculated_ddG.dat. Looking for "+System.path+"/"+mut_filename
         if os.path.exists(System.path+"/"+mut_filename):
