@@ -122,7 +122,7 @@ def analyze_temperature_array(System,append_log,equil=False):
             tdir = temperatures[k]
             os.chdir(cwd2+"/"+tdir)
             crunchfiles = ["rmsd.xvg","radius_cropped.xvg","energyterms.xvg","phis.xvg"]
-            crunchQfiles = ["Qprob.dat","Qhprob.dat","Qnhprob.dat"]
+            crunchQfiles = ["Qprob.dat","Qhprob.dat","Qnhprob.dat","Q.dat"]
 
             flag = all([ os.path.exists(file) for file in crunchfiles ])
             flagQ = all([ os.path.exists(file) for file in crunchQfiles ])

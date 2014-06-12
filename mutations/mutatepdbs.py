@@ -327,7 +327,7 @@ def modeller_mutate_pdb(modelname,respos,restyp,saveas,chain='A'):
 def prepare_mutants(System,append_log):
     """ Creates a mutated pdb for every mutant."""
 
-    append_log("Starting: Preparing_Mutants")
+    append_log(System.subdir,"Starting: Preparing_Mutants")
     cwd = os.getcwd()
     sub = cwd+"/"+System.subdir+"/mutants"
     mut_filename = System.subdir+"_calculated_ddG.dat"
@@ -355,7 +355,7 @@ def prepare_mutants(System,append_log):
     print "  Calculating fraction of contact loss fij..."
     calculate_contacts_lost_for_mutants()
     os.chdir(cwd)
-    append_log("Finished: Preparing_Mutants")
+    append_log(System.subdir,"Finished: Preparing_Mutants")
 
 def command_line_prepare_mutants(System,append_log):
     """ Creates a mutated pdb for every mutant."""
