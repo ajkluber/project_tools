@@ -8,6 +8,9 @@ perturbation technique outlined in Matysiak Clementi 2004.
 
 References:
 
+(1) Matysiak, S.; Clementi, C. Optimal Combination of Theory and Experiment for
+the Characterization of the Protein Folding Landscape of S6: How Far Can a
+Minimalist Model Go? J. Mol. Biol. 2004, 343, 235-248.
 """
 
 import numpy as np
@@ -32,6 +35,18 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q",newbeadbead=
 
     Description:
 
+        Use Matysiak, Clementi 2004 perturbation technique to solve for new
+    contact parameters. See reference (1) for more details. The procedure 
+    is based off of trying to match experimental DeltaDelta G's (from 
+    phi value analysis) to simulation DeltaDelta G's. It involves Taylor 
+    expanding the simulation DeltaDelta G's around 
+
+
+    Reference:
+
+    (1) Matysiak, S.; Clementi, C. Optimal Combination of Theory and Experiment for
+    the Characterization of the Protein Folding Landscape of S6: How Far Can a
+    Minimalist Model Go? J. Mol. Biol. 2004, 343, 235-248.
     """
     
     cwd = os.getcwd()
@@ -49,6 +64,8 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q",newbeadbead=
         print "  One of the following does not exist: M.dat, ddG.dat, eps.dat. Calculating."
         os.chdir(System.subdir)
         ddG, eps, M = calculate_matrix_ddG_eps_M(Model,System,savedir,beta,coord)
+        print "  IMPORTANT: Look at the singular value spectrum and choose a number of singular values to use."
+        print "  IMPORTANT: Make sure ",savedir+"/mut/num_singular_values_include.txt  exists."
         os.chdir(cwd)
     else:
         print "  Loading M.dat, ddG.dat, eps.dat"
@@ -66,44 +83,53 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q",newbeadbead=
         print "  Exiting"
         raise SystemExit
     else:
-        num_singular_values = int(open(savedir+"/mut/num_singular_values_include.txt").read()[:-1])
+        temp = open(savedir+"/mut/num_singular_values_include.txt").read()[:-1]
+        if temp.endswith("xp"):
+            compute_xp = True
+            num_singular_values = int(temp.split()[0])
+            savebeadbeadxp = savedir+"/mut/"+newbeadbead.split(".dat")[0]+"_xp.dat"
+            savebeadbead = savebeadbeadxp
+        else:
+            compute_xp = False
+            num_singular_values = int(temp)
+            savebeadbead = savedir+"/mut/"+newbeadbead
         cutoff = cutoffs[num_singular_values]
         print "  Using ",num_singular_values," singular values. Cutoff of = ",cutoff
 
     append_log(System.subdir,"Starting: Calculating_MC2004") 
-    LP_problem, solution, x_particular, N = apply_constraints_with_cplex(Model,System,savedir,ddG,eps,M,cutoff)
-    delta_eps = x_particular + np.dot(N,solution)
-    delta_eps_xp = x_particular
-    ratio = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
-    ratio_xp = np.linalg.norm(delta_eps_xp)/np.linalg.norm(eps)
+
+    if compute_xp == True:
+        print "  Using ONLY the particular solution x_p as delta_eps!"
+        Mpinv = np.linalg.pinv(M,rcond=cutoff)
+        x_particular = np.dot(Mpinv,ddG)
+        np.savetxt(savedir+"/mut/x_p.dat",x_particular)
+
+        delta_eps = x_particular
+        ratio = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
+
+        delta_eps_xp = x_particular
+        ratio_xp = np.linalg.norm(delta_eps_xp)/np.linalg.norm(eps)
+    else:
+        print "  Applying CPLEX to the particular solution to get delta_eps!"
+        LP_problem, solution, x_particular, N = apply_constraints_with_cplex(Model,System,savedir,ddG,eps,M,cutoff)
+
+        print "    Solution found!"
+        delta_eps = x_particular + np.dot(N,solution)
+        ratio = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
+
+        delta_eps_xp = x_particular
+        ratio_xp = np.linalg.norm(delta_eps_xp)/np.linalg.norm(eps)
+
     np.savetxt(savedir+"/mut/delta_eps.dat",delta_eps)
-    print "  Solution found!"
-    print "  Norm of perturbation, |deps|/|eps| = ", ratio
-    print "  Norm of just x_p perturbation, |x_p|/|eps| = ", ratio_xp
+    np.savetxt(savedir+"/mut/delta_eps_xp.dat",delta_eps_xp)
+    print "    Norm of perturbation, |deps|/|eps| = ", ratio
+    print "    Norm of just x_p perturbation, |x_p|/|eps| = ", ratio_xp
 
-    print "  Saving new parameters as: ",savedir+"/mut/"+newbeadbead
-    ## New Parameters
-    epsilon_prime = eps + delta_eps
+    print "  Saving new parameters as: ",savebeadbead
+    save_new_parameters(sub,eps,delta_eps,delta_eps_xp,savebeadbead,savebeadbeadxp)
 
-    beadbead, keep_interactions = phi.load_beadbead(sub+"/"+T+"_1")
-    
-    epsij = beadbead[:,6].astype(float)
-    epsij[keep_interactions != 0] = epsilon_prime
-    
-    beadbead_string = ''
-    for rownum in range(beadbead.shape[0]): 
-        i_idx = int(beadbead[rownum,0])
-        j_idx = int(beadbead[rownum,1])
-        resi_id = beadbead[rownum,2]
-        resj_id = beadbead[rownum,3]
-        interaction_num = str(beadbead[rownum,4])
-        sig = float(beadbead[rownum,5])
-        Knb = epsij[rownum]
-        delta = float(beadbead[rownum,7])
-        beadbead_string += '%5d%5d%8s%8s%5s%16.8E%16.8E%16.8E\n' % \
-                (i_idx,j_idx,resi_id,resj_id,interaction_num,sig,Knb,delta)
-    open(savedir+"/mut/"+newbeadbead,"w").write(beadbead_string)
-    Model.contact_energies = savedir+"/mut/"+newbeadbead
+    Model.contact_energies = savebeadbead
+
     append_log(System.subdir,"Finished: Calculating_MC2004") 
 
 def apply_constraints_with_cplex(Model,System,savedir,ddG,eps,M,cutoff):
@@ -130,6 +156,9 @@ def apply_constraints_with_cplex(Model,System,savedir,ddG,eps,M,cutoff):
     ## np.allclose(M,np.dot(u,np.dot(S,v))) --> should be True
     u,s,v = np.linalg.svd(M)
     rank = len(s)
+    print "  Matrix M singular values saved as: ", savedir+"/mut/singular_values.dat (and as ..._norm.dat)"
+    print "  Normed singular value spectrum:"
+    print s/max(s)
     np.savetxt(savedir+"/mut/singular_values.dat",s)
     np.savetxt(savedir+"/mut/singular_values_norm.dat",s/max(s))
 
@@ -321,6 +350,54 @@ def calculate_matrix_ddG_eps_M(Model,System,savedir,beta,coord):
     print "  Matrices: termA, termB, termC, and M computed and saved to ", savedir+"/mut"
     
     return ddG_all,epsij,M
+
+def save_new_parameters(sub,eps,delta_eps,delta_eps_xp,savebeadbead,savebeadbeadxp):
+    """ Save new parameters as a BeadBead file
+
+    Description:
+
+    """
+    beadbead, keep_interactions = phi.load_beadbead(sub+"/"+T+"_1")
+
+    ## Saving new parameters
+    epsilon_prime = eps + delta_eps
+    epsij = beadbead[:,6].astype(float)
+    epsij[keep_interactions != 0] = epsilon_prime
+    
+    beadbead_string = ''
+    for rownum in range(beadbead.shape[0]): 
+        i_idx = int(beadbead[rownum,0])
+        j_idx = int(beadbead[rownum,1])
+        resi_id = beadbead[rownum,2]
+        resj_id = beadbead[rownum,3]
+        interaction_num = str(beadbead[rownum,4])
+        sig = float(beadbead[rownum,5])
+        Knb = epsij[rownum]
+        delta = float(beadbead[rownum,7])
+        beadbead_string += '%5d%5d%8s%8s%5s%16.8E%16.8E%16.8E\n' % \
+                (i_idx,j_idx,resi_id,resj_id,interaction_num,sig,Knb,delta)
+
+    open(savebeadbead,"w").write(beadbead_string)
+
+    ## Also saving the x_p solution as well for good measure.
+    epsilon_prime = eps + delta_eps_xp
+    epsij = beadbead[:,6].astype(float)
+    epsij[keep_interactions != 0] = epsilon_prime
+
+    beadbead_string = ''
+    for rownum in range(beadbead.shape[0]): 
+        i_idx = int(beadbead[rownum,0])
+        j_idx = int(beadbead[rownum,1])
+        resi_id = beadbead[rownum,2]
+        resj_id = beadbead[rownum,3]
+        interaction_num = str(beadbead[rownum,4])
+        sig = float(beadbead[rownum,5])
+        Knb = epsij[rownum]
+        delta = float(beadbead[rownum,7])
+        beadbead_string += '%5d%5d%8s%8s%5s%16.8E%16.8E%16.8E\n' % \
+                (i_idx,j_idx,resi_id,resj_id,interaction_num,sig,Knb,delta)
+
+    open(savebeadbeadxp,"w").write(beadbead_string)
 
 if __name__ == '__main__':
     def dummy_func(sub,string):

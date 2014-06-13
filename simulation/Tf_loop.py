@@ -280,6 +280,7 @@ def start_next_Tf_loop_iteration(Model,System,append_log):
 
     """
 
+    estimate_new_Tf(Model)
     Tf_choice = System.path+"/"+System.subdir+"/"+System.mutation_active_directory+"/Tf_choice.txt"
     Tf_guess = int(round(float(open(Tf_choice,"r").read()[:-1])))
     #Tf_guess = 36.0811*((Model.n_contacts*epsilon_bar)/ Model.n_residues) + 56.2182
