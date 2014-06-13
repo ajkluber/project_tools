@@ -73,10 +73,13 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q",newbeadbead=
     append_log(System.subdir,"Starting: Calculating_MC2004") 
     LP_problem, solution, x_particular, N = apply_constraints_with_cplex(Model,System,savedir,ddG,eps,M,cutoff)
     delta_eps = x_particular + np.dot(N,solution)
+    delta_eps_xp = x_particular
     ratio = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
+    ratio_xp = np.linalg.norm(delta_eps_xp)/np.linalg.norm(eps)
     np.savetxt(savedir+"/mut/delta_eps.dat",delta_eps)
     print "  Solution found!"
     print "  Norm of perturbation, |deps|/|eps| = ", ratio
+    print "  Norm of just x_p perturbation, |x_p|/|eps| = ", ratio_xp
 
     print "  Saving new parameters as: ",savedir+"/mut/"+newbeadbead
     ## New Parameters
@@ -299,10 +302,23 @@ def calculate_matrix_ddG_eps_M(Model,System,savedir,beta,coord):
     #print "M", M.shape
     #print "ddG", ddG_all.shape
 
+    ## Singular value decomposition. As a test you can recover M by,
+    ## S = np.zeros(M.shape)
+    ## S[:M.shape[1],:M.shape[1]] = np.diag(s)
+    ## np.allclose(M,np.dot(u,np.dot(S,v))) --> should be True
+    u,s,v = np.linalg.svd(M)
+    rank = len(s)
+    np.savetxt(savedir+"/mut/singular_values.dat",s)
+    np.savetxt(savedir+"/mut/singular_values_norm.dat",s/max(s))
+    print "  Matrix M singular values saved as: ", savedir+"/mut/singular_values.dat"
+    print "  Normed singular value spectrum:"
+    print s/max(s)
+
     np.savetxt(savedir+"/mut/termA.dat",termA_all)
     np.savetxt(savedir+"/mut/termB.dat",termB_all)
     np.savetxt(savedir+"/mut/termC.dat",termC_all)
     np.savetxt(savedir+"/mut/M.dat",M)
+    print "  Matrices: termA, termB, termC, and M computed and saved to ", savedir+"/mut"
     
     return ddG_all,epsij,M
 
