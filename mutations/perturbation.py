@@ -127,7 +127,7 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q",newbeadbead=
     print "    Norm of just x_p perturbation, |x_p|/|eps| = ", ratio_xp
 
     print "  Saving new parameters as: ",savebeadbead
-    save_new_parameters(sub,eps,delta_eps,delta_eps_xp,savebeadbead, savebeadbeadxp)
+    save_new_parameters(sub,eps,delta_eps,delta_eps_xp,savebeadbead, savebeadbeadxp, T)
 
     Model.contact_energies = savebeadbead
 
@@ -352,7 +352,7 @@ def calculate_matrix_ddG_eps_M(Model,System,savedir,beta,coord):
     
     return ddG_all,epsij,M
 
-def save_new_parameters(sub,eps,delta_eps,delta_eps_xp,savebeadbead,savebeadbeadxp):
+def save_new_parameters(sub,eps,delta_eps,delta_eps_xp,savebeadbead,savebeadbeadxp, T):
     """ Save new parameters as a BeadBead file
 
     Description:
