@@ -153,6 +153,12 @@ def determine_new_T_array():
     print "##DEBUGGING: New Ti, Tf, dT", newTi, newTf, newdT
     return newTi, newTf, newdT
 
+def estimate_new_T(Model, System):
+    sum_of_epsilons = np.sum(Model.get_MC2004_weights())
+    number_of_residues = len(np.loadtxt(System.path+'/'+System.subdir+"/Qref_cryst.dat"))
+    
+    Tf_guess = 36.081061 * (sum_of_epsilons/number_of_residues) + 56.218196
+
 def manually_extend_temperatures(Model,System,append_log,method,temps,factor):
     """ To manually extend some temperatures."""
 
@@ -280,10 +286,9 @@ def start_next_Tf_loop_iteration(Model,System,append_log):
 
     """
 
-    estimate_new_T(Model)
     Tf_choice = System.path+"/"+System.subdir+"/"+System.mutation_active_directory+"/Tf_choice.txt"
-    Tf_guess = int(round(float(open(Tf_choice,"r").read()[:-1])))
-    #Tf_guess = 36.0811*((Model.n_contacts*epsilon_bar)/ Model.n_residues) + 56.2182
+    #Tf_guess = int(round(float(open(Tf_choice,"r").read()[:-1])))
+    Tf_guess = estimate_new_T(Model, System)
 
     ## Update System counters
     System.Tf_iteration += 1
