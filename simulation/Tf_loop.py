@@ -154,10 +154,14 @@ def determine_new_T_array():
     return newTi, newTf, newdT
 
 def estimate_new_T(Model, System):
-    sum_of_epsilons = np.sum(Model.get_MC2004_weights())
+    beadbead = np.loadtxt(Model.contact_energies, dtype=str)
+    native = beadbead[:,4].astype(int)
+    eps = beabead[:,6].astype(float)
+    #Pick only the native contacts
+    eps = eps[ native !=0 ]
     number_of_residues = len(np.loadtxt(System.path+'/'+System.subdir+"/Qref_cryst.dat"))
     
-    Tf_guess = 36.081061 * (sum_of_epsilons/number_of_residues) + 56.218196
+    Tf_guess = 36.081061 * (np.sum(eps)/number_of_residues) + 56.218196
 
     return Tf_guess
 
