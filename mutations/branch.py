@@ -62,7 +62,7 @@ if __name__ == "__main__":
     "/system.info",
     "/modelbuilder.log",
     "/Mut_0/Tf_choice.txt",
-    "/Mut_0/"+Tf_choice+"_1/BeadBead.dat",
+    "/Mut_0/"+Tf_choice+"_agg/BeadBead.dat",
     "/Mut_0/"+Tf_choice+"_agg/mut/M.dat",
     "/Mut_0/"+Tf_choice+"_agg/mut/eps.dat",
     "/Mut_0/"+Tf_choice+"_agg/mut/ddG.dat",
