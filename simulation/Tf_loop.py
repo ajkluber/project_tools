@@ -159,6 +159,8 @@ def estimate_new_T(Model, System):
     
     Tf_guess = 36.081061 * (sum_of_epsilons/number_of_residues) + 56.218196
 
+    return Tf_guess
+
 def manually_extend_temperatures(Model,System,append_log,method,temps,factor):
     """ To manually extend some temperatures."""
 
