@@ -156,7 +156,7 @@ def determine_new_T_array():
 def estimate_new_T(Model, System):
     beadbead = np.loadtxt(Model.contact_energies, dtype=str)
     native = beadbead[:,4].astype(int)
-    eps = beabead[:,6].astype(float)
+    eps = beadbead[:,6].astype(float)
     #Pick only the native contacts
     eps = eps[ native !=0 ]
     number_of_residues = len(np.loadtxt(System.path+'/'+System.subdir+"/Qref_cryst.dat"))
