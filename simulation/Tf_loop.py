@@ -208,8 +208,10 @@ def manually_extend_temperatures(Model,System,append_log,method,temps,factor):
             if os.path.exists("energyterms.xvg"):
                 os.remove("energyterms.xvg")
         os.chdir(cwd2)
-
-    append_log(System.subdir,"Starting: Tf_loop_iteration")
+    if method == "Tf":
+        append_log(System.subdir,"Starting: Tf_loop_iteration")
+    elif method == "Mut":
+        append_log(System.subdir,"Starting: Equil_Tf")
 
     os.chdir(cwd)
 
