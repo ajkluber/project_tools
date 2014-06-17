@@ -94,7 +94,7 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q",newbeadbead=
             num_singular_values = int(temp)
             savebeadbeadxp = savedir+"/mut/"+newbeadbead.split(".dat")[0]+"_xp.dat"
             savebeadbead = savedir+"/mut/"+newbeadbead
-        cutoff = cutoffs[num_singular_values]
+        cutoff = cutoffs[num_singular_values-1]
         print "  Using ",num_singular_values," singular values. Cutoff of = ",cutoff
 
     append_log(System.subdir,"Starting: Calculating_MC2004") 
@@ -358,7 +358,7 @@ def save_new_parameters(sub,eps,delta_eps,delta_eps_xp,savebeadbead,savebeadbead
     Description:
 
     """
-    beadbead, keep_interactions = phi.load_beadbead(sub+"/"+T+"_1")
+    beadbead, keep_interactions = phi.load_beadbead(sub+"/"+T+"_agg")
 
     ## Saving new parameters
     epsilon_prime = eps + delta_eps

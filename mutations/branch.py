@@ -46,7 +46,6 @@ if __name__ == "__main__":
     paths = [ \
     "/Mut_0/"+Tf_choice+"_agg/mut",
     "/Mut_0/"+Tf_choice+"_agg/phi",
-    "/Mut_0/"+Tf_choice+"_1",
     "/mutants",
     "/Qref_shadow"]
 
