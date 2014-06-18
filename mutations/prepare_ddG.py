@@ -20,7 +20,8 @@ Remaining issues:
    
 Changelog:                                                                                                                        
 May 2014 Created                                                                                                             
-June 2014 Modified to include proper treatment of surface mutations                                                                                        June 2014 Turned into a module 
+June 2014 Modified to include proper treatment of surface mutations                                                                                        JunJune 2014 Turned into a module 
+June 2014 Added the option to incorporate ddGs directly from available data
 '''
 
 def get_args():
@@ -42,6 +43,7 @@ def translate_csv_file(protein):
     content_in_rows.append('# kf denaturant concentration (M):'+'\t'*4+file_content.next()[1]+'\n')
     content_in_rows.append('# ku denaturant concentration (M):'+'\t'*4+file_content.next()[1]+'\n')
     content_in_rows.append('# Denaturant equilibrium concentration (M):'+'\t'*3+file_content.next()[1]+'\n')
+    content_in_rows.append('# Type of calculation: (direct or indirect):'+'\t'*3+file_content.next()[1]+'\n')
     content_in_rows.append('# (NOTE: if the kinetic constant type is \'log_value\', please replace  \'kf, e_kf, ku and e_ku\''+
                            ' by  \'ln_kf, e_ln_kf, ln_ku and  e_ln_ku\'    in the units line.\n')
     content_in_rows.append('# (NOTE: if the energy values are in kJ/mol, please replace the corresponding units)\n')
@@ -78,38 +80,62 @@ class ddG_data:
         self.exclude = exclude
 
 # All values in units of kT
-def calc_ddGdag(wt_ln_kf, ln_kf, wt_mkf, mkf, CM):
-    ddGdag = wt_ln_kf - ln_kf - CM * (wt_mkf - mkf)
+def calc_ddGdag(wt_ln_kf, ln_kf, wt_mkf, mkf, CM, calculation_type):
+    if calculation_type=='direct':
+        ddGdag = wt_ln_kf - ln_kf
+    else:
+        ddGdag = wt_ln_kf - ln_kf - CM * (wt_mkf - mkf)
     return ddGdag
 
-def calc_e_ddGdag(wt_e_ln_kf, e_ln_kf, wt_e_mkf, e_mkf, CM):
+def calc_e_ddGdag(wt_e_ln_kf, e_ln_kf, wt_e_mkf, e_mkf, CM, calculation_type):
     # Using the arithmetic version of the error
-    e_ddGdag = wt_e_ln_kf + e_ln_kf + CM *(wt_e_mkf + e_mkf)
+    if calculation_type=='direct':
+        e_ddGdag = wt_e_ln_kf + e_ln_kf
+    else:
+        e_ddGdag = wt_e_ln_kf + e_ln_kf + CM *(wt_e_mkf + e_mkf)
     return e_ddGdag
 
-def calc_ddG0(ln_kf, ln_ku, mkf, mku, CM, ku_denaturant_conc):
-    ddG0 = ln_ku - ln_kf + CM * (mku + mkf) - ku_denaturant_conc * mku
+def calc_ddG0(ln_kf, ln_ku, mkf, mku, CM, ku_denaturant_conc, ddG0_eq_f, calculation_type, temperature, kB, placeholder_list):
+    if calculation_type=='direct':
+        if ddG0_eq_f in placeholder_list:
+            ddG0 = 0.
+        else:
+            ddG0 = ddG0_eq_f/(temperature * kB)
+    else:
+        ddG0 = ln_ku - ln_kf + CM * (mku + mkf) - ku_denaturant_conc * mku
     return ddG0
 
-def calc_e_ddG0(e_ln_kf, e_ln_ku, e_mkf, e_mku, CM, ku_denaturant_conc):
+def calc_e_ddG0(e_ln_kf, e_ln_ku, e_mkf, e_mku, CM, ku_denaturant_conc, e_ddG0_eq_f, calculation_type, temperature, kB, placeholder_list):
     # Using the arithmetic version of the error  
-    e_ddG0 = e_ln_ku + e_ln_kf + CM * (e_mku + e_mkf) + ku_denaturant_conc * e_mku
+    if calculation_type=='direct':
+        e_ddG0 = e_ddG0_eq_f/(temperature * kB)
+        if e_ddG0_eq_f in placeholder_list:
+            e_ddG0 = 0.
+    else:
+        e_ddG0 = e_ln_ku + e_ln_kf + CM * (e_mku + e_mkf) + ku_denaturant_conc * e_mku
     return e_ddG0
 
-def calc_phi(item_ddGdag, item_ddG0):
-    if item_ddG0!=0:
-        phi = item_ddGdag / item_ddG0
+def calc_phi(item_ddGdag, item_ddG0, phi_f, calculation_type, placeholder_list):
+    if calculation_type=='direct' and phi_f not in placeholder_list:
+        phi = phi_f
     else:
-        phi = 0.
+        # Just for informative purposes, we will include all phi values (even if ddG0 is very low)
+        if item_ddG0!=0:
+            phi = item_ddGdag / item_ddG0
+        else:
+            phi = 0.
     
     return phi
     
-def calc_e_phi(item_ddGdag, item_e_ddGdag, item_ddG0, item_e_ddG0):
+def calc_e_phi(item_ddGdag, item_e_ddGdag, item_ddG0, item_e_ddG0, e_phi_f, calculation_type, placeholder_list):
     # Using the arithmetic version of the error  
-    if item_e_ddG0 != 0:
-        e_phi = abs((item_e_ddGdag * item_ddG0 + item_e_ddG0 * item_ddGdag)/ np.square(item_ddG0))
+    if calculation_type=='direct' and e_phi_f not in placeholder_list:
+        e_phi = e_phi_f
     else:
-        e_phi = 0.
+        if item_e_ddG0 != 0.:
+            e_phi = abs((item_e_ddGdag * item_ddG0 + item_e_ddG0 * item_ddGdag)/ np.square(item_ddG0))
+        else:
+            e_phi = 0.
 
     return e_phi
 
@@ -126,9 +152,10 @@ def import_ddG_file(protein):
     units_dict_kJ = {'index_number':'', 'resA':'', 'resB':'', 'kf': '1/s', 'e_kf':'1/s', 'ku':'1/s', 'e_ku':'1/s',
                        'mkf':'1/M','e_mkf':'1/M', 'mku':'1/M', 'e_mku':'1/M', 'ddG0_eq':'kJ/mol', 'e_ddG0_eq':'kJ/mol'}
     temperature_list = ['deg_C', 'K']
-    placeholder_list = ['-999', -999]
+    placeholder_list = ['-999', -999, -999.000000]
     k_type_options = ['k_value', 'log_value']
     location_options = ['none','core','surf']
+    calculation_type_options = ['direct', 'indirect']
     
     
     # Read experimental temperature
@@ -162,6 +189,9 @@ def import_ddG_file(protein):
 
     # Read denaturant concentration at vertex of chevron plot
     CM = float(ddG_file[6].split()[-1])
+    calculation_type = ddG_file[7].split()[-1]
+    if calculation_type not in calculation_type_options:
+        sys.exit('Please give a valid option for the calculation type')
 
     location = []
     index =[]
@@ -207,9 +237,11 @@ def import_ddG_file(protein):
                 wt_e_mku = 0.
             
 
-            if any(x in placeholder_list for x in [wt_kf,wt_mkf]):
+            if any(x in placeholder_list for x in [wt_kf,wt_mkf]) and calculation_type=='indirect':
                 sys.exit('The program cannot run without kf or ln(kf) and mkf for the wild type')
-                
+            if wt_kf in placeholder_list and calculation_type=='direct':
+                sys.exit('The program cannot run without kf for the wild type')
+               
             if k_type =='log_value':
                 wt_ln_kf = wt_kf
                 wt_e_ln_kf = wt_e_kf
@@ -230,7 +262,7 @@ def import_ddG_file(protein):
             e_mkf = float(values[9])
             mku = float(values[10])
             e_mku = float(values[11])
-            #The following values are not used for the time being
+            #The following values are only used for the direct calculation_type
             ddG0_eq_f = float(values[12])
             e_ddG0_eq_f = float(values[13])
             phi_f = float(values[14])
@@ -243,7 +275,7 @@ def import_ddG_file(protein):
         resB.append(residue_B)
 
         # Exception handling: kf, mkf, ku and mku (or their logarithmic equivalent) must be given for mutation to be usable
-        if any(x in placeholder_list for x in [kf, mkf, ku, mku]):
+        if any(x in placeholder_list for x in [kf, mkf, ku, mku]) and calculation_type=='indirect':
             print 'Mutation '+ residue_A + index_number + residue_B + ' cannot be used because either kf, ku, mkf or mku are missing'
             ddG0.append(0)
             e_ddG0.append(0)
@@ -255,6 +287,31 @@ def import_ddG_file(protein):
             exclude.append(item_exclude)             
             continue
         
+        if any(x in placeholder_list for x in [kf]) and calculation_type=='direct':
+            print 'Mutation '+ residue_A + index_number + residue_B + ' cannot be used because kf is missing'
+            ddG0.append(0)
+            e_ddG0.append(0)
+            ddGdag.append(0)
+            e_ddGdag.append(0)
+            usable.append(False)
+            phi.append(0)
+            e_phi.append(0)
+            exclude.append(item_exclude)
+            continue
+        
+        if all([any(x in placeholder_list for x in [ddG0_eq_f]), calculation_type=='direct', location_value not in ['surf']]):
+            print 'Mutation '+ residue_A + index_number + residue_B + ' cannot be used because kf is missing'
+            ddG0.append(0)
+            e_ddG0.append(0)
+            ddGdag.append(0)
+            e_ddGdag.append(0)
+            usable.append(False)
+            phi.append(0)
+            e_phi.append(0)
+            exclude.append(item_exclude)
+            continue
+
+
         # Mutations that pass the previous filter are usable
         usable.append(True)
 
@@ -266,9 +323,15 @@ def import_ddG_file(protein):
             e_ln_ku = e_ku
         else: 
             ln_kf = np.log(kf)
-            ln_ku = np.log(ku)
             e_ln_kf = e_kf/kf
-            e_ln_ku = e_ku/ku
+            try:    
+                ln_ku = np.log(ku)
+            except: 
+                ln_ku = 0.
+            try:
+                e_ln_ku = e_ku/ku
+            except:
+                e_ln_ku = 0.
 
         # Error calculation is not indispensable, but then we must reset the respective uncertainties to zero if not available
         if e_ln_kf in placeholder_list:
@@ -283,21 +346,29 @@ def import_ddG_file(protein):
         if e_mku in placeholder_list:
             e_mku = 0.
         
+        if e_ddG0_eq_f in placeholder_list:
+            e_ddG_eq_f = 0.
+        
+        if e_phi_f in placeholder_list:
+            e_phi_f = 0.
+
         # Calculate parameters to yield in final .dat file
         # Variables within the scope of this module are preceded by "item_" so that they are not confused with the corresponding lists
-        item_ddG0 = calc_ddG0(ln_kf, ln_ku, mkf, mku, CM, ku_denaturant_conc)
+        item_ddG0 = calc_ddG0(ln_kf, ln_ku, mkf, mku, CM, ku_denaturant_conc, ddG0_eq_f, calculation_type, temperature, kB, placeholder_list)
+        item_e_ddG0 = calc_e_ddG0(e_ln_kf, e_ln_ku, e_mkf, e_mku, CM, ku_denaturant_conc, e_ddG0_eq_f, calculation_type, temperature, kB, placeholder_list)
+        item_ddGdag = calc_ddGdag(wt_ln_kf, ln_kf, wt_mkf, mkf, CM, calculation_type)
+        item_e_ddGdag = calc_e_ddGdag(wt_e_ln_kf, e_ln_kf, wt_e_mkf, e_mkf, CM, calculation_type)
+        item_phi = calc_phi(item_ddGdag, item_ddG0, phi_f, calculation_type, placeholder_list)
+        item_e_phi = calc_e_phi(item_ddGdag, item_e_ddGdag, item_ddG0, item_e_ddG0, e_phi_f, calculation_type, placeholder_list)
+        
         ddG0.append(item_ddG0)
-        item_e_ddG0 = calc_e_ddG0(e_ln_kf, e_ln_ku, e_mkf, e_mku, CM, ku_denaturant_conc)
         e_ddG0.append(item_e_ddG0)
-        item_ddGdag = calc_ddGdag(wt_ln_kf, ln_kf, wt_mkf, mkf, CM)
         ddGdag.append(item_ddGdag)
-        item_e_ddGdag = calc_e_ddGdag(wt_e_ln_kf, e_ln_kf, wt_e_mkf, e_mkf, CM)
         e_ddGdag.append(item_e_ddGdag)
-        phi.append(calc_phi(item_ddGdag, item_ddG0))
-        e_phi.append(calc_e_phi(item_ddGdag, item_e_ddGdag, item_ddG0, item_e_ddG0))
+        phi.append(item_phi)
+        e_phi.append(item_e_phi)
         exclude.append(item_exclude)
-
-
+        
     # Now, do the trick for the surface mutations:
     i = 0
     n_muts = len(location)-1
@@ -325,9 +396,9 @@ def import_ddG_file(protein):
                     ddGdag.append(ddGdag[second]-ddGdag[first])
                     e_ddGdag.append(e_ddGdag[second]+e_ddGdag[first])
                     usable.append(True)
-                    phi.append(calc_phi(ddGdag[len(location)-1], ddG0[len(location)-1]))
+                    phi.append(calc_phi(ddGdag[len(location)-1], ddG0[len(location)-1], phi_f, 'indirect', placeholder_list))
                     e_phi.append(calc_e_phi(ddGdag[len(location)-1], e_ddGdag[len(location)-1],
-                                            ddG0[len(location)-1], e_ddG0[len(location)-1]))
+                                            ddG0[len(location)-1], e_ddG0[len(location)-1], e_phi_f, 'indirect', placeholder_list))
                     exclude.append(0)
                     # Turn the original pair into usable=False
                     usable[i]=False
@@ -366,8 +437,8 @@ def main():
     #See if the input .csv file exists
     try:
         translate_csv_file(protein)
-
-    import_ddG_file(protein)
+    finally:
+        import_ddG_file(protein)
 
 if __name__ == '__main__':
     main()
