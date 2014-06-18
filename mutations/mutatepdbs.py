@@ -357,7 +357,7 @@ def prepare_mutants(System,append_log):
     os.chdir(cwd)
     append_log(System.subdir,"Finished: Preparing_Mutants")
 
-def command_line_prepare_mutants(System,append_log):
+def command_line_prepare_mutants():
     """ Creates a mutated pdb for every mutant."""
 
     if not os.path.exists("calculated_ddG.dat"):
