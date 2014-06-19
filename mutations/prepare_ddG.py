@@ -64,7 +64,7 @@ def translate_csv_file(protein):
             if row[i]=='-999':
                 line_to_append += '     -999          '
             else:
-                line_to_append += '{0:>13.8f}      '.format(float(row[i]))
+                line_to_append += '{0:>13.7f}      '.format(float(row[i]))
 
         for i in range(8,16):
             if row[i]=='-999':
