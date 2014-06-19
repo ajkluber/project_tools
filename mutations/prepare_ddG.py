@@ -20,7 +20,7 @@ Remaining issues:
    
 Changelog:                                                                                                                        
 May 2014 Created                                                                                                             
-June 2014 Modified to include proper treatment of surface mutations                                                                                        JunJune 2014 Turned into a module 
+June 2014 Modified to include proper treatment of surface mutations                                                                                     June 2014 Turned into a module 
 June 2014 Added the option to incorporate ddGs directly from available data
 '''
 
