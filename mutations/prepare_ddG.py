@@ -49,14 +49,31 @@ def translate_csv_file(protein):
     content_in_rows.append('# (NOTE: if the energy values are in kJ/mol, please replace the corresponding units)\n')
     content_in_rows.append('# (NOTE: \'-999\' is the placeholder for missing data)\n')
     content_in_rows.append('# (NOTE: In the case of the location, the valid options are \'none\', \'core\' or \'surf\'\n')
-    content_in_rows.append('# location\tindex\tresA\tresB\tkf\te_kf\tku\te_ku\tmkf\te_mkf\tmku\te_mku\tddG0\te_ddG0\tphi_f\te_phi_f\texclude\n\
-')
-    content_in_rows.append('# \t-\t-\t-\t-\t(1/s)\t(1/s)\t(1/s)\t(1/s)\t(1/M)\t(1/M)\t(1/M)\t(1/M)\t(kcal/mol)\t-\t-\t-\n')
+    content_in_rows.append('# loca\'n  index  resA  resB            kf                 e_kf                ku                e_ku         mkf       e_mkf       mku        e_mku      ddG0      e_ddG0     phi_f     e_phi_f  exclude\n')
+    content_in_rows.append('#    -        -    -     -           (1/s)               (1/s)              (1/s)              (1/s)        (1/M)      (1/M)      (1/M)       (1/M)         (kcal/mol)           -          -      -\n')
 
     for row in file_content:
         if list(row[0])[0]=='#':
             continue
-        line_to_append ='\t'+'\t'.join(row)+'\n'
+        line_to_append = '    {0:4s}   '.format(row[0])
+        if row[1]=='wt':
+            line_to_append += '  wt    {0:1s}    {1:1s}        '.format(row[2], row[3])   
+        else:
+            line_to_append += '{0:4d}    {1:1s}    {2:1s}        '.format(int(row[1]), row[2], row[3])
+        for i in range(4,8):
+            if row[i]=='-999':
+                line_to_append += '     -999          '
+            else:
+                line_to_append += '{0:>13.8f}      '.format(float(row[i]))
+
+        for i in range(8,16):
+            if row[i]=='-999':
+                line_to_append += '  -999     '
+            else:
+                line_to_append += '{0:>7.5f}    '.format(float(row[i]))
+        
+        line_to_append += '{0:1d}\n'.format(int(row[16]))
+
         content_in_rows.append(line_to_append)
 
     with open(protein+'_ddG.dat', 'w') as datfile:
@@ -334,6 +351,14 @@ def import_ddG_file(protein):
                 e_ln_ku = 0.
 
         # Error calculation is not indispensable, but then we must reset the respective uncertainties to zero if not available
+        if e_kf in placeholder_list:
+            e_kf = 0.
+            e_ln_kf = 0.
+        
+        if e_ku in placeholder_list:
+            e_ku = 0.
+            e_ln_ku = 0.
+
         if e_ln_kf in placeholder_list:
             e_ln_kf = 0.
 
