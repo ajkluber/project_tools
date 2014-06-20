@@ -20,7 +20,8 @@ Remaining issues:
    
 Changelog:                                                                                                                        
 May 2014 Created                                                                                                             
-June 2014 Modified to include proper treatment of surface mutations                                                                                     June 2014 Turned into a module 
+June 2014 Modified to include proper treatment of surface mutations
+June 2014 Turned into a module 
 June 2014 Added the option to incorporate ddGs directly from available data
 '''
 
@@ -445,15 +446,15 @@ def import_ddG_file(protein):
     a = '  '
     b = '   '
     c = '    '
-    dat_file.write('#loc\tindex\tresA\tresB'+2*c+' ddG0'+2*c+b+'e_ddG0'+2*c+' ddGdag'+2*c+a+'e_ddGdag'+3*c+'usable'+2*c+'phi'+3*c+'e_phi'+c+a+'exclude\n')
+    dat_file.write('#loc   index   resA   resB'+b+c+' ddG0'+2*b+c+'e_ddG0'+c+b+' ddGdag'+2*b+a+'e_ddGdag'+2*c+'usable'+a+b+c+'phi'+2*c+b+'e_phi'+c+a+'exclude\n')
     for i in range(len(Calculated_ddG_list.location)):
-        dat_file.write('%s\t%s\t%s\t%s\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t\t%s\t%10.4f\t%10.4f\t%d\n'% (Calculated_ddG_list.location[i], Calculated_ddG_list.index[i],
-                                                                                                  Calculated_ddG_list.resA[i], Calculated_ddG_list.resB[i], 
-                                                                                                  Calculated_ddG_list.ddG0[i], Calculated_ddG_list.e_ddG0[i], 
-                                                                                                  Calculated_ddG_list.ddGdag[i], Calculated_ddG_list.e_ddGdag[i],
-                                                                                                  Calculated_ddG_list.usable[i],
-                                                                                                  Calculated_ddG_list.phi[i], Calculated_ddG_list.e_phi[i],
-                                                                                                  Calculated_ddG_list.exclude[i]))
+        dat_file.write('{0:>4s}    {1:>4s}     {2:>s}     {3:>s}     {4:>10.4f}     {5:>10.4f}    '.format(Calculated_ddG_list.location[i], Calculated_ddG_list.index[i],
+                                                                                                           Calculated_ddG_list.resA[i], Calculated_ddG_list.resB[i], 
+                                                                                                           Calculated_ddG_list.ddG0[i], Calculated_ddG_list.e_ddG0[i]))      
+        dat_file.write('{0:>10.4f}     {1:>10.4f}         {2:>5s}     {3:>10.4f}     {4:>10.4f}        {5:>d}\n'.format(Calculated_ddG_list.ddGdag[i], Calculated_ddG_list.e_ddGdag[i],
+                                                                                                                       str(Calculated_ddG_list.usable[i]),
+                                                                                                                       Calculated_ddG_list.phi[i], Calculated_ddG_list.e_phi[i],
+                                                                                                                       Calculated_ddG_list.exclude[i]))
     dat_file.close()
     
 def main():
