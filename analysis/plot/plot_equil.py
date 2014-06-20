@@ -122,7 +122,7 @@ def plot_2D_pmf(coord1,coord2,T,):
     cbar = plt.colorbar()
     cbar.set_label("F / kT",fontsize="xx-large")
     #plt.savefig(path+"/Q_Qh_"+T+"_pmf.pdf")
-    plt.savefig(savedir+"/"+coord1+"_"coord2+"_pmf.pdf")
+    plt.savefig(savedir+"/"+coord1+"_"+coord2+"_pmf.pdf")
 
 def plot_2D_equil_pmfs(name,T,num):
     ''' Plot 2D pmfs.'''
