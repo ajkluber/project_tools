@@ -21,7 +21,7 @@ import os
 import argparse
 import subprocess as sb
 
-import model_builder.analysis.contacts as ct
+import project_tools.analysis.contacts as ct
 
 def main():
     ''' Two possible branches: 1. Calculate reference matrix, 2. Calculate Q '''
