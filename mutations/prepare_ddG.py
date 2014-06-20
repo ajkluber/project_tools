@@ -460,7 +460,7 @@ def main():
     #find out protein from input... should be replaced by reading system.info                                                     
     protein = get_args().prot
     #See if the input .csv file exists
-    if os.path.exists(protein+'_ddG.csv'):
+    if os.path.exists(os.getcwd()+'/'+protein+'_ddG.csv'):
         translate_csv_file(protein)
 
     import_ddG_file(protein)
