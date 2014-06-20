@@ -15,7 +15,7 @@ import hist_stab
 import melt_curve
 import metrics
 import plot_ddG_comparison
-import plot_equil
+#import plot_equil
 import plot_loop_dist_vs_permutant
 import plot_Qgroups
 import plot_TS_probabilities
