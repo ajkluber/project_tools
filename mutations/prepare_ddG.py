@@ -460,10 +460,10 @@ def main():
     #find out protein from input... should be replaced by reading system.info                                                     
     protein = get_args().prot
     #See if the input .csv file exists
-    try:
+    if os.path.exists(protein+'_ddG.csv'):
         translate_csv_file(protein)
-    finally:
-        import_ddG_file(protein)
+
+    import_ddG_file(protein)
 
 if __name__ == '__main__':
     main()
