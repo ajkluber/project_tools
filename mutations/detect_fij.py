@@ -1,4 +1,7 @@
 """ Extract mutational data. Only return info for useable mutations """
+
+import numpy as np
+
 mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
 useable_and_core = []
 for i in range(mutation_data.shape[0]):
