@@ -6,9 +6,10 @@ import numpy as np
 import os 
 import argparse
 
-from model_builder.analysis.whamdata import WhamData
+from project_tools.analysis.whamdata import WhamData
 
-'''
+"""
+
     Author: Alexander Kluber
     Date: August 24 2013
 
@@ -19,7 +20,7 @@ from model_builder.analysis.whamdata import WhamData
     This could be because I compiled numpy with the Intel mkl libraries on
     installation. The error occurs when plt.colorbar or plt.contourf is used.
  
-'''
+"""
 
 global R
 R = 0.00831415
@@ -356,9 +357,9 @@ def main():
     single_parser = sp.add_parser('single')
     single_parser.add_argument('--name', type=str, required=True, help='Name of system.')
     single_parser.add_argument('--path', type=str, required=True, help='Path that holds the wham directory.')
-    single_parser.add_argument('--FreeEnergy1D', action='store_true', help='Path that holds the wham directory.')
-    single_parser.add_argument('--FreeEnergy', action='store_true', help='Path that holds the wham directory.')
-    single_parser.add_argument('--HeatCap', action='store_true', help='Path that holds the wham directory.')
+    single_parser.add_argument('--FreeEnergy1D', action='store_true', help='.')
+    single_parser.add_argument('--FreeEnergy', action='store_true', help='.')
+    single_parser.add_argument('--HeatCap', action='store_true', help='.')
     
 
     subplot_parser = sp.add_parser('subplot')
