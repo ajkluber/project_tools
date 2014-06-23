@@ -19,5 +19,5 @@ import plot_ddG_comparison
 import plot_loop_dist_vs_permutant
 import plot_Qgroups
 import plot_TS_probabilities
-#import plot_wham
+import plot_wham
 import res_VMD

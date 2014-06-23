@@ -462,6 +462,19 @@ def run_constant_temp(Model,System,T,nsteps="400000000",walltime="23:00:00",queu
     else:
         submit_run(jobname,walltime=walltime,queue=queue,ppn=ppn)
     
+def get_pbs_string(jobname,queue,ppn,walltime):
+    """ Return basic PBS job script. """
+    pbs_string = "#!/bin/bash \n"
+    pbs_string +="#PBS -N %s \n" % jobname
+    pbs_string +="#PBS -q %s \n" % queue
+    pbs_string +="#PBS -l nodes=1:ppn=%s \n" % ppn
+    pbs_string +="#PBS -l walltime=%s \n" % walltime
+    pbs_string +="#PBS -V \n\n"
+    pbs_string +="cd $PBS_O_WORKDIR\n"
+    pbs_string +="mdrun -s run.tpr -table table.xvg -tablep table.xvg"
+    return pbs_string
+
+
 def submit_run(jobname,walltime="23:00:00",queue="serial",ppn="1"):
     ''' Executes the constant temperature runs.'''
 
@@ -482,8 +495,6 @@ def submit_run(jobname,walltime="23:00:00",queue="serial",ppn="1"):
     pbs_string +="#PBS -l walltime=%s \n" % walltime
     pbs_string +="#PBS -V \n\n"
     pbs_string +="cd $PBS_O_WORKDIR\n"
-    #pbs_string +="module purge\n"
-    #pbs_string +="module load gromacs/4.6.5\n"
     pbs_string +="mdrun -s topol.tpr"
 
     open("run.pbs","w").write(pbs_string)
@@ -497,8 +508,6 @@ def submit_run(jobname,walltime="23:00:00",queue="serial",ppn="1"):
     rst_string +="#PBS -l walltime=%s \n" % walltime
     rst_string +="#PBS -V \n\n"
     rst_string +="cd $PBS_O_WORKDIR\n"
-    #rst_string +="module purge\n"
-    #rst_string +="module load gromacs/4.6.5\n"
     rst_string +="mdrun -s topol.tpr -cpi state.cpt"
 
     open("rst.pbs","w").write(rst_string)
