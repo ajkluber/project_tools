@@ -221,8 +221,8 @@ def apply_constraints_with_cplex(Model,System,savedir,ddG,eps,M,cutoff):
 
     ## Constraints version 4:
     ## Require that native contacts remain within a fixed interval.
-    eps_lower_bound = 0.1
-    eps_upper_bound = 4.0
+    eps_lower_bound = 0.001
+    eps_upper_bound = 20.0
     right_hand_side = list(eps + x_particular - eps_lower_bound*np.ones(len(eps)))
     right_hand_side_2 = list(eps + x_particular - eps_upper_bound*np.ones(len(eps)))
     right_hand_side.extend(right_hand_side_2)
