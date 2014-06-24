@@ -76,6 +76,9 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q",newbeadbead=
     u,s,v = np.linalg.svd(M)
     s_norm = s/max(s)
     cutoffs = s_norm - 0.01*np.ones(len(s_norm))
+    #If s_norm is lower than 0.01, cutoffs should still be positve
+    if cutoffs <0.:
+        cutoffs = 0.
 
     if not os.path.exists(savedir+"/mut/num_singular_values_include.txt"):
         print "ERROR!"
