@@ -1,3 +1,9 @@
+""" Example script to start a set of temperatures.
+
+
+"""
+
+
 import numpy as np
 import subprocess as sb
 import os
@@ -10,7 +16,7 @@ import project_tools as pjt
 pdb = "1SHG.pdb"
 name = "1SHG"
 
-base = mdb.models.SmogCalphaBase.SmogCalphaBase()
+base = mdb.models.SmogCalpha.SmogCalpha()
 base.clean_pdb(pdb)
 if not os.path.exists("Qref_shadow"):
     os.mkdir("Qref_shadow")

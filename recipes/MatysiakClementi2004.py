@@ -97,7 +97,7 @@ class MatysiakClementi2004(ProjectManager):
                 pass 
             else:
                 print "Starting Tf_loop_iteration..."
-                simulation.Tf_loop.folding_temperature_loop(Model,System,self.append_log)
+                simulation.Tf_loop.folding_temperature_loop(Model,self.append_log)
         elif task == "wham_Cv":
             print "Finished wham_Cv..."
             print "Stating wham_FreeEnergy..."
@@ -146,24 +146,20 @@ class MatysiakClementi2004(ProjectManager):
                 print "Subdirectory: ", sub, " already exists! just fyi"
 
         print "Starting a new simulation project..."
-        Models = models.new_models(subdirs,modeloptions)
-        Systems = systems.new_systems(subdirs)
+        Models = models.new_models(args.pdbs,modeloptions)
 
-        self.prepare_systems(Models,Systems)
-        self.save_model_system_info(Models,Systems,subdirs)
-
+        self.save_model_system_info(Models)
         if args.temparray != None:
             for n in range(len(subdirs)):
-                Systems[n].initial_T_array = args.temparray
+                Models[n].initial_T_array = args.temparray
 
         ## The first step depends on the type of model.
         for k in range(len(subdirs)):
             print "Starting Tf_loop_iteration for subdirectory: ", subdirs[k]
             Model = Models[k]
-            System = Systems[k]
-            simulation.Tf_loop.folding_temperature_loop(Model,System,self.append_log,new=True)
+            simulation.Tf_loop.folding_temperature_loop(Model,self.append_log,new=True)
 
-        self.save_model_system_info(Models,Systems,subdirs)
+        self.save_model_system_info(Models)
         print "Success"
 
 
@@ -222,9 +218,6 @@ def get_args():
         options["Disulfides"] = None
 
     options["Model_Code"] = "HetGo"
-    options["Bead_Model"] = "CA"
-    options["Solvent"] = None
-    options["R_CD"] = None
     options["Contact_Energies"] = "MC2004"
 
     modeloptions = models.check_options(options)

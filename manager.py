@@ -66,17 +66,14 @@ def get_args():
 
     ## Options for initializing a new simulation project.
     new_parser = sp.add_parser('new')
-    new_parser.add_argument('--model', type=str, required=True, help='Choose model type: HetGo, HomGo, DMC')
-    new_parser.add_argument('--beads', type=str, required=True, help='Choose model beads: CA, CACB.')
     new_parser.add_argument('--pdbs', type=str, required=True, nargs='+',help='PDBs to start simulations.')
+    new_parser.add_argument('--model', type=str, required=True, help='Choose model type: HetGo, HomGo, DMC')
+    new_parser.add_argument('--beads', type=str, default="CA", help='Choose model beads: CA, CACB.')
     new_parser.add_argument('--contact_energies', type=str, help='HetGo Contact energies: MJ, Bach, MC2004, from file.')
     new_parser.add_argument('--temparray', type=int, nargs='+',help='Optional initial temp array: Ti Tf dT. Default: 50 350 50')
-    new_parser.add_argument('--solvent', action='store_true', help='Add this option for solvent.')
-    new_parser.add_argument('--dryrun', action='store_true', help='Add this option for dry run. No simulations started.')
-    new_parser.add_argument('--R_CD', type=float, help='Optional specific ratio of contact to dihedral energy.')
     new_parser.add_argument('--epsilon_bar', type=float, help='Optional, average strength of contacts. epsilon bar.')
-    new_parser.add_argument('--cutoff', type=float, help='Optional cutoff for heavy atom determination of native contacts.')
     new_parser.add_argument('--disulfides', type=int, nargs='+', help='Optional pairs of disulfide linked residues.')
+    new_parser.add_argument('--dryrun', action='store_true', help='Add this option for dry run. No simulations started.')
     new_parser.add_argument('--email', type=str, help='Optional email address for PBS to send sim details.')
 
     ## Options for continuing from a previously saved simulation project.
@@ -113,7 +110,7 @@ def get_args():
         options["Model_Code"] = args.model
         options["Bead_Model"] = args.beads
         options["Solvent"] = args.solvent
-        options["R_CD"] = args.R_CD
+        options["R_CD"] = None
         options["Epsilon_Bar"] = args.epsilon_bar
         options["Disulfides"] = args.disulfides
         options["Contact_Energies"] = args.contact_energies
@@ -153,14 +150,13 @@ class ProjectManager(object):
         now_string = "%s:%s:%s:%s:%s" % (now.tm_year,now.tm_mon,now.tm_mday,now.tm_hour,now.tm_min)
         return now_string
 
-    def create_subdirs(self,System):
+    def create_subdirs(self,Models):
         ''' Create the subdirectories for the system. Skip if they already exist.'''
-        for i in range(len(System.subdirs)): 
-            sub = System.subdirs[i]
+        for i in range(len(Models)): 
+            sub = Models[i].subdirs
             if os.path.exists(sub) != True:
                 os.mkdir(sub)
-                os.mkdir(sub+"/"+System.Tf_active_directory[i])
-                #open(sub+"/Tf_active_directory.txt","w").write(System.Tf_active_directory[i])
+                os.mkdir(sub+"/Tf_"+Models[i].Tf_iteration)
                 self.append_log(sub,"Creating new subdirectory: %s" % sub)
 
     def add_temperature_array(self,args):
@@ -169,25 +165,22 @@ class ProjectManager(object):
 
         subdirs = args.subdirs
         Models = models.load_models(subdirs,dryrun=args.dryrun)
-        Systems = systems.load_systems(subdirs)
-        self.prepare_systems(Models,Systems)
 
         Ti = args.temparray[0] 
         Tf = args.temparray[1] 
         dT = args.temparray[2] 
 
         for i in range(len(subdirs)):
-            sub = subdirs[i]
-            Model = Models[i]
-            System = Systems[i]
+            model = Models[i]
+            sub = model.subdir
             lasttime,action,task = self.check_modelbuilder_log(sub)
             print "Checking progress for directory:  ", sub
             print "Last task was %s %s at %s" % (action,task,lasttime) ## DEBUGGING
             print "Manually adding temperature array Ti=%d Tf=%d dT=%d" % (Ti,Tf,dT)
             print "Starting Tf_loop_iteration..."
-            simulation.Tf_loop.manually_add_temperature_array(Model,System,self.append_log,Ti,Tf,dT)
+            simulation.Tf_loop.manually_add_temperature_array(model,self.append_log,Ti,Tf,dT)
             
-        self.save_model_system_info(Models,Systems,subdirs)
+        self.save_model_system_info(Models)
         print "Success"
 
     def extend_temperatures(self,args):
@@ -197,8 +190,6 @@ class ProjectManager(object):
 
         subdirs = args.subdirs
         Models = models.load_models(subdirs,dryrun=args.dryrun)
-        Systems = systems.load_systems(subdirs)
-        self.prepare_systems(Models,Systems)
 
         if (args.Tf_temps != None) and (args.mut_temps != None):
             print "ERROR!"
@@ -220,15 +211,11 @@ class ProjectManager(object):
             print "Extending Mutational temps",temps
 
         for i in range(len(subdirs)):
-            sub = subdirs[i]
-            Model = Models[i]
-            System = Systems[i]
-            #print Model.dryrun 
-            #print " OPTION NOT DONE! "
-            #raise SystemExit
-            simulation.Tf_loop.manually_extend_temperatures(Model,System,self.append_log,method,temps,factor)
+            model = Models[i]
+            sub = model.subdir
+            simulation.Tf_loop.manually_extend_temperatures(model,self.append_log,method,temps,factor)
             
-        self.save_model_system_info(Models,Systems,subdirs)
+        self.save_model_system_info(Models)
         print "Success"
 
     def check_modelbuilder_log(self,sub):
@@ -242,46 +229,32 @@ class ProjectManager(object):
         ''' Checks where something left off and continues it.'''
         subdirs = args.subdirs
         Models = models.load_models(subdirs,dryrun=args.dryrun)
-        Systems = systems.load_systems(subdirs)
-        self.prepare_systems(Models,Systems)
 
         if args.dryrun == True:
             print "  Dry run complete. Saving and Exiting."
         else:
             for i in range(len(subdirs)):
-                Model = Models[i]        
-                System = Systems[i]      
-                subdir = subdirs[i]
+                model = Models[i]        
+                subdir = model.subdir
                 
                 lasttime,action,task = self.check_modelbuilder_log(subdir)
                 print "Checking progress for directory:  ", subdir
                 print "Last task was %s %s at %s" % (action,task,lasttime)
                 if action == "Starting:":
-                    self.logical_flowchart_starting(System,Model,subdir,task)
+                    self.logical_flowchart_starting(model,task)
                 elif action == "Finished:":
-                    self.logical_flowchart_finished(System,Model,subdir,task)
+                    self.logical_flowchart_finished(model,task)
                 elif action == "Error":
                     pass
 
-        self.save_model_system_info(Models,Systems,subdirs)
+        self.save_model_system_info(Models)
         print "Success"
 
-    def save_model_system_info(self,Models,Systems,subdirs):
-        ''' Save the model and system info strings.'''
+    def save_model_system_info(self,Models):
+        ''' Save the model.info strings.'''
         print "Saving system.info progress..."
-        for i in range(len(subdirs)):
-            open(subdirs[i]+"/system.info","w").write(Systems[i].__repr__())
-            open(subdirs[i]+"/model.info","w").write(Models[i].__repr__())
-
-    def prepare_systems(self,Models,Systems):
-        ''' New style of preparing files: on subdirectory basis.'''
         for i in range(len(Models)):
-            if not os.path.exists(Systems[i].path+"/"+Systems[i].subdir+"/"+Systems[i].subdir+".pdb"):
-                shutil.copy(Systems[i].subdir+".pdb",Systems[i].subdir)
-            if not os.path.exists(Systems[i].path+"/"+Systems[i].subdir+"/Qref_shadow"):
-                os.mkdir(Systems[i].path+"/"+Systems[i].subdir+"/Qref_shadow")
-            Models[i].prepare_system(Systems[i])
-            print "Done preparing systems."
+            open(subdirs[i]+"/model.info","w").write(Models[i].__repr__())
 
 def main():
     args, modeloptions = get_args()

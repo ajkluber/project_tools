@@ -240,7 +240,7 @@ def extend_temperature(Model,T,factor):
     qsub = "qsub rst.pbs"
     sb.call(qsub.split(),stdout=open("rst.out","w"),stderr=open("rst.err","w"))
 
-def folding_temperature_loop(Model,System,append_log,new=False):
+def folding_temperature_loop(model,append_log,new=False):
     """ The "folding temperature loop" is one of the several large-scale 
         logical structures in modelbuilder. It is entered anytime we want
         to determine the folding temperature. This could be when we have
@@ -249,40 +249,40 @@ def folding_temperature_loop(Model,System,append_log,new=False):
         narrows in on the folding temperature."""
 
     cwd = os.getcwd()
-    sub = System.path+"/"+System.subdir+"/"+System.Tf_active_directory
+    sub = model.path+"/"+model.subdir+"/Tf_"+str(model.Tf_iteration)
     #print sub  ## DEBUGGING
     if (not os.path.exists(sub)):
         os.mkdir(sub)
     ## Check to see if the folding temperature has been found. If yes, then continue.
     if (not os.path.exists(sub+"/Tf.txt")):
         os.chdir(sub)
-        folding_temperature_loop_extension(Model,System,append_log,new=new)
+        folding_temperature_loop_extension(model,append_log,new=new)
     else:
         ## Folding temperature has been found. Continuing.
         pass
     os.chdir(cwd)
 
-def folding_temperature_loop_extension(Model,System,append_log,new=False):
+def folding_temperature_loop_extension(model,append_log,new=False):
     """ This is for doing an additional loop in the Tf_loop. It either starts
         an initial temperature array or refines the temperature range according
         to previous data. """
     ## Check to see if a previous temperature range was used.
     if (not os.path.exists("T_array_last.txt")) or new:
         ## For initial exploration use very broad temperature increments.
-        if System.initial_T_array != None:
-            Ti = System.initial_T_array[0]
-            Tf = System.initial_T_array[1]
-            dT = System.initial_T_array[2]
+        if model.initial_T_array != None:
+            Ti = model.initial_T_array[0]
+            Tf = model.initial_T_array[1]
+            dT = model.initial_T_array[2]
         else:
             Ti = 50; Tf = 250; dT = 50
     else:
         ## Use previous range to determine new range. 
         Ti, Tf, dT = determine_new_T_array()
     print "  Running temperature array: T_initial = %.2f   T_final = %.2f   dT = %.2f " % (Ti,Tf,dT)
-    run_temperature_array(Model,System,Ti,Tf,dT)
-    append_log(System.subdir,"Submitting T_array iteration %d " % System.Tf_iteration)
-    append_log(System.subdir,"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
-    append_log(System.subdir,"Starting: Tf_loop_iteration")
+    run_temperature_array(model,Ti,Tf,dT)
+    append_log(model.subdir,"Submitting T_array iteration %d " % model.Tf_iteration)
+    append_log(model.subdir,"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
+    append_log(model.subdir,"Starting: Tf_loop_iteration")
 
 def start_next_Tf_loop_iteration(Model,System,append_log):
     """ Estimate new folding temperature with calibration data
@@ -405,11 +405,11 @@ def determine_walltime(Model):
             queue="serial"
     return walltime, queue, ppn,nsteps
 
-def run_temperature_array(Model,System,Ti,Tf,dT):
+def run_temperature_array(model,Ti,Tf,dT):
     """ Run many constant temperature runs over a range of temperatures to
         find the folding temperature. """
 
-    System.append_log("Starting Tf_loop_iteration %d " % System.Tf_iteration)
+    model.append_log("Starting Tf_loop_iteration %d " % model.Tf_iteration)
     Temperatures = range(Ti,Tf+dT,dT)
     ## Run for longer if the protein is really big.
     walltime, queue, ppn, nsteps = determine_walltime(Model)
@@ -422,9 +422,9 @@ def run_temperature_array(Model,System,Ti,Tf,dT):
             T_string += "%d_0\n" % T
             os.mkdir(simpath)
             os.chdir(simpath)
-            System.append_log("  running T=%d" % T)
+            model.append_log("  running T=%d" % T)
             print "  Running temperature ", T
-            run_constant_temp(Model,System,T,nsteps=nsteps,walltime=walltime,queue=queue,ppn=ppn)
+            run_constant_temp(model,T,nsteps=nsteps,walltime=walltime,queue=queue,ppn=ppn)
             os.chdir("..")
         else:
             ## Directory exists for this temperature: continue.
@@ -434,30 +434,34 @@ def run_temperature_array(Model,System,Ti,Tf,dT):
     open("T_array_last.txt","w").write(T_string)
     open("Ti_Tf_dT.txt","w").write("%d %d %d" % (Ti, Tf, dT))
 
-def run_constant_temp(Model,System,T,nsteps="400000000",walltime="23:00:00",queue="serial",ppn="1"):
-    ''' Start a constant temperature simulation with Gromacs. First it has
-        to write the gromacs files stored in the System object, then it
-        calls a function to submit the job.'''
+def run_constant_temp(model,T,nsteps="400000000",walltime="23:00:00",queue="serial",ppn="1"):
+    ''' Start a constant temperature simulation with Gromacs. 
+
+    Description:
+
+        Save the grofile and topology file in model object, then 
+    submit a pbs job to run simulation.
+
+    '''
     ## Loading and writing grompp.
-    grompp_mdp = mdp.get_constant_temperature_mdp(Model,str(T),nsteps)
-    open("grompp.mdp","w").write(grompp_mdp)
+    grompp_mdp = mdp.get_constant_temperature_mdp_smog(str(T),nsteps)
+    open("nvt.mdp","w").write(grompp_mdp)
 
-    ## Writing topology files.
-    for filename in System.topology_files.iterkeys():
-        #print "    Writing: ", filename    ## DEBUGGING
-        open(filename,"w").write(System.topology_files[filename])
+    ## Write all needed simulation files.
+    open("index.ndx","w").write(model.index_ndx)
+    open("dihedrals.ndx","w").write(model.dihedrals_ndx)
+    open("contacts.ndx","w").write(model.contacts_ndx)
+    open("conf.gro","w").write(model.grofile)
+    open("topol.top","w").write(model.topology)
+    open("BeadBead.dat","w").write(model.beadbead)
 
-    ## Writing interaction tables. Writing native contact map.
-    for m in range(len(Model.interaction_groups)):
-        tablefile = "table_%s.xvg" % Model.interaction_groups[m]
-        np.savetxt(tablefile,Model.tables[m],fmt="%16.15e",delimiter=" ")
-    np.savetxt("table.xvg",Model.other_table,fmt="%16.15e",delimiter=" ")
-    np.savetxt("Qref_cryst.dat",Model.Qref,fmt="%1d",delimiter=" ")
+    np.savetxt("table.xvg",model.table,fmt="%16.15e",delimiter=" ")
+    np.savetxt("Qref_cryst.dat",model.Qref,fmt="%1d",delimiter=" ")
+    np.savetxt("contacts.dat",model.contacts,fmt="%4d",delimiter=" ")
+
     ## Start simulation
-    jobname = System.subdir+"_"+str(T)
-    if Model.R_CD != None:
-        jobname += "_Rcd_%.2f" % Model.R_CD
-    if Model.dryrun == True:
+    jobname = model.subdir+"_"+str(T)
+    if model.dryrun == True:
         print "    Dryrun Success! Successfully saved simulation files." 
     else:
         submit_run(jobname,walltime=walltime,queue=queue,ppn=ppn)
@@ -471,36 +475,10 @@ def get_pbs_string(jobname,queue,ppn,walltime):
     pbs_string +="#PBS -l walltime=%s \n" % walltime
     pbs_string +="#PBS -V \n\n"
     pbs_string +="cd $PBS_O_WORKDIR\n"
-    pbs_string +="mdrun -s run.tpr -table table.xvg -tablep table.xvg"
+    pbs_string +="mdrun -s topol.tpr -table table.xvg -tablep table.xvg"
     return pbs_string
 
-
-def submit_run(jobname,walltime="23:00:00",queue="serial",ppn="1"):
-    ''' Executes the constant temperature runs.'''
-
-    prep_step1 = 'trjconv -f Native.pdb -o Native.xtc'
-    prep_step2 = 'grompp -n index.ndx -c Native.pdb -maxwarn 1'
-    prep_step3 = 'echo -e "System\\n" | trjconv -f Native.pdb -o conf.gro'
-    #prep_step4 = 'grompp -n index.ndx -maxwarn 1'
-
-    sb.call(prep_step1.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
-    sb.call(prep_step2.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
-    sb.call(prep_step3,shell=True,stdout=open("sim.out","w"),stderr=open("sim.err","w"))
-    #sb.call(prep_step4.split())
-
-    pbs_string = "#!/bin/bash \n"
-    pbs_string +="#PBS -N %s \n" % jobname
-    pbs_string +="#PBS -q %s \n" % queue
-    pbs_string +="#PBS -l nodes=1:ppn=%s \n" % ppn
-    pbs_string +="#PBS -l walltime=%s \n" % walltime
-    pbs_string +="#PBS -V \n\n"
-    pbs_string +="cd $PBS_O_WORKDIR\n"
-    pbs_string +="mdrun -s topol.tpr"
-
-    open("run.pbs","w").write(pbs_string)
-    qsub = "qsub run.pbs"
-    sb.call(qsub.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
-
+def get_rst_pbs_string(jobname,queue,ppn,walltime):
     rst_string = "#!/bin/bash \n"
     rst_string +="#PBS -N %s_rst \n" % jobname
     rst_string +="#PBS -q %s \n" % queue
@@ -508,8 +486,22 @@ def submit_run(jobname,walltime="23:00:00",queue="serial",ppn="1"):
     rst_string +="#PBS -l walltime=%s \n" % walltime
     rst_string +="#PBS -V \n\n"
     rst_string +="cd $PBS_O_WORKDIR\n"
-    rst_string +="mdrun -s topol.tpr -cpi state.cpt"
+    rst_string +="mdrun -s topol.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
 
+
+def submit_run(jobname,walltime="23:00:00",queue="serial",ppn="1"):
+    ''' Executes the constant temperature runs.'''
+
+    prep_step = 'grompp -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol.tpr -maxwarn 1'
+
+    sb.call(prep_step.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
+
+    pbs_string = get_pbs_string(jobname,queue,ppn,walltime)
+    open("run.pbs","w").write(pbs_string)
+    qsub = "qsub run.pbs"
+    sb.call(qsub.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
+
+    rst_string = get_rst_pbs_string(jobname,queue,ppn,walltime)
     open("rst.pbs","w").write(rst_string)
 
 if __name__ == '__main__':
