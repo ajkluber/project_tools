@@ -11,7 +11,7 @@ Reference:
 
 (1) Matysiak, S.; Clementi, C. Optimal Combination of Theory and Experiment for
 the Characterization of the Protein Folding Landscape of S6: How Far Can a
-Minimalist Model Go? J. Mol. Biol. 2004, 343, 235-248.
+Minimalist model Go? J. Mol. Biol. 2004, 343, 235-248.
 """
 
 import os
@@ -19,8 +19,7 @@ import argparse
 
 from project_tools.manager import ProjectManager
 from project_tools import simulation, analysis, mutations
-from model_builder import models
-from model_builder import systems
+import model_builder as mdb
 
 
 class MatysiakClementi2004(ProjectManager):
@@ -39,39 +38,39 @@ class MatysiakClementi2004(ProjectManager):
 
     (1) Matysiak, S.; Clementi, C. Optimal Combination of Theory and Experiment for
     the Characterization of the Protein Folding Landscape of S6: How Far Can a
-    Minimalist Model Go? J. Mol. Biol. 2004, 343, 235-248.
+    Minimalist model Go? J. Mol. Biol. 2004, 343, 235-248.
     """
 
 
-    def logical_flowchart_starting(self,System,Model,sub,task):
+    def logical_flowchart_starting(self,model,sub,task):
         if task == "Tf_loop_iteration":
             print "Checking if Tf_loop_iteration completed..."
-            simulation.Tf_loop.check_completion(System,self.append_log)
+            simulation.Tf_loop.check_completion(self.append_log)
             lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
             if action2 == "Finished:":
                 print "Finished Tf_loop_iteration..."
                 print "Starting Tf_loop_analysis..."
-                analysis.Tf_loop.analyze_temperature_array(System,self.append_log)
+                analysis.Tf_loop.analyze_temperature_array(self.append_log)
         elif task == "Tf_loop_analysis":
             print "Checking if Tf_loop_analysis completed..."
-            analysis.Tf_loop.check_completion(System,self.append_log)
+            analysis.Tf_loop.check_completion(self.append_log)
         elif task == "wham_Cv":
             print "Starting to check if wham_Cv completed..."
-            analysis.Tf_loop.continue_wham(System,self.append_log)
+            analysis.Tf_loop.continue_wham(self.append_log)
         elif task == "wham_FreeEnergy":
             print "Starting Equil_Tf..."
-            simulation.Tf_loop.run_equilibrium_simulations(Model,System,self.append_log)
+            simulation.Tf_loop.run_equilibrium_simulations(model,self.append_log)
         elif task == "Equil_Tf":
             print "Starting to check if Equil_Tf completed..."
-            simulation.Tf_loop.check_completion(System,self.append_log,equil=True)
+            simulation.Tf_loop.check_completion(self.append_log,equil=True)
             lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
             if action2 == "Finished:":
                 print "Finished Equil_Tf_iteration..."
                 print "Starting Equil_Tf_analysis..."
-                analysis.Tf_loop.analyze_temperature_array(System,self.append_log,equil=True)
+                analysis.Tf_loop.analyze_temperature_array(self.append_log,equil=True)
         elif task == "Equil_Tf_analysis":
             print "Starting to check if Equil_Tf_analysis completed..."
-            analysis.Tf_loop.check_completion(System,self.append_log,equil=True)
+            analysis.Tf_loop.check_completion(self.append_log,equil=True)
         elif task == "Calculating_MC2004":
             print "ERROR!"
             print "  ",task, " should have finished!"
@@ -85,49 +84,49 @@ class MatysiakClementi2004(ProjectManager):
             print "  Exiting."
             raise SystemExit
 
-    def logical_flowchart_finished(self,System,Model,sub,task):
+    def logical_flowchart_finished(self,model,sub,task):
         if task == "Tf_loop_iteration":
             print "Finished Tf_loop_iteration..."
             print "Starting Tf_loop_analysis..."
-            analysis.Tf_loop.analyze_temperature_array(System,self.append_log)
+            analysis.Tf_loop.analyze_temperature_array(self.append_log)
         elif task == "Tf_loop_analysis":
             print "Finished Tf_loop_analysis..."
-            flag = analysis.Tf_loop.check_if_wham_is_next(System,self.append_log)
+            flag = analysis.Tf_loop.check_if_wham_is_next(self.append_log)
             if flag == 1:
                 pass 
             else:
                 print "Starting Tf_loop_iteration..."
-                simulation.Tf_loop.folding_temperature_loop(Model,self.append_log)
+                simulation.Tf_loop.folding_temperature_loop(model,self.append_log)
         elif task == "wham_Cv":
             print "Finished wham_Cv..."
             print "Stating wham_FreeEnergy..."
-            analysis.Tf_loop.continue_wham(System,self.append_log)
+            analysis.Tf_loop.continue_wham(self.append_log)
         elif task == "Equil_Tf":
             print "Starting Equil_Tf_analysis..."
-            analysis.Tf_loop.analyze_temperature_array(System,self.append_log,equil=True)
+            analysis.Tf_loop.analyze_temperature_array(self.append_log,equil=True)
         elif task == "Equil_Tf_analysis":
             ## Aggregrate equil_Tf data for each temperature and plot PMFs
             print "Starting aggregate data..."
-            analysis.Tf_loop.aggregate_equilibrium_runs(System,self.append_log)
+            analysis.Tf_loop.aggregate_equilibrium_runs(self.append_log)
             print "Plotting aggregated data PMFS..."
-            analysis.plot.pmfs.plot_aggregated_data(System,self.append_log)
+            analysis.plot.pmfs.plot_aggregated_data(self.append_log)
         elif task == "Aggregating_Equil_Runs":
             ## If plotting diddn't work before
             print "Plotting aggregated data PMFS..."
-            analysis.plot.pmfs.plot_aggregated_data(System,self.append_log)
+            analysis.plot.pmfs.plot_aggregated_data(self.append_log)
         elif task == "Plotting_Agg_Data":
             print "Starting prepping mutant pdbs..."
-            mutations.mutatepdbs.prepare_mutants(System,self.append_log)
+            mutations.mutatepdbs.prepare_mutants(self.append_log)
         elif task == "Preparing_Mutants":
             print "Starting calculating dH for mutants..."
-            mutations.phi_values.calculate_dH_for_mutants(Model,System,self.append_log)
+            mutations.phi_values.calculate_dH_for_mutants(model,self.append_log)
         elif task == "Calculating_dH":
-            mutations.phi_values.calculate_phi_values(Model,System,self.append_log,"Q")
+            mutations.phi_values.calculate_phi_values(model,self.append_log,"Q")
         elif task == "Calculating_phi_values":
-            mutations.perturbation.calculate_MC2004_perturbation(Model,System,self.append_log)
+            mutations.perturbation.calculate_MC2004_perturbation(model,self.append_log)
         elif task == "Calculating_MC2004":
             ## Start the next round of simulations with new parameters.
-            simulation.Tf_loop.start_next_Tf_loop_iteration(Model,System,self.append_log)
+            simulation.Tf_loop.start_next_Tf_loop_iteration(model,self.append_log)
         else:
             print "ERROR!"
             print "  Couldn't find next option for task:",task
@@ -146,7 +145,7 @@ class MatysiakClementi2004(ProjectManager):
                 print "Subdirectory: ", sub, " already exists! just fyi"
 
         print "Starting a new simulation project..."
-        Models = models.new_models(args.pdbs,modeloptions)
+        Models = mdb.models.new_models(args.pdbs,modeloptions)
 
         self.save_model_system_info(Models)
         if args.temparray != None:
@@ -154,10 +153,10 @@ class MatysiakClementi2004(ProjectManager):
                 Models[n].initial_T_array = args.temparray
 
         ## The first step depends on the type of model.
-        for k in range(len(subdirs)):
-            print "Starting Tf_loop_iteration for subdirectory: ", subdirs[k]
-            Model = Models[k]
-            simulation.Tf_loop.folding_temperature_loop(Model,self.append_log,new=True)
+        for k in range(len(Models)):
+            model = Models[k]
+            print "Starting Tf_loop_iteration for subdirectory: ", model.subdir
+            simulation.Tf_loop.folding_temperature_loop(model,self.append_log,new=True)
 
         self.save_model_system_info(Models)
         print "Success"
@@ -220,7 +219,7 @@ def get_args():
     options["Model_Code"] = "HetGo"
     options["Contact_Energies"] = "MC2004"
 
-    modeloptions = models.check_options(options)
+    modeloptions = mdb.models.check_options(options)
 
     return args, modeloptions
 
