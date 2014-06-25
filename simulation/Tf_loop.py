@@ -29,20 +29,20 @@ def main():
     else:
         pass
 
-def check_completion(System,append_log,equil=False):
+def check_completion(model,append_log,equil=False):
     """ Checks to see if the previous Tf_loop simulation completed. 
 
     Description:
 
         First 
-    checks the desired number of steps in the grompp.mdp file then 
+    checks the desired number of steps in the .mdp file then 
     checks to see if md.log has recorded that number of steps.
     """
     cwd = os.getcwd()
     if equil == True:
-        sub = System.subdir+"/"+System.mutation_active_directory
+        sub = model.subdir+"/Mut_"+model.Mut_iteration
     else:
-        sub = System.subdir+"/"+System.Tf_active_directory
+        sub = model.subdir+"/Tf_"+model.Tf_iteration
     os.chdir(cwd+"/"+sub)
     tempfile = open("T_array_last.txt","r").readlines()
     temperatures = [ temp[:-1] for temp in tempfile  ]
@@ -51,14 +51,14 @@ def check_completion(System,append_log,equil=False):
         tdir = temperatures[k]
         check_error = run_gmxcheck(tdir)
         ## Determine the number of steps for completed run.
-        for line in open(tdir+"/"+"grompp.mdp","r"):
+        for line in open(tdir+"/nvt.mdp","r"):
             if line[:6] == "nsteps":
                 nsteps = int(line.split()[2]) + 1
                 break    
         finish_line = "Statistics over " + str(nsteps)
         ## Check if md.log has finished the required number of steps.
         if finish_line in open(tdir+"/md.log","r").read():
-            System.append_log("  %s finished." % tdir)
+            model.append_log("  %s finished." % tdir)
         else:
             print "    Check %s simulation did not finish." % tdir
             #print "    Cannot continue with errors."
@@ -68,10 +68,10 @@ def check_completion(System,append_log,equil=False):
                 qrst = "qsub rst.pbs"
                 sb.call(qrst.split(),stdout=open("rst.out","w"),stderr=open("rst.err","w"))
                 os.chdir(cwd+"/"+sub)
-                System.append_log("  %s did not finish. restarting" % tdir)
+                model.append_log("  %s did not finish. restarting" % tdir)
                 print "  %s did not finish. Restarting: submitting rst.pbs. " % tdir
             else:
-                System.append_log("  %s did not finish. did not find a rst.pbs. skipping." % tdir)
+                model.append_log("  %s did not finish. did not find a rst.pbs. skipping." % tdir)
             error = 1
 
     if error == 1:
@@ -79,36 +79,38 @@ def check_completion(System,append_log,equil=False):
         pass 
     else:
         if equil == True:
-            append_log(System.subdir,"Finished: Equil_Tf")
+            append_log(model.subdir,"Finished: Equil_Tf")
         else:
-            append_log(System.subdir,"Finished: Tf_loop_iteration")
-    System.error = error
+            append_log(model.subdir,"Finished: Tf_loop_iteration")
+    model.error = error
     os.chdir(cwd)
 
 def gmxcheck_subdirectories():
     """ Run gmxcheck on all traj.xtc files in subdirecories. """
     runs = glob("*/traj.xtc")
     dirs = [ x[:-9] for x in runs ]
+    error = 0
     for subdir in dirs:
-        run_gmxcheck(subdir)
-
-def run_gmxcheck(dir):
-    cwd = os.getcwd()
-    os.chdir(dir)
-    print "  Running gmxcheck on ",dir
-    check = "gmxcheck -f traj.xtc"
-    sb.call(check.split(),stdout=open("check.out","w"),stderr=open("check.err","w")) 
-    
-    error = "Fatal error"
-    if (error in open("check.err","r").read()) or (error in open("check.out","r").read()):
-        print "  FATAL ERROR in directory: ",dir
-        print "  somethings wrong with Gromacs traj.xtc file. See %s/check.err" % dir
-        #print open("check.err","r").read()
-        error = 1
-    else:
-        error = 0
-    os.chdir(cwd)
-    return error
+        cwd = os.getcwd()
+        os.chdir(subdir)
+        print "  Running gmxcheck on ",subdir
+        check = "gmxcheck -f traj.xtc"
+        sb.call(check.split(),stdout=open("check.out","w"),stderr=open("check.err","w")) 
+        
+        error = "Fatal error"
+        if (error in open("check.err","r").read()) or (error in open("check.out","r").read()):
+            print "  FATAL ERROR in directory: ",subdir
+            print "  somethings wrong with Gromacs traj.xtc file. See %s/check.err" % subdir
+            #print open("check.err","r").read()
+            error = 1
+        else:
+            error = 0
+        os.chdir(cwd)
+        error += temp
+    if error != 0:
+        print "ERROR! Some trajectories did not pass gmxcheck."
+        print " Exiting."
+        raise SystemExit
 
 def determine_new_T_array():
     """ Find the temperatures which bracket the folding temperature.
@@ -153,28 +155,16 @@ def determine_new_T_array():
     print "##DEBUGGING: New Ti, Tf, dT", newTi, newTf, newdT
     return newTi, newTf, newdT
 
-def estimate_new_T(Model, System):
-    beadbead = np.loadtxt(Model.contact_energies, dtype=str)
-    native = beadbead[:,4].astype(int)
-    eps = beadbead[:,6].astype(float)
-    #Pick only the native contacts
-    eps = eps[ native !=0 ]
-    number_of_residues = len(np.loadtxt(System.path+'/'+System.subdir+"/Qref_cryst.dat"))
-    
-    Tf_guess = 36.081061 * (np.sum(eps)/number_of_residues) + 56.218196
-
-    return Tf_guess
-
-def manually_extend_temperatures(Model,System,append_log,method,temps,factor):
+def manually_extend_temperatures(model,append_log,method,temps,factor):
     """ To manually extend some temperatures."""
 
     cwd = os.getcwd()
     ## Determine directory to enter
     if method == "Tf":
-        sub = System.path+"/"+ System.subdir+"/"+System.Tf_active_directory
+        sub = model.path+"/"+ model.subdir+"/Tf_"+str(model.Tf_iteration)
         Tlist = [ x+"_0" for x in temps ]
     elif method == "Mut":
-        sub = System.path+"/"+ System.subdir+"/"+System.mutation_active_directory
+        sub = model.path+"/"+ model.subdir+"/Mut_"+str(model.Mut_iteration)
         Tlist = []
         for i in range(len(temps)):
             for j in range(1,6):
@@ -197,43 +187,43 @@ def manually_extend_temperatures(Model,System,append_log,method,temps,factor):
         Tdir = Tlist[k]
         os.chdir(Tdir)
         T = Tdir.split("_")[0]
-        if Model.dryrun == True:
+        if model.dryrun == True:
             print "    Dryrun Success! " 
             os.chdir(cwd)
             raise SystemExit
         else:
-            extend_temperature(Model,T,factor)
+            extend_temperature(T,factor)
             if os.path.exists("Q.dat"):
                 os.remove("Q.dat")
             if os.path.exists("energyterms.xvg"):
                 os.remove("energyterms.xvg")
         os.chdir(cwd2)
     if method == "Tf":
-        append_log(System.subdir,"Starting: Tf_loop_iteration")
+        append_log(model.subdir,"Starting: Tf_loop_iteration")
     elif method == "Mut":
-        append_log(System.subdir,"Starting: Equil_Tf")
+        append_log(model.subdir,"Starting: Equil_Tf")
 
     os.chdir(cwd)
 
-def extend_temperature(Model,T,factor):
-    """ Extend individual temperature """
+def extend_temperature(T,factor):
+    """ Extend individual temperature run by factor """
     ## Calculate new nsteps = factor*old_nsteps
-    for line in open("grompp.mdp","r").readlines():
+    for line in open("nvt.mdp","r").readlines():
         if line.startswith("nsteps"):
             old_nsteps = int(line.split()[2])
             new_nsteps = str(int(round(factor*old_nsteps)))
             break
     
-    ## Save old grompp.mdp and topol.tpr as something else.
-    shutil.move("grompp.mdp","old_grompp.mdp")
+    ## Save old .mdp and .tpr as something else.
+    shutil.move("nvt.mdp","nvt.mdp")
     shutil.move("topol.tpr","old_topol.tpr")
 
-    ## Write new grompp and topol.tpr
-    grompp_mdp = mdp.get_constant_temperature_mdp(Model,T,new_nsteps)
-    open("grompp.mdp","w").write(grompp_mdp)
+    ## Write new .mdp with more steps and recreate .tpr
+    mdpfile = mdp.get_constant_temperature_mdp_smog(T,new_nsteps)
+    open("nvt.mdp","w").write(mdpfile)
 
     print "  Extending temp ", T, " to nsteps ",new_nsteps
-    prep_step = 'grompp -n index.ndx -c Native.pdb -maxwarn 1'
+    prep_step = 'grompp -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol.tpr '
     sb.call(prep_step.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
 
     ## Submit rst.pbs
@@ -284,7 +274,7 @@ def folding_temperature_loop_extension(model,append_log,new=False):
     append_log(model.subdir,"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
     append_log(model.subdir,"Starting: Tf_loop_iteration")
 
-def start_next_Tf_loop_iteration(Model,System,append_log):
+def start_next_Tf_loop_iteration(model,append_log):
     """ Estimate new folding temperature with calibration data
 
     Description:
@@ -294,18 +284,16 @@ def start_next_Tf_loop_iteration(Model,System,append_log):
 
     """
 
-    Tf_choice = System.path+"/"+System.subdir+"/"+System.mutation_active_directory+"/Tf_choice.txt"
-    #Tf_guess = int(round(float(open(Tf_choice,"r").read()[:-1])))
-    Tf_guess = estimate_new_T(Model, System)
+    ## Update System counters and estimate new Tf
+    model.Tf_iteration += 1
+    model.mutation_iteration += 1
+    E = float(sum(model.contact_epsilons[model.contact_deltas == 1]))
+    N = float(model.n_residues)
+    Tf_guess = (36.081061*E/N) + 56.218196 ## calibration circa June 2014
 
-    ## Update System counters
-    System.Tf_iteration += 1
-    System.Tf_active_directory = "Tf_"+str(System.Tf_iteration)
-    System.mutation_iteration += 1
-    System.mutation_active_directory = "Mut_"+str(System.mutation_iteration)
 
     cwd = os.getcwd()
-    sub = System.path+"/"+ System.subdir+"/"+System.Tf_active_directory
+    sub = model.path+"/"+ model.subdir+"/Tf_"+str(model.Tf_iteration)
     if os.path.exists(sub):
         print "ERROR!"
         print "  The next Tf iteration directory exists. "
@@ -318,39 +306,35 @@ def start_next_Tf_loop_iteration(Model,System,append_log):
     Tf = int(Tf_guess + 20)
     dT = 2
 
-    append_log(System.subdir,"Submitting T_array iteration %d" % System.Tf_iteration)
-    append_log(System.subdir,"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
-    run_temperature_array(Model,System,Ti,Tf,dT)
-    append_log(System.subdir,"Starting: Tf_loop_iteration")
+    append_log(model.subdir,"Submitting T_array iteration %d" % model.Tf_iteration)
+    append_log(model.subdir,"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
+    run_temperature_array(model,Ti,Tf,dT)
+    append_log(model.subdir,"Starting: Tf_loop_iteration")
 
     os.chdir(cwd)
 
-def manually_add_temperature_array(Model,System,append_log,Ti,Tf,dT):
+def manually_add_temperature_array(model,append_log,Ti,Tf,dT):
     """ To manually set the next temperature array."""
     cwd = os.getcwd()
-    sub = System.path+"/"+ System.subdir+"/"+System.Tf_active_directory
+    sub = model.path+"/"+model.subdir+"/Tf_"+str(model.Tf_iteration)
     os.chdir(sub)
-    append_log(System.subdir,"Submitting T_array iteration %d " % System.Tf_iteration)
-    append_log(System.subdir,"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
-    run_temperature_array(Model,System,Ti,Tf,dT)
-    append_log(System.subdir,"Starting: Tf_loop_iteration")
+    append_log(model.subdir,"Submitting T_array iteration %d " % model.Tf_iteration)
+    append_log(model.subdir,"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
+    run_temperature_array(model,Ti,Tf,dT)
+    append_log(model.subdir,"Starting: Tf_loop_iteration")
 
     os.chdir(cwd)
 
-def run_equilibrium_simulations(Model,System,append_log):
+def run_equilibrium_simulations(model,append_log):
     """ Run very long (equilibrium) simulations at the estimated folding 
         temperature."""
 
-    if System.mutation_active_directory == '':
-        System.mutation_active_directory = 'Mut_0'
-        System.append_log("Creating mutational directory Mut_0" )
-    
     cwd = os.getcwd()
-    mutsub = System.path+"/"+System.subdir+"/"+System.mutation_active_directory
-    Tfsub = System.path+"/"+System.subdir+"/"+System.Tf_active_directory
+    mutsub = model.path+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
+    Tfsub = model.path+"/"+model.subdir+"/Tf_"+str(model.Tf_iteration)
     Tf = open(Tfsub+"/Tf.txt","r").read().split()[0]
 
-    System.append_log("Starting Equil_Tf")
+    model.append_log("Starting Equil_Tf")
 
     if not os.path.exists(mutsub):
         os.mkdir(mutsub)
@@ -366,11 +350,9 @@ def run_equilibrium_simulations(Model,System,append_log):
                 T_string += "%s\n" % simpath
                 os.mkdir(simpath)
                 os.chdir(simpath)
-                System.append_log("  running T=%s" % simpath)
-                #np.savetxt("Qref_cryst.dat",System.Qrefs[i],fmt="%1d",delimiter=" ")
-                #print "Number of contacts: ", sum(sum(System.Qrefs[i]))
+                model.append_log("  running T=%s" % simpath)
                 print "    Running temperature ", T_string
-                run_constant_temp(Model,System,float(T),nsteps=1000000000,walltime="60:00:00",queue="serial_long")
+                run_constant_temp(model,float(T),nsteps=1000000000,walltime="60:00:00",queue="serial_long")
                 os.chdir("..")
             else:
                 ## Directory exists for this temperature: continue.
@@ -378,21 +360,21 @@ def run_equilibrium_simulations(Model,System,append_log):
 
     open("T_array.txt","a").write(T_string)
     open("T_array_last.txt","w").write(T_string)
-    append_log(System.subdir,"Starting: Equil_Tf")
+    append_log(model.subdir,"Starting: Equil_Tf")
     os.chdir(cwd)
 
-def determine_walltime(Model):
+def determine_walltime(model):
     """ Estimate an efficient walltime."""
-    Length = len(Model.Qref)
+    N = model.n_residues
     ppn = "1"
     nsteps = "400000000"
-    if Length < 60:
+    if N < 60:
         walltime="12:00:00"
         queue="serial"
     else:
-        if len(Model.Qref) > 160:
+        if N > 160:
             nsteps = "600000000"
-            if len(Model.Qref) > 250:
+            if N > 250:
                 nsteps = "800000000"
                 walltime="72:00:00"
                 ppn = "4"
@@ -406,13 +388,12 @@ def determine_walltime(Model):
     return walltime, queue, ppn,nsteps
 
 def run_temperature_array(model,Ti,Tf,dT):
-    """ Run many constant temperature runs over a range of temperatures to
-        find the folding temperature. """
+    """ Simulate range of temperatures to find the folding temperature. """
 
     model.append_log("Starting Tf_loop_iteration %d " % model.Tf_iteration)
     Temperatures = range(Ti,Tf+dT,dT)
     ## Run for longer if the protein is really big.
-    walltime, queue, ppn, nsteps = determine_walltime(Model)
+    walltime, queue, ppn, nsteps = determine_walltime(model)
 
     T_string = ''
     for T in Temperatures:
@@ -427,8 +408,6 @@ def run_temperature_array(model,Ti,Tf,dT):
             run_constant_temp(model,T,nsteps=nsteps,walltime=walltime,queue=queue,ppn=ppn)
             os.chdir("..")
         else:
-            ## Directory exists for this temperature: continue.
-            #print "##DEBUGGING: skipped ",T
             continue
     open("T_array.txt","a").write(T_string)
     open("T_array_last.txt","w").write(T_string)
@@ -444,8 +423,8 @@ def run_constant_temp(model,T,nsteps="400000000",walltime="23:00:00",queue="seri
 
     '''
     ## Loading and writing grompp.
-    grompp_mdp = mdp.get_constant_temperature_mdp_smog(str(T),nsteps)
-    open("nvt.mdp","w").write(grompp_mdp)
+    mdpfile = mdp.get_constant_temperature_mdp_smog(str(T),nsteps)
+    open("nvt.mdp","w").write(mdpfile)
 
     ## Write all needed simulation files.
     open("index.ndx","w").write(model.index_ndx)
@@ -492,7 +471,7 @@ def get_rst_pbs_string(jobname,queue,ppn,walltime):
 def submit_run(jobname,walltime="23:00:00",queue="serial",ppn="1"):
     ''' Executes the constant temperature runs.'''
 
-    prep_step = 'grompp -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol.tpr -maxwarn 1'
+    prep_step = 'grompp -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol.tpr'
 
     sb.call(prep_step.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
 
