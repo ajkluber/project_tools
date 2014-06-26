@@ -40,9 +40,9 @@ def check_completion(model,append_log,equil=False):
     """
     cwd = os.getcwd()
     if equil == True:
-        sub = model.subdir+"/Mut_"+model.Mut_iteration
+        sub = model.subdir+"/Mut_"+str(model.Mut_iteration)
     else:
-        sub = model.subdir+"/Tf_"+model.Tf_iteration
+        sub = model.subdir+"/Tf_"+str(model.Tf_iteration)
     os.chdir(cwd+"/"+sub)
     tempfile = open("T_array_last.txt","r").readlines()
     temperatures = [ temp[:-1] for temp in tempfile  ]
@@ -50,6 +50,8 @@ def check_completion(model,append_log,equil=False):
     for k in range(len(temperatures)):
         tdir = temperatures[k]
         check_error = run_gmxcheck(tdir)
+        if check_error == 1:
+            error = 1
         ## Determine the number of steps for completed run.
         for line in open(tdir+"/nvt.mdp","r"):
             if line[:6] == "nsteps":
@@ -92,25 +94,30 @@ def gmxcheck_subdirectories():
     error = 0
     for subdir in dirs:
         cwd = os.getcwd()
-        os.chdir(subdir)
-        print "  Running gmxcheck on ",subdir
-        check = "gmxcheck -f traj.xtc"
-        sb.call(check.split(),stdout=open("check.out","w"),stderr=open("check.err","w")) 
-        
-        error = "Fatal error"
-        if (error in open("check.err","r").read()) or (error in open("check.out","r").read()):
-            print "  FATAL ERROR in directory: ",subdir
-            print "  somethings wrong with Gromacs traj.xtc file. See %s/check.err" % subdir
-            #print open("check.err","r").read()
-            error = 1
-        else:
-            error = 0
+        temp = run_gmxcheck(subdir)
         os.chdir(cwd)
         error += temp
     if error != 0:
         print "ERROR! Some trajectories did not pass gmxcheck."
         print " Exiting."
         raise SystemExit
+
+def run_gmxcheck(subdir):
+    print "  Running gmxcheck on ",subdir
+    os.chdir(subdir)
+    check = "gmxcheck_sbm -f traj.xtc"
+    sb.call(check.split(),stdout=open("check.out","w"),stderr=open("check.err","w")) 
+    
+    errorcode = "Fatal error"
+    if (errorcode in open("check.err","r").read()) or (errorcode in open("check.out","r").read()):
+        print "  FATAL ERROR in directory: ",subdir
+        print "  somethings wrong with Gromacs traj.xtc file. See %s/check.err" % subdir
+        #print open("check.err","r").read()
+        error = 1
+    else:
+        error = 0
+    os.chdir("..")
+    return error
 
 def determine_new_T_array():
     """ Find the temperatures which bracket the folding temperature.

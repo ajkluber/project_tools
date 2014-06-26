@@ -1,0 +1,89 @@
+numDimensions 2 # number of dimensions in the dos histogram
+                # energy and Q, energy is always in the first column, can
+                # have up to 3 reaction coordinates
+
+kB 0.008314     # Boltzmann constant
+
+run_wham        # creates optimal density of states, writes to dosFile,
+                # comment out to not run
+
+dosFile dos     # density of states output filename for run_wham, input
+                # filename for analysis (i.e. run_cv)
+
+threads 1       # on multicore systems you can use up to 8 threads to speed
+                # up the calculation
+
+### energy binning ###
+numBins 82
+start -160
+step 5
+
+### reaction coordinate 1 binning ###
+numBins 32
+start 0
+step 5
+
+### reaction coordinate 2 binning, change numDimensions to 3 ###
+## numBins 50
+## start 0
+## step 2
+
+### list of histogram filenames and their temperatures ###
+numFiles 13
+name whamin120.dat temp 120
+name whamin125.dat temp 125
+name whamin130.dat temp 130
+name whamin135.dat temp 135
+name whamin140.dat temp 140
+name whamin145.dat temp 145
+name whamin150.dat temp 150
+name whamin155.dat temp 155
+name whamin160.dat temp 160
+name whamin165.dat temp 165
+name whamin170.dat temp 170
+name whamin175.dat temp 175
+name whamin180.dat temp 180
+
+#### Example 1: Compute F(Q)
+#run_free            # comment out to not run, reads dosFile
+#run_free_out free   # prefix for the free energy curves
+#startTF 140         # first temperature to compute F(Q)
+#deltaTF 0.1         # step in temperature
+#ntempsF 300         # total F(Q) to generate
+
+#### Example 2: Compute Cv(T)
+#run_cv              # comment out to not run, reads dosFile
+#run_cv_out cv       # filename for the temperature curves
+#startT 140          # starting temperature
+#deltaT 0.1          # step in temperature
+#ntemps 300          # total temps to generate
+
+### Example 3: Compute <Q>(T)
+run_coord            # comment out to not run, reads dosFile
+run_coord_out Q_vs_T # filename for the coordinate curve
+startTC 140          # temperature to start at
+deltaTC 0.1          # step in temperature
+ntempsC 300          # total temps to generate
+
+#### Example 4: Compute <Q_2>(Q_1)
+#run_coord           # comment out to not run, reads dosFile
+#run_coord_out coord # filename prefix for the coordinate curve
+#startTC 110         # temperature to use
+
+#### Example 5: Compute <Q_3>(Q_1,[Q_2_min,Q_2_max])
+#run_coord           # comment out to not run, reads dosFile
+#run_coord_out coord # filename prefix for the coordinate curve
+#startTC 110         # temperature to use
+
+#### Example 6: Reweighting Umbrella sampling
+#umDimensions 3        # energy reaction_coord umbrella_coord
+#numUmbrella 1         # number of umbrella_coord
+#umbrellaType harmonic # harmonic umbrellas
+
+## list of histogram filenames, temperatures, umbrella stiffness and umbrella
+## centers. NOTE: The energy column doesn't include the perturbation.
+#numFiles 1
+#name data/hist144.40 temp 144 umbrella_k 0.5 umbrella_0 40
+#name data/hist144.80 temp 144 umbrella_k 0.5 umbrella_0 80
+#name data/hist146.40 temp 146 umbrella_k 0.5 umbrella_0 40
+#name data/hist146.80 temp 146 umbrella_k 0.5 umbrella_0 80

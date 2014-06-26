@@ -59,6 +59,31 @@ def crunch_all(name,walltime="00:02:00",ppn="1"):
     qsub = "qsub analysis.pbs"
     sb.call(qsub.split(),stdout=open("energyterms.out","w"),stderr=open("energyterms.err","w"))
 
+def reorganize_qimap():
+    """ Parse a couple Q coordinates from qimap.dat """
+    G = np.loadtxt("radius_gyration.xvg")
+    np.savetxt("Rg.xvg",G[:,0:2])
+
+    contacts = np.loadtxt("contacts.dat")
+    helical_contacts = (contacts[:,1] == contacts[:,0]+4)
+    local_contacts = ((contacts[:,1] == contacts[:,0]+4).astype(int) + \
+                  (contacts[:,1] == contacts[:,0]+5).astype(int) + \
+                  (contacts[:,1] == contacts[:,0]+6).astype(int)).astype(bool)
+    nonhelical_contacts = (helical_contacts == False)
+    nonlocal_contacts = (local_contacts == False)
+
+    qimap = np.loadtxt("qimap.dat")
+
+    Qh = sum(qimap[:,helical_contacts].T)
+    Qnh = sum(qimap[:,nonhelical_contacts].T)
+    Qlocal = sum(qimap[:,local_contacts].T)
+    Qnonlocal = sum(qimap[:,nonlocal_contacts].T)
+
+    np.savetxt("Qh.dat",Qh)
+    np.savetxt("Qnh.dat",Qnh)
+    np.savetxt("Qlocal.dat",Qlocal)
+    np.savetxt("Qnonlocal.dat",Qnonlocal)
+
 
 def crunch_Nh(tol=40.):
     """ Compute number of helical residues 
@@ -83,7 +108,5 @@ def crunch_Nh(tol=40.):
     np.savetxt("Nh.dat",sum(Nh.T))
     np.savetxt("Nhres.dat",Nh)
 
-    G = np.loadtxt("radius_gyration.xvg")
-    np.savetxt("radius_cropped.xvg",G[:,0:2])
 
 

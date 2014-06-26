@@ -42,7 +42,8 @@ class MatysiakClementi2004(ProjectManager):
     """
 
 
-    def logical_flowchart_starting(self,model,sub,task):
+    def logical_flowchart_starting(self,model,task):
+        sub = model.subdir
         if task == "Tf_loop_iteration":
             print "Checking if Tf_loop_iteration completed..."
             simulation.Tf_loop.check_completion(model,self.append_log)
@@ -84,7 +85,8 @@ class MatysiakClementi2004(ProjectManager):
             print "  Exiting."
             raise SystemExit
 
-    def logical_flowchart_finished(self,model,sub,task):
+    def logical_flowchart_finished(self,model,task):
+        sub = model.subdir
         if task == "Tf_loop_iteration":
             print "Finished Tf_loop_iteration..."
             print "Starting Tf_loop_analysis..."
@@ -219,7 +221,7 @@ def get_args():
     options["Bead_Model"] = "CA"
     options["Contact_Energies"] = "MC2004"
 
-    modeloptions = mdb.models.check_options(options)
+    modeloptions = mdb.models.check_options(options,firstpass=True)
 
     return args, modeloptions
 

@@ -176,15 +176,18 @@ def check_completion(model,append_log,equil=False):
     for k in range(len(temperatures)):
         tdir = temperatures[k]
         os.chdir(cwd2+"/"+tdir)
-        if  os.path.exists("rmsd.xvg") and os.path.exists("radius_cropped.xvg") and \
-            os.path.exists("energyterms.xvg") and os.path.exists("phis.xvg") and \
-            os.path.exists("Qprob.dat"):
+        files = ["rmsd.xvg","radius_gyration.xvg","energyterms.xvg","phis.xvg","Q.dat","qimap.dat"] 
+        check_files = all([ os.path.exists(file) for file in files ])
+        if check_files:
             if os.path.exists("Nh.dat"): 
                 print "    Crunch coordinates done. "
             else:
-                print "    Crunch coordinates done. Crunching Nh for "+tdir
-                model.append_log("    crunching Nh for "+tdir)
-                crunch_coordinates.crunch_Nh()
+                #print "    Crunch coordinates done. Crunching Nh for "+tdir
+                #model.append_log("    crunching Nh for "+tdir)
+                #crunch_coordinates.crunch_Nh()
+                print "    Saving Qh, Qnh, Qlocal, Qnonlocal for "+tdir
+                model.append_log("    Saving Qh, Qnh, Qlocal, Qnonlocal for "+tdir)
+                crunch_coordinates.reorganize_qimap()
             model.append_log("    analysis done for "+tdir)
             done = 1
         else:
@@ -215,9 +218,9 @@ def check_if_wham_is_next(model,append_log):
     os.chdir(cwd+"/"+sub)
     cwd2 = os.getcwd()
     Tinfo = open("Ti_Tf_dT.txt","r").read().split()
-    Ti,Tf,dT = int(Tinfo[0]), int(Tinfo[1]), int(Tinfo[2])
+    T_min,T_max,deltaT = int(Tinfo[0]), int(Tinfo[1]), int(Tinfo[2])
 
-    if dT == 2:
+    if deltaT <= 5:
         ## Its time for WHAM
         print "Temperature interval has reached dT=2. Time for WHAM."
         print "Starting wham_Cv..."
