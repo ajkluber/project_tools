@@ -365,24 +365,19 @@ def determine_walltime(model):
     """ Estimate an efficient walltime."""
     N = model.n_residues
     ppn = "1"
-    nsteps = "400000000"
+    nsteps = "100000000"
+    queue="serial"
     if N < 60:
-        walltime="12:00:00"
-        queue="serial"
+        walltime="03:00:00"
     else:
         if N > 160:
-            nsteps = "600000000"
             if N > 250:
-                nsteps = "800000000"
                 walltime="72:00:00"
-                ppn = "4"
+                queue="serial_long"
             else:
-                walltime="48:00:00"
-                ppn = "2"
-            queue="serial_long"
+                walltime="24:00:00"
         else:
-            walltime="24:00:00"
-            queue="serial"
+            walltime="12:00:00"
     return walltime, queue, ppn,nsteps
 
 def run_temperature_array(model,Ti,Tf,dT):
@@ -456,6 +451,8 @@ def get_pbs_string(jobname,queue,ppn,walltime):
     return pbs_string
 
 def get_rst_pbs_string(jobname,queue,ppn,walltime):
+    """ Return basic PBS job script for restarting. """
+    pbs_string = "#!/bin/bash \n"
     rst_string = "#!/bin/bash \n"
     rst_string +="#PBS -N %s_rst \n" % jobname
     rst_string +="#PBS -q %s \n" % queue
@@ -464,7 +461,7 @@ def get_rst_pbs_string(jobname,queue,ppn,walltime):
     rst_string +="#PBS -V \n\n"
     rst_string +="cd $PBS_O_WORKDIR\n"
     rst_string +="mdrun_sbm -s topol.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
-
+    return rst_string
 
 def submit_run(jobname,walltime="23:00:00",queue="serial",ppn="1"):
     ''' Executes the constant temperature runs.'''
