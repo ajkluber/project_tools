@@ -152,7 +152,7 @@ def determine_new_T_array():
         else:
             newTi = lowerT + newdT
             newTf = upperT - newdT
-    print "##DEBUGGING: New Ti, Tf, dT", newTi, newTf, newdT
+    #print "##DEBUGGING: New Ti, Tf, dT", newTi, newTf, newdT
     return newTi, newTf, newdT
 
 def manually_extend_temperatures(model,append_log,method,temps,factor):
@@ -223,7 +223,7 @@ def extend_temperature(T,factor):
     open("nvt.mdp","w").write(mdpfile)
 
     print "  Extending temp ", T, " to nsteps ",new_nsteps
-    prep_step = 'grompp -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol.tpr '
+    prep_step = 'grompp_sbm -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol.tpr '
     sb.call(prep_step.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
 
     ## Submit rst.pbs
@@ -280,8 +280,6 @@ def start_next_Tf_loop_iteration(model,append_log):
     Description:
 
         We made a calibration curve with the following points.
-
-
     """
 
     ## Update System counters and estimate new Tf
@@ -454,7 +452,7 @@ def get_pbs_string(jobname,queue,ppn,walltime):
     pbs_string +="#PBS -l walltime=%s \n" % walltime
     pbs_string +="#PBS -V \n\n"
     pbs_string +="cd $PBS_O_WORKDIR\n"
-    pbs_string +="mdrun -s topol.tpr -table table.xvg -tablep table.xvg"
+    pbs_string +="mdrun_sbm -s topol.tpr -table table.xvg -tablep table.xvg"
     return pbs_string
 
 def get_rst_pbs_string(jobname,queue,ppn,walltime):
@@ -465,13 +463,13 @@ def get_rst_pbs_string(jobname,queue,ppn,walltime):
     rst_string +="#PBS -l walltime=%s \n" % walltime
     rst_string +="#PBS -V \n\n"
     rst_string +="cd $PBS_O_WORKDIR\n"
-    rst_string +="mdrun -s topol.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
+    rst_string +="mdrun_sbm -s topol.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
 
 
 def submit_run(jobname,walltime="23:00:00",queue="serial",ppn="1"):
     ''' Executes the constant temperature runs.'''
 
-    prep_step = 'grompp -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol.tpr'
+    prep_step = 'grompp_sbm -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol.tpr'
 
     sb.call(prep_step.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
 
