@@ -9,13 +9,13 @@ import wham
 import plot
 
 
-def aggregate_equilibrium_runs(System,append_log,reagg=False):
+def aggregate_equilibrium_runs(model,append_log,reagg=False):
     ''' Aggregate equilibrium simulation data into one directory for    
         ease of access.'''
 
-    append_log(System.subdir,"Starting: Aggregating_Equil_Runs")
+    append_log(model.subdir,"Starting: Aggregating_Equil_Runs")
     cwd = os.getcwd()
-    sub = System.subdir+"/"+System.mutation_active_directory
+    sub = model.subdir+"/"+model.mutation_active_directory
     os.chdir(cwd+"/"+sub)
     temps = [ x.split('_')[0] for x in open("T_array.txt","r").readlines() ] 
     unique_temps = []
@@ -61,20 +61,20 @@ def aggregate_equilibrium_runs(System,append_log,reagg=False):
                 np.savetxt(T+"_agg/"+cord, X)
          
     os.chdir(cwd)
-    append_log(System.subdir,"Finished: Aggregating_Equil_Runs")
+    append_log(model.subdir,"Finished: Aggregating_Equil_Runs")
 
-def determine_walltime(System,long=False):
+def determine_walltime(model,long=False):
     ''' Estimate an efficient walltime.'''
-    Length = len(np.loadtxt(System.subdir+"/Qref_cryst.dat"))
+    N = model.n_residues
     ppn = "4"
     queue = "serial"
-    if Length < 60:
+    if N < 60:
         qwalltime = "00:04:00"
         cwalltime = "00:02:00"
     else:
-        if Length > 160:
+        if N > 160:
             queue = "bigmem"
-            if Length > 250:
+            if N > 250:
                 if long:
                     qwalltime = "00:16:00"
                     cwalltime = "00:10:00"
@@ -95,20 +95,20 @@ def determine_walltime(System,long=False):
             cwalltime = "00:10:00"
     return qwalltime, cwalltime, ppn, queue
 
-def analyze_temperature_array(System,append_log,equil=False):
+def analyze_temperature_array(model,append_log,equil=False):
     ''' Analyze the previously simulated temperatures of a Tf_loop iteration.
         Goes into the active Tf_loop directory and crunches all coordinates.
         Exits after submitting a couple PBS scripts to compute Q and 
         energyterms.xvg.
     '''
     cwd = os.getcwd()
-    if System.error == 0:
+    if model.error == 0:
         if equil == True:
-            sub = System.subdir+"/"+System.mutation_active_directory
-            qwalltime, cwalltime, ppn, queue = determine_walltime(System,long=True)
+            sub = model.subdir+"/Mut_"+str(model.Mut_iteration)
+            qwalltime, cwalltime, ppn, queue = determine_walltime(model,long=True)
         else:
-            sub = System.subdir+"/"+System.Tf_active_directory
-            qwalltime, cwalltime, ppn, queue = determine_walltime(System)
+            sub = model.subdir+"/Tf_"+str(model.Tf_iteration)
+            qwalltime, cwalltime, ppn, queue = determine_walltime(model)
         print "  Analyzing temperature array for", sub
         os.chdir(cwd+"/"+sub)
         tempfile = open("T_array_last.txt","r").readlines()
@@ -129,10 +129,10 @@ def analyze_temperature_array(System,append_log,equil=False):
             if (not flag) or (not flag):
                 if not flag:
                     print "    Crunching coordinates for ",tdir
-                    crunch_coordinates.crunch_all(System.subdir+"_"+tdir,walltime=cwalltime,ppn=ppn)
+                    crunch_coordinates.crunch_all(model.subdir+"_"+tdir,walltime=cwalltime,ppn=ppn)
                 if not flagQ:
                     print "    Crunching Q for ",tdir
-                    crunch_coordinates.crunch_Q(System.subdir+"_"+tdir,walltime=qwalltime,ppn=ppn,queue=queue)
+                    crunch_coordinates.crunch_Q(model.subdir+"_"+tdir,walltime=qwalltime,ppn=ppn,queue=queue)
             else:
                 print "    Skipping directory ",tdir
             os.chdir(cwd2)
@@ -146,26 +146,26 @@ def analyze_temperature_array(System,append_log,equil=False):
             os.chdir(cwd2)
         os.chdir(cwd)
         if equil == True:
-            append_log(System.subdir,"Starting: Equil_Tf_analysis")
-            System.append_log("Starting: Equil_Tf_analysis")
+            append_log(model.subdir,"Starting: Equil_Tf_analysis")
+            model.append_log("Starting: Equil_Tf_analysis")
         else:
-            append_log(System.subdir,"Starting: Tf_loop_analysis")
-            System.append_log("Starting: Tf_loop_analysis")
+            append_log(model.subdir,"Starting: Tf_loop_analysis")
+            model.append_log("Starting: Tf_loop_analysis")
     else:
         pass
 
-def check_completion(System,append_log,equil=False):
+def check_completion(model,append_log,equil=False):
     ''' Check if the Tf_loop_analysis finished by seeing if all needed files
         were generated.
     '''
     done = 0
     cwd = os.getcwd()
     if equil == True:
-        sub = System.subdir+"/"+System.mutation_active_directory
+        sub = model.subdir+"/Mut_"+str(model.Mut_iteration)
         qwalltime = "00:20:00"
         cwalltime = "00:10:00"
     else:
-        sub = System.subdir+"/"+System.Tf_active_directory
+        sub = model.subdir+"/Tf_"+str(model.Tf_iteration)
         qwalltime = "00:04:00"
         cwalltime = "00:02:00"
     os.chdir(cwd+"/"+sub)
@@ -183,14 +183,14 @@ def check_completion(System,append_log,equil=False):
                 print "    Crunch coordinates done. "
             else:
                 print "    Crunch coordinates done. Crunching Nh for "+tdir
-                System.append_log("    crunching Nh for "+tdir)
+                model.append_log("    crunching Nh for "+tdir)
                 crunch_coordinates.crunch_Nh()
-            System.append_log("    analysis done for "+tdir)
+            model.append_log("    analysis done for "+tdir)
             done = 1
         else:
             print "    Crunching not done. Retrying for "+tdir
-            crunch_coordinates.crunch_all(System.subdir+"_"+tdir,walltime=cwalltime)
-            crunch_coordinates.crunch_Q(System.subdir+"_"+tdir,walltime=qwalltime)
+            crunch_coordinates.crunch_all(model.subdir+"_"+tdir,walltime=cwalltime)
+            crunch_coordinates.crunch_Q(model.subdir+"_"+tdir,walltime=qwalltime)
             done = 0
         os.chdir(cwd2)
 
@@ -198,20 +198,20 @@ def check_completion(System,append_log,equil=False):
     if done == 1:
         print "  Analysis completed."
         if equil == True:
-            append_log(System.subdir,"Finished: Equil_Tf_analysis")
-            System.append_log("Finished: Equil_Tf_analysis")
+            append_log(model.subdir,"Finished: Equil_Tf_analysis")
+            model.append_log("Finished: Equil_Tf_analysis")
         else:
-            append_log(System.subdir,"Finished: Tf_loop_analysis")
-            System.append_log("Finished: Tf_loop_analysis")
+            append_log(model.subdir,"Finished: Tf_loop_analysis")
+            model.append_log("Finished: Tf_loop_analysis")
     else:
         print "  Analysis has not finished."
 
-def check_if_wham_is_next(System,append_log):
+def check_if_wham_is_next(model,append_log):
     ''' Check if the last temperature step, dT=1. If it was start 
         prepping and running WHAM calculation for the Heat Capacity.'''
 
     cwd = os.getcwd()
-    sub = System.subdir+"/"+System.Tf_active_directory
+    sub = model.subdir+"/Tf_"+str(model.Tf_iteration)
     os.chdir(cwd+"/"+sub)
     cwd2 = os.getcwd()
     Tinfo = open("Ti_Tf_dT.txt","r").read().split()
@@ -221,15 +221,15 @@ def check_if_wham_is_next(System,append_log):
         ## Its time for WHAM
         print "Temperature interval has reached dT=2. Time for WHAM."
         print "Starting wham_Cv..."
-        System.append_log("  prepping wham_Cv inputs")
+        model.append_log("  prepping wham_Cv inputs")
         if os.path.exists(cwd2+"/wham"):
             pass
         else:
             os.makedirs(cwd2+"/wham")
         wham.prep_input_files(Ti,Tf,dT,cwd2,"HeatCap")
 
-        System.append_log("  running wham for heat capacity")
-        append_log(System.subdir,"Starting: wham_Cv")
+        model.append_log("  running wham for heat capacity")
+        append_log(model.subdir,"Starting: wham_Cv")
         wham.run_wham("HeatCap")
         flag = 1
     else:
@@ -239,12 +239,12 @@ def check_if_wham_is_next(System,append_log):
     os.chdir(cwd)
     return flag
 
-def continue_wham(System,append_log):
+def continue_wham(model,append_log):
     ''' If WHAM has already run for the Heat Capacity (Cv) then prep files
         and run WHAM for 1D & 2D free energy surfaces.'''
 
     cwd = os.getcwd()
-    sub = System.subdir+"/"+System.Tf_active_directory
+    sub = model.subdir+"/Tf_"+str(model.Tf_iteration)
     os.chdir(cwd+"/"+sub)
     cwd2 = os.getcwd()
     Tinfo = open("Ti_Tf_dT.txt","r").read().split()
@@ -253,17 +253,17 @@ def continue_wham(System,append_log):
     ## Check for completion
     if os.path.exists(cwd2+"/wham/Heat_rmsd_Rg.dat"):
         print "Finished wham_Cv..."
-        System.append_log("  wham heat capacity done")
-        append_log(System.subdir,"Finished: wham_Cv")
+        model.append_log("  wham heat capacity done")
+        append_log(model.subdir,"Finished: wham_Cv")
         print "Starting wham_FreeEnergy..."
-        append_log(System.subdir,"Starting: wham_FreeEnergy")
-        System.append_log("  prepping wham inputs for 1D PMFs")
+        append_log(model.subdir,"Starting: wham_FreeEnergy")
+        model.append_log("  prepping wham inputs for 1D PMFs")
         wham.prep_input_files(Ti,Tf,dT,cwd2,"1DFreeEnergy")
-        System.append_log("  running wham for 1D PMFs")
+        model.append_log("  running wham for 1D PMFs")
         wham.run_wham("1DFreeEnergy")
-        System.append_log("  prepping wham inputs for 2D PMFs")
+        model.append_log("  prepping wham inputs for 2D PMFs")
         wham.prep_input_files(Ti,Tf,dT,cwd2,"FreeEnergy")
-        System.append_log("  running wham for 2D PMFs")
+        model.append_log("  running wham for 2D PMFs")
         wham.run_wham("FreeEnergy")
     else:
         print "wham_Cv may not have finished. Check if Heat_rmsd_Rg.dat exists."

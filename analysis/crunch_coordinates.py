@@ -10,12 +10,11 @@ of helical residues for Gromacs trajectories.
 import subprocess as sb
 import numpy as np
 import os 
-import argparse
 
-def crunch_Q(name,walltime="00:10:00",ppn="4",queue="serial"):
+def crunch_Q(name,walltime="00:01:00",ppn="1",queue="serial"):
     """ Submit PBS job to calculate sets of residue-residue contacts.
 
-    Calculates contacts in python with mdtraj module. See contacts.py.
+    Calculates contacts with structure-based models gromacs function g_kuh_sbm 
     """
 
     contact_pbs = "#!/bin/bash\n"
@@ -26,39 +25,40 @@ def crunch_Q(name,walltime="00:10:00",ppn="4",queue="serial"):
     contact_pbs +="#PBS -j oe\n"
     contact_pbs +="#PBS -V\n\n"
     contact_pbs +="cd $PBS_O_WORKDIR\n"
-    contact_pbs +='python -m project_tools.analysis.contacts --calc  \n'
+    contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -noshortcut -noabscut -cut 0.2 -qiformat list \n'
+    contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -o Q -noshortcut -noabscut -cut 0.2\n'
+    contact_pbs +='mv qimap.out qimap.dat\n'
+    contact_pbs +='mv Q.out Q.dat\n'
     open("contacts.pbs","w").write(contact_pbs)
     qsub = "qsub contacts.pbs"
     sb.call(qsub.split(),stdout=open("contacts.out","w"),stderr=open("contacts.err","w"))
     
 
-def crunch_all(name,walltime="00:02:00",ppn="4"):
+def crunch_all(name,walltime="00:02:00",ppn="1"):
     """ Submit PBS job to calculate observables
 
-    Calculates rmsd, radius gyration, dihedrals, and potential energy by 
-    calling Gromacs utilities.
+    Calculates rmsd, radius gyration, dihedrals, and potential energy with 
+    Gromacs utilities.
     """
-    cmd1 = 'echo -e "CA\nCA" | g_rms -f traj.xtc -s topol.tpr -o rmsd.xvg -nomw -xvg none -n index.ndx'
-    cmd2 = 'echo "1" | g_gyrate -f traj.xtc -s topol.tpr -o radius_gyration.xvg -xvg none'
-    cmd3 = 'g_angle -n dihedrals.ndx -ov phis.xvg -all -type dihedral -xvg none'
-    energy_pbs = "#!/bin/bash\n"
-    energy_pbs +="#PBS -N Eng_"+name+"\n"
-    energy_pbs +="#PBS -q serial\n"
-    energy_pbs +="#PBS -l nodes=1:ppn=%s\n" % ppn
-    energy_pbs +="#PBS -l walltime=%s\n" % walltime
-    energy_pbs +="#PBS -j oe\n"
-    energy_pbs +="#PBS -V\n\n"
-    energy_pbs +="cd $PBS_O_WORKDIR\n"
-    energy_pbs +='echo "1 2 3 4 6" | g_energy -f ener.edr -o energyterms -xvg none\n'
+    analysis_pbs = '#!/bin/bash\n'
+    analysis_pbs +='#PBS -N crnch_%s\n' % name
+    analysis_pbs +='#PBS -q serial\n'
+    analysis_pbs +='#PBS -l nodes=1:ppn=%s\n' % ppn
+    analysis_pbs +='#PBS -l walltime=%s\n' % walltime
+    analysis_pbs +='#PBS -j oe\n'
+    analysis_pbs +='#PBS -V\n\n'
+    analysis_pbs +='cd $PBS_O_WORKDIR\n'
 
-    sb.call(cmd1,shell=True,stdout=open("rmsd.out","w"),stderr=open("rmsd.err","w"))
-    sb.call(cmd2,shell=True,stdout=open("gyration.out","w"),stderr=open("gyration.err","w"))
-    sb.call(cmd3,shell=True,stdout=open("dihedrals.out","w"),stderr=open("dihedrals.err","w"))
-    G = np.loadtxt("radius_gyration.xvg")
-    np.savetxt("radius_cropped.xvg",G[:,0:2])
-    open("energyterms.pbs","w").write(energy_pbs)
-    qsub = "qsub energyterms.pbs"
+    analysis_pbs +='echo -e "0\n0" | g_rms_sbm -f traj.xtc -s topol.tpr -o rmsd.xvg -nomw -xvg none -n index.ndx\n'
+    analysis_pbs +='echo "1" | g_gyrate_sbm -f traj.xtc -s topol.tpr -o radius_gyration.xvg -xvg none\n'
+    analysis_pbs +='g_angle_sbm -n dihedrals.ndx -ov phis.xvg -all -type dihedral -xvg none\n'
+    analysis_pbs +='echo "1 2 3 4 8" | g_energy_sbm -f ener.edr -o energyterms -xvg none\n'
+    analysis_pbs +='echo "11" | g_energy_sbm -f ener.edr -o temperature -xvg none\n'
+
+    open("analysis.pbs","w").write(analysis_pbs)
+    qsub = "qsub analysis.pbs"
     sb.call(qsub.split(),stdout=open("energyterms.out","w"),stderr=open("energyterms.err","w"))
+
 
 def crunch_Nh(tol=40.):
     """ Compute number of helical residues 
@@ -82,5 +82,8 @@ def crunch_Nh(tol=40.):
 
     np.savetxt("Nh.dat",sum(Nh.T))
     np.savetxt("Nhres.dat",Nh)
+
+    G = np.loadtxt("radius_gyration.xvg")
+    np.savetxt("radius_cropped.xvg",G[:,0:2])
 
 
