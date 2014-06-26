@@ -139,21 +139,21 @@ def determine_new_T_array():
     if dT == 2:
         ## Previous run was final iteration. Now WHAM needs to be
         ## done.
-        newTi, newTf, newdT = 0,0,0
+        newT_min, newT_max, newdeltaT = 0,0,0
     else:
         ## Determine the finer grain T_array.
-        newdT = int(float(dT)/5.)
-        ## If newdT < 5 then just do finest temperature spacing. 
-        if newdT < 5:
-            newdT = 2
+        newdeltaT = int(float(dT)/5.)
+        ## If newdeltaT < 5 then just do finest temperature spacing. 
+        if newdeltaT < 5:
+            newdeltaT = 2
             midT = int(0.5*(float(lowerT)+upperT))
-            newTi = midT - 20
-            newTf = midT + 20
+            newT_min = midT - 20
+            newT_max = midT + 20
         else:
-            newTi = lowerT + newdT
-            newTf = upperT - newdT
-    #print "##DEBUGGING: New Ti, Tf, dT", newTi, newTf, newdT
-    return newTi, newTf, newdT
+            newT_min = lowerT + newdeltaT
+            newT_max = upperT - newdeltaT
+    #print "##DEBUGGING: New Ti, Tf, dT", newT_min, newT_max, newdeltaT
+    return newT_min, newT_max, newdeltaT
 
 def manually_extend_temperatures(model,append_log,method,temps,factor):
     """ To manually extend some temperatures."""
@@ -260,18 +260,24 @@ def folding_temperature_loop_extension(model,append_log,new=False):
     if (not os.path.exists("T_array_last.txt")) or new:
         ## For initial exploration use very broad temperature increments.
         if model.initial_T_array != None:
-            Ti = model.initial_T_array[0]
-            Tf = model.initial_T_array[1]
-            dT = model.initial_T_array[2]
+            T_min = model.initial_T_array[0]
+            T_max = model.initial_T_array[1]
+            deltaT = model.initial_T_array[2]
         else:
-            Ti = 50; Tf = 250; dT = 50
+            ## Estimate folding temperature
+            E = float(sum(model.contact_epsilons[model.contact_deltas == 1]))
+            N = float(model.n_residues)
+            Tf_guess = int(round((36.081061*E/N) + 56.218196)) ## calibration circa June 2014
+            T_min = Tf_guess - 20
+            T_max = Tf_guess + 20
+            deltaT = 4
     else:
         ## Use previous range to determine new range. 
-        Ti, Tf, dT = determine_new_T_array()
-    print "  Running temperature array: T_initial = %.2f   T_final = %.2f   dT = %.2f " % (Ti,Tf,dT)
-    run_temperature_array(model,Ti,Tf,dT)
+        T_min, T_max, deltaT = determine_new_T_array()
+    print "  Running temperature array: T_initial = %.2f   T_final = %.2f   dT = %.2f " % (T_min,T_max,deltaT)
+    run_temperature_array(model,T_min,T_max,deltaT)
     append_log(model.subdir,"Submitting T_array iteration %d " % model.Tf_iteration)
-    append_log(model.subdir,"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
+    append_log(model.subdir,"  T_min = %d , T_max = %d , dT = %d" % (T_min, T_max, deltaT))
     append_log(model.subdir,"Starting: Tf_loop_iteration")
 
 def start_next_Tf_loop_iteration(model,append_log):
@@ -288,7 +294,9 @@ def start_next_Tf_loop_iteration(model,append_log):
     E = float(sum(model.contact_epsilons[model.contact_deltas == 1]))
     N = float(model.n_residues)
     Tf_guess = (36.081061*E/N) + 56.218196 ## calibration circa June 2014
-
+    T_min = int(Tf_guess - 20)
+    T_max = int(Tf_guess + 20)
+    deltaT = 4
 
     cwd = os.getcwd()
     sub = model.path+"/"+ model.subdir+"/Tf_"+str(model.Tf_iteration)
@@ -300,25 +308,22 @@ def start_next_Tf_loop_iteration(model,append_log):
     else:
         os.makedirs(sub)
     os.chdir(sub)
-    Ti = int(Tf_guess - 20)
-    Tf = int(Tf_guess + 20)
-    dT = 2
 
     append_log(model.subdir,"Submitting T_array iteration %d" % model.Tf_iteration)
-    append_log(model.subdir,"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
-    run_temperature_array(model,Ti,Tf,dT)
+    append_log(model.subdir,"  T_min = %d , T_max = %d , dT = %d" % (T_min, T_max, deltaT))
+    run_temperature_array(model,T_min,T_max,deltaT)
     append_log(model.subdir,"Starting: Tf_loop_iteration")
 
     os.chdir(cwd)
 
-def manually_add_temperature_array(model,append_log,Ti,Tf,dT):
+def manually_add_temperature_array(model,append_log,T_min,T_max,deltaT):
     """ To manually set the next temperature array."""
     cwd = os.getcwd()
     sub = model.path+"/"+model.subdir+"/Tf_"+str(model.Tf_iteration)
     os.chdir(sub)
     append_log(model.subdir,"Submitting T_array iteration %d " % model.Tf_iteration)
-    append_log(model.subdir,"  Ti = %d , Tf = %d , dT = %d" % (Ti, Tf, dT))
-    run_temperature_array(model,Ti,Tf,dT)
+    append_log(model.subdir,"  T_min = %d , T_max = %d , dT = %d" % (T_min, T_max, deltaT))
+    run_temperature_array(model,T_min,T_max,deltaT)
     append_log(model.subdir,"Starting: Tf_loop_iteration")
 
     os.chdir(cwd)
@@ -380,11 +385,11 @@ def determine_walltime(model):
             walltime="12:00:00"
     return walltime, queue, ppn,nsteps
 
-def run_temperature_array(model,Ti,Tf,dT):
+def run_temperature_array(model,T_min,T_max,deltaT):
     """ Simulate range of temperatures to find the folding temperature. """
 
     model.append_log("Starting Tf_loop_iteration %d " % model.Tf_iteration)
-    Temperatures = range(Ti,Tf+dT,dT)
+    Temperatures = range(T_min,T_max+deltaT,deltaT)
     ## Run for longer if the protein is really big.
     walltime, queue, ppn, nsteps = determine_walltime(model)
 
@@ -404,7 +409,7 @@ def run_temperature_array(model,Ti,Tf,dT):
             continue
     open("T_array.txt","a").write(T_string)
     open("T_array_last.txt","w").write(T_string)
-    open("Ti_Tf_dT.txt","w").write("%d %d %d" % (Ti, Tf, dT))
+    open("Ti_Tf_dT.txt","w").write("%d %d %d" % (T_min, T_max, deltaT))
 
 def run_constant_temp(model,T,nsteps="400000000",walltime="23:00:00",queue="serial",ppn="1"):
     ''' Start a constant temperature simulation with Gromacs. 
