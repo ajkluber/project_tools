@@ -254,7 +254,7 @@ class ProjectManager(object):
         ''' Save the model.info strings.'''
         print "Saving system.info progress..."
         for i in range(len(Models)):
-            open(subdirs[i]+"/model.info","w").write(Models[i].__repr__())
+            open(Models[i].subdir+"/model.info","w").write(Models[i].__repr__())
 
 def main():
     args, modeloptions = get_args()
