@@ -219,17 +219,19 @@ def check_if_wham_is_next(model,append_log):
     cwd2 = os.getcwd()
     Tinfo = open("Ti_Tf_dT.txt","r").read().split()
     T_min,T_max,deltaT = int(Tinfo[0]), int(Tinfo[1]), int(Tinfo[2])
+    temperatures = range(T_min,T_max+deltaT,deltaT)
 
     if deltaT <= 5:
         ## Its time for WHAM
-        print "Temperature interval has reached dT=2. Time for WHAM."
+        print "Since deltaT <=5 --> Time for WHAM."
+        print "  *** NOTE: module load jdk/1.7.0.21 required for WHAM ***"
         print "Starting wham_Cv..."
         model.append_log("  prepping wham_Cv inputs")
-        if os.path.exists(cwd2+"/wham"):
+        if os.path.exists(cwd2+"/whamQ"):
             pass
         else:
-            os.makedirs(cwd2+"/wham")
-        wham.prep_input_files(Ti,Tf,dT,cwd2,"HeatCap")
+            os.makedirs(cwd2+"/whamQ")
+        wham.prepare_histograms(Ti,Tf,dT,cwd2,"HeatCap")
 
         model.append_log("  running wham for heat capacity")
         append_log(model.subdir,"Starting: wham_Cv")

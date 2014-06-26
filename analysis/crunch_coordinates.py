@@ -108,5 +108,3 @@ def crunch_Nh(tol=40.):
     np.savetxt("Nh.dat",sum(Nh.T))
     np.savetxt("Nhres.dat",Nh)
 
-
-
