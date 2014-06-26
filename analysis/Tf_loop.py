@@ -105,24 +105,24 @@ def analyze_temperature_array(model,append_log,equil=False):
     if model.error == 0:
         if equil == True:
             sub = model.subdir+"/Mut_"+str(model.Mut_iteration)
-            qwalltime, cwalltime, ppn, queue = determine_walltime(model,long=True)
+            qwalltime = "00:10:00"
+            cwalltime = "00:06:00"
         else:
             sub = model.subdir+"/Tf_"+str(model.Tf_iteration)
-            qwalltime, cwalltime, ppn, queue = determine_walltime(model)
+            qwalltime = "00:05:00"
+            cwalltime = "00:03:00"
         print "  Analyzing temperature array for", sub
         os.chdir(cwd+"/"+sub)
         tempfile = open("T_array_last.txt","r").readlines()
         temperatures = [ temp[:-1] for temp in tempfile  ]
         allTs = [ temp[:-1] for temp in open("T_array.txt","r").readlines() ]
-        allTs.sort()
-        lowT = allTs[0]
 
         cwd2 = os.getcwd()
         for k in range(len(temperatures)):
             tdir = temperatures[k]
             os.chdir(cwd2+"/"+tdir)
             crunchfiles = ["rmsd.xvg","radius_cropped.xvg","energyterms.xvg","phis.xvg"]
-            crunchQfiles = ["Qprob.dat","Qhprob.dat","Qnhprob.dat","Q.dat"]
+            crunchQfiles = ["Q.dat","qimap.dat"]
 
             flag = all([ os.path.exists(file) for file in crunchfiles ])
             flagQ = all([ os.path.exists(file) for file in crunchQfiles ])
@@ -137,13 +137,6 @@ def analyze_temperature_array(model,append_log,equil=False):
                 print "    Skipping directory ",tdir
             os.chdir(cwd2)
 
-        ## Saves the reference matrix in each temp. directory. Submits PBS job for 
-        ## calculating native contacts, native helical, and not-native contacts.
-        for k in range(len(temperatures)):
-            tdir = temperatures[k]
-            #print cwd2+"/"+tdir ## DEBUGGING
-            os.chdir(cwd2+"/"+tdir)
-            os.chdir(cwd2)
         os.chdir(cwd)
         if equil == True:
             append_log(model.subdir,"Starting: Equil_Tf_analysis")
@@ -162,12 +155,12 @@ def check_completion(model,append_log,equil=False):
     cwd = os.getcwd()
     if equil == True:
         sub = model.subdir+"/Mut_"+str(model.Mut_iteration)
-        qwalltime = "00:20:00"
-        cwalltime = "00:10:00"
+        qwalltime = "00:10:00"
+        cwalltime = "00:06:00"
     else:
         sub = model.subdir+"/Tf_"+str(model.Tf_iteration)
-        qwalltime = "00:04:00"
-        cwalltime = "00:02:00"
+        qwalltime = "00:05:00"
+        cwalltime = "00:03:00"
     os.chdir(cwd+"/"+sub)
     cwd2 = os.getcwd()
     print "  Checking analysis in directory "+sub
@@ -224,18 +217,15 @@ def check_if_wham_is_next(model,append_log):
     if deltaT <= 5:
         ## Its time for WHAM
         print "Since deltaT <=5 --> Time for WHAM."
-        print "  *** NOTE: module load jdk/1.7.0.21 required for WHAM ***"
-        print "Starting wham_Cv..."
-        model.append_log("  prepping wham_Cv inputs")
+        print "*** NOTE: module load jdk/1.7.0.21 required for WHAM ***"
+        print "Running wham for heat capacity, free energy curves, and melting curve"
         if os.path.exists(cwd2+"/whamQ"):
             pass
         else:
             os.makedirs(cwd2+"/whamQ")
-        wham.prepare_histograms(Ti,Tf,dT,cwd2,"HeatCap")
-
-        model.append_log("  running wham for heat capacity")
-        append_log(model.subdir,"Starting: wham_Cv")
-        wham.run_wham("HeatCap")
+        model.append_log("  running wham for heat capacity, free energy, and melting curve")
+        wham.run_wham(temperatures)
+        append_log(model.subdir,"Starting: Tf_wham")
         flag = 1
     else:
         ## Its not time for WHAM
@@ -246,7 +236,10 @@ def check_if_wham_is_next(model,append_log):
 
 def continue_wham(model,append_log):
     ''' If WHAM has already run for the Heat Capacity (Cv) then prep files
-        and run WHAM for 1D & 2D free energy surfaces.'''
+        and run WHAM for 1D & 2D free energy surfaces.
+
+        DEPRECATED JUNE 2014
+    '''
 
     cwd = os.getcwd()
     sub = model.subdir+"/Tf_"+str(model.Tf_iteration)

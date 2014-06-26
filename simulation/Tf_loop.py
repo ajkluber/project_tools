@@ -409,7 +409,8 @@ def run_temperature_array(model,T_min,T_max,deltaT):
             os.mkdir(simpath)
             os.chdir(simpath)
             model.append_log("  running T=%d" % T)
-            print "  Running temperature ", T
+            if not model.dryrun:
+                print "  Running temperature ", T
             run_constant_temp(model,T,nsteps=nsteps,walltime=walltime,queue=queue,ppn=ppn)
             os.chdir("..")
         else:
@@ -446,7 +447,7 @@ def run_constant_temp(model,T,nsteps="400000000",walltime="23:00:00",queue="seri
     ## Start simulation
     jobname = model.subdir+"_"+str(T)
     if model.dryrun == True:
-        print "    Dryrun Success! Successfully saved simulation files." 
+        print "    Dryrun: Successfully saved simulation files for ", T
     else:
         submit_run(jobname,walltime=walltime,queue=queue,ppn=ppn)
     

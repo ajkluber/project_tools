@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import subprocess as sb
 import os
+import shutil
 
 def get_wham_config_basic(numbinsQ,minQ,stepQ,numbinsE,minE,stepE,temps):
     wham_config = "numDimensions 2 # number of dimensions in the dos histogram\n"
@@ -33,12 +34,12 @@ def get_wham_config_basic(numbinsQ,minQ,stepQ,numbinsE,minE,stepE,temps):
     wham_config += "### list of histogram filenames and their temperatures ###\n"
     wham_config += "numFiles %d\n" % len(temps)
     for temp in temps:
-        wham_config += "name hist%d.dat temp %d\n" % temp
+        wham_config += "name hist%d temp %d\n" % (temp, temp)
     wham_config += "\n"
     return wham_config
 
 def get_wham_config_heat_capacity(startT,deltaT,ntemps):
-    wham_config += "#### Compute Cv(T)\n"
+    wham_config = "#### Compute Cv(T)\n"
     wham_config += "run_cv              # comment out to not run, reads dosFile\n"
     wham_config += "run_cv_out cv       # filename for the temperature curves\n"
     wham_config += "startT %6.2f       # starting temperature\n"     % startT
@@ -47,7 +48,7 @@ def get_wham_config_heat_capacity(startT,deltaT,ntemps):
     return wham_config
 
 def get_wham_config_free_energy(startTF,deltaTF,ntempsF):
-    wham_config += "#### Compute F(Q)\n"
+    wham_config = "#### Compute F(Q)\n"
     wham_config += "run_free            # comment out to not run, reads dosFile\n"
     wham_config += "run_free_out free   # prefix for the free energy curves\n"
     wham_config += "startTF %6.2f      # first temperature to compute F(Q)\n" % startTF
@@ -56,7 +57,7 @@ def get_wham_config_free_energy(startTF,deltaTF,ntempsF):
     return wham_config
 
 def get_wham_config_melting_curve(startTC,deltaTC,ntempsC):
-    wham_config += "### Compute <Q>(T)\n"
+    wham_config = "### Compute <Q>(T)\n"
     wham_config += "run_coord            # comment out to not run, reads dosFile\n"
     wham_config += "run_coord_out Q_vs_T # filename for the coordinate curve\n"
     wham_config += "startTC %6.2f       # temperature to start at\n"   % startTC
@@ -65,14 +66,55 @@ def get_wham_config_melting_curve(startTC,deltaTC,ntempsC):
     return wham_config
 
 def prepare_histograms(temperatures):
-
+    """ Prepare histogram files for wham """
     directories = [ str(x)+"_0" for x in temperatures ]
+
+    print "  Preparing histograms..."
     Qs = [ np.loadtxt(dir+"/Q.dat") for dir in directories  ]     
     Engs = [ np.loadtxt(dir+"/energyterms.xvg",usecols=(4,5))[:,1] for dir in directories   ]     
+    for i in range(len(Qs)):
+        histogram = np.zeros((len(Qs[0]),2),float)
+        histogram[:,0] = Engs[i]
+        histogram[:,1] = Qs[i]
+        np.savetxt("whamQ/hist"+str(temperatures[i]),histogram,fmt="%15.6f")
 
     maxQ = max([ max(q) for q in Qs ])
     minQ = min([ min(q) for q in Qs ])
     maxE = max([ max(x) for x in Engs ])
     minE = min([ min(x) for x in Engs ])
 
+    stepQ = 5 
+    stepE = 5 
+    numbinsQ = int(round((maxQ - minQ)/stepQ))
+    numbinsE = int(round((maxE - minE)/stepE))
+    wham_basic = get_wham_config_basic(numbinsQ,minQ,stepQ,numbinsE,minE,stepE,temperatures)
+    return wham_basic
+
+def run_wham(temperatures):
+    """ """
+    wham_basic = prepare_histograms(temperatures)
+
+    startT = min(temperatures)
+    deltaT = 0.1
+    ntemps = int(round((float(max(temperatures)) - float(startT))/deltaT))
+    wham_Cv = get_wham_config_heat_capacity(startT,deltaT,ntemps)
+    wham_Free = get_wham_config_free_energy(startT,deltaT,ntemps)
+    wham_Melt = get_wham_config_melting_curve(startT,deltaT,ntemps)
     
+    os.chdir("whamQ")
+    PROJECTS = os.environ["PROJECTS"]
+    shutil.copy(PROJECTS+"/project_tools/analysis/WHAM.1.06.jar",".")
+    open("cv.config","w").write(wham_basic + wham_Cv)
+    open("free.config","w").write(wham_basic + wham_Free)
+    open("melt.config","w").write(wham_basic + wham_Melt)
+
+    cmd1 = "java -jar WHAM.1.06.jar --config cv.config"
+    cmd2 = "java -jar WHAM.1.06.jar --config free.config"
+    cmd3 = "java -jar WHAM.1.06.jar --config melt.config"
+
+    print "  Running wham..."
+    sb.call(cmd1.split(),stdout=open("cv.out","w"),stderr=open("cv.err","w"))
+    sb.call(cmd2.split(),stdout=open("free.out","w"),stderr=open("free.err","w"))
+    sb.call(cmd3.split(),stdout=open("melt.out","w"),stderr=open("melt.err","w"))
+
+    os.chdir("..")
