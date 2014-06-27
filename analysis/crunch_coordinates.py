@@ -49,11 +49,11 @@ def crunch_all(name,walltime="00:02:00",ppn="1"):
     analysis_pbs +='#PBS -V\n\n'
     analysis_pbs +='cd $PBS_O_WORKDIR\n'
 
-    analysis_pbs +='echo -e "0\n0" | g_rms_sbm -f traj.xtc -s topol.tpr -o rmsd.xvg -nomw -xvg none -n index.ndx\n'
-    analysis_pbs +='echo "1" | g_gyrate_sbm -f traj.xtc -s topol.tpr -o radius_gyration.xvg -xvg none\n'
-    analysis_pbs +='g_angle_sbm -n dihedrals.ndx -ov phis.xvg -all -type dihedral -xvg none\n'
-    analysis_pbs +='echo "1 2 3 4 8" | g_energy_sbm -f ener.edr -o energyterms -xvg none\n'
-    analysis_pbs +='echo "11" | g_energy_sbm -f ener.edr -o temperature -xvg none\n'
+    analysis_pbs +='echo -e "0\n0" | g_rms -f traj.xtc -s topol_4.6.tpr -o rmsd.xvg -nomw -xvg none -n index.ndx\n'
+    analysis_pbs +='echo "1" | g_gyrate -f traj.xtc -s topol_4.6.tpr -o radius_gyration.xvg -xvg none\n'
+    analysis_pbs +='g_angle -n dihedrals.ndx -ov phis.xvg -all -type dihedral -xvg none\n'
+    analysis_pbs +='echo "1 2 3 4 8" | g_energy -f ener.edr -o energyterms -xvg none\n'
+    analysis_pbs +='echo "11" | g_energy -f ener.edr -o temperature -xvg none\n'
 
     open("analysis.pbs","w").write(analysis_pbs)
     qsub = "qsub analysis.pbs"

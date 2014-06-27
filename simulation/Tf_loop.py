@@ -363,7 +363,7 @@ def run_equilibrium_simulations(model,append_log):
                 os.mkdir(simpath)
                 os.chdir(simpath)
                 model.append_log("  running T=%s" % simpath)
-                print "    Running temperature ", T_string
+                print "    Running temperature ", simpath
                 run_constant_temp(model,float(T),nsteps=str(1000000000),walltime="60:00:00",queue="serial_long")
                 os.chdir("..")
             else:
