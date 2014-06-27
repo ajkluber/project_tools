@@ -55,10 +55,6 @@ class MatysiakClementi2004(ProjectManager):
         elif task == "Tf_loop_analysis":
             print "Checking if Tf_loop_analysis completed..."
             analysis.Tf_loop.check_completion(model,self.append_log)
-        elif task == "Tf_wham":
-            print "Starting equilibrium simulations at Tf..."
-            simulation.Tf_loop.run_equilibrium_simulations(model,self.append_log)
-        elif task == "wham_FreeEnergy":
         elif task == "Equil_Tf":
             print "Starting to check if Equil_Tf completed..."
             simulation.Tf_loop.check_completion(model,self.append_log,equil=True)
@@ -97,10 +93,9 @@ class MatysiakClementi2004(ProjectManager):
             else:
                 print "Starting Tf_loop_iteration..."
                 simulation.Tf_loop.folding_temperature_loop(model,self.append_log)
-        elif task == "wham":
-            print "Finished wham_Cv..."
-            print "Stating wham_FreeEnergy..."
-            analysis.Tf_loop.continue_wham(model,self.append_log)
+        elif task == "Tf_wham":
+            print "Starting equilibrium simulations at Tf..."
+            simulation.Tf_loop.run_equilibrium_simulations(model,self.append_log)
         elif task == "Equil_Tf":
             print "Starting Equil_Tf_analysis..."
             analysis.Tf_loop.analyze_temperature_array(model,self.append_log,equil=True)

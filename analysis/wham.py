@@ -124,7 +124,7 @@ def run_wham(model,temperatures):
     ax1.plot(Cv[:,0],Cv[:,1],'r')
     ax1.set_xlabel("Temperature (K)")
     ax1.set_ylabel("Heat Capacity (kJ/mol K)")
-    #ax1.set_title("$C_v(T)$ and $\\left< Q \\right>(T)$ for %s" % model.name)
+    ax1.set_title("$C_v(T)$ and $\\left< Q \\right>(T)$ for %s" % model.name)
 
     ax2.plot(QvsT[:,0],QvsT[:,1]/model.n_contacts,'b')
     ax2.set_ylabel("$\\left< Q \\right>(T)$")
@@ -132,6 +132,5 @@ def run_wham(model,temperatures):
     print "  Wham done! Plotted Cv and melting curve: %s/Tf_%d/whamQ/cv_and_melt.pdf" % (model.subdir,model.Tf_iteration)
     Tf = Cv[list(Cv[:,1]).index(max(Cv[:,1])),0]
     print "  Folding temperature: ", Tf
-    plt.show()
     os.chdir("..")
     open("Tf.txt","w").write("%.2f" % Tf)
