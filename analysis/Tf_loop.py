@@ -224,7 +224,7 @@ def check_if_wham_is_next(model,append_log):
         else:
             os.makedirs(cwd2+"/whamQ")
         model.append_log("  running wham for heat capacity, free energy, and melting curve")
-        wham.run_wham(temperatures)
+        wham.run_wham(model,temperatures)
         append_log(model.subdir,"Starting: Tf_wham")
         flag = 1
     else:

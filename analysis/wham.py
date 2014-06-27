@@ -1,4 +1,3 @@
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import subprocess as sb
@@ -90,8 +89,8 @@ def prepare_histograms(temperatures):
     wham_basic = get_wham_config_basic(numbinsQ,minQ,stepQ,numbinsE,minE,stepE,temperatures)
     return wham_basic
 
-def run_wham(temperatures):
-    """ """
+def run_wham(model,temperatures):
+    """ Prepare wham histograms and run Jeff's WHAM code"""
     wham_basic = prepare_histograms(temperatures)
 
     startT = min(temperatures)
@@ -117,4 +116,22 @@ def run_wham(temperatures):
     sb.call(cmd2.split(),stdout=open("free.out","w"),stderr=open("free.err","w"))
     sb.call(cmd3.split(),stdout=open("melt.out","w"),stderr=open("melt.err","w"))
 
+    Cv = np.loadtxt("cv",usecols=(0,1))
+    QvsT = np.loadtxt("Q_vs_T",dtype=float)
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    ax2 = ax1.twinx()
+    ax1.plot(Cv[:,0],Cv[:,1],'r')
+    ax1.set_xlabel("Temperature (K)")
+    ax1.set_ylabel("Heat Capacity (kJ/mol K)")
+    #ax1.set_title("$C_v(T)$ and $\\left< Q \\right>(T)$ for %s" % model.name)
+
+    ax2.plot(QvsT[:,0],QvsT[:,1]/model.n_contacts,'b')
+    ax2.set_ylabel("$\\left< Q \\right>(T)$")
+    plt.savefig("cv_and_melt.pdf")
+    print "  Wham done! Plotted Cv and melting curve: %s/Tf_%d/whamQ/cv_and_melt.pdf" % (model.subdir,model.Tf_iteration)
+    Tf = Cv[list(Cv[:,1]).index(max(Cv[:,1])),0]
+    print "  Folding temperature: ", Tf
+    plt.show()
     os.chdir("..")
+    open("Tf.txt","w").write("%.2f" % Tf)

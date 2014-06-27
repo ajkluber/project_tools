@@ -350,10 +350,10 @@ def run_equilibrium_simulations(model,append_log):
         os.mkdir(mutsub)
     os.chdir(mutsub)
     T_string = ''
-    for n in range(7):
+    for n in range(3):
         #T = "%.2f" % (float(Tf)+float(Tf)*(0.003*(n-1)))
-        T = "%.2f" % (float(Tf)+float(Tf)*(0.003*(n-3)))
-        for simnum in range(1,6):
+        T = "%.2f" % (float(Tf)+0.1*(n-1)))
+        for simnum in range(1,4):
             simpath = T+"_"+str(simnum)
             ## Only start the simulation if directory doesn't exist.
             if (not os.path.exists(simpath)):
@@ -372,6 +372,25 @@ def run_equilibrium_simulations(model,append_log):
     open("T_array_last.txt","w").write(T_string)
     append_log(model.subdir,"Starting: Equil_Tf")
     os.chdir(cwd)
+
+def determine_equil_walltime(model):
+    """ Estimate an efficient walltime."""
+    N = model.n_residues
+    ppn = "1"
+    nsteps = "1000000000"
+    queue="serial"
+    if N < 60:
+        walltime="24:00:00"
+    else:
+        if N > 160:
+            if N > 250:
+                walltime="72:00:00"
+                queue="serial_long"
+            else:
+                walltime="24:00:00"
+        else:
+            walltime="12:00:00"
+    return walltime, queue, ppn,nsteps
 
 def determine_walltime(model):
     """ Estimate an efficient walltime."""
