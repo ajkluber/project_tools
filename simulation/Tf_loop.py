@@ -105,7 +105,7 @@ def gmxcheck_subdirectories():
 def run_gmxcheck(subdir):
     print "  Running gmxcheck on ",subdir
     os.chdir(subdir)
-    check = "gmxcheck_sbm -f traj.xtc"
+    check = "gmxcheck -f traj.xtc"
     sb.call(check.split(),stdout=open("check.out","w"),stderr=open("check.err","w")) 
     
     errorcode = "Fatal error"
@@ -223,15 +223,17 @@ def extend_temperature(T,factor):
     
     ## Save old .mdp and .tpr as something else.
     shutil.move("nvt.mdp","nvt.mdp")
-    shutil.move("topol.tpr","old_topol.tpr")
+    shutil.move("topol_4.6.tpr","old_topol_4.6.tpr")
 
     ## Write new .mdp with more steps and recreate .tpr
     mdpfile = mdp.get_constant_temperature_mdp_smog(T,new_nsteps)
     open("nvt.mdp","w").write(mdpfile)
 
     print "  Extending temp ", T, " to nsteps ",new_nsteps
-    prep_step = 'grompp_sbm -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol.tpr '
-    sb.call(prep_step.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
+    prep_step1 = 'grompp_sbm -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.5.tpr '
+    prep_step2 = 'grompp -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.6.tpr '
+    sb.call(prep_step1.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
+    sb.call(prep_step2.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
 
     ## Submit rst.pbs
     qsub = "qsub rst.pbs"
@@ -362,7 +364,7 @@ def run_equilibrium_simulations(model,append_log):
                 os.chdir(simpath)
                 model.append_log("  running T=%s" % simpath)
                 print "    Running temperature ", T_string
-                run_constant_temp(model,float(T),nsteps=1000000000,walltime="60:00:00",queue="serial_long")
+                run_constant_temp(model,float(T),nsteps=str(1000000000),walltime="60:00:00",queue="serial_long")
                 os.chdir("..")
             else:
                 ## Directory exists for this temperature: continue.
@@ -438,7 +440,7 @@ def run_temperature_array(model,T_min,T_max,deltaT):
     open("T_array_last.txt","w").write(T_string)
     open("Ti_Tf_dT.txt","w").write("%d %d %d" % (T_min, T_max, deltaT))
 
-def run_constant_temp(model,T,nsteps="400000000",walltime="23:00:00",queue="serial",ppn="1"):
+def run_constant_temp(model,T,nsteps="100000000",walltime="23:00:00",queue="serial",ppn="1"):
     ''' Start a constant temperature simulation with Gromacs. 
 
     Description:
@@ -479,7 +481,7 @@ def get_pbs_string(jobname,queue,ppn,walltime):
     pbs_string +="#PBS -l walltime=%s \n" % walltime
     pbs_string +="#PBS -V \n\n"
     pbs_string +="cd $PBS_O_WORKDIR\n"
-    pbs_string +="mdrun_sbm -s topol.tpr -table table.xvg -tablep table.xvg"
+    pbs_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg"
     return pbs_string
 
 def get_rst_pbs_string(jobname,queue,ppn,walltime):
@@ -492,15 +494,16 @@ def get_rst_pbs_string(jobname,queue,ppn,walltime):
     rst_string +="#PBS -l walltime=%s \n" % walltime
     rst_string +="#PBS -V \n\n"
     rst_string +="cd $PBS_O_WORKDIR\n"
-    rst_string +="mdrun_sbm -s topol.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
+    rst_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
     return rst_string
 
 def submit_run(jobname,walltime="23:00:00",queue="serial",ppn="1"):
     ''' Executes the constant temperature runs.'''
 
-    prep_step = 'grompp_sbm -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol.tpr'
-
-    sb.call(prep_step.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
+    prep_step1 = 'grompp_sbm -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.5.tpr'
+    prep_step2 = 'grompp -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.6.tpr'
+    sb.call(prep_step1.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
+    sb.call(prep_step2.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
 
     pbs_string = get_pbs_string(jobname,queue,ppn,walltime)
     open("run.pbs","w").write(pbs_string)
