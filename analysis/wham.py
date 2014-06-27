@@ -127,6 +127,7 @@ def run_wham(model,temperatures):
     ax1.set_title("$C_v(T)$ and $\\left< Q \\right>(T)$ for %s" % model.name)
 
     ax2.plot(QvsT[:,0],QvsT[:,1]/model.n_contacts,'b')
+    ax2.set_ylim(0,1)
     ax2.set_ylabel("$\\left< Q \\right>(T)$")
     plt.savefig("cv_and_melt.pdf")
     print "  Wham done! Plotted Cv and melting curve: %s/Tf_%d/whamQ/cv_and_melt.pdf" % (model.subdir,model.Tf_iteration)
