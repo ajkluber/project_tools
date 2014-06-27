@@ -111,6 +111,8 @@ def analyze_temperature_array(model,append_log,equil=False):
             sub = model.subdir+"/Tf_"+str(model.Tf_iteration)
             qwalltime = "00:05:00"
             cwalltime = "00:03:00"
+        ppn = "1"
+        queue = "serial"
         print "  Analyzing temperature array for", sub
         os.chdir(cwd+"/"+sub)
         tempfile = open("T_array_last.txt","r").readlines()
