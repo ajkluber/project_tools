@@ -106,14 +106,14 @@ def analyze_temperature_array(model,append_log,equil=False):
         if equil == True:
             sub = model.subdir+"/Mut_"+str(model.Mut_iteration)
             qwalltime = "00:10:00"
-            cwalltime = "00:06:00"
+            cwalltime = "00:07:00"
         else:
             sub = model.subdir+"/Tf_"+str(model.Tf_iteration)
             qwalltime = "00:05:00"
             cwalltime = "00:03:00"
         ppn = "1"
         queue = "serial"
-        print "  Analyzing temperature array for", sub
+        print "  Analyzing temperatures in", sub
         os.chdir(cwd+"/"+sub)
         tempfile = open("T_array_last.txt","r").readlines()
         temperatures = [ temp[:-1] for temp in tempfile  ]
@@ -174,15 +174,15 @@ def check_completion(model,append_log,equil=False):
         files = ["rmsd.xvg","radius_gyration.xvg","energyterms.xvg","phis.xvg","Q.dat","qimap.dat"] 
         check_files = all([ os.path.exists(file) for file in files ])
         if check_files:
-            if os.path.exists("Nh.dat"): 
-                print "    Crunch coordinates done. "
-            else:
-                #print "    Crunch coordinates done. Crunching Nh for "+tdir
-                #model.append_log("    crunching Nh for "+tdir)
-                #crunch_coordinates.crunch_Nh()
-                print "    Saving Qh, Qnh, Qlocal, Qnonlocal for "+tdir
-                model.append_log("    Saving Qh, Qnh, Qlocal, Qnonlocal for "+tdir)
-                crunch_coordinates.reorganize_qimap()
+            #if os.path.exists("Nh.dat"): 
+            #    print "    Crunch coordinates done. "
+            #else:
+            #    print "    Crunch coordinates done. Crunching Nh for "+tdir
+            #    model.append_log("    crunching Nh for "+tdir)
+            #    crunch_coordinates.crunch_Nh()
+            print "    Saving Qh, Qnh, Qlocal, Qnonlocal for "+tdir
+            model.append_log("    Saving Qh, Qnh, Qlocal, Qnonlocal for "+tdir)
+            crunch_coordinates.reorganize_qimap()
             model.append_log("    analysis done for "+tdir)
             done = 1
         else:

@@ -22,31 +22,44 @@ from mutatepdbs import get_core_mutations
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
-def calculate_dH_for_mutants(Model,System,append_log):
+def calculate_dH_for_mutants(model,append_log):
     """ First task is to calculate the perturbations for each mutation for
         each frame in the trajectory.   May be generalized in the future or 
         moved inside Model to deal with Models with multiple parameters per
         interaction (e.g. desolvation barrier, etc.)
     """
     
-    append_log(System.subdir,"Starting: Calculating_dH")
+    append_log(model.subdir,"Starting: Calculating_dH")
 
     cwd = os.getcwd()
-    sub = cwd+"/"+System.subdir+"/"+System.mutation_active_directory
+    sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
     T = get_Tf_choice(sub)
-    savedir = sub+"/"+T+"_agg"
 
-    os.chdir(System.subdir)
+
+    ## Loop over all directories in Mut subdirectory. Crunch dH for each
+    ## trajectory independently.
+
+    savedir = sub+"/"+T+"_agg" ## DEPRECATED
+
+    os.chdir(model.subdir)
     
+    ## Get list of useable mutations.
     os.chdir("mutants")
     mut_indx, wt_res, mut_res = get_core_mutations()
-    os.chdir("..")
     mutants = [ wt_res[i]+mut_indx[i]+mut_res[i]  for i in range(len(mut_indx)) ]
+    os.chdir("..")
 
+    ## Get contact parameter info
     sigij,epsij,deltaij,interaction_nums,keep_interactions,pairs,traj,traj_dist = load_eps_delta_sig_traj(savedir)
+
+    ## Get the fraction of native contacts deleted for each mutation.
     Fij = get_mutant_fij(mutants,keep_interactions)
+
+    ## Calculate Q_ij for all contacts in the trajectory. Save this in a 
+    ## histogram file.
     qij = get_Qij(Model,traj_dist,sigij,deltaij,interaction_nums)
 
+    ## Calculate the perturbation.
     for j in range(len(Fij)):
         mut = mutants[j]
         if not os.path.exists(savedir+"/dH_"+mut+".dat"):
@@ -56,7 +69,7 @@ def calculate_dH_for_mutants(Model,System,append_log):
             print "    Saving dH for ",mut
             np.savetxt(savedir+"/dH_"+mut+".dat",dH_k)
     os.chdir(cwd)
-    append_log(System.subdir,"Finished: Calculating_dH")
+    append_log(model.subdir,"Finished: Calculating_dH")
 
 def calculate_phi_values(Model,System,append_log,coord):
     """ Calculate the phi values for a trajectory. Requires only state 

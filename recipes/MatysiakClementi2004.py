@@ -100,6 +100,26 @@ class MatysiakClementi2004(ProjectManager):
             print "Starting Equil_Tf_analysis..."
             analysis.Tf_loop.analyze_temperature_array(model,self.append_log,equil=True)
         elif task == "Equil_Tf_analysis":
+        ## To Do:
+        ##  1. Run WHAM to get F(Q) and Cv(T).
+        ##  2. Select peak in Cv(T) as Tf
+        ##  3. Run WHAM to get the following thermal averages as function
+        ##    of Q at Tf:
+        ##    3a. <Q_ij>(Q) the interaction energy of contact ij.
+        ##    3b. <exp(-beta*dH_k)>(Q) the perturbation due to mutation k.
+        ##    3c. <Q_i>(Q) the contact probability
+        ##
+        ##  4. Determine bounds for TS, U, N states
+        ##  5. Calculate DeltaDeltaG's for simulation and phi_values
+        ##  6. Calculate matrix M and solve for new parameters.
+
+            ## Calculate exp(-beta*dH_k) and Q_ij for runs.
+
+            #mutations.phi_values.calculate_dH_for_mutants(model,self.append_log)
+
+            #mutations.phi_values.calculate_phi_values(model,self.append_log,"Q")
+
+
             ## Aggregrate equil_Tf data for each temperature and plot PMFs
             print "Starting aggregate data..."
             analysis.Tf_loop.aggregate_equilibrium_runs(model,self.append_log)
