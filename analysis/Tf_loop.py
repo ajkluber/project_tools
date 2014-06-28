@@ -8,7 +8,6 @@ import crunch_coordinates
 import wham
 import plot
 
-
 def aggregate_equilibrium_runs(model,append_log,reagg=False):
     ''' Aggregate equilibrium simulation data into one directory for    
         ease of access.'''
@@ -17,13 +16,13 @@ def aggregate_equilibrium_runs(model,append_log,reagg=False):
     cwd = os.getcwd()
     sub = model.subdir+"/"+model.mutation_active_directory
     os.chdir(cwd+"/"+sub)
-    temps = [ x.split('_')[0] for x in open("T_array.txt","r").readlines() ] 
+    temperatures = [ x.split('_')[0] for x in open("T_array.txt","r").readlines() ] 
     unique_temps = []
     counts = []
-    for t in temps:
+    for t in temperatures:
         if t not in unique_temps:
             unique_temps.append(t)
-            counts.append(temps.count(t))
+            counts.append(temperatures.count(t))
         else:
             pass
 
@@ -115,9 +114,7 @@ def analyze_temperature_array(model,append_log,equil=False):
         queue = "serial"
         print "  Analyzing temperatures in", sub
         os.chdir(cwd+"/"+sub)
-        tempfile = open("T_array_last.txt","r").readlines()
-        temperatures = [ temp[:-1] for temp in tempfile  ]
-        allTs = [ temp[:-1] for temp in open("T_array.txt","r").readlines() ]
+        temperatures = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ]
 
         cwd2 = os.getcwd()
         for k in range(len(temperatures)):
@@ -166,8 +163,7 @@ def check_completion(model,append_log,equil=False):
     os.chdir(cwd+"/"+sub)
     cwd2 = os.getcwd()
     print "  Checking analysis in directory "+sub
-    tempfile = open("T_array_last.txt","r").readlines()
-    temperatures = [ temp[:-1] for temp in tempfile  ]
+    temperatures = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ]
     for k in range(len(temperatures)):
         tdir = temperatures[k]
         os.chdir(cwd2+"/"+tdir)
@@ -227,7 +223,7 @@ def check_if_wham_is_next(model,append_log):
             os.makedirs(cwd2+"/whamQ")
         model.append_log("  running wham for heat capacity, free energy, and melting curve")
         append_log(model.subdir,"Starting: Tf_wham")
-        wham.run_wham(model,temperatures)
+        wham.run_wham_for_heat_capacity(model)
         append_log(model.subdir,"Finished: Tf_wham")
         flag = 1
     else:
