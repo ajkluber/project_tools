@@ -60,36 +60,79 @@ def get_wham_config_melting_curve(startTC,deltaTC,ntempsC):
     wham_config += "ntempsC %6d        # total temps to generate\n\n" % ntempsC
     return wham_config
 
-def prepare_histograms_old(temperatures):
-    """ Prepare histogram files for wham. OLD"""
+def prepare_histograms():
+    """ Prepare histogram files for wham.
+    
+        Concatenates all the data from the same temperature for the histogram
+    files in the whamQ subdirectory.
+    """
+    if not os.path.exists("whamQ"):
+        os.mkdir("whamQ")
 
-    directories = [ str(x)+"_0" for x in temperatures ]
+    directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ]
+    temperatures = [ x.split("_")[0] for x in open("T_array_last.txt","r").readlines() ]
+    endings = [ int(x.split("_")[1].rstrip("\n")) for x in open("T_array_last.txt","r").readlines() ]
+    start_at = min(endings)
 
+    unique_temps = []
+    counts = []
+    for t in temperatures:
+        if t not in unique_temps:
+            unique_temps.append(t)
+            if start_at == 0:
+                counts.append(temperatures.count(t)-1)
+            else:
+                counts.append(temperatures.count(t))
+        else:
+            pass
+
+    ## Concatenate the E and Q data at a particular temperature then
+    ## save in the whamQ subdirectory
+    cwd = os.getcwd()
+    histfilenames = ""
+    i = 0  
     print "  Preparing histograms..."
-    Qs = [ np.loadtxt(dir+"/Q.dat") for dir in directories  ]     
-    Engs = [ np.loadtxt(dir+"/energyterms.xvg",usecols=(4,5))[:,1] for dir in directories   ]     
-    for i in range(len(Qs)):
-        histogram = np.zeros((len(Qs[0]),2),float)
-        histogram[:,0] = Engs[i]
-        histogram[:,1] = Qs[i]
-        np.savetxt("whamQ/hist"+str(temperatures[i]),histogram,fmt="%15.6f")
+    for k in range(len(unique_temps)):
+        T = unique_temps[k]
 
-    maxQ = max([ max(q) for q in Qs ])
-    minQ = min([ min(q) for q in Qs ])
-    maxE = max([ max(x) for x in Engs ])
-    minE = min([ min(x) for x in Engs ])
+        print "    temperature: ",T
+        for n in range(start_at,counts[k]+1):
+            q = np.loadtxt(T+"_"+str(n)+"/Q.dat")
+            eng = np.loadtxt(T+"_"+str(n)+"/energyterms.xvg",usecols=(4,5))[:,1]
+            if n == start_at:
+                Q = q
+                E = eng
+            else:
+                Q = np.concatenate((Q,q),axis=0)
+                E = np.concatenate((E,eng),axis=0)
+        if i == 0:
+            maxQ = max(Q)
+            minQ = min(Q)
+            maxE = max(E)
+            minE = min(E)
+        else:
+            maxQ = max([max(Q),maxQ])
+            minQ = min([min(Q),minQ])
+            maxE = max([max(E),maxE])
+            minE = min([min(E),minE])
+
+        histogram = np.zeros((len(Q),2),float)
+        histogram[:,0] = E
+        histogram[:,1] = Q
+        np.savetxt("whamQ/hist_%.2f" % float(T),histogram,fmt="%15.6f")
+        histfilenames += "name hist_%.2f temp %.2f\n" % (float(T),float(T))
+        i += 1
 
     stepQ = 5 
     stepE = 5 
     numbinsQ = int(round((maxQ - minQ)/stepQ))
     numbinsE = int(round((maxE - minE)/stepE))
     wham_basic = get_wham_config_basic(numbinsQ,minQ,stepQ,numbinsE,minE,stepE)
-    wham_config += "numFiles %d\n" % len(temperatures)
-    for temp in temps:
-        wham_config += "name hist%d temp %d\n" % (temp, temp)
-    wham_config += "\n"
+    wham_basic += "numFiles %d\n" % len(unique_temps)
+    wham_basic += histfilenames
+    wham_basic += "\n"
 
-    return wham_basic
+    return wham_basic,temperatures
 
 def run_wham_for_heat_capacity(model,Mut=False):
     """ Prepare wham histograms and run Jeff's WHAM code"""
@@ -142,124 +185,6 @@ def run_wham_for_heat_capacity(model,Mut=False):
         print "  Wham done! Plotted Cv and melting curve: %s/Mut_%d/whamQ/cv_and_melt.pdf" % (model.subdir,model.Mut_iteration)
     else:
         print "  Wham done! Plotted Cv and melting curve: %s/Tf_%d/whamQ/cv_and_melt.pdf" % (model.subdir,model.Tf_iteration)
-    Tf = Cv[list(Cv[:,1]).index(max(Cv[:,1])),0]
-    print "  Folding temperature: ", Tf
-    os.chdir("..")
-    open("Tf.txt","w").write("%.2f" % Tf)
-
-def prepare_histograms():
-    """ Prepare histogram files for wham.
-    
-        Concatenates all the data from the same temperature for the histogram
-    files in the whamQ subdirectory.
-    """
-    if not os.path.exists("whamQ"):
-        os.mkdir("whamQ")
-
-    directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ]
-    temperatures = [ x.split("_")[0] for x in open("T_array_last.txt","r").readlines() ]
-
-    unique_temps = []
-    counts = []
-    for t in temperatures:
-        if t not in unique_temps:
-            unique_temps.append(t)
-            counts.append(temperatures.count(t))
-        else:
-            pass
-
-    ## Concatenate the E and Q data at a particular temperature then
-    ## save in the whamQ subdirectory
-    cwd = os.getcwd()
-    histfilenames = ""
-    i = 0  
-    print "  Preparing histograms..."
-    for k in range(len(unique_temps)):
-        T = unique_temps[k]
-
-        print "    temperature: ",T
-        for n in range(1,counts[k]+1):
-            q = np.loadtxt(T+"_"+str(n)+"/Q.dat")
-            eng = np.loadtxt(T+"_"+str(n)+"/Q.dat")
-            if n == 1:
-                Q = q
-                E = eng
-            else:
-                Q = np.concatenate((Q,q),axis=0)
-                E = np.concatenate((E,eng),axis=0)
-        if i == 0:
-            maxQ = max(Q)
-            minQ = min(Q)
-            maxE = max(E)
-            minE = min(E)
-        else:
-            maxQ = max([max(Q),maxQ])
-            minQ = min([min(Q),minQ])
-            maxE = max([max(E),maxE])
-            minE = min([min(E),minE])
-
-        histogram = np.zeros((len(Q),2),float)
-        histogram[:,0] = E
-        histogram[:,1] = Q
-        np.savetxt("whamQ/histQ_"+T,histogram,fmt="%15.6f")
-        histfilenames = "name hist_"+T+" temp "+T+"\n"
-        i += 1
-
-    stepQ = 5 
-    stepE = 5 
-    numbinsQ = int(round((maxQ - minQ)/stepQ))
-    numbinsE = int(round((maxE - minE)/stepE))
-    wham_basic = get_wham_config_basic(numbinsQ,minQ,stepQ,numbinsE,minE,stepE)
-    wham_config += "numFiles %d\n" % len(unique_temps)
-    wham_config += histfilenames
-    wham_config += "\n"
-
-    return wham_basic,temperatures
-
-def run_wham_for_equilibrium_runs(model,temperatures):
-    """ Prepare wham histograms and run Jeff's WHAM code"""
-
-    ## prepare histograms for Q
-    wham_basic = prepare_histograms()
-
-    startT = min(temperatures)
-    deltaT = 0.01
-    ntemps = int(round((float(max(temperatures)) - float(startT))/deltaT))
-    wham_Cv = get_wham_config_heat_capacity(startT,deltaT,ntemps)
-    wham_Free = get_wham_config_free_energy(startT,deltaT,ntemps)
-    wham_Melt = get_wham_config_melting_curve(startT,deltaT,ntemps)
-    
-    os.chdir("whamQ")
-    PROJECTS = os.environ["PROJECTS"]
-    shutil.copy(PROJECTS+"/project_tools/analysis/WHAM.1.06.jar",".")
-    open("cv.config","w").write(wham_basic + wham_Cv)
-    open("free.config","w").write(wham_basic + wham_Free)
-    open("melt.config","w").write(wham_basic + wham_Melt)
-
-    cmd1 = "java -jar WHAM.1.06.jar --config cv.config"
-    cmd2 = "java -jar WHAM.1.06.jar --config free.config"
-    cmd3 = "java -jar WHAM.1.06.jar --config melt.config"
-
-    print "  Running wham..."
-    sb.call(cmd1.split(),stdout=open("cv.out","w"),stderr=open("cv.err","w"))
-    sb.call(cmd2.split(),stdout=open("free.out","w"),stderr=open("free.err","w"))
-    sb.call(cmd3.split(),stdout=open("melt.out","w"),stderr=open("melt.err","w"))
-
-    Cv = np.loadtxt("cv",usecols=(0,1))
-    QvsT = np.loadtxt("Q_vs_T",dtype=float)
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111)
-    ax2 = ax1.twinx()
-    ax1.plot(Cv[:,0],Cv[:,1],'r')
-    ax1.set_xlabel("Temperature (K)")
-    ax1.set_ylabel("Heat Capacity (kJ/mol K)")
-    ax1.set_title("$C_v(T)$ and $\\left< Q \\right>(T)$ for %s" % model.name)
-
-    ax2.plot(QvsT[:,0],QvsT[:,1]/model.n_contacts,'b')
-    ax2.set_ylim(0,1)
-    ax2.set_ylabel("$\\left< Q \\right>(T)$")
-    plt.savefig("cv_and_melt.pdf")
-    print "  Wham done! Plotted Cv and melting curve: %s/Tf_%d/whamQ/cv_and_melt.pdf" % (model.subdir,model.Tf_iteration)
     Tf = Cv[list(Cv[:,1]).index(max(Cv[:,1])),0]
     print "  Folding temperature: ", Tf
     os.chdir("..")

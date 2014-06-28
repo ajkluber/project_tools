@@ -200,12 +200,15 @@ def check_completion(model,append_log,equil=False):
     else:
         print "  Analysis has not finished."
 
-def check_if_wham_is_next(model,append_log):
+def check_if_wham_is_next(model,append_log,Mut=False):
     ''' Check if the last temperature step, dT=1. If it was start 
         prepping and running WHAM calculation for the Heat Capacity.'''
 
     cwd = os.getcwd()
-    sub = model.subdir+"/Tf_"+str(model.Tf_iteration)
+    if Mut == True:
+        sub = model.subdir+"/Mut_"+str(model.Mut_iteration)
+    else:
+        sub = model.subdir+"/Tf_"+str(model.Tf_iteration)
     os.chdir(cwd+"/"+sub)
     cwd2 = os.getcwd()
     Tinfo = open("Ti_Tf_dT.txt","r").read().split()
