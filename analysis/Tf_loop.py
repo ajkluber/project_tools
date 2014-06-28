@@ -200,38 +200,44 @@ def check_completion(model,append_log,equil=False):
     else:
         print "  Analysis has not finished."
 
-def check_if_wham_is_next(model,append_log,Mut=False):
+def run_wham_heat_capacity(model,append_log,Mut=False):
     ''' Check if the last temperature step, dT=1. If it was start 
         prepping and running WHAM calculation for the Heat Capacity.'''
 
     cwd = os.getcwd()
+    print "*** NOTE: module load jdk/1.7.0.21 required for WHAM ***"
     if Mut == True:
         sub = model.subdir+"/Mut_"+str(model.Mut_iteration)
-    else:
-        sub = model.subdir+"/Tf_"+str(model.Tf_iteration)
-    os.chdir(cwd+"/"+sub)
-    cwd2 = os.getcwd()
-    Tinfo = open("Ti_Tf_dT.txt","r").read().split()
-    T_min,T_max,deltaT = int(Tinfo[0]), int(Tinfo[1]), int(Tinfo[2])
-    temperatures = range(T_min,T_max+deltaT,deltaT)
-
-    if deltaT <= 5:
-        ## Its time for WHAM
-        print "Since deltaT <=5 --> Time for WHAM."
-        print "*** NOTE: module load jdk/1.7.0.21 required for WHAM ***"
+        os.chdir(cwd+"/"+sub)
+        cwd2 = os.getcwd()
         print "Running wham for heat capacity, free energy curves, and melting curve"
-        if os.path.exists(cwd2+"/whamQ"):
-            pass
-        else:
-            os.makedirs(cwd2+"/whamQ")
+        if not os.path.exists("whamQ"):
+            os.mkdir("whamQ")
         model.append_log("  running wham for heat capacity, free energy, and melting curve")
-        append_log(model.subdir,"Starting: Tf_wham")
-        wham.run_wham_for_heat_capacity(model)
-        append_log(model.subdir,"Finished: Tf_wham")
+        append_log(model.subdir,"Starting: Equil_Tf_wham")
+        wham.run_wham_for_heat_capacity(model,Mut=True)
+        append_log(model.subdir,"Finished: Equil_Tf_wham")
         flag = 1
     else:
-        ## Its not time for WHAM
-        flag = 0
+        sub = model.subdir+"/Tf_"+str(model.Tf_iteration)
+        os.chdir(cwd+"/"+sub)
+        cwd2 = os.getcwd()
+        Tinfo = open("Ti_Tf_dT.txt","r").read().split()
+        T_min,T_max,deltaT = int(Tinfo[0]), int(Tinfo[1]), int(Tinfo[2])
+        if deltaT <= 5:
+            ## Its time for WHAM
+            print "Since deltaT <=5 --> Time for WHAM."
+            print "Running wham for heat capacity, free energy curves, and melting curve"
+            if not os.path.exists("whamQ"):
+                os.mkdir("whamQ")
+            model.append_log("  running wham for heat capacity, free energy, and melting curve")
+            append_log(model.subdir,"Starting: Tf_wham")
+            wham.run_wham_for_heat_capacity(model)
+            append_log(model.subdir,"Finished: Tf_wham")
+            flag = 1
+        else:
+            ## Its not time for WHAM
+            flag = 0
 
     os.chdir(cwd)
     return flag

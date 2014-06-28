@@ -87,7 +87,7 @@ class MatysiakClementi2004(ProjectManager):
             analysis.Tf_loop.analyze_temperature_array(model,self.append_log)
         elif task == "Tf_loop_analysis":
             print "Finished Tf_loop_analysis..."
-            flag = analysis.Tf_loop.check_if_wham_is_next(model,self.append_log)
+            flag = analysis.Tf_loop.run_wham_heat_capacity(model,self.append_log)
             if flag == 1:
                 pass 
             else:
@@ -113,18 +113,20 @@ class MatysiakClementi2004(ProjectManager):
         ##  5. Calculate DeltaDeltaG's for simulation and phi_values
         ##  6. Calculate matrix M and solve for new parameters.
 
+            ## Run heat capacity for equilibrium runs. Cv(T), F(Q)
+            analysis.Tf_loop.run_wham_heat_capacity(model,self.append_log,Mut=True)
+
             ## Calculate exp(-beta*dH_k) and Q_ij for runs.
 
             #mutations.phi_values.calculate_dH_for_mutants(model,self.append_log)
 
             #mutations.phi_values.calculate_phi_values(model,self.append_log,"Q")
-
-
+        
             ## Aggregrate equil_Tf data for each temperature and plot PMFs
-            print "Starting aggregate data..."
-            analysis.Tf_loop.aggregate_equilibrium_runs(model,self.append_log)
-            print "Plotting aggregated data PMFS..."
-            analysis.plot.pmfs.plot_aggregated_data(model,self.append_log)
+            #print "Starting aggregate data..."
+            #analysis.Tf_loop.aggregate_equilibrium_runs(model,self.append_log)
+            #print "Plotting aggregated data PMFS..."
+            #analysis.plot.pmfs.plot_aggregated_data(model,self.append_log)
         elif task == "Aggregating_Equil_Runs":
             ## If plotting diddn't work before
             print "Plotting aggregated data PMFS..."

@@ -60,7 +60,7 @@ def get_wham_config_melting_curve(startTC,deltaTC,ntempsC):
     wham_config += "ntempsC %6d        # total temps to generate\n\n" % ntempsC
     return wham_config
 
-def prepare_histograms():
+def prepare_histograms(Mut=False):
     """ Prepare histogram files for wham.
     
         Concatenates all the data from the same temperature for the histogram
@@ -123,8 +123,12 @@ def prepare_histograms():
         histfilenames += "name hist_%.2f temp %.2f\n" % (float(T),float(T))
         i += 1
 
-    stepQ = 5 
-    stepE = 5 
+    if Mut == True:
+        stepQ = 2 
+        stepE = 2 
+    else:
+        stepQ = 5 
+        stepE = 5 
     numbinsQ = int(round((maxQ - minQ)/stepQ))
     numbinsE = int(round((maxE - minE)/stepE))
     wham_basic = get_wham_config_basic(numbinsQ,minQ,stepQ,numbinsE,minE,stepE)
@@ -137,18 +141,24 @@ def prepare_histograms():
 def run_wham_for_heat_capacity(model,Mut=False):
     """ Prepare wham histograms and run Jeff's WHAM code"""
 
-    wham_basic,temperatures = prepare_histograms()
+    wham_basic,temperatures = prepare_histograms(Mut=Mut)
 
     temps = [ float(x) for x in temperatures ]
     startT = min(temps)
     if Mut == True:
-        deltaT = 0.01
+        deltaTCv = 0.01
+        ntempsCv = int(round((float(max(temps)) - float(startT))/deltaTCv))
+        ntempsF = 10
+        deltaTF = (float(max(temps)) - float(startT))/ntempsF
     else:
-        deltaT = 0.1
-    ntemps = int(round((float(max(temps)) - float(startT))/deltaT))
-    wham_Cv = get_wham_config_heat_capacity(startT,deltaT,ntemps)
-    wham_Free = get_wham_config_free_energy(startT,deltaT,ntemps)
-    wham_Melt = get_wham_config_melting_curve(startT,deltaT,ntemps)
+        deltaTCv = 0.05
+        deltaTF = 0.4
+        ntempsCv = int(round((float(max(temps)) - float(startT))/deltaTCv))
+        ntempsF = int(round((float(max(temps)) - float(startT))/deltaTCv))
+
+    wham_Cv = get_wham_config_heat_capacity(startT,deltaTCv,ntempsCv)
+    wham_Melt = get_wham_config_melting_curve(startT,deltaTCv,ntempsCv)
+    wham_Free = get_wham_config_free_energy(startT,deltaTF,ntempsF)
     
     os.chdir("whamQ")
     PROJECTS = os.environ["PROJECTS"]
