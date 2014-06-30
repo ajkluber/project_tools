@@ -481,6 +481,7 @@ def run_constant_temp(model,T,nsteps="100000000",walltime="23:00:00",queue="seri
     open("nvt.mdp","w").write(mdpfile)
 
     ## Write all needed simulation files.
+    open("Native.pdb","w").write(model.cleanpdb)
     open("index.ndx","w").write(model.index_ndx)
     open("dihedrals.ndx","w").write(model.dihedrals_ndx)
     open("contacts.ndx","w").write(model.contacts_ndx)

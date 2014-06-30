@@ -101,17 +101,18 @@ class MatysiakClementi2004(ProjectManager):
             analysis.Tf_loop.analyze_temperature_array(model,self.append_log,equil=True)
         elif task == "Equil_Tf_analysis":
         ## To Do:
-        ##  1. Run WHAM to get F(Q) and Cv(T).
-        ##  2. Select peak in Cv(T) as Tf
-        ##  3. Run WHAM to get the following thermal averages as function
+        ##  1. Run WHAM to get F(Q) and Cv(T). DONE
+        ##  2. Select peak in Cv(T) as Tf. NO
+        ##  3. Calculate dH 
+        ##  4. Run WHAM to get the following thermal averages as function
         ##    of Q at Tf:
-        ##    3a. <Q_ij>(Q) the interaction energy of contact ij.
-        ##    3b. <exp(-beta*dH_k)>(Q) the perturbation due to mutation k.
-        ##    3c. <Q_i>(Q) the contact probability
+        ##    4a. <Q_ij>(Q) the interaction energy of contact ij.
+        ##    4b. <exp(-beta*dH_k)>(Q) the perturbation due to mutation k.
+        ##    4c. <Q_i>(Q) the contact probability
         ##
-        ##  4. Determine bounds for TS, U, N states
-        ##  5. Calculate DeltaDeltaG's for simulation and phi_values
-        ##  6. Calculate matrix M and solve for new parameters.
+        ##  5. Determine bounds for TS, U, N states
+        ##  6. Calculate DeltaDeltaG's for simulation and phi_values
+        ##  7. Calculate matrix M and solve for new parameters.
 
             ## Run heat capacity for equilibrium runs. Cv(T), F(Q)
             analysis.Tf_loop.run_wham_heat_capacity(model,self.append_log,Mut=True)
@@ -127,7 +128,7 @@ class MatysiakClementi2004(ProjectManager):
             #analysis.Tf_loop.aggregate_equilibrium_runs(model,self.append_log)
             #print "Plotting aggregated data PMFS..."
             #analysis.plot.pmfs.plot_aggregated_data(model,self.append_log)
-        elif task == "Aggregating_Equil_Runs":
+        elif task == "Equil_Tf_wham":
             ## If plotting diddn't work before
             print "Plotting aggregated data PMFS..."
             analysis.plot.pmfs.plot_aggregated_data(model,self.append_log)

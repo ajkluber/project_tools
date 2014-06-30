@@ -35,7 +35,6 @@ def calculate_dH_for_mutants(model,append_log):
     sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
     T = get_Tf_choice(sub)
 
-
     ## Loop over all directories in Mut subdirectory. Crunch dH for each
     ## trajectory independently.
 
@@ -48,6 +47,57 @@ def calculate_dH_for_mutants(model,append_log):
     mut_indx, wt_res, mut_res = get_core_mutations()
     mutants = [ wt_res[i]+mut_indx[i]+mut_res[i]  for i in range(len(mut_indx)) ]
     os.chdir("..")
+
+    temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
+    directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
+
+    for dir in directories:
+
+        os.chdir(dir)
+        ## Load trajectory, epsilons, deltas
+        print "  Loading BeadBead.dat"
+        beadbead = np.loadtxt(subdir+"/BeadBead.dat",dtype=str) 
+        sigij = beadbead[:,5].astype(float)
+        epsij = beadbead[:,6].astype(float)
+        deltaij = beadbead[:,7].astype(float)
+        interaction_numbers = beadbead[:,4].astype(str)
+        pairs = beadbead[:,:2].astype(int) 
+        pairs -= np.ones(pairs.shape,int)
+
+        keep_interactions = np.zeros(len(interaction_numbers),int)
+        for i in range(len(interaction_numbers)):
+            if interaction_numbers[i] in ["ds","ss"]:
+                pass
+            else:
+                keep_interactions[i] = int(interaction_numbers[i])
+
+        sigij = sigij[keep_interactions != 0]
+        epsij = epsij[keep_interactions != 0]
+        deltaij = deltaij[keep_interactions != 0]
+        pairs = pairs[keep_interactions != 0]
+
+        print "  Only modifying ",sum((keep_interactions != 0).astype(int)), " parameters out of ", len(keep_interactions)
+        ## Use mdtraj to compute the distances between pairs.
+        print "  Loading traj.xtc with mdtraj..."
+        traj = md.load(subdir+"/traj.xtc",top=subdir+"/Native.pdb")
+        print "  Computing distances with mdtraj..."
+        traj_dist = md.compute_distances(traj,pairs)
+
+        os.chdir("..")
+
+    #print keep_interactions != 0       ## DEBUGGING
+    #print sum((keep_interactions != 0).astype(int))      ## DEBUGGING
+    sigij = sigij[keep_interactions != 0]
+    epsij = epsij[keep_interactions != 0]
+    deltaij = deltaij[keep_interactions != 0]
+    pairs = pairs[keep_interactions != 0]
+
+    print "  Only modifying ",sum((keep_interactions != 0).astype(int)), " parameters out of ", len(keep_interactions)
+    ## Use mdtraj to compute the distances between pairs.
+    print "  Loading traj.xtc with mdtraj..."
+    traj = md.load(subdir+"/traj.xtc",top=subdir+"/Native.pdb")
+    print "  Computing distances with mdtraj..."
+    traj_dist = md.compute_distances(traj,pairs)
 
     ## Get contact parameter info
     sigij,epsij,deltaij,interaction_nums,keep_interactions,pairs,traj,traj_dist = load_eps_delta_sig_traj(savedir)
