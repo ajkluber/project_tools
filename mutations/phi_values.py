@@ -11,6 +11,7 @@ References:
 
 import numpy as np
 import os
+import argparse
 
 import mdtraj as md
 
@@ -23,62 +24,49 @@ global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
 def calculate_dH_for_mutants(model,append_log):
-    """ First task is to calculate the perturbations for each mutation for
-        each frame in the trajectory.   May be generalized in the future or 
-        moved inside Model to deal with Models with multiple parameters per
-        interaction (e.g. desolvation barrier, etc.)
-    """
+    """ Calculate Hamiltonian perturbation for each mutation dH_k """
     
     append_log(model.subdir,"Starting: Calculating_dH")
 
     cwd = os.getcwd()
     sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
-    T = get_Tf_choice(sub)
-
-
-    os.chdir(model.subdir)
-    
-    ## Get list of useable mutations.
     ## Get the fraction of native contacts deleted for each mutation.
-    os.chdir("mutants")
+    os.chdir(model.subdir+"/mutants")
     mut_indx, wt_res, mut_res = get_core_mutations()
     mutants = [ wt_res[i]+mut_indx[i]+mut_res[i]  for i in range(len(mut_indx)) ]
     Fij, Fij_pairs, Fij_conts = get_mutant_fij(model,mutants)
-    
-    os.chdir("..")
 
     os.chdir(sub)
 
     #temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
-    #directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
-    temperatures = [ x.split('_')[0] for x in open("T_array.txt","r").readlines() ] 
-    directories = [ x.rstrip("\n") for x in open("T_array.txt","r").readlines() ] 
+    directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
 
-    ## Loop over all directories in Mut subdirectory. Crunch dH for each
-    ## trajectory independently.
+    ## Loop over all directories in Mut subdirectory. For each trajectory
+    ## and each mutation crunch dH.
     for dir in directories:
         os.chdir(dir)
-        print "  Loading traj, " dir
+        print "  Loading traj for: ", "Mut_"+str(model.Mut_iteration)+"/"+dir
         traj = md.load("traj.xtc",top="Native.pdb")
         for k in range(len(mutants)):
-            print "    calc dH for ", mutants[k]
-            mut = mutants[k]
-                        
-            ## Use mdtraj to compute the distances between pairs.
-            rij = md.compute_distances(traj,Fij_pairs[k])
-            
-            ## Epsilons, deltas, and sigmas for relevant pairs for this mutation.
-            eps = model.contact_epsilons[Fij_conts[k]]
-            deltas = model.contact_deltas[Fij_conts[k]]
-            sigmas = model.contact_sigmas[Fij_conts[k]]
+            if not os.path.exists("dH_"+mut+".dat"):
+                print "    calc dH for ", mutants[k]
+                mut = mutants[k]
+                            
+                ## Use mdtraj to compute the distances between pairs.
+                rij = md.compute_distances(traj,Fij_pairs[k])
+                
+                ## Epsilons, deltas, and sigmas for relevant pairs for this mutation.
+                eps = model.contact_epsilons[Fij_conts[k]]
+                deltas = model.contact_deltas[Fij_conts[k]]
+                sigmas = model.contact_sigmas[Fij_conts[k]]
 
-            ## Calculate dH_k using distances and parameters. Save.
-            Vij = eps*(5.*((sigmas/rij)**12) - 6.*((sigmas/rij)**10))
-            dH_k = sum(Vij.T)
-            np.savetxt("dH_"+mut+".dat",dH_k)
-
+                ## Calculate dH_k using distances and parameters. Save.
+                Vij = eps*(5.*((sigmas/rij)**12) - 6.*((sigmas/rij)**10))
+                dH_k = sum(Vij.T)
+                np.savetxt("dH_"+mut+".dat",dH_k)
+            else:
+                pass
         os.chdir("..")
-
     os.chdir(cwd)
     append_log(model.subdir,"Finished: Calculating_dH")
 
@@ -168,7 +156,7 @@ def get_mutant_fij(model,mutants):
         tempconts = []
         for i in range(len(indices[0])):
             temppairs.append([indices[0][i],indices[1][i]])
-            contact_num = list((model.contacts[:,0] == indices[0][i]) & (model.contacts[:,1] == indices[1][i])).index(True)
+            contact_num = list((model.contacts[:,0]-1 == indices[0][i]) & (model.contacts[:,1]-1 == indices[1][i])).index(True)
             tempconts.append(contact_num)
     
         Fij_conts.append(np.array(tempconts))
@@ -316,3 +304,16 @@ def save_phi_values(savedir,mutants,coord,bounds,dG,ddG,phi):
     outputfile.write(header_string+"\n"+data_string)
     outputfile.close()
 
+if __name__ == "__main__":
+    """ To Do: Make into a command line utility.
+    """
+
+    parser = argparse.ArgumentParser(description='Calculate .')
+    parser.add_argument('--subdir', type=str, required=True, help='Directory.')
+    parser.add_argument('--calc_dH', action='store_true', help='Calculate dH for mutants.')
+    args.parse.parse_args()
+    
+    def dummy(this,that):
+        pass
+    model = models.SmogCalpha.SmogCalpha("r15.pdb")
+    Fij, Fij_pairs, Fij_conts = calculate_dH_for_mutants(model,dummy)

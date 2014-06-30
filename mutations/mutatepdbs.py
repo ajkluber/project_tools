@@ -168,7 +168,7 @@ def calculate_fraction_contact_loss(name):
 
 def calculate_contacts_from_pdb(name):
     """ Calls shadow map to calculate"""
-    if os.path.exists(name+".gro") == False:
+    if not os.path.exists(name+".gro"):
         cmd1 = 'echo -e "9\\n3\\n" | pdb2gmx -f %s.pdb -o %s.gro -p %s.top' % (name,name,name)
         sb.call(cmd1,shell=True,stdout=open("cutoff.out","w"),stderr=open("cutoff.err","w"))
     cmd2 = 'java -jar SCM.1.31.jar -g %s.gro -t %s.top -o %s.cutoff.contacts -m cutoff -p %s.cutoff.wH.pdb' % (name,name,name,name)
@@ -196,10 +196,10 @@ def calculate_contacts_lost_for_mutants():
     for i in range(len(mut_indx)):
         name = wt_res[i]+mut_indx[i]+mut_res[i]
         if os.path.exists(name+".cutoff.contacts") == False:
-            print "    Calculating contacts for", name
+            #print "    Calculating contacts for", name
             calculate_contacts_from_pdb(name)
         if os.path.exists("fij_"+name+".dat") == False:
-            print "    Calculating fij for ", name
+            #print "    Calculating fij for ", name
             calculate_fraction_contact_loss(name)
 
 
