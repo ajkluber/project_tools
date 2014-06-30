@@ -34,6 +34,17 @@ class MatysiakClementi2004(ProjectManager):
     put forth by Matysiak & Clementi (1).
         
 
+    Recipe:
+    1. Run constant temperature runs to calculate heat capacity Cv(T). Identify
+        the folding temperature Tf as the peak in Cv(T).
+    2. Run longer simulations around Tf to witness folding/unfolding transitions. 
+    3. Use equilibrium data and wham to get F(Q) at different temperatures. Find
+        a more accurate folding temperature as temperature at which the folded
+        and unfolded state have same free energy.
+    3. Prepare the experimental data to get <name>_calculated_ddG.dat input file.
+    3. Mutate pdbs with MODELLER and calculate fraction of heavy atom contact
+        loss for each contact and each mutation.
+
     Reference:
 
     (1) Matysiak, S.; Clementi, C. Optimal Combination of Theory and Experiment for
@@ -100,17 +111,22 @@ class MatysiakClementi2004(ProjectManager):
             print "Starting Equil_Tf_analysis..."
             analysis.Tf_loop.analyze_temperature_array(model,self.append_log,equil=True)
         elif task == "Equil_Tf_analysis":
+        ## Use the following sub module to plot PMFS of coordinates:
+        ## analysis.plot.pmfs
+    
         ## To Do:
         ##  1. Run WHAM to get F(Q) and Cv(T). DONE
-        ##  2. Select peak in Cv(T) as Tf. NO
-        ##  3. Calculate dH 
+        ##      1a. User adjusts T for F(Q) to find Tf --> Save as Mut_0/Tf.txt
+        ##      1b. 
+        ##  5. Determine bounds for TS, U, N states
+        ##  3. Calculate dH  TESTING
+        ##
         ##  4. Run WHAM to get the following thermal averages as function
         ##    of Q at Tf:
         ##    4a. <Q_ij>(Q) the interaction energy of contact ij.
         ##    4b. <exp(-beta*dH_k)>(Q) the perturbation due to mutation k.
         ##    4c. <Q_i>(Q) the contact probability
         ##
-        ##  5. Determine bounds for TS, U, N states
         ##  6. Calculate DeltaDeltaG's for simulation and phi_values
         ##  7. Calculate matrix M and solve for new parameters.
 
@@ -119,20 +135,9 @@ class MatysiakClementi2004(ProjectManager):
 
             ## Calculate exp(-beta*dH_k) and Q_ij for runs.
 
-            #mutations.phi_values.calculate_dH_for_mutants(model,self.append_log)
-
             #mutations.phi_values.calculate_phi_values(model,self.append_log,"Q")
         
-            ## Aggregrate equil_Tf data for each temperature and plot PMFs
-            #print "Starting aggregate data..."
-            #analysis.Tf_loop.aggregate_equilibrium_runs(model,self.append_log)
-            #print "Plotting aggregated data PMFS..."
-            #analysis.plot.pmfs.plot_aggregated_data(model,self.append_log)
         elif task == "Equil_Tf_wham":
-            ## If plotting diddn't work before
-            print "Plotting aggregated data PMFS..."
-            analysis.plot.pmfs.plot_aggregated_data(model,self.append_log)
-        elif task == "Plotting_Agg_Data":
             print "Starting prepping mutant pdbs..."
             mutations.mutatepdbs.prepare_mutants(model,self.append_log)
         elif task == "Preparing_Mutants":

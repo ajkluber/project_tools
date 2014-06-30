@@ -161,7 +161,7 @@ def get_mutant_fij(model,mutants):
     Fij_conts = []
     Fij = []
     for mut in mutants:
-        fij_temp = np.loadtxt("fij_"+mut+".dat")
+        fij_temp = model.Qref*np.loadtxt("fij_"+mut+".dat")
         indices = np.nonzero(fij_temp)
         Fij.append(fij_temp[indices])
         temppairs = []
