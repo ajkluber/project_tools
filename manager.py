@@ -161,31 +161,40 @@ class ProjectManager(object):
 
     def add_temperature_array(self,args):
         ''' Adds manually adds a temperature array.'''
-        args.pdbs = [ name+'.pdb' for name in  args.subdirs ]
 
         subdirs = args.subdirs
         Models = models.load_models(subdirs,dryrun=args.dryrun)
+    
+        if args.temparray != None:
+            T_min = args.temparray[0] 
+            T_max = args.temparray[1] 
+            deltaT = args.temparray[2] 
+            Mut = False
+        elif args.mutarray != None:
+            temps = args.mutarray
+            Mut = True
+        else:
+            print "ERROR! Must use --temparray or --mutarray with this option"
+            print " Exiting."
+            raise SystemExit
 
-        Ti = args.temparray[0] 
-        Tf = args.temparray[1] 
-        dT = args.temparray[2] 
-
-        for i in range(len(subdirs)):
+        for i in range(len(Models)):
             model = Models[i]
             sub = model.subdir
-            lasttime,action,task = self.check_modelbuilder_log(sub)
-            print "Checking progress for directory:  ", sub
-            print "Last task was %s %s at %s" % (action,task,lasttime) ## DEBUGGING
-            print "Manually adding temperature array Ti=%d Tf=%d dT=%d" % (Ti,Tf,dT)
-            print "Starting Tf_loop_iteration..."
-            simulation.Tf_loop.manually_add_temperature_array(model,self.append_log,Ti,Tf,dT)
+            if Mut == False:
+                print "Manually adding temperature array Ti=%d Tf=%d dT=%d" % (T_min,T_max,deltaT)
+                print "Starting Tf_loop_iteration..."
+                simulation.Tf_loop.manually_add_temperature_array(model,self.append_log,T_min,T_max,deltaT)
+            elif Mut == True:
+                print "Manually adding equilibrium sims ", temps
+                simulation.Tf_loop.manually_add_equilibrium_runs(model,self.append_log,temps)
+            
             
         self.save_model_system_info(Models)
         print "Success"
 
     def extend_temperatures(self,args):
         ''' Manually extends.'''
-        args.pdbs = [ name+'.pdb' for name in  args.subdirs ]
         factor = args.factor
 
         subdirs = args.subdirs

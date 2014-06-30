@@ -334,7 +334,35 @@ def manually_add_temperature_array(model,append_log,T_min,T_max,deltaT):
     append_log(model.subdir,"  T_min = %d , T_max = %d , dT = %d" % (T_min, T_max, deltaT))
     run_temperature_array(model,T_min,T_max,deltaT)
     append_log(model.subdir,"Starting: Tf_loop_iteration")
+    os.chdir(cwd)
 
+def manually_add_equilibrium_runs(model,append_log,temps):
+    """ To manually set the next temperature array."""
+    cwd = os.getcwd()
+    sub = model.path+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
+    os.chdir(sub)
+
+    T_string = ''
+    for i in range(len(temps)):
+        T = "%.2f" % temps[i]
+        for simnum in range(1,4):
+            simpath = T+"_"+str(simnum)
+            ## Only start the simulation if directory doesn't exist.
+            if (not os.path.exists(simpath)):
+                T_string += "%s\n" % simpath
+                os.mkdir(simpath)
+                os.chdir(simpath)
+                model.append_log("  running T=%s" % simpath)
+                print "    Running temperature ", simpath
+                run_constant_temp(model,T,nsteps=str(1000000000),walltime="60:00:00",queue="serial_long")
+                os.chdir("..")
+            else:
+                ## Directory exists for this temperature: continue.
+                continue
+
+    open("T_array.txt","a").write(T_string)
+    open("T_array_last.txt","w").write(T_string)
+    append_log(model.subdir,"Starting: Equil_Tf")
     os.chdir(cwd)
 
 def run_equilibrium_simulations(model,append_log):
@@ -353,8 +381,7 @@ def run_equilibrium_simulations(model,append_log):
     os.chdir(mutsub)
     T_string = ''
     for n in range(3):
-        #T = "%.2f" % (float(Tf)+float(Tf)*(0.003*(n-1)))
-        T = "%.2f" % (float(Tf)+0.5*(n-1))
+        T = "%.2f" % (float(Tf)+1.*(n-1))
         for simnum in range(1,4):
             simpath = T+"_"+str(simnum)
             ## Only start the simulation if directory doesn't exist.

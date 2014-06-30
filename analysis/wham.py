@@ -146,15 +146,19 @@ def run_wham_for_heat_capacity(model,Mut=False):
     temps = [ float(x) for x in temperatures ]
     startT = min(temps)
     if Mut == True:
+        startT -= 2.
+        stopT = max(temps) + 2.
         deltaTCv = 0.01
-        ntempsCv = int(round((float(max(temps)) - float(startT))/deltaTCv))
+        ntempsCv = int(round((stopT - startT)/deltaTCv))
         ntempsF = 10
+        ntempsF = (float(max(temps)) - float(startT))/deltaTF
         deltaTF = (float(max(temps)) - float(startT))/ntempsF
     else:
+        stopT = max(temps)
         deltaTCv = 0.05
         deltaTF = 0.4
-        ntempsCv = int(round((float(max(temps)) - float(startT))/deltaTCv))
-        ntempsF = int(round((float(max(temps)) - float(startT))/deltaTCv))
+        ntempsCv = int(round((stopT - startT)/deltaTCv))
+        ntempsF = int(round((stopT - startT)/deltaTF))
 
     wham_Cv = get_wham_config_heat_capacity(startT,deltaTCv,ntempsCv)
     wham_Melt = get_wham_config_melting_curve(startT,deltaTCv,ntempsCv)
