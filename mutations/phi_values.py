@@ -35,89 +35,50 @@ def calculate_dH_for_mutants(model,append_log):
     sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
     T = get_Tf_choice(sub)
 
-    ## Loop over all directories in Mut subdirectory. Crunch dH for each
-    ## trajectory independently.
-
-    savedir = sub+"/"+T+"_agg" ## DEPRECATED
 
     os.chdir(model.subdir)
     
     ## Get list of useable mutations.
+    ## Get the fraction of native contacts deleted for each mutation.
     os.chdir("mutants")
     mut_indx, wt_res, mut_res = get_core_mutations()
     mutants = [ wt_res[i]+mut_indx[i]+mut_res[i]  for i in range(len(mut_indx)) ]
+    Fij, Fij_pairs, Fij_conts = get_mutant_fij(model,mutants)
+    
     os.chdir("..")
 
-    temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
-    directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
+    os.chdir(sub)
 
+    #temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
+    #directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
+    temperatures = [ x.split('_')[0] for x in open("T_array.txt","r").readlines() ] 
+    directories = [ x.rstrip("\n") for x in open("T_array.txt","r").readlines() ] 
+
+    ## Loop over all directories in Mut subdirectory. Crunch dH for each
+    ## trajectory independently.
     for dir in directories:
-
         os.chdir(dir)
-        ## Load trajectory, epsilons, deltas
-        print "  Loading BeadBead.dat"
-        beadbead = np.loadtxt(subdir+"/BeadBead.dat",dtype=str) 
-        sigij = beadbead[:,5].astype(float)
-        epsij = beadbead[:,6].astype(float)
-        deltaij = beadbead[:,7].astype(float)
-        interaction_numbers = beadbead[:,4].astype(str)
-        pairs = beadbead[:,:2].astype(int) 
-        pairs -= np.ones(pairs.shape,int)
+        print "  Loading traj, " dir
+        traj = md.load("traj.xtc",top="Native.pdb")
+        for k in range(len(mutants)):
+            print "    calc dH for ", mutants[k]
+            mut = mutants[k]
+                        
+            ## Use mdtraj to compute the distances between pairs.
+            rij = md.compute_distances(traj,Fij_pairs[k])
+            
+            ## Epsilons, deltas, and sigmas for relevant pairs for this mutation.
+            eps = model.contact_epsilons[Fij_conts[k]]
+            deltas = model.contact_deltas[Fij_conts[k]]
+            sigmas = model.contact_sigmas[Fij_conts[k]]
 
-        keep_interactions = np.zeros(len(interaction_numbers),int)
-        for i in range(len(interaction_numbers)):
-            if interaction_numbers[i] in ["ds","ss"]:
-                pass
-            else:
-                keep_interactions[i] = int(interaction_numbers[i])
-
-        sigij = sigij[keep_interactions != 0]
-        epsij = epsij[keep_interactions != 0]
-        deltaij = deltaij[keep_interactions != 0]
-        pairs = pairs[keep_interactions != 0]
-
-        print "  Only modifying ",sum((keep_interactions != 0).astype(int)), " parameters out of ", len(keep_interactions)
-        ## Use mdtraj to compute the distances between pairs.
-        print "  Loading traj.xtc with mdtraj..."
-        traj = md.load(subdir+"/traj.xtc",top=subdir+"/Native.pdb")
-        print "  Computing distances with mdtraj..."
-        traj_dist = md.compute_distances(traj,pairs)
+            ## Calculate dH_k using distances and parameters. Save.
+            Vij = eps*(5.*((sigmas/rij)**12) - 6.*((sigmas/rij)**10))
+            dH_k = sum(Vij.T)
+            np.savetxt("dH_"+mut+".dat",dH_k)
 
         os.chdir("..")
 
-    #print keep_interactions != 0       ## DEBUGGING
-    #print sum((keep_interactions != 0).astype(int))      ## DEBUGGING
-    sigij = sigij[keep_interactions != 0]
-    epsij = epsij[keep_interactions != 0]
-    deltaij = deltaij[keep_interactions != 0]
-    pairs = pairs[keep_interactions != 0]
-
-    print "  Only modifying ",sum((keep_interactions != 0).astype(int)), " parameters out of ", len(keep_interactions)
-    ## Use mdtraj to compute the distances between pairs.
-    print "  Loading traj.xtc with mdtraj..."
-    traj = md.load(subdir+"/traj.xtc",top=subdir+"/Native.pdb")
-    print "  Computing distances with mdtraj..."
-    traj_dist = md.compute_distances(traj,pairs)
-
-    ## Get contact parameter info
-    sigij,epsij,deltaij,interaction_nums,keep_interactions,pairs,traj,traj_dist = load_eps_delta_sig_traj(savedir)
-
-    ## Get the fraction of native contacts deleted for each mutation.
-    Fij = get_mutant_fij(mutants,keep_interactions)
-
-    ## Calculate Q_ij for all contacts in the trajectory. Save this in a 
-    ## histogram file.
-    qij = get_Qij(Model,traj_dist,sigij,deltaij,interaction_nums)
-
-    ## Calculate the perturbation.
-    for j in range(len(Fij)):
-        mut = mutants[j]
-        if not os.path.exists(savedir+"/dH_"+mut+".dat"):
-            fij = Fij[j]
-            print "    Computing dH vectorized for ", mut
-            dH_k = -1.*np.array([ sum(x) for x in fij*qij ])
-            print "    Saving dH for ",mut
-            np.savetxt(savedir+"/dH_"+mut+".dat",dH_k)
     os.chdir(cwd)
     append_log(model.subdir,"Finished: Calculating_dH")
 
@@ -188,27 +149,31 @@ def get_exp_ddG():
 
     return ddG_exp_TS_D, ddG_exp_N_D
 
-def get_mutant_fij(mutants,keep_interactions):
+def get_mutant_fij(model,mutants):
     """ Load in the fraction of contact loss for each mutation.
-        The matrix needs to be filtered to include only pair 
-        interactions that correspond to parameters that are going
-        to be mutated.
+
+    Description:
+
+        Since the fraction of contacts lost matrix f^k_ij is sparse only load
+    in the of nonzero elements and their indices.
     """
-    k = 0
+    Fij_pairs = []
+    Fij_conts = []
+    Fij = []
     for mut in mutants:
-        fij_temp = np.loadtxt("mutants/fij_"+mut+".dat")
-        fij_all = []
-        for i in range(len(fij_temp)-4):
-            fij_all.extend(fij_temp[i,i+4:])
-        fij = np.array(fij_all)[keep_interactions != 0]
-        if k == 0:
-            Fij = np.zeros((len(mutants),len(fij)),float)
-            Fij[0,:] = fij
-        else:
-            Fij[k,:] = fij
-        k += 1
-        
-    return Fij
+        fij_temp = np.loadtxt("fij_"+mut+".dat")
+        indices = np.nonzero(fij_temp)
+        Fij.append(fij_temp[indices])
+        temppairs = []
+        tempconts = []
+        for i in range(len(indices[0])):
+            temppairs.append([indices[0][i],indices[1][i]])
+            contact_num = list((model.contacts[:,0] == indices[0][i]) & (model.contacts[:,1] == indices[1][i])).index(True)
+            tempconts.append(contact_num)
+    
+        Fij_conts.append(np.array(tempconts))
+        Fij_pairs.append(temppairs)
+    return Fij, Fij_pairs, Fij_conts
 
 def get_Qij(Model,r,sig,delta,interaction_nums):
     """ Calculates the normalized interaction betwen nonbonded pairs."""
