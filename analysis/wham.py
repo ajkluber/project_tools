@@ -107,9 +107,15 @@ def run_wham_expdH_k(mut,Tf,bounds):
         for n in range(1,counts[k]+1):
             q = np.loadtxt(T+"_"+str(n)+"/Q.dat")
             state_indicator = np.zeros(len(q),int)
+            ## Assign every frame a state label. State indicator is integer 1-N for N states.
             for state_num in range(len(bounds)-1):
                 instate = (q > bounds[state_num]).astype(int)*(q <= bounds[state_num+1]).astype(int)
                 state_indicator[instate == 1] = state_num+1
+            if any(state_indicator == 0):
+                print "ERROR! There are unassigned frames!"
+                print sum((state_indicator == 0).astype(int)), " unassigned frames"
+                print " Exiting"
+                raise SystemExit
             
             expdH = np.exp(-beta*np.loadtxt(T+"_"+str(n)+"/dH_"+mut+".dat"))
             eng = np.loadtxt(T+"_"+str(n)+"/energyterms.xvg",usecols=(4,5))[:,1]
@@ -254,7 +260,7 @@ def run_wham_for_heat_capacity(model,Mut=False):
         deltaTCv = 0.01
         ntempsCv = int(round((stopT - startT)/deltaTCv))
         ntempsF = 10
-        ntempsF = (float(max(temps)) - float(startT))/deltaTF
+        #ntempsF = (float(max(temps)) - float(startT))/deltaTF
         deltaTF = (float(max(temps)) - float(startT))/ntempsF
     else:
         stopT = max(temps)

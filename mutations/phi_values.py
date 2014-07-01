@@ -400,4 +400,5 @@ if __name__ == "__main__":
     def dummy(this,that):
         pass
     model = models.SmogCalpha.SmogCalpha("r15.pdb")
-    Fij, Fij_pairs, Fij_conts = calculate_dH_for_mutants(model,dummy)
+    #Fij, Fij_pairs, Fij_conts = calculate_dH_for_mutants(model,dummy)
+    calculate_phi_values(model,dummy)

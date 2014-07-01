@@ -95,7 +95,7 @@ def get_args():
     ext_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
     ext_parser.add_argument('--factor', type=float, help='Factor by which you want to extend simulations. e.g. --factor 2 doubles length',required=True)
     ext_parser.add_argument('--Tf_temps', type=str, nargs='+', help='Temperatures that you want extended')
-    ext_parser.add_argument('--mut_temps', type=str, nargs='+', help='T_initial T_final dT for new mutational sims array')
+    ext_parser.add_argument('--Mut_temps', type=str, nargs='+', help='T_initial T_final dT for new mutational sims array')
     ext_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
 
     args = parser.parse_args()
@@ -200,22 +200,22 @@ class ProjectManager(object):
         subdirs = args.subdirs
         Models = models.load_models(subdirs,dryrun=args.dryrun)
 
-        if (args.Tf_temps != None) and (args.mut_temps != None):
+        if (args.Tf_temps != None) and (args.Mut_temps != None):
             print "ERROR!"
-            print "  Specify either --Tf_temps or --mut_temps. Not both!"
+            print "  Specify either --Tf_temps or --Mut_temps. Not both!"
             print "  Exiting"
             raise SystemExit
-        if (args.Tf_temps == None) and (args.mut_temps == None):
+        if (args.Tf_temps == None) and (args.Mut_temps == None):
             print "ERROR!"
-            print "  Specify either --Tf_temps or --mut_temps."
+            print "  Specify either --Tf_temps or --Mut_temps."
             print "  Exiting"
             raise SystemExit
         if (args.Tf_temps != None):
             temps = args.Tf_temps
             method = "Tf"
             print "Extending Tf temps",temps
-        if (args.mut_temps != None):
-            temps = args.mut_temps
+        if (args.Mut_temps != None):
+            temps = args.Mut_temps
             method = "Mut"
             print "Extending Mutational temps",temps
 

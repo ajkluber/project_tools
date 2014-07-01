@@ -216,7 +216,7 @@ def get_args():
     ext_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
     ext_parser.add_argument('--factor', type=float, help='Factor by which you want to extend simulations. e.g. --factor 2 doubles length',required=True)
     ext_parser.add_argument('--Tf_temps', type=float, nargs='+', help='Temperatures that you want extended')
-    ext_parser.add_argument('--mut_temps', type=float, nargs='+', help='T_initial T_final dT for new mutational sims array')
+    ext_parser.add_argument('--Mut_temps', type=float, nargs='+', help='T_initial T_final dT for new mutational sims array')
     ext_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
 
     args = parser.parse_args()

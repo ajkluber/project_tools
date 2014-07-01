@@ -169,13 +169,17 @@ def manually_extend_temperatures(model,append_log,method,temps,factor):
     ## Determine directory to enter
     if method == "Tf":
         sub = model.path+"/"+ model.subdir+"/Tf_"+str(model.Tf_iteration)
-        Tlist = [ x+"_0" for x in temps ]
+        Tlist = [ str(int(x))+"_0" for x in temps ]
     elif method == "Mut":
         sub = model.path+"/"+ model.subdir+"/Mut_"+str(model.Mut_iteration)
         Tlist = []
         for i in range(len(temps)):
-            for j in range(1,6):
-                Tlist.append(temps[i]+"_"+str(j)) 
+            for j in range(1,10):
+                tempdir = "%.2f_%d" % (temps[i], j)
+                if os.path.exists(sub+"/"+tempdir):
+                    Tlist.append(tempdir) 
+                else:
+                    break
 
     os.chdir(sub)
     check_exist = [ os.path.exists(x) for x in Tlist ]
