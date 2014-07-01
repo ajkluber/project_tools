@@ -51,9 +51,9 @@ def calculate_dH_for_mutants(model,append_log):
         print "  Loading traj for: ", "Mut_"+str(model.Mut_iteration)+"/"+dir
         traj = md.load("traj.xtc",top="Native.pdb")
         for k in range(len(mutants)):
+            mut = mutants[k]
             if not os.path.exists("dH_"+mut+".dat"):
                 print "    calc dH for ", mutants[k]
-                mut = mutants[k]
                             
                 ## Use mdtraj to compute the distances between pairs.
                 rij = md.compute_distances(traj,Fij_pairs[k])
@@ -64,7 +64,7 @@ def calculate_dH_for_mutants(model,append_log):
                 sigmas = model.contact_sigmas[Fij_conts[k]]
 
                 ## Calculate dH_k using distances and parameters. Save.
-                Vij = eps*(5.*((sigmas/rij)**12) - 6.*((sigmas/rij)**10))
+                Vij = -Fij[k]*eps*(5.*((sigmas/rij)**12) - 6.*((sigmas/rij)**10))
                 dH_k = sum(Vij.T)
                 np.savetxt("dH_"+mut+".dat",dH_k)
             else:
@@ -83,7 +83,7 @@ def calculate_phi_values(model,append_log):
     sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
 
 
-    beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
+    #beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
     os.chdir(model.subdir)
     if not os.path.exists(sub+"/phi"):
         os.mkdir(sub+"/phi")
@@ -113,7 +113,6 @@ def calculate_phi_values(model,append_log):
         ## Run WHAM to get <exp(-beta*dH_k)>_X for each mutant.
         wham.run_wham_expdH_k(mut,Tf,bounds)
 
-
             ## initialize histogram array
 
             ## loop over temperature copies 
@@ -125,7 +124,8 @@ def calculate_phi_values(model,append_log):
             ## save histogram file
 
         ## run wham to get thermal average
-
+    print "Success!"
+    raise SystemExit
     num_states = len(states)
     print "  Loading dH for mutants"
 
@@ -395,10 +395,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Calculate .')
     parser.add_argument('--subdir', type=str, required=True, help='Directory.')
     parser.add_argument('--calc_dH', action='store_true', help='Calculate dH for mutants.')
-    args.parse.parse_args()
+    args = parser.parse_args()
     
     def dummy(this,that):
         pass
-    model = models.SmogCalpha.SmogCalpha("r15.pdb")
-    #Fij, Fij_pairs, Fij_conts = calculate_dH_for_mutants(model,dummy)
-    calculate_phi_values(model,dummy)
+    pdb = args.subdir+".pdb"
+    model = models.SmogCalpha.SmogCalpha(pdb)
+    Fij, Fij_pairs, Fij_conts = calculate_dH_for_mutants(model,dummy)
+    #calculate_phi_values(model,dummy)

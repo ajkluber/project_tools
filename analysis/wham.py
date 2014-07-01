@@ -4,7 +4,7 @@ import subprocess as sb
 import os
 import shutil
 
-def get_wham_config_basic(numbinsE,minE,stepE,numbinsC,minC,stepC,dim=2):
+def get_wham_config_basic(numbinsE,minE,stepE,numbinsC,minC,stepC,dim):
     wham_config = "numDimensions %d # number of dimensions in the dos histogram\n" % dim
     wham_config += "               # energy and Q, energy is always in the first column, can\n"
     wham_config += "               # have up to 3 reaction coordinates\n\n"
@@ -22,21 +22,28 @@ def get_wham_config_basic(numbinsE,minE,stepE,numbinsC,minC,stepC,dim=2):
 
     wham_config += "### energy binning ###\n"
     wham_config += "numBins %d\n" % numbinsE
-    wham_config += "start %.2f\n" % minE
-    wham_config += "step %.2f\n\n" % stepE
+    wham_config += "start %.5f\n" % minE
+    wham_config += "step %.5f\n\n" % stepE
 
     wham_config += "### reaction coordinate 1 binning ###\n"
     wham_config += "numBins %d\n" % numbinsC
-    wham_config += "start %.2f\n" % minC
-    wham_config += "step %.2f\n\n" % stepC
+    wham_config += "start %.5f\n" % minC
+    wham_config += "step %.5f\n\n" % stepC
 
     return wham_config
 
 def get_wham_config_coordinate_binning(numbinsC,minC,stepC):
     wham_config = "### additional reaction coordinate binning ###\n"
     wham_config += "numBins %d\n" % numbinsC
-    wham_config += "start %.2f\n" % minC
-    wham_config += "step %.2f\n\n" % stepC
+    wham_config += "start %.5f\n" % minC
+    wham_config += "step %.5f\n\n" % stepC
+    return wham_config
+
+def get_wham_config_coordinate_output(outfile,T):
+    wham_config = "### Output reaction coordinate binning ###\n"
+    wham_config += "run_coord \n"
+    wham_config += "run_coord_out %s\n" % outfile
+    wham_config += "startTC %.5f\n\n" % T
     return wham_config
 
 def get_wham_config_heat_capacity(startT,deltaT,ntemps):
@@ -64,13 +71,6 @@ def get_wham_config_melting_curve(startTC,deltaTC,ntempsC):
     wham_config += "startTC %6.2f       # temperature to start at\n"   % startTC
     wham_config += "deltaTC %6.2f       # step in temperature\n"       % deltaTC
     wham_config += "ntempsC %6d        # total temps to generate\n\n" % ntempsC
-    return wham_config
-
-def get_wham_config_coordinate_output(output,startTC):
-    wham_config = "### Compute coordinate <Q_2(Q_1)>\n"
-    wham_config += "run_coord            # comment out to not run, reads dosFile\n"
-    wham_config += "run_coord_out %s # filename for the coordinate curve\n" % output
-    wham_config += "startTC %6.2f       # temperature to start at\n"   % startTC
     return wham_config
 
 def run_wham_expdH_k(mut,Tf,bounds):
@@ -102,51 +102,69 @@ def run_wham_expdH_k(mut,Tf,bounds):
     print "  Preparing histograms for ", mut
     for k in range(len(unique_temps)):
         T = unique_temps[k]
-
-        print "    temperature: ",T
-        for n in range(1,counts[k]+1):
-            q = np.loadtxt(T+"_"+str(n)+"/Q.dat")
-            state_indicator = np.zeros(len(q),int)
-            ## Assign every frame a state label. State indicator is integer 1-N for N states.
-            for state_num in range(len(bounds)-1):
-                instate = (q > bounds[state_num]).astype(int)*(q <= bounds[state_num+1]).astype(int)
-                state_indicator[instate == 1] = state_num+1
-            if any(state_indicator == 0):
-                print "ERROR! There are unassigned frames!"
-                print sum((state_indicator == 0).astype(int)), " unassigned frames"
-                print " Exiting"
-                raise SystemExit
-            
-            expdH = np.exp(-beta*np.loadtxt(T+"_"+str(n)+"/dH_"+mut+".dat"))
-            eng = np.loadtxt(T+"_"+str(n)+"/energyterms.xvg",usecols=(4,5))[:,1]
-            if n == 1:
-                State_indicator = state_indicator
-                ExpdH = expdH
-                E = eng
+        beta = 1./float(T)
+        histname = "dH_hist_%s_%.2f" % (mut,float(T))
+        #if not os.path.exists("whamQ/"+histname):
+        if True:
+            print "    temperature: ",T
+            for n in range(1,counts[k]+1):
+                
+                q = np.loadtxt(T+"_"+str(n)+"/Q.dat")
+                state_indicator = np.zeros(len(q),int)
+                ## Assign every frame a state label. State indicator is integer 1-N for N states.
+                for state_num in range(len(bounds)-1):
+                    instate = (q > bounds[state_num]).astype(int)*(q <= bounds[state_num+1]).astype(int)
+                    state_indicator[instate == 1] = state_num+1
+                if any(state_indicator == 0):
+                    print "ERROR! There are unassigned frames!"
+                    print sum((state_indicator == 0).astype(int)), " unassigned frames out of ", len(q)
+                    print " Exiting"
+                    raise SystemExit
+                
+                expdH = np.exp(-beta*np.loadtxt(T+"_"+str(n)+"/dH_"+mut+".dat"))
+                eng = np.loadtxt(T+"_"+str(n)+"/energyterms.xvg",usecols=(4,5))[:,1]
+                if n == 1:
+                    State_indicator = state_indicator
+                    ExpdH = expdH
+                    E = eng
+                else:
+                    State_indicator = np.concatenate((State_indicator,state_indicator),axis=0)
+                    ExpdH = np.concatenate((ExpdH,expdH),axis=0)
+                    E = np.concatenate((E,eng),axis=0)
+            if i == 0:
+                maxexpdH = max(ExpdH)
+                minexpdH = min(ExpdH)
+                maxE = max(E)
+                minE = min(E[1:])
             else:
-                State_indicator = np.concatenate((State_indicator,state_indicator),axis=0)
-                ExpdH = np.concatenate((ExpdH,expdH),axis=0)
-                E = np.concatenate((E,eng),axis=0)
-        if i == 0:
-            maxexpdH = max(ExpdH)
-            minexpdH = min(ExpdH)
-            maxE = max(E)
-            minE = min(E[1:])
+                maxexpdH = max([max(ExpdH),maxexpdH])
+                minexpdH = min([min(ExpdH),minexpdH])
+                maxE = max([max(E),maxE])
+                minE = min([min(E[1:]),minE])
+            histogram = np.zeros((len(ExpdH),3),float)
+            histogram[:,0] = E
+            histogram[:,1] = State_indicator
+            histogram[:,2] = ExpdH
+            np.savetxt("whamQ/"+histname,histogram,fmt="%15.6f")
         else:
-            maxexpdH = max([max(ExpdH),maxexpdH])
-            minexpdH = min([min(ExpdH),minexpdH])
-            maxE = max([max(E),maxE])
-            minE = min([min(E[1:]),minE])
-        histogram = np.zeros((len(maxexpdH),3),float)
-        histogram[:,0] = E
-        histogram[:,1] = State_indicator
-        histogram[:,2] = ExpdH
-        np.savetxt("whamQ/dH_hist_%s_%.2f" % (mut,float(T)),histogram,fmt="%15.6f")
-        histfiles.append("whamQ/dH_hist_%s_%.2f" % (mut,float(T)))
-        histfilenames += "name dH_hist_%s_%.2f temp %.2f\n" % (mut,float(T),float(T))
+            print " loading ",histname
+            E,state,ExpdH = np.loadtxt("whamQ/"+histname,unpack=True)
+            if i == 0:
+                maxexpdH = max(ExpdH)
+                minexpdH = min(ExpdH)
+                maxE = max(E)
+                minE = min(E[1:])
+            else:
+                maxexpdH = max([max(ExpdH),maxexpdH])
+                minexpdH = min([min(ExpdH),minexpdH])
+                maxE = max([max(E),maxE])
+                minE = min([min(E[1:]),minE])
+        histfiles.append("whamQ/"+histname)
+        histfilenames += "name %s temp %.2f\n" % (histname,float(T))
         i += 1
 
     print "  histogram files: ",histfiles
+    os.chdir("whamQ")
     ## Binning settings
     numbinsState = len(bounds)-1
     startState = 0.2
@@ -159,14 +177,24 @@ def run_wham_expdH_k(mut,Tf,bounds):
     numbinsExpdH = 50
     stepExpdH = (maxexpdH - startExpdH)/float(numbinsExpdH)
 
-    wham_basic = get_wham_config_basic(numbinsE,minE,stepE,numbinsState,startState,stepState)
+    wham_basic = get_wham_config_basic(numbinsE,minE,stepE,numbinsState,startState,stepState,3)
     wham_basic += get_wham_config_coordinate_binning(numbinsExpdH,startExpdH,stepExpdH)
+    wham_basic += get_wham_config_coordinate_output("expdH_"+mut,Tf)
     wham_basic += "### list of histogram filenames and their temperatures ###\n"
     wham_basic += "numFiles %d\n" % len(unique_temps)
     wham_basic += histfilenames
     wham_basic += "\n"
 
-    return wham_basic,temperatures
+    #print wham_basic       ## DEBUGGING
+
+    open("%s.config" % mut,"w").write(wham_basic)
+
+    print "  Running wham for ", mut
+    cmd1 = "java -jar WHAM.1.06.jar --config %s.config" % mut
+    sb.call(cmd1.split(),stdout=open(mut+".out","w"),stderr=open(mut+".err","w"))
+
+    os.chdir("..")
+    #return wham_basic,temperatures
 
 def prepare_histograms_heat_capacity(Mut=False):
     """ Prepare histogram files for wham.
@@ -239,7 +267,7 @@ def prepare_histograms_heat_capacity(Mut=False):
         stepE = 5 
     numbinsQ = int(round((maxQ - minQ)/stepQ))
     numbinsE = int(round((maxE - minE)/stepE))
-    wham_basic = get_wham_config_basic(numbinsE,minE,stepE,numbinsQ,minQ,stepQ)
+    wham_basic = get_wham_config_basic(numbinsE,minE,stepE,numbinsQ,minQ,stepQ,2)
     wham_basic += "### list of histogram filenames and their temperatures ###\n"
     wham_basic += "numFiles %d\n" % len(unique_temps)
     wham_basic += histfilenames
