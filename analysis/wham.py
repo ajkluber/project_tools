@@ -4,8 +4,8 @@ import subprocess as sb
 import os
 import shutil
 
-def get_wham_config_basic(numbinsQ,minQ,stepQ,numbinsE,minE,stepE):
-    wham_config = "numDimensions 2 # number of dimensions in the dos histogram\n"
+def get_wham_config_basic(numbinsE,minE,stepE,numbinsC,minC,stepC,dim=2):
+    wham_config = "numDimensions %d # number of dimensions in the dos histogram\n" % dim
     wham_config += "               # energy and Q, energy is always in the first column, can\n"
     wham_config += "               # have up to 3 reaction coordinates\n\n"
 
@@ -25,12 +25,18 @@ def get_wham_config_basic(numbinsQ,minQ,stepQ,numbinsE,minE,stepE):
     wham_config += "start %.2f\n" % minE
     wham_config += "step %.2f\n\n" % stepE
 
-    wham_config += "### reaction coordinate 1 binning Q ###\n"
-    wham_config += "numBins %d\n" % numbinsQ
-    wham_config += "start %.2f\n" % minQ
-    wham_config += "step %.2f\n\n" % stepQ
+    wham_config += "### reaction coordinate 1 binning ###\n"
+    wham_config += "numBins %d\n" % numbinsC
+    wham_config += "start %.2f\n" % minC
+    wham_config += "step %.2f\n\n" % stepC
 
-    wham_config += "### list of histogram filenames and their temperatures ###\n"
+    return wham_config
+
+def get_wham_config_coordinate_binning(numbinsC,minC,stepC):
+    wham_config = "### additional reaction coordinate binning ###\n"
+    wham_config += "numBins %d\n" % numbinsC
+    wham_config += "start %.2f\n" % minC
+    wham_config += "step %.2f\n\n" % stepC
     return wham_config
 
 def get_wham_config_heat_capacity(startT,deltaT,ntemps):
@@ -60,7 +66,103 @@ def get_wham_config_melting_curve(startTC,deltaTC,ntempsC):
     wham_config += "ntempsC %6d        # total temps to generate\n\n" % ntempsC
     return wham_config
 
-def prepare_histograms(Mut=False):
+def get_wham_config_coordinate_output(output,startTC):
+    wham_config = "### Compute coordinate <Q_2(Q_1)>\n"
+    wham_config += "run_coord            # comment out to not run, reads dosFile\n"
+    wham_config += "run_coord_out %s # filename for the coordinate curve\n" % output
+    wham_config += "startTC %6.2f       # temperature to start at\n"   % startTC
+    return wham_config
+
+def run_wham_expdH_k(mut,Tf,bounds):
+    """ Prepare histogram files for wham.
+    
+        Concatenates all the data from the same temperature for the histogram
+    files in the whamQ subdirectory.
+    """
+
+    directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ]
+    temperatures = [ x.split("_")[0] for x in open("T_array_last.txt","r").readlines() ]
+    start_at = 1
+
+    unique_temps = []
+    counts = []
+    for t in temperatures:
+        if t not in unique_temps:
+            unique_temps.append(t)
+            counts.append(temperatures.count(t))
+        else:
+            pass
+
+    ## Concatenate the E and Q data at a particular temperature then
+    ## save in the whamQ subdirectory
+    cwd = os.getcwd()
+    histfilenames = ""
+    histfiles = []
+    i = 0  
+    print "  Preparing histograms for ", mut
+    for k in range(len(unique_temps)):
+        T = unique_temps[k]
+
+        print "    temperature: ",T
+        for n in range(1,counts[k]+1):
+            q = np.loadtxt(T+"_"+str(n)+"/Q.dat")
+            state_indicator = np.zeros(len(q),int)
+            for state_num in range(len(bounds)-1):
+                instate = (q > bounds[state_num]).astype(int)*(q <= bounds[state_num+1]).astype(int)
+                state_indicator[instate == 1] = state_num+1
+            
+            expdH = np.exp(-beta*np.loadtxt(T+"_"+str(n)+"/dH_"+mut+".dat"))
+            eng = np.loadtxt(T+"_"+str(n)+"/energyterms.xvg",usecols=(4,5))[:,1]
+            if n == 1:
+                State_indicator = state_indicator
+                ExpdH = expdH
+                E = eng
+            else:
+                State_indicator = np.concatenate((State_indicator,state_indicator),axis=0)
+                ExpdH = np.concatenate((ExpdH,expdH),axis=0)
+                E = np.concatenate((E,eng),axis=0)
+        if i == 0:
+            maxexpdH = max(ExpdH)
+            minexpdH = min(ExpdH)
+            maxE = max(E)
+            minE = min(E[1:])
+        else:
+            maxexpdH = max([max(ExpdH),maxexpdH])
+            minexpdH = min([min(ExpdH),minexpdH])
+            maxE = max([max(E),maxE])
+            minE = min([min(E[1:]),minE])
+        histogram = np.zeros((len(maxexpdH),3),float)
+        histogram[:,0] = E
+        histogram[:,1] = State_indicator
+        histogram[:,2] = ExpdH
+        np.savetxt("whamQ/dH_hist_%s_%.2f" % (mut,float(T)),histogram,fmt="%15.6f")
+        histfiles.append("whamQ/dH_hist_%s_%.2f" % (mut,float(T)))
+        histfilenames += "name dH_hist_%s_%.2f temp %.2f\n" % (mut,float(T),float(T))
+        i += 1
+
+    print "  histogram files: ",histfiles
+    ## Binning settings
+    numbinsState = len(bounds)-1
+    startState = 0.2
+    stepState = 1.0
+
+    stepE = 5 
+    numbinsE = int(round((maxE - minE)/stepE))
+
+    startExpdH = 0.9
+    numbinsExpdH = 50
+    stepExpdH = (maxexpdH - startExpdH)/float(numbinsExpdH)
+
+    wham_basic = get_wham_config_basic(numbinsE,minE,stepE,numbinsState,startState,stepState)
+    wham_basic += get_wham_config_coordinate_binning(numbinsExpdH,startExpdH,stepExpdH)
+    wham_basic += "### list of histogram filenames and their temperatures ###\n"
+    wham_basic += "numFiles %d\n" % len(unique_temps)
+    wham_basic += histfilenames
+    wham_basic += "\n"
+
+    return wham_basic,temperatures
+
+def prepare_histograms_heat_capacity(Mut=False):
     """ Prepare histogram files for wham.
     
         Concatenates all the data from the same temperature for the histogram
@@ -131,7 +233,8 @@ def prepare_histograms(Mut=False):
         stepE = 5 
     numbinsQ = int(round((maxQ - minQ)/stepQ))
     numbinsE = int(round((maxE - minE)/stepE))
-    wham_basic = get_wham_config_basic(numbinsQ,minQ,stepQ,numbinsE,minE,stepE)
+    wham_basic = get_wham_config_basic(numbinsE,minE,stepE,numbinsQ,minQ,stepQ)
+    wham_basic += "### list of histogram filenames and their temperatures ###\n"
     wham_basic += "numFiles %d\n" % len(unique_temps)
     wham_basic += histfilenames
     wham_basic += "\n"
@@ -141,7 +244,7 @@ def prepare_histograms(Mut=False):
 def run_wham_for_heat_capacity(model,Mut=False):
     """ Prepare wham histograms and run Jeff's WHAM code"""
 
-    wham_basic,temperatures = prepare_histograms(Mut=Mut)
+    wham_basic,temperatures = prepare_histograms_heat_capacity(Mut=Mut)
 
     temps = [ float(x) for x in temperatures ]
     startT = min(temps)

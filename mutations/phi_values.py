@@ -20,6 +20,9 @@ import model_builder.systems as systems
 
 from mutatepdbs import get_core_mutations
 
+from project_tools.analysis import wham
+
+
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
@@ -70,7 +73,79 @@ def calculate_dH_for_mutants(model,append_log):
     os.chdir(cwd)
     append_log(model.subdir,"Finished: Calculating_dH")
 
-def calculate_phi_values(Model,System,append_log,coord):
+def calculate_phi_values(model,append_log):
+    """ Calculate the phi values for a trajectory. Requires only state 
+        definitions and dH (energetic perturbation for each mutation).
+    """
+    
+    append_log(model.subdir,"Starting: Calculating_phi_values")
+    cwd = os.getcwd()
+    sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
+
+
+    beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
+    os.chdir(model.subdir)
+    if not os.path.exists(sub+"/phi"):
+        os.mkdir(sub+"/phi")
+
+    ## Get the mutations.
+    os.chdir("mutants")
+    mut_indx, wt_res, mut_res = get_core_mutations()
+    mutants = [ wt_res[i]+mut_indx[i]+mut_res[i]  for i in range(len(mut_indx)) ]
+
+    os.chdir(sub)
+
+    ## Load:
+    ## These need to be created by the user after the user messes
+    ## with the output free energy and finds where the two basins
+    ## are equal.
+    ## output temperature <-- sub/whamQ/Tf.txt   
+    ## state boundaries   <-- sub/whamQ/state_bounds.txt
+    Tf = get_Tf_choice()
+    bounds, state_labels = get_state_bounds()
+    bounds = [0] + bounds + [model.n_contacts]
+
+    ## loop over mutants
+    #for k in range(len(mutants)):
+    for k in [0]:
+        mut = mutants[k]
+        print "  Running wham for exp(-beta*dH_"+mut+")"
+        ## Run WHAM to get <exp(-beta*dH_k)>_X for each mutant.
+        wham.run_wham_expdH_k(mut,Tf,bounds)
+
+
+            ## initialize histogram array
+
+            ## loop over temperature copies 
+
+                ## load dH and Q.dat
+                ## compute state variable h(x) using state boundaries
+                ## concatenate onto histogram array
+
+            ## save histogram file
+
+        ## run wham to get thermal average
+
+    num_states = len(states)
+    print "  Loading dH for mutants"
+
+    ## Compute deltaG for each state. Then DeltaDelta G with 
+    ## respect to the first state (assumed to be the denatured state).
+    ## Units of kT.
+    print "  Computing ddG and phi values..."
+    dG = [ -np.log(sum(np.exp(-beta*dH[:,states[X]]).T)/float(len(dH[:,states[X]]))) for X in range(num_states) ]
+    ddG = [ dG[X]-dG[0] for X in range(1,num_states) ]
+
+    ## Compute the phi value for each mutation. Phi is the ratio
+    ## of DeltaDeltaG of the transition state(s) to DeltaDelta G
+    ## of the native state (assumed to be the last state). unitless.
+    phi = [ ddG[X]/ddG[-1] for X in range(len(ddG)-1) ]
+    
+    save_phi_values(savedir,mutants,coord,bounds,dG,ddG,phi)
+    os.chdir(cwd)
+    append_log(model.subdir,"Finished: Calculating_phi_values")
+
+def calculate_phi_values_old(Model,System,append_log,coord):
     """ Calculate the phi values for a trajectory. Requires only state 
         definitions and dH (energetic perturbation for each mutation).
     """
@@ -127,23 +202,14 @@ def get_mutant_dH(path,mutants):
     
     return dH
 
-def get_exp_ddG():
-    """ Get experimental ddG data from mutants/mutations.dat"""
-
-    ddG_exp_all = np.loadtxt("mutants/mutations.dat",skiprows=1,usecols=(3,4))
-     
-    ddG_exp_TS_D = ddG_exp_all[:,0]
-    ddG_exp_N_D = ddG_exp_all[:,1]
-
-    return ddG_exp_TS_D, ddG_exp_N_D
-
 def get_mutant_fij(model,mutants):
     """ Load in the fraction of contact loss for each mutation.
 
     Description:
 
         Since the fraction of contacts lost matrix f^k_ij is sparse only load
-    in the of nonzero elements and their indices.
+    in the of nonzero elements and their indices. Determine the contact index.
+    for nonzero entries.
     """
     Fij_pairs = []
     Fij_conts = []
@@ -156,7 +222,8 @@ def get_mutant_fij(model,mutants):
         tempconts = []
         for i in range(len(indices[0])):
             temppairs.append([indices[0][i],indices[1][i]])
-            contact_num = list((model.contacts[:,0]-1 == indices[0][i]) & (model.contacts[:,1]-1 == indices[1][i])).index(True)
+            contact_num = list((model.contacts[:,0]-1 == indices[0][i]) & \
+                               (model.contacts[:,1]-1 == indices[1][i])).index(True)
             tempconts.append(contact_num)
     
         Fij_conts.append(np.array(tempconts))
@@ -169,7 +236,21 @@ def get_Qij(Model,r,sig,delta,interaction_nums):
     qij = Model.nonbond_interaction(r,sig,delta)
     return qij
 
-def get_state_bounds(path,coord):
+def get_state_bounds():
+    """ Bounds for each state. Bounds are bin edges along Q. """
+
+    statefile = open("whamQ/state_bounds.txt","r").readlines()
+    state_bounds = []
+    state_labels = []
+    for line in statefile:
+        info = line.split()
+        state_bounds.append(float(info[1]))
+        state_bounds.append(float(info[2]))
+        state_labels.append(info[0])
+    
+    return state_bounds,state_labels
+
+def get_state_bounds_old(path,coord):
     """ Get bounds for each state for specified coordinate. Return a list of boolean
         arrays that specifies if each frame is in the given state or not."""
     #print path+"/"+coord+"_states.txt" ## DEBUGGING
@@ -202,16 +283,16 @@ def get_state_bounds(path,coord):
 
     return bounds,states
 
-def get_Tf_choice(sub):
-    if not os.path.exists(sub+"/Tf_choice.txt"):
+def get_Tf_choice():
+    if not os.path.exists("whamQ/Tf.txt"):
         print "ERROR!"
-        print "  Please create ",sub+"/Tf_choice.txt with your choice to do mutations at."
+        print "  Please create whamQ/Tf.txt with your choice to do mutations at."
         print "  Exiting"
         raise SystemExit
     else:
-        Tf_choice = open(sub+"/Tf_choice.txt").read().split()[0]
-        print "  Calculating dH for temp ",Tf_choice
-    return Tf_choice
+        Tf = open("whamQ/Tf.txt").read().rstrip("\n")
+        print "  Calculating exp(-beta*dH) at temp ",Tf
+    return float(Tf)
 
 
 def load_beadbead(subdir):
@@ -241,6 +322,9 @@ def load_eps_delta_sig_traj(subdir):
 
         In calculating the mutations only modify parameters that have interaction_type
         in the BeadBead.dat =/= [0,ds,ss]. 
+
+        SOON TO BE DEPRECATED
+
     """
     print "  Loading BeadBead.dat"
     beadbead = np.loadtxt(subdir+"/BeadBead.dat",dtype=str) 

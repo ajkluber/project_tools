@@ -116,19 +116,17 @@ class MatysiakClementi2004(ProjectManager):
     
         ## To Do:
         ##  1. Run WHAM to get F(Q) and Cv(T). DONE
-        ##      1a. User adjusts T for F(Q) to find Tf --> Save as Mut_0/Tf.txt
-        ##      1b. 
-        ##  5. Determine bounds for TS, U, N states
-        ##  3. Calculate dH  TESTING
-        ##
-        ##  4. Run WHAM to get the following thermal averages as function
+        ##      1a. User adjusts T for F(Q) to find Tf --> Save as Mut_0/whamQ/Tf.txt
+        ##      1b. User determines bounds for TS, U, N states --> Save as Mut_0/whamQ/state_bounds
+        ##  2. Calculate dH  TESTING --> WORKS
+        ##  3. Run WHAM to get the following thermal averages as function
         ##    of Q at Tf:
-        ##    4a. <Q_ij>(Q) the interaction energy of contact ij.
-        ##    4b. <exp(-beta*dH_k)>(Q) the perturbation due to mutation k.
-        ##    4c. <Q_i>(Q) the contact probability
+        ##    3a. <Q_ij>_X the interaction energy of contact ij.
+        ##    3b. <exp(-beta*dH_k)>_X the perturbation due to mutation k.
+        ##    [ 3c. <Q_i>_X the contact probability ]
         ##
-        ##  6. Calculate DeltaDeltaG's for simulation and phi_values
-        ##  7. Calculate matrix M and solve for new parameters.
+        ##  4. Calculate DeltaDeltaG's for simulation and phi_values
+        ##  5. Calculate matrix M and solve for new parameters.
 
             ## Run heat capacity for equilibrium runs. Cv(T), F(Q)
             analysis.Tf_loop.run_wham_heat_capacity(model,self.append_log,Mut=True)
@@ -138,11 +136,14 @@ class MatysiakClementi2004(ProjectManager):
             #mutations.phi_values.calculate_phi_values(model,self.append_log,"Q")
         
         elif task == "Equil_Tf_wham":
+            ## WORKS
             print "Starting prepping mutant pdbs..."
             mutations.mutatepdbs.prepare_mutants(model,self.append_log)
         elif task == "Preparing_Mutants":
+            ## WORKS
             print "Starting calculating dH for mutants..."
             mutations.phi_values.calculate_dH_for_mutants(model,self.append_log)
+
         elif task == "Calculating_dH":
             mutations.phi_values.calculate_phi_values(model,self.append_log,"Q")
         elif task == "Calculating_phi_values":
