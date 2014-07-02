@@ -136,14 +136,11 @@ class MatysiakClementi2004(ProjectManager):
             #mutations.phi_values.calculate_phi_values(model,self.append_log,"Q")
         
         elif task == "Equil_Tf_wham":
-            ## WORKS
             print "Starting prepping mutant pdbs..."
             mutations.mutatepdbs.prepare_mutants(model,self.append_log)
         elif task == "Preparing_Mutants":
-            ## WORKS
             print "Starting calculating dH for mutants..."
             mutations.phi_values.calculate_dH_for_mutants(model,self.append_log)
-
         elif task == "Calculating_dH":
             mutations.phi_values.calculate_phi_values(model,self.append_log,"Q")
         elif task == "Calculating_phi_values":

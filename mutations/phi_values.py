@@ -37,10 +37,9 @@ def calculate_dH_for_mutants(model,append_log):
     os.chdir(model.subdir+"/mutants")
     mut_indx, wt_res, mut_res = get_core_mutations()
     mutants = [ wt_res[i]+mut_indx[i]+mut_res[i]  for i in range(len(mut_indx)) ]
-    #mutants = [ wt_res[i]+mut_indx[i]+mut_res[i]  for i in range(1) ]
     Fij, Fij_pairs, Fij_conts = get_mutant_fij(model,mutants)
 
-    print Fij,Fij_pairs,Fij_conts
+    #print Fij,Fij_pairs,Fij_conts      ## DEBUGGING
 
     os.chdir(sub)
 
@@ -53,8 +52,8 @@ def calculate_dH_for_mutants(model,append_log):
         os.chdir(dir)
         print "  Loading traj for: ", "Mut_"+str(model.Mut_iteration)+"/"+dir
         traj = md.load("traj.xtc",top="Native.pdb")
-        #for k in range(len(mutants)):
-        for k in [1]:
+        for k in range(len(mutants)):
+        #for k in [1]:       ## DEBUGGING
             mut = mutants[k]
             #if not os.path.exists("dH_"+mut+".dat"):
             if True:
@@ -68,12 +67,21 @@ def calculate_dH_for_mutants(model,append_log):
                 deltas = model.contact_deltas[Fij_conts[k]]
                 sigmas = model.contact_sigmas[Fij_conts[k]]
 
-                ## Calculate dH_k using distances and parameters. Save.
-                Vij = -Fij[k]*eps*(5.*((sigmas/rij)**12) - 6.*deltas*((sigmas/rij)**10))
+                ## For some reason, the energies blow up for 0.5% of frames for
+                ## some contacts. Alex thinks its due to numerical differences 
+                ## (number of sig figs) used in the sigmas or rij. The actual 
+                ## energies of the simulation do not blow up. This calculation
+                ## is an estimation of dH_k anyways so this shouldn't effect the
+                ## main results.
+                x = sigmas/rij
+                x[(x > 1.211)] = 1.211
 
+                ## Calculate dH_k using distances and parameters. Save.
+                Vij = -Fij[k]*eps*(5.*(x**12) - 6.*deltas*(x**10))
                 dH_k = sum(Vij.T)
                 np.savetxt("dH_"+mut+".dat",dH_k)
-                return Fij,Fij_pairs,Fij_conts,eps,deltas,sigmas,rij
+
+                #return Fij,Fij_pairs,Fij_conts,eps,deltas,sigmas,rij   ## DEBUGGING
             else:
                 pass
         os.chdir("..")
