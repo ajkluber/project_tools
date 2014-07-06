@@ -277,11 +277,10 @@ def calculate_matrix_ddG_eps_M(Model,System,savedir,beta,coord):
 
     print "  Loading mutants"
     os.chdir("mutants")
-    mut_indx,wt_res,mut_res = mut.get_core_mutations()
+    mutants = mut.get_core_mutations()
     print "  Loading ddG from experiment"
     ddGexp_N_D,ddGexp_N_D_err,ddGexp_TS_D,ddGexp_TS_D_err = mut.get_core_mutation_ddG()
     os.chdir("..")
-    mutants = [ wt_res[i]+mut_indx[i]+mut_res[i] for i in range(mut_indx.shape[0]) ]
     #print "  Computing perturbation with the following mutants"
     #print mutants
 

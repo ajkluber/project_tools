@@ -93,8 +93,9 @@ def get_core_mutations():
     mut_indx = mutation_data[(useable_and_core == True),1] 
     wt_res = mutation_data[(useable_and_core == True),2] 
     mut_res = mutation_data[(useable_and_core == True),3] 
+    mutants = [ wt_res[i]+mut_indx[i]+mut_res[i]  for i in range(len(mut_indx)) ]
     
-    return mut_indx,wt_res,mut_res
+    return mutants
 
 def get_core_mutation_ddG():
     """ Extract mutational data. Only return info for useable mutations """
@@ -179,7 +180,7 @@ def calculate_contacts_lost_for_mutants():
         for mutant k:  f^k_ij . Must be in mutants directory which holds wild-type 
         pdb wt.pdb, a file hold mutations information mutations.dat."""
 
-    mut_indx,wt_res,mut_res = get_core_mutations()
+    mutants = get_core_mutations()
 
     if os.path.exists("SCM.1.31.jar") == False:
         cmd0 = 'cp /projects/cecilia/SCM.1.31.jar .'
@@ -193,8 +194,8 @@ def calculate_contacts_lost_for_mutants():
 
     ## Use shadow map to create all-atom contact map. For each mutated pdb
     ## determine the fraction of heavy-atom contacts lost .
-    for i in range(len(mut_indx)):
-        name = wt_res[i]+mut_indx[i]+mut_res[i]
+    for k in range(len(mutants)):
+        name = mutants[k]
         if os.path.exists(name+".cutoff.contacts") == False:
             #print "    Calculating contacts for", name
             calculate_contacts_from_pdb(name)
@@ -213,21 +214,18 @@ def make_all_mutations():
     """
 
     modelname = 'wt'
-    mut_indx,wt_res,mut_res = get_core_mutations()
-
+    mutants = get_core_mutations()
     for i in range(len(mut_indx)):
-
-        saveas = wt_res[i]+mut_indx[i]+mut_res[i]+".pdb"
+        mut = mutants[i]
+        saveas = mut+".pdb"
         if not os.path.exists(saveas):
-
-            print "    Performing mutation: %s%s%s" % (wt_res[i],mut_indx[i],mut_res[i])
-
-            respos = mut_indx[i]
-            restyp = residue_three_letter_code(mut_res[i])
-            saveas = wt_res[i]+mut_indx[i]+mut_res[i]+".pdb"
+            print "    Performing mutation: %s" % mut
+            respos = mut[1:-1]
+            restyp = residue_three_letter_code(mut[-1])
+            saveas = mut+".pdb"
             modeller_mutate_pdb(modelname,respos,restyp,saveas)
         else:
-            print "    Skipping mutation: %s%s%s" % (wt_res[i],mut_indx[i],mut_res[i])
+            print "    Skipping mutation: %s" % mut
 
 def modeller_mutate_pdb(modelname,respos,restyp,saveas,chain='A'):
     """ Use MODELLER to mutate the pdb modelname at respos to restyp then save as saveas.

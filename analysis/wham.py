@@ -1,3 +1,26 @@
+""" Run Weighted Histogram Analysis Method Smog tool.
+
+Description:
+
+    Functions to prepare input files and run WHAM to compute 
+thermal averages. For details on WHAM see reference (1). This
+code uses a WHAM executable that is part of the SMOG set of 
+tools, see reference (2) for more information .
+
+
+
+(1) Kumar,S.; Bouzida,D.; Swendsen, R.H.; Kollman, P.A.; Rosenberg, J.
+The Weighted Histogram Analysis Method for Free-energy calculations on
+biomolecules. I. The Method. J. Comput. Chem. 1992, 13, 1011-1021.
+
+(2) Noel, J.K.; Whitford, P.C.; Sanbonmatsu, K.Y.; Onuchic, J.N.
+SMOG@ctbp: Simplified Deployment of Structure-Based Models in GROMACS.
+Nucleic Acids Res. 2010, 38, W657-61.
+
+"""
+
+
+
 import matplotlib.pyplot as plt
 import numpy as np
 import subprocess as sb

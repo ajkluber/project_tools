@@ -132,8 +132,6 @@ class MatysiakClementi2004(ProjectManager):
             analysis.Tf_loop.run_wham_heat_capacity(model,self.append_log,Mut=True)
 
             ## Calculate exp(-beta*dH_k) and Q_ij for runs.
-
-            #mutations.phi_values.calculate_phi_values(model,self.append_log,"Q")
         
         elif task == "Equil_Tf_wham":
             print "Starting prepping mutant pdbs..."

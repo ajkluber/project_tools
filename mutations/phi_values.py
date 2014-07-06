@@ -35,8 +35,7 @@ def calculate_dH_for_mutants(model,append_log):
     sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
     ## Get the fraction of native contacts deleted for each mutation.
     os.chdir(model.subdir+"/mutants")
-    mut_indx, wt_res, mut_res = get_core_mutations()
-    mutants = [ wt_res[i]+mut_indx[i]+mut_res[i]  for i in range(len(mut_indx)) ]
+    mutants = get_core_mutations()
     Fij, Fij_pairs, Fij_conts = get_mutant_fij(model,mutants)
 
     #print Fij,Fij_pairs,Fij_conts      ## DEBUGGING
@@ -88,12 +87,17 @@ def calculate_dH_for_mutants(model,append_log):
     os.chdir(cwd)
     append_log(model.subdir,"Finished: Calculating_dH")
 
-def calculate_phi_values(model,append_log):
-    """ Calculate the phi values for a trajectory. Requires only state 
-        definitions and dH (energetic perturbation for each mutation).
+def calculate_phi_values_wham(model,append_log):
+    """ Calculate the simulation delta G's, deltadelta G's, and phi-values using WHAM. 
+
+    Description:
+        Requires the definition of states along Q and the energetic
+    perturbation for each mutation dH_k. Saves output in Mut_#/phi
+
+    NOT DONE 7-10-14
     """
     
-    append_log(model.subdir,"Starting: Calculating_phi_values")
+    #append_log(model.subdir,"Starting: Calculating_phi_values")
     cwd = os.getcwd()
     sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
 
@@ -105,9 +109,7 @@ def calculate_phi_values(model,append_log):
 
     ## Get the mutations.
     os.chdir("mutants")
-    mut_indx, wt_res, mut_res = get_core_mutations()
-    mutants = [ wt_res[i]+mut_indx[i]+mut_res[i]  for i in range(len(mut_indx)) ]
-
+    mutants = get_core_mutations()
     os.chdir(sub)
 
     ## Load:
@@ -121,24 +123,14 @@ def calculate_phi_values(model,append_log):
     bounds = [0] + bounds + [model.n_contacts]
 
     ## loop over mutants
-    #for k in range(len(mutants)):
-    for k in [0]:
+    for k in range(len(mutants)):
+    #for k in [0]:       ## DEBUGGING
         mut = mutants[k]
         print "  Running wham for exp(-beta*dH_"+mut+")"
         ## Run WHAM to get <exp(-beta*dH_k)>_X for each mutant.
+        ## 
         wham.run_wham_expdH_k(mut,Tf,bounds)
 
-            ## initialize histogram array
-
-            ## loop over temperature copies 
-
-                ## load dH and Q.dat
-                ## compute state variable h(x) using state boundaries
-                ## concatenate onto histogram array
-
-            ## save histogram file
-
-        ## run wham to get thermal average
     print "Success!"
     raise SystemExit
     num_states = len(states)
@@ -160,46 +152,91 @@ def calculate_phi_values(model,append_log):
     os.chdir(cwd)
     append_log(model.subdir,"Finished: Calculating_phi_values")
 
-def calculate_phi_values_old(Model,System,append_log,coord):
-    """ Calculate the phi values for a trajectory. Requires only state 
-        definitions and dH (energetic perturbation for each mutation).
+def calculate_phi_values(model,append_log,coord):
+    """ Calculate the simulation delta G's, deltadelta G's, and phi-values. 
+
+    Description:
+        Requires the definition of states along Q and the energetic
+    perturbation for each mutation dH_k. Saves output in Mut_#/phi
     """
     
-    append_log(System.subdir,"Starting: Calculating_phi_values")
+    append_log(model.subdir,"Starting: Calculating_phi_values")
     cwd = os.getcwd()
-    sub = cwd+"/"+System.subdir+"/"+System.mutation_active_directory
-    T = get_Tf_choice(sub)
-    savedir = sub+"/"+T+"_agg"
-    beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
-    os.chdir(System.subdir)
-    if not os.path.exists(savedir+"/phi"):
-        os.mkdir(savedir+"/phi")
+    sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
+    
+    os.chdir(model.subdir)
+    if not os.path.exists(sub+"/phi"):
+        os.mkdir(sub+"/phi")
 
     os.chdir("mutants")
-    mut_indx, wt_res, mut_res = get_core_mutations()
-    os.chdir("..")
-    mutants = [ wt_res[i]+mut_indx[i]+mut_res[i]  for i in range(len(mut_indx)) ]
-    print "  Getting state bounds for coordinate:",coord
-    bounds, states = get_state_bounds(savedir,coord)
-    num_states = len(states)
-    print "  Loading dH for mutants"
-    dH = get_mutant_dH(savedir,mutants)
+    mutants = get_core_mutations()
+    os.chdir(sub)
+
+    T,Tnum = get_Tf_choice()
+    beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
+    Tdir = "%.2f_%d" % (T,Tnum)
+    bounds, state_labels = get_state_bounds()
+    bounds = [0] + bounds + [model.n_contacts]
+
+    os.chdir(Tdir)
+    Q = np.loadtxt("Q.dat")
+    state_indicator = np.zeros(len(Q),int)
+    ## Assign every frame a state label. State indicator is integer 1-N for N states.
+    for state_num in range(len(bounds)-1):
+        instate = (Q > bounds[state_num]).astype(int)*(Q <= bounds[state_num+1]).astype(int)
+        state_indicator[instate == 1] = state_num+1
+    if any(state_indicator == 0):
+        print "ERROR! There are unassigned frames!"
+        print sum((state_indicator == 0).astype(int)), " unassigned frames out of ", len(Q)
+        print " Exiting"
+        raise SystemExit
+
+    ## Boolean arrays that indicate which state each frame is in.
+    ## States are defined by their boundaries along coordinate Q.
+    U  = ((Q > bounds[1]).astype(int)*(Q < bounds[2]).astype(int)).astype(bool)
+    TS = ((Q > bounds[3]).astype(int)*(Q < bounds[4]).astype(int)).astype(bool)
+    N  = ((Q > bounds[5]).astype(int)*(Q < bounds[6]).astype(int)).astype(bool)
+    Nframes  = float(sum(N.astype(int)))
+    Uframes  = float(sum(U.astype(int)))
+    TSframes = float(sum(TS.astype(int)))
 
     ## Compute deltaG for each state. Then DeltaDelta G with 
-    ## respect to the first state (assumed to be the denatured state).
+    ## respect to the first state (assumed to be the unfolded/denatured state).
     ## Units of kT.
+    dG = [[],[],[]]
+    ddG = [[],[]]
+    phi = []
     print "  Computing ddG and phi values..."
-    dG = [ -np.log(sum(np.exp(-beta*dH[:,states[X]]).T)/float(len(dH[:,states[X]]))) for X in range(num_states) ]
-    ddG = [ dG[X]-dG[0] for X in range(1,num_states) ]
+    for k in range(len(mutants)):
+        mut = mutants[k]
+        print "    calculating ddG for ",mut
 
-    ## Compute the phi value for each mutation. Phi is the ratio
-    ## of DeltaDeltaG of the transition state(s) to DeltaDelta G
-    ## of the native state (assumed to be the last state). unitless.
-    phi = [ ddG[X]/ddG[-1] for X in range(len(ddG)-1) ]
-    
-    save_phi_values(savedir,mutants,coord,bounds,dG,ddG,phi)
+        ## Load dH_k for mutation
+        dH = np.loadtxt("dH_"+mut+".dat")
+
+        ## Free energy perturbation formula. Equation
+        dG_U  = -np.log(np.sum(np.exp(-beta*dH[U]))/Uframes)
+        dG_TS = -np.log(np.sum(np.exp(-beta*dH[TS]))/TSframes)
+        dG_N  = -np.log(np.sum(np.exp(-beta*dH[N]))/Nframes)
+
+        ## DeltaDeltaG's
+        ddG_dagg = (dG_TS - dG_U)
+        ddG_stab = (dG_N - dG_U)
+
+        ## Phi-value
+        phi_value = ddG_dagg/ddG_stab
+
+        dG[0].append(dG_U)
+        dG[1].append(dG_TS)
+        dG[2].append(dG_N)
+        ddG[0].append(ddG_dagg)
+        ddG[1].append(ddG_stab)
+        phi.append(phi_value)
+
+    os.chdir("..")
+    save_phi_values(mutants,coord,state_labels,dG,ddG,phi)
     os.chdir(cwd)
-    append_log(System.subdir,"Finished: Calculating_phi_values")
+    append_log(model.subdir,"Finished: Calculating_phi_values")
 
 def get_mutant_dH(path,mutants):
     """ Load the mutant energy perturbations dH_<mut>.dat"""
@@ -223,7 +260,7 @@ def get_mutant_fij(model,mutants):
     Description:
 
         Since the fraction of contacts lost matrix f^k_ij is sparse only load
-    in the of nonzero elements and their indices. Determine the contact index.
+    in the of nonzero elements and their indices. Determine the contact indices
     for nonzero entries.
     """
     Fij_pairs = []
@@ -246,23 +283,29 @@ def get_mutant_fij(model,mutants):
                     break
                 else:
                     continue
-            #contact_num = list((model.contacts[:,0]-1 == indices[0][i]) & \
-            #                   (model.contacts[:,1]-1 == indices[1][i])).index(True)
-        #Fij.append(tempfij)
         Fij_conts.append(np.array(tempconts))
         Fij_pairs.append(temppairs)
     return Fij, Fij_pairs, Fij_conts
 
-def get_Qij(Model,r,sig,delta,interaction_nums):
+def get_Qij(model,r,sig,delta,interaction_nums):
     """ Calculates the normalized interaction betwen nonbonded pairs."""
     print "  Calculating Qij..."
-    qij = Model.nonbond_interaction(r,sig,delta)
+    qij = model.nonbond_interaction(r,sig,delta)
     return qij
 
 def get_state_bounds():
     """ Bounds for each state. Bounds are bin edges along Q. """
-
-    statefile = open("whamQ/state_bounds.txt","r").readlines()
+    if os.path.exists("whamQ/state_bounds.txt"):
+        statefile = open("whamQ/state_bounds.txt","r").readlines()
+    elif os.path.exists("state_bounds.txt"):
+        statefile = open("state_bounds.txt","r").readlines()
+    else:
+        print "ERROR!"
+        print "  Please create state_bounds.txt or whamQ/state_bounds.txt"
+        print "  With the boundaries of each state along Q"
+        print "  Exiting"
+        raise SystemExit
+    
     state_bounds = []
     state_labels = []
     for line in statefile:
@@ -273,50 +316,25 @@ def get_state_bounds():
     
     return state_bounds,state_labels
 
-def get_state_bounds_old(path,coord):
-    """ Get bounds for each state for specified coordinate. Return a list of boolean
-        arrays that specifies if each frame is in the given state or not."""
-    #print path+"/"+coord+"_states.txt" ## DEBUGGING
-    #print open(path+"/"+coord+"_states.txt","r").read() ## DEBUGGING
-
-    statefile = open(path+"/"+coord+"_states.txt","r").readlines()[1:]
-    bounds = []
-    for line in statefile:
-        bounds.append([line.split()[0],float(line.split()[1]),float(line.split()[2]),float(line.split()[3])])
-
-    if coord in ["Q","Qnh","Qh"]:
-        data = np.loadtxt(path+"/"+coord+".dat")
-        data /= max(data)
-    elif coord == "Nh":
-        data = np.loadtxt(path+"/Nh.dat")
-    elif coord == "Rg":
-        dummy,data = np.loadtxt(path+"/radius_cropped.xvg",unpack=True)
-    elif coord == "rmsd":
-        dummy,data = np.loadtxt(path+"/rmsd.xvg",unpack=True)
-    else:
-        print "ERROR!"
-        print "  No option for coordinate: ", coord
-        print "  Exiting"
-        raise SystemExit
-
-    states = []
-    for i in range(len(bounds)):
-        print "  State: ", bounds[i][0], " is defined as between: ",bounds[i][2], bounds[i][3]
-        states.append((bounds[i][2] <= data)*(data <= bounds[i][3]))
-
-    return bounds,states
-
 def get_Tf_choice():
-    if not os.path.exists("whamQ/Tf.txt"):
+    if os.path.exists("whamQ/Tf.txt"):
+        Tf = open("whamQ/Tf.txt").read().rstrip("\n")
+        print "  Using temp ",Tf
+    elif os.path.exists("Tf.txt"):
+        Tf = open("Tf.txt").read().rstrip("\n")
+        print "  Using temp ",Tf
+    else:
         print "ERROR!"
-        print "  Please create whamQ/Tf.txt with your choice to do mutations at."
+        print "  Please create Tf.txt or whamQ/Tf.txt with your choice to do mutations at."
         print "  Exiting"
         raise SystemExit
+    if len(Tf.split("_")) > 1:
+        Tnum = int(Tf.split("_")[1])
+        Tf = float(Tf.split("_")[0])
     else:
-        Tf = open("whamQ/Tf.txt").read().rstrip("\n")
-        print "  Calculating exp(-beta*dH) at temp ",Tf
-    return float(Tf)
-
+        Tf = float(Tf)
+        Tnum = 1
+    return Tf,Tnum
 
 def load_beadbead(subdir):
 
@@ -381,17 +399,17 @@ def load_eps_delta_sig_traj(subdir):
 
     return sigij,epsij,deltaij,interaction_numbers,keep_interactions,pairs,traj,traj_dist
 
-def save_phi_values(savedir,mutants,coord,bounds,dG,ddG,phi):
+def save_phi_values(mutants,coord,state_labels,dG,ddG,phi):
     """ Save the calculated dG, ddG, and phi values for states"""
 
     header_string = "# mut" 
-    for i in range(len(bounds)):
-        header_string += "     dG_"+bounds[i][0]+"(kT)"
+    for i in range(len(state_labels)):
+        header_string += "     dG_"+state_labels[i]+"(kT)"
     header_string += "    "
-    for i in range(1,len(bounds)):
-        header_string += " ddG_"+bounds[i][0]+"-"+bounds[0][0]+"(kT)"
-    for i in range(1,len(bounds)-1):
-        header_string += "   Phi_"+bounds[i][0]+"/"+bounds[-1][0]
+    for i in range(1,len(state_labels)):
+        header_string += " ddG_"+state_labels[i]+"-"+state_labels[0]+"(kT)"
+    for i in range(1,len(state_labels)-1):
+        header_string += "   Phi_"+state_labels[i]+"/"+state_labels[-1]
 
     data_string = ''
     for j in range(len(mutants)):
@@ -400,14 +418,13 @@ def save_phi_values(savedir,mutants,coord,bounds,dG,ddG,phi):
             line += "  %10.5f " % dG[i][j]
         for i in range(len(ddG)):
             line += "  %10.5f " % ddG[i][j]
-        for i in range(len(phi)):
-            line += "  %10.5f  " % phi[i][j]
+        line += "  %10.5f  " % phi[j]
         data_string += line+"\n"
     print "ddG and Phi values:"
     print header_string
     print data_string
 
-    outputfile = open(savedir+"/phi/"+coord+"_phi.dat","w")
+    outputfile = open("phi/"+coord+"_phi.dat","w")
     outputfile.write(header_string+"\n"+data_string)
     outputfile.close()
 
