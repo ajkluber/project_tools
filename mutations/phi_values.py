@@ -7,6 +7,10 @@ the results DeltaDetla G's for simulation.
 
 
 References:
+
+(1) Matysiak, S.; Clementi, C. Optimal Combination of Theory and Experiment for
+the Characterization of the Protein Folding Landscape of S6: How Far Can a
+Minimalist model Go? J. Mol. Biol. 2004, 343, 235-248.
 """
 
 import numpy as np
@@ -52,7 +56,6 @@ def calculate_dH_for_mutants(model,append_log):
         print "  Loading traj for: ", "Mut_"+str(model.Mut_iteration)+"/"+dir
         traj = md.load("traj.xtc",top="Native.pdb")
         for k in range(len(mutants)):
-        #for k in [1]:       ## DEBUGGING
             mut = mutants[k]
             #if not os.path.exists("dH_"+mut+".dat"):
             if True:
@@ -73,7 +76,8 @@ def calculate_dH_for_mutants(model,append_log):
                 ## is an estimation of dH_k anyways so this shouldn't effect the
                 ## main results.
                 x = sigmas/rij
-                x[(x > 1.211)] = 1.211
+                x[(x > 1.09)] = 1.09  # <-- 1.09 is where LJ12-10 crosses zero.
+                #x[(x > 1.211)] = 1.211
 
                 ## Calculate dH_k using distances and parameters. Save.
                 Vij = -Fij[k]*eps*(5.*(x**12) - 6.*deltas*(x**10))
@@ -165,76 +169,83 @@ def calculate_phi_values(model,append_log,coord):
     sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
     
     os.chdir(model.subdir)
-    if not os.path.exists(sub+"/phi"):
-        os.mkdir(sub+"/phi")
 
     os.chdir("mutants")
     mutants = get_core_mutations()
     os.chdir(sub)
 
-    T,Tnum = get_Tf_choice()
-    beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
-    Tdir = "%.2f_%d" % (T,Tnum)
+    temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
+    directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
+
+    #T,Tnum = get_Tf_choice()
+    #Tdir = "%.2f_%d" % (T,Tnum)
+
     bounds, state_labels = get_state_bounds()
     bounds = [0] + bounds + [model.n_contacts]
+    for n in range(len(directories)):
+        T = temperatures[n]
+        Tdir = directories[n]
+        beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
+        os.chdir(Tdir)
+        if not os.path.exists("phi"):
+            os.mkdir("phi")
 
-    os.chdir(Tdir)
-    Q = np.loadtxt("Q.dat")
-    state_indicator = np.zeros(len(Q),int)
-    ## Assign every frame a state label. State indicator is integer 1-N for N states.
-    for state_num in range(len(bounds)-1):
-        instate = (Q > bounds[state_num]).astype(int)*(Q <= bounds[state_num+1]).astype(int)
-        state_indicator[instate == 1] = state_num+1
-    if any(state_indicator == 0):
-        print "ERROR! There are unassigned frames!"
-        print sum((state_indicator == 0).astype(int)), " unassigned frames out of ", len(Q)
-        print " Exiting"
-        raise SystemExit
+        Q = np.loadtxt("Q.dat")
+        state_indicator = np.zeros(len(Q),int)
+        ## Assign every frame a state label. State indicator is integer 1-N for N states.
+        for state_num in range(len(bounds)-1):
+            instate = (Q > bounds[state_num]).astype(int)*(Q <= bounds[state_num+1]).astype(int)
+            state_indicator[instate == 1] = state_num+1
+        if any(state_indicator == 0):
+            print "ERROR! There are unassigned frames!"
+            print sum((state_indicator == 0).astype(int)), " unassigned frames out of ", len(Q)
+            print " Exiting"
+            raise SystemExit
 
-    ## Boolean arrays that indicate which state each frame is in.
-    ## States are defined by their boundaries along coordinate Q.
-    U  = ((Q > bounds[1]).astype(int)*(Q < bounds[2]).astype(int)).astype(bool)
-    TS = ((Q > bounds[3]).astype(int)*(Q < bounds[4]).astype(int)).astype(bool)
-    N  = ((Q > bounds[5]).astype(int)*(Q < bounds[6]).astype(int)).astype(bool)
-    Nframes  = float(sum(N.astype(int)))
-    Uframes  = float(sum(U.astype(int)))
-    TSframes = float(sum(TS.astype(int)))
+        ## Boolean arrays that indicate which state each frame is in.
+        ## States are defined by their boundaries along coordinate Q.
+        U  = ((Q > bounds[1]).astype(int)*(Q < bounds[2]).astype(int)).astype(bool)
+        TS = ((Q > bounds[3]).astype(int)*(Q < bounds[4]).astype(int)).astype(bool)
+        N  = ((Q > bounds[5]).astype(int)*(Q < bounds[6]).astype(int)).astype(bool)
+        Nframes  = float(sum(N.astype(int)))
+        Uframes  = float(sum(U.astype(int)))
+        TSframes = float(sum(TS.astype(int)))
 
-    ## Compute deltaG for each state. Then DeltaDelta G with 
-    ## respect to the first state (assumed to be the unfolded/denatured state).
-    ## Units of kT.
-    dG = [[],[],[]]
-    ddG = [[],[]]
-    phi = []
-    print "  Computing ddG and phi values..."
-    for k in range(len(mutants)):
-        mut = mutants[k]
-        print "    calculating ddG for ",mut
+        
+        ## Compute deltaG for each state. Then DeltaDelta G with respect to the
+        ## first state (assumed to be the unfolded/denatured state).
+        ## Units of kT.
+        dG = [[],[],[]]
+        ddG = [[],[]]
+        phi = []
+        print "  Computing ddG and phi-values for ", Tdir
+        for k in range(len(mutants)):
+            mut = mutants[k]
+            print "    calculating ddG for ",mut
+            ## Load dH_k for mutation. Eq. (2) minus Eq. (1) from reference (1).
+            dH = np.loadtxt("dH_"+mut+".dat")
 
-        ## Load dH_k for mutation
-        dH = np.loadtxt("dH_"+mut+".dat")
+            ## Free energy perturbation formula. Equation (4) in reference (1).
+            dG_U  = -np.log(np.sum(np.exp(-beta*dH[U]))/Uframes)
+            dG_TS = -np.log(np.sum(np.exp(-beta*dH[TS]))/TSframes)
+            dG_N  = -np.log(np.sum(np.exp(-beta*dH[N]))/Nframes)
 
-        ## Free energy perturbation formula. Equation
-        dG_U  = -np.log(np.sum(np.exp(-beta*dH[U]))/Uframes)
-        dG_TS = -np.log(np.sum(np.exp(-beta*dH[TS]))/TSframes)
-        dG_N  = -np.log(np.sum(np.exp(-beta*dH[N]))/Nframes)
+            ## DeltaDeltaG's. Equations (5) in reference (1).
+            ddG_stab = (dG_N - dG_U)
+            ddG_dagg = (dG_TS - dG_U)
 
-        ## DeltaDeltaG's
-        ddG_dagg = (dG_TS - dG_U)
-        ddG_stab = (dG_N - dG_U)
+            ## Phi-value
+            phi_value = ddG_dagg/ddG_stab
 
-        ## Phi-value
-        phi_value = ddG_dagg/ddG_stab
+            dG[0].append(dG_U)
+            dG[1].append(dG_TS)
+            dG[2].append(dG_N)
+            ddG[0].append(ddG_dagg)
+            ddG[1].append(ddG_stab)
+            phi.append(phi_value)
 
-        dG[0].append(dG_U)
-        dG[1].append(dG_TS)
-        dG[2].append(dG_N)
-        ddG[0].append(ddG_dagg)
-        ddG[1].append(ddG_stab)
-        phi.append(phi_value)
-
-    os.chdir("..")
-    save_phi_values(mutants,coord,state_labels,dG,ddG,phi)
+        save_phi_values(mutants,coord,state_labels,dG,ddG,phi)
+        os.chdir("..")
     os.chdir(cwd)
     append_log(model.subdir,"Finished: Calculating_phi_values")
 
