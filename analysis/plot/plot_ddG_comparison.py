@@ -21,8 +21,7 @@ Procedure:
    The iteration number should start from zero (meaning, raw simulation without experimental adjustment)
                                                     
 Changelog:                                                                                                                       
-May 2014 Created                                                                                                                  
-June 2014 Added phi-value comparison                                                                                                             
+May 2014 Created                                                                                                                 June 2014 Added phi-value comparison                                                                                             July 2014 Updated to new directory format, eliminated references to excel docs that were unnecessary                
 '''
 def get_args():
     parser = argparse.ArgumentParser()
