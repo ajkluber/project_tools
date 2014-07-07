@@ -10,7 +10,10 @@ import plot
 
 def aggregate_equilibrium_runs(model,append_log,reagg=False):
     ''' Aggregate equilibrium simulation data into one directory for    
-        ease of access.'''
+        ease of access.
+
+    DEPRECATED 7-6-2014
+    '''
 
     append_log(model.subdir,"Starting: Aggregating_Equil_Runs")
     cwd = os.getcwd()

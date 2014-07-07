@@ -51,22 +51,44 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
     
     cwd = os.getcwd()
     sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
-    T = phi.get_Tf_choice(sub)
-    savedir = sub+"/"+T+"_agg"
+    os.chdir(sub)
 
+    ## Throw error if more than one temperature been used (?)
+    temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
+    directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
+    unique_temps = []
+    counts = []
+    for t in temperatures:
+        if t not in unique_temps:
+            unique_temps.append(t)
+            counts.append(temperatures.count(t))
+        else:
+            pass
+
+    if not os.path.exists("mut"):
+        os.mkdir("mut")
+
+    ## To Do:
+    ## 0.
+    ## 1. If M or ddG don't exist in Mut_#/mut directory:
+    ##   1a. Collect ddG & M from Mut_#/<temp>_*/{mut,phi} directories.
+    ##   1b. Take avg. and std error of mean for error bars. Save in Mut_#/mut
+    ##   1c. Compute correlation matrix for all possible xp's.
+    ##   1d. Compute correlation matrix for all possible xp's with cplex.
+    ## 2. If num_singular_values_include.txt exists
+    ##   2a. Compute solution epsilon_prime and save in Mut_#/mut directory
+    ##   2b. Save model object with new contact parameters
+ 
+    #T = phi.get_Tf_choice()
     beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
 
-    if not os.path.exists(savedir+"/mut"):
-        os.mkdir(savedir+"/mut")
-
     files = ["M.dat","ddG.dat","eps.dat"] 
-    flag = np.array([ not os.path.exists(savedir+"/mut/"+file) for file in files ])
+    flag = np.array([ not os.path.exists("mut/"+file) for file in files ])
     if np.any(flag):
         print "  One of the following does not exist: M.dat, ddG.dat, eps.dat. Calculating."
         os.chdir(model.subdir)
-        ddG, eps, M = calculate_matrix_ddG_eps_M(model,coord)
         print "  IMPORTANT: Look at the singular value spectrum and choose a number of singular values to use."
-        print "  IMPORTANT: Make sure ",savedir+"/mut/num_singular_values_include.txt  exists."
+        print "  IMPORTANT: Make sure Mut_#/mut/num_singular_values_include.txt  exists."
         os.chdir(cwd)
     else:
         print "  Loading M.dat, ddG.dat, eps.dat"
@@ -379,8 +401,6 @@ def calculate_matrix_ddG_eps_M(model,coord):
 
     os.chdir(cwd)
 
-    #return ddG_all,epsij,M
-
 def save_new_parameters(sub,eps,delta_eps,delta_eps_xp,savebeadbead,savebeadbeadxp, T):
     """ Save new parameters as a BeadBead file
 
@@ -434,116 +454,8 @@ if __name__ == '__main__':
     def dummy_func(sub,string):
         pass 
     
-    subdirs = ["r15"]
+    subdirs = ["r16"]
     Models = models.load_models(subdirs,dryrun=True)
     model = Models[0]
 
     calculate_matrix_ddG_eps_M(model,"Q")
-    raise SystemExit
-    cwd = os.getcwd()
-    sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
-
-    os.chdir(model.subdir+"/mutants")
-    print "  Loading mutants"
-    mutants = mute.get_core_mutations()
-    Fij, Fij_pairs, Fij_conts = phi.get_mutant_fij(model,mutants)
-    print "  Loading ddG from experiment"
-    ddGexp_N_D,ddGexp_N_D_err,ddGexp_TS_D,ddGexp_TS_D_err = mute.get_core_mutation_ddG()
-
-    os.chdir(sub)
-
-    bounds, states = phi.get_state_bounds()
-    bounds = [0] + bounds + [model.n_contacts]
-
-    temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
-    directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
-
-    ## 
-    #print "  Loading ddG from simulation"
-    #ddGsim_TS_D, ddGsim_N_D = mut.get_sim_ddG(mutants,coord)
-
-    epsilons = model.contact_epsilons
-    deltas = model.contact_deltas
-    sigmas = model.contact_sigmas
-
-    ## Loop over temperature directories.
-    for n in range(len(directories)):
-        T = temperatures[n]
-        Tdir = directories[n]
-        print " Computing matrix M for ", Tdir
-        os.chdir(Tdir)
-        if not os.path.exists("mut"):
-            os.mkdir("mut")
-
-        ## Boolean arrays that indicate which state each frame is in.
-        ## States are defined by their boundaries along coordinate Q.
-        Q = np.loadtxt("Q.dat")
-        U  = ((Q > bounds[1]).astype(int)*(Q < bounds[2]).astype(int)).astype(bool)
-        TS = ((Q > bounds[3]).astype(int)*(Q < bounds[4]).astype(int)).astype(bool)
-        N  = ((Q > bounds[5]).astype(int)*(Q < bounds[6]).astype(int)).astype(bool)
-        Nframes  = float(sum(N.astype(int)))
-        Uframes  = float(sum(U.astype(int)))
-        TSframes = float(sum(TS.astype(int)))
-
-        ## Compute M vectorized
-        beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
-        traj = md.load("traj.xtc",top="Native.pdb")
-        rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape))
-
-        ## Only count values of potential energy function where interaction is
-        ## attractive.
-        x = sigmas/rij
-        x[(x > 1.09)] = 1.09  # <-- 1.09 is where LJ12-10 crosses zero.
-        Vij = epsilons*(5.*(x**12) - 6.*deltas*(x**10))
-    
-        Vij_U  = sum(Vij[U,:])/Uframes
-        Vij_TS = sum(Vij[TS,:])/TSframes
-        Vij_N  = sum(Vij[N,:])/Nframes
-
-        #rij = md.compute_distances(traj,Fij_pairs[k])
-        M = np.zeros((2*len(mutants),model.n_contacts),float)
-
-        ## Compute the rows of matrix in equation (9) of reference (1)
-        for k in range(len(mutants)):
-            mut = mutants[k]
-            print "   computing row for mutant ", mut
-            ## Load dH_k for mutation. Eq. (2) minus Eq. (1) from reference (1).
-            dHk = np.loadtxt("dH_"+mut+".dat")
-
-            ## Thermal averages for matrix equation (9).
-            expdHk_U  = sum(np.exp(-beta*dHk[U]))/Uframes
-            expdHk_TS = sum(np.exp(-beta*dHk[TS]))/TSframes
-            expdHk_N  = sum(np.exp(-beta*dHk[N]))/Nframes
-
-            Vij_expdHk_U  = sum((Vij[U,:].T*np.exp(-beta*dHk[U])).T)/Uframes
-            Vij_expdHk_TS = sum((Vij[TS,:].T*np.exp(-beta*dHk[TS])).T)/TSframes
-            Vij_expdHk_N  = sum((Vij[N,:].T*np.exp(-beta*dHk[N])).T)/Nframes
-
-            ## Compute all columns with Fij_k zero.
-            M[k,:] = -beta*((Vij_TS - Vij_U) -  ((Vij_expdHk_TS/expdHk_TS) - (Vij_expdHk_U/expdHk_U)))
-            M[k + len(mutants),:] = -beta*((Vij_N - Vij_U)  -  ((Vij_expdHk_N/expdHk_N) - (Vij_expdHk_U/expdHk_U)))
-
-            ## Replace columns for which Fij_k is not zero.
-            M[k,Fij_conts[k]] = -beta*((Vij_TS[Fij_conts[k]] - Vij_U[Fij_conts[k]])  - \
-                (1. - Fij[k])*((Vij_expdHk_TS[Fij_conts[k]]/expdHk_TS) - \
-                               (Vij_expdHk_U[Fij_conts[k]]/expdHk_U)))
-
-            M[k + len(mutants),Fij_conts[k]] = -beta*((Vij_N[Fij_conts[k]] - Vij_U[Fij_conts[k]])  -  \
-                (1. - Fij[k])*((Vij_expdHk_N[Fij_conts[k]]/expdHk_N)   - \
-                              (Vij_expdHk_U[Fij_conts[k]]/expdHk_U)))
-                
-        u,s,v = np.linalg.svd(M)
-        rank = len(s)
-        np.savetxt("mut/M.dat",M)
-        np.savetxt("mut/singular_values.dat",s)
-        np.savetxt("mut/singular_values_norm.dat",s/max(s))
-        plt.figure()
-        plt.plot(s/max(s),'ro')
-        plt.title(model.subdir+" "+Tdir)
-        plt.savefig("mut/spectrum.pdf")
-        plt.close()
-
-        os.chdir("..")
-
-    os.chdir(cwd)
-
