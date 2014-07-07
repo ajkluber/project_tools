@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
-def calculate_MC2004_perturbation(Model,System,append_log,coord="Q",newbeadbead="NewBeadBead.dat",target_ratio=0.95):
+def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBeadBead.dat",target_ratio=0.95):
     """ Calculate the new contact parameters with Matysiak Clementi 2004 method
 
     Description:
@@ -50,9 +50,10 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q",newbeadbead=
     """
     
     cwd = os.getcwd()
-    sub = cwd+"/"+System.subdir+"/"+System.mutation_active_directory
+    sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
     T = phi.get_Tf_choice(sub)
     savedir = sub+"/"+T+"_agg"
+
     beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
 
     if not os.path.exists(savedir+"/mut"):
@@ -62,8 +63,8 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q",newbeadbead=
     flag = np.array([ not os.path.exists(savedir+"/mut/"+file) for file in files ])
     if np.any(flag):
         print "  One of the following does not exist: M.dat, ddG.dat, eps.dat. Calculating."
-        os.chdir(System.subdir)
-        ddG, eps, M = calculate_matrix_ddG_eps_M(Model,System,savedir,beta,coord)
+        os.chdir(model.subdir)
+        ddG, eps, M = calculate_matrix_ddG_eps_M(model,savedir,beta,coord)
         print "  IMPORTANT: Look at the singular value spectrum and choose a number of singular values to use."
         print "  IMPORTANT: Make sure ",savedir+"/mut/num_singular_values_include.txt  exists."
         os.chdir(cwd)
@@ -100,7 +101,7 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q",newbeadbead=
         cutoff = cutoffs[num_singular_values-1]
         print "  Using ",num_singular_values," singular values. Cutoff of = ",cutoff
 
-    append_log(System.subdir,"Starting: Calculating_MC2004") 
+    append_log(model.subdir,"Starting: Calculating_MC2004") 
 
     if compute_xp == True:
         print "  Using ONLY the particular solution x_p as delta_eps!"
@@ -115,7 +116,7 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q",newbeadbead=
         ratio_xp = np.linalg.norm(delta_eps_xp)/np.linalg.norm(eps)
     else:
         print "  Applying CPLEX to the particular solution to get delta_eps!"
-        LP_problem, solution, x_particular, N = apply_constraints_with_cplex(Model,System,savedir,ddG,eps,M,cutoff)
+        LP_problem, solution, x_particular, N = apply_constraints_with_cplex(model,savedir,ddG,eps,M,cutoff)
 
         print "    Solution found!"
         delta_eps = x_particular + np.dot(N,solution)
@@ -132,11 +133,11 @@ def calculate_MC2004_perturbation(Model,System,append_log,coord="Q",newbeadbead=
     print "  Saving new parameters as: ",savebeadbead
     save_new_parameters(sub,eps,delta_eps,delta_eps_xp,savebeadbead, savebeadbeadxp, T)
 
-    Model.contact_energies = savebeadbead
+    model.contact_energies = savebeadbead
 
-    append_log(System.subdir,"Finished: Calculating_MC2004") 
+    append_log(model.subdir,"Finished: Calculating_MC2004") 
 
-def apply_constraints_with_cplex(Model,System,savedir,ddG,eps,M,cutoff):
+def apply_constraints_with_cplex(model,savedir,ddG,eps,M,cutoff):
     """ Construct and solve a linear/quadratic programming problem for new parameters.
 
     Description:
@@ -267,44 +268,117 @@ def apply_constraints_with_cplex(Model,System,savedir,ddG,eps,M,cutoff):
     
     return LP_problem, solution_lambda, x_particular, N
 
-def calculate_matrix_ddG_eps_M(Model,System,savedir,beta,coord):
+def calculate_matrix_ddG_eps_M(model,coord):
     ''' Calculates and saves and returns the matrix from equation (9) in 
         Matysiak Clementi 2004. '''
 
-    print "  Getting state bounds for coordinate:",coord
-    bounds, states = phi.get_state_bounds(savedir,coord)
-    num_states = len(states)
+    #print "  Getting state bounds for coordinate:",coord
+    bounds, states = phi.get_state_bounds()
+    bounds = [0] + bounds + [model.n_contacts]
 
-    print "  Loading mutants"
+    cwd = os.getcwd()
+    sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
+
     os.chdir("mutants")
+    print "  Loading mutants"
     mutants = mut.get_core_mutations()
+    Fij, Fij_pairs, Fij_conts = phi.get_mutant_fij(model,mutants)
     print "  Loading ddG from experiment"
     ddGexp_N_D,ddGexp_N_D_err,ddGexp_TS_D,ddGexp_TS_D_err = mut.get_core_mutation_ddG()
-    os.chdir("..")
-    #print "  Computing perturbation with the following mutants"
-    #print mutants
+    print "  Loading ddG from simulation"
 
-    print "  Loading trajectory, epsij, deltaij, sigij"
-    sigij,epsij,deltaij,interaction_nums,keep_interactions,pairs,traj,traj_dist = phi.load_eps_delta_sig_traj(savedir)
-    Fij = phi.get_mutant_fij(mutants,keep_interactions)
-    qij = phi.get_Qij(Model,traj_dist,sigij,deltaij,interaction_nums)
-    print "  Loading dH for mutants"
-    dH = phi.get_mutant_dH(savedir,mutants)
+    os.chdir(sub)
 
-    np.savetxt(savedir+"/mut/eps.dat",epsij)
-    np.savetxt(savedir+"/mut/delta.dat",deltaij)
-    np.savetxt(savedir+"/mut/sigma.dat",sigij)
+    temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
+    directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
 
-    ## DEBUGGING 
-    #print qij.shape, dH.shape, Fij.shape
-    #print qij.shape, dH.shape
-    #print "Qij shape",qij[states[1],:].shape
-    #print "dH shape",dH[:,states[1]].shape
-    #print "dH shape",sum(dH[:,states[1]])
+    ## Compute 
+
+    ddGsim_TS_D, ddGsim_N_D = mut.get_sim_ddG(mutants,coord)
+
+    bounds, state_labels = get_state_bounds()
+    bounds = [0] + bounds + [model.n_contacts]
+
+    epsilons = model.contact_epsilons
+    deltas = model.contact_deltas
+    sigmas = model.contact_sigmas
+
+    ## Loop over temperature directories.
+    for n in range(len(directories)):
+        T = temperatures[n]
+        Tdir = directories[n]
+        os.chdir(Tdir)
+        if not os.path.exists("phi"):
+            os.mkdir("phi")
+        ## Compute M vectorized
+        beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
+        traj = md.load("traj.xtc",top="Native.pdb")
+        rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape))
+
+        ## Only count values of potential energy function where interaction is
+        ## attractive.
+        x = sigmas/rij
+        x[(x > 1.09)] = 1.09  # <-- 1.09 is where LJ12-10 crosses zero.
+        Vij = epsilons*(5.*(x**12) - 6.*deltas*(x**10))
+
+        ## Boolean arrays that indicate which state each frame is in.
+        ## States are defined by their boundaries along coordinate Q.
+        Q = np.loadtxt("Q.dat")
+        U  = ((Q > bounds[1]).astype(int)*(Q < bounds[2]).astype(int)).astype(bool)
+        TS = ((Q > bounds[3]).astype(int)*(Q < bounds[4]).astype(int)).astype(bool)
+        N  = ((Q > bounds[5]).astype(int)*(Q < bounds[6]).astype(int)).astype(bool)
+        Nframes  = float(sum(N.astype(int)))
+        Uframes  = float(sum(U.astype(int)))
+        TSframes = float(sum(TS.astype(int)))
+
+        #rij = md.compute_distances(traj,Fij_pairs[k])
+
+        M = np.zeros((2*len(mutants),model.n_contacts),float)
+
+        ## Compute the rows of matrix in equation (9) of reference (1)
+        for k in range(len(mutants)):
+            mut = mutants[k]
+            ## Load dH_k for mutation. Eq. (2) minus Eq. (1) from reference (1).
+            dHk = np.loadtxt("dH_"+mut+".dat")
+
+            ## Thermal averages for matrix equation (9).
+            expdHk_U  = sum(np.exp(-beta*dHk[U]))/Uframes
+            expdHk_TS = sum(np.exp(-beta*dHk[TS]))/TSframes
+            expdHk_N  = sum(np.exp(-beta*dHk[N]))/Nframes
+        
+            Vij_U  = sum(Vij[U,:])/Uframes
+            Vij_TS = sum(Vij[TS,:])/TSframes
+            Vij_N  = sum(Vij[N,:])/Nframes
+
+            Vij_expdHk_U  = sum(Vij[U,:]*np.exp(-beta*dHk[U]))/Uframes
+            Vij_expdHk_TS = sum(Vij[TS,:]*np.exp(-beta*dHk[TS]))/TSframes
+            Vij_expdHk_N  = sum(Vij[N,:]*np.exp(-beta*dHk[N]))/Nframes
+
+            ## Compute all columns with Fij_k zero.
+            M[k,:] = -beta*((Vij_TS - Vij_U) -  ((Vij_expdHk_TS/expdHk_TS) - (Vij_expdHk_U/expdHk_U)))
+            M[k + len(mutants),:] = -beta*((Vij_N - Vij_U)  -  ((Vij_expdHk_N/expdHk_N) - (Vij_expdHk_U/expdHk_U))))
+
+            ## Replace columns for which Fij_k is not zero.
+            M[k,Fij_conts[k]] = -beta*((Vij_TS[Fij_conts[k]] - Vij_U[Fij_conts[k]])  - \
+                (1. - Fij[k])*((Vij_expdHk_TS[Fij_conts[k]]/expdHk_TS[Fij_conts[k]]) - \
+                               (Vij_expdHk_U[Fij_conts[k]]/expdHk_U[Fij_conts[k]])))
+
+            M[k + len(mutants),Fij_conts[k]] = -beta*((Vij_N[Fij_conts[k]] - Vij_U[Fij_conts[k]])  -  \
+                (1. - Fij[k])*((Vij_expdHk_N[Fij_conts[k]]/expdHk_N[Fij_conts[k]])   - \
+                              (Vij_expdHk_U[Fij_conts[k]]/expdHk_U[Fij_conts[k]]))))
+                
+
+    np.savetxt("phi/eps.dat",epsij)
+    np.savetxt("phi/delta.dat",deltaij)
+    np.savetxt("phi/sigma.dat",sigij)
+
+            ## Compute entries with fij_k
+
+        os.chdir("..")
+
+    os.chdir(cwd)
 
     ## Load ddG from theory. 
-    print "  Loading ddG from simulation"
-    ddGsim_TS_D, ddGsim_N_D = mut.get_sim_ddG(savedir,mutants,coord,bounds)
 
     ddG_all = np.concatenate(((ddGexp_TS_D - ddGsim_TS_D),(ddGexp_N_D - ddGsim_N_D)), axis=0)
 
@@ -340,16 +414,16 @@ def calculate_matrix_ddG_eps_M(Model,System,savedir,beta,coord):
     ## np.allclose(M,np.dot(u,np.dot(S,v))) --> should be True
     u,s,v = np.linalg.svd(M)
     rank = len(s)
-    np.savetxt(savedir+"/mut/singular_values.dat",s)
-    np.savetxt(savedir+"/mut/singular_values_norm.dat",s/max(s))
-    print "  Matrix M singular values saved as: ", savedir+"/mut/singular_values.dat"
+    np.savetxt("mut/singular_values.dat",s)
+    np.savetxt("mut/singular_values_norm.dat",s/max(s))
+    print "  Matrix M singular values saved as: mut/singular_values.dat"
     print "  Normed singular value spectrum:"
     print s/max(s)
 
-    np.savetxt(savedir+"/mut/termA.dat",termA_all)
-    np.savetxt(savedir+"/mut/termB.dat",termB_all)
-    np.savetxt(savedir+"/mut/termC.dat",termC_all)
-    np.savetxt(savedir+"/mut/M.dat",M)
+    np.savetxt("mut/termA.dat",termA_all)
+    np.savetxt("mut/termB.dat",termB_all)
+    np.savetxt("mut/termC.dat",termC_all)
+    np.savetxt("mut/M.dat",M)
     print "  Matrices: termA, termB, termC, and M computed and saved to ", savedir+"/mut"
     
     return ddG_all,epsij,M
@@ -410,9 +484,8 @@ if __name__ == '__main__':
     Tf_choice = open(subdirs[0]+"/Mut_0/Tf_choice.txt","r").read()[:-1]
     Models = models.load_models(subdirs,dryrun=True)
     Systems = systems.load_systems(subdirs)
-    Model = Models[0]
-    System = Systems[0]
-    path = System.subdir+"/"+System.mutation_active_directory+"/"+Tf_choice+"_agg"
+    model = Models[0]
+    path = model.subdir+"/Mut_"+str(model.Mut_iteration)+"/"+Tf_choice+"_agg"
 
 
     '''
@@ -420,7 +493,7 @@ if __name__ == '__main__':
     dH, states = calculate_phi_values(Model,System,dummy_func)
     '''
     target_ratio = 1.0
-    calculate_MC2004_perturbation_debug(Model,System,dummy_func,newbeadbead="test_threshold_sing_val_0.2_"+str(target_ratio)+".dat",target_ratio=target_ratio)
+    calculate_MC2004_perturbation_debug(model,dummy_func,newbeadbead="test_threshold_sing_val_0.2_"+str(target_ratio)+".dat",target_ratio=target_ratio)
 
     raise SystemExit
     newbeadbead="test_threshold_lb_0.01_ub_4.0_"+str(target_ratio)+".dat"
@@ -439,7 +512,7 @@ if __name__ == '__main__':
     if np.any(flag):
         print "  One of the following does not exist: M.dat, ddG.dat, eps.dat. Calculating."
         os.chdir(System.subdir)
-        ddG, eps, M = calculate_matrix_ddG_eps_M(Model,System,savedir,beta,coord)
+        ddG, eps, M = calculate_matrix_ddG_eps_M(model,savedir,beta,coord)
         os.chdir(cwd)
     else:
         print "  Loading M.dat, ddG.dat, eps.dat"
@@ -472,7 +545,7 @@ if __name__ == '__main__':
     std_eps_prime = []
     avg_eps_prime = []
     for cutoff in cutoffs[1:len(cutoffs)/2]:
-        LP_problem, solution, x_particular, N = apply_constraints_with_cplex(Model,System,savedir,ddG,eps,M,cutoff)
+        LP_problem, solution, x_particular, N = apply_constraints_with_cplex(model,savedir,ddG,eps,M,cutoff)
         delta_eps = x_particular + np.dot(N,solution)
         eps_prime = delta_eps + eps
 

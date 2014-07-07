@@ -2,8 +2,8 @@
 
 Description:
 
-    Submodule to calculate the energetic perturbation from each mutation and
-the results DeltaDetla G's for simulation.
+    Submodule to calculate the energetic perturbation from each
+mutation and the results DeltaDetla G's for simulation.
 
 
 References:
@@ -41,12 +41,8 @@ def calculate_dH_for_mutants(model,append_log):
     os.chdir(model.subdir+"/mutants")
     mutants = get_core_mutations()
     Fij, Fij_pairs, Fij_conts = get_mutant_fij(model,mutants)
-
-    #print Fij,Fij_pairs,Fij_conts      ## DEBUGGING
-
     os.chdir(sub)
 
-    #temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
     directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
 
     ## Loop over all directories in Mut subdirectory. For each trajectory
@@ -60,7 +56,6 @@ def calculate_dH_for_mutants(model,append_log):
             #if not os.path.exists("dH_"+mut+".dat"):
             if True:
                 print "    calc dH for ", mutants[k]
-                            
                 ## Use mdtraj to compute the distances between pairs.
                 rij = md.compute_distances(traj,Fij_pairs[k])
                 
@@ -69,99 +64,35 @@ def calculate_dH_for_mutants(model,append_log):
                 deltas = model.contact_deltas[Fij_conts[k]]
                 sigmas = model.contact_sigmas[Fij_conts[k]]
 
-                ## For some reason, the energies blow up for 0.5% of frames for
-                ## some contacts. Alex thinks its due to numerical differences 
-                ## (number of sig figs) used in the sigmas or rij. The actual 
-                ## energies of the simulation do not blow up. This calculation
-                ## is an estimation of dH_k anyways so this shouldn't effect the
-                ## main results.
+                ## Sometimes the energies calculated here blow up because small
+                ## changes in distance can lead to large energies on the
+                ## repulsive wall. (The actual energies of the simulation do not
+                ## blow up). Since this calculation is meant to estimation of 
+                ## the change in energy upon mutation, dH_k, I just use frames
+                ## where the contact energy LJ12-10 is negative. Without this
+                ## consideration, the results are crazy
                 x = sigmas/rij
                 x[(x > 1.09)] = 1.09  # <-- 1.09 is where LJ12-10 crosses zero.
-                #x[(x > 1.211)] = 1.211
+                #x[(x > 1.211)] = 1.211     ## Old, arbitrary cutoff.
 
                 ## Calculate dH_k using distances and parameters. Save.
                 Vij = -Fij[k]*eps*(5.*(x**12) - 6.*deltas*(x**10))
                 dH_k = sum(Vij.T)
                 np.savetxt("dH_"+mut+".dat",dH_k)
-
-                #return Fij,Fij_pairs,Fij_conts,eps,deltas,sigmas,rij   ## DEBUGGING
             else:
                 pass
         os.chdir("..")
     os.chdir(cwd)
     append_log(model.subdir,"Finished: Calculating_dH")
 
-def calculate_phi_values_wham(model,append_log):
-    """ Calculate the simulation delta G's, deltadelta G's, and phi-values using WHAM. 
-
-    Description:
-        Requires the definition of states along Q and the energetic
-    perturbation for each mutation dH_k. Saves output in Mut_#/phi
-
-    NOT DONE 7-10-14
-    """
-    
-    #append_log(model.subdir,"Starting: Calculating_phi_values")
-    cwd = os.getcwd()
-    sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
-
-
-    #beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
-    os.chdir(model.subdir)
-    if not os.path.exists(sub+"/phi"):
-        os.mkdir(sub+"/phi")
-
-    ## Get the mutations.
-    os.chdir("mutants")
-    mutants = get_core_mutations()
-    os.chdir(sub)
-
-    ## Load:
-    ## These need to be created by the user after the user messes
-    ## with the output free energy and finds where the two basins
-    ## are equal.
-    ## output temperature <-- sub/whamQ/Tf.txt   
-    ## state boundaries   <-- sub/whamQ/state_bounds.txt
-    Tf = get_Tf_choice()
-    bounds, state_labels = get_state_bounds()
-    bounds = [0] + bounds + [model.n_contacts]
-
-    ## loop over mutants
-    for k in range(len(mutants)):
-    #for k in [0]:       ## DEBUGGING
-        mut = mutants[k]
-        print "  Running wham for exp(-beta*dH_"+mut+")"
-        ## Run WHAM to get <exp(-beta*dH_k)>_X for each mutant.
-        ## 
-        wham.run_wham_expdH_k(mut,Tf,bounds)
-
-    print "Success!"
-    raise SystemExit
-    num_states = len(states)
-    print "  Loading dH for mutants"
-
-    ## Compute deltaG for each state. Then DeltaDelta G with 
-    ## respect to the first state (assumed to be the denatured state).
-    ## Units of kT.
-    print "  Computing ddG and phi values..."
-    dG = [ -np.log(sum(np.exp(-beta*dH[:,states[X]]).T)/float(len(dH[:,states[X]]))) for X in range(num_states) ]
-    ddG = [ dG[X]-dG[0] for X in range(1,num_states) ]
-
-    ## Compute the phi value for each mutation. Phi is the ratio
-    ## of DeltaDeltaG of the transition state(s) to DeltaDelta G
-    ## of the native state (assumed to be the last state). unitless.
-    phi = [ ddG[X]/ddG[-1] for X in range(len(ddG)-1) ]
-    
-    save_phi_values(savedir,mutants,coord,bounds,dG,ddG,phi)
-    os.chdir(cwd)
-    append_log(model.subdir,"Finished: Calculating_phi_values")
-
 def calculate_phi_values(model,append_log,coord):
     """ Calculate the simulation delta G's, deltadelta G's, and phi-values. 
 
     Description:
+
         Requires the definition of states along Q and the energetic
-    perturbation for each mutation dH_k. Saves output in Mut_#/phi
+    perturbation for each mutation dH_k. Saves output in each temperature
+    directory under phi/ subdirectory.
     """
     
     append_log(model.subdir,"Starting: Calculating_phi_values")
@@ -185,72 +116,78 @@ def calculate_phi_values(model,append_log,coord):
     for n in range(len(directories)):
         T = temperatures[n]
         Tdir = directories[n]
-        beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
         os.chdir(Tdir)
-        if not os.path.exists("phi"):
-            os.mkdir("phi")
-
-        Q = np.loadtxt("Q.dat")
-        state_indicator = np.zeros(len(Q),int)
-        ## Assign every frame a state label. State indicator is integer 1-N for N states.
-        for state_num in range(len(bounds)-1):
-            instate = (Q > bounds[state_num]).astype(int)*(Q <= bounds[state_num+1]).astype(int)
-            state_indicator[instate == 1] = state_num+1
-        if any(state_indicator == 0):
-            print "ERROR! There are unassigned frames!"
-            print sum((state_indicator == 0).astype(int)), " unassigned frames out of ", len(Q)
-            print " Exiting"
-            raise SystemExit
-
-        ## Boolean arrays that indicate which state each frame is in.
-        ## States are defined by their boundaries along coordinate Q.
-        U  = ((Q > bounds[1]).astype(int)*(Q < bounds[2]).astype(int)).astype(bool)
-        TS = ((Q > bounds[3]).astype(int)*(Q < bounds[4]).astype(int)).astype(bool)
-        N  = ((Q > bounds[5]).astype(int)*(Q < bounds[6]).astype(int)).astype(bool)
-        Nframes  = float(sum(N.astype(int)))
-        Uframes  = float(sum(U.astype(int)))
-        TSframes = float(sum(TS.astype(int)))
-
-        
-        ## Compute deltaG for each state. Then DeltaDelta G with respect to the
-        ## first state (assumed to be the unfolded/denatured state).
-        ## Units of kT.
-        dG = [[],[],[]]
-        ddG = [[],[]]
-        phi = []
         print "  Computing ddG and phi-values for ", Tdir
-        for k in range(len(mutants)):
-            mut = mutants[k]
-            print "    calculating ddG for ",mut
-            ## Load dH_k for mutation. Eq. (2) minus Eq. (1) from reference (1).
-            dH = np.loadtxt("dH_"+mut+".dat")
-
-            ## Free energy perturbation formula. Equation (4) in reference (1).
-            dG_U  = -np.log(np.sum(np.exp(-beta*dH[U]))/Uframes)
-            dG_TS = -np.log(np.sum(np.exp(-beta*dH[TS]))/TSframes)
-            dG_N  = -np.log(np.sum(np.exp(-beta*dH[N]))/Nframes)
-
-            ## DeltaDeltaG's. Equations (5) in reference (1).
-            ddG_stab = (dG_N - dG_U)
-            ddG_dagg = (dG_TS - dG_U)
-
-            ## Phi-value
-            phi_value = ddG_dagg/ddG_stab
-
-            dG[0].append(dG_U)
-            dG[1].append(dG_TS)
-            dG[2].append(dG_N)
-            ddG[0].append(ddG_dagg)
-            ddG[1].append(ddG_stab)
-            phi.append(phi_value)
-
-        save_phi_values(mutants,coord,state_labels,dG,ddG,phi)
+        calculate_ddG_for_temperature(mutants,T,bounds,state_labels)
         os.chdir("..")
+
     os.chdir(cwd)
     append_log(model.subdir,"Finished: Calculating_phi_values")
 
+def calculate_ddG_for_temperature(mutants,T,bounds,state_labels):
+    """ Calculate ddG for"""
+    if not os.path.exists("phi"):
+        os.mkdir("phi")
+    beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
+    Q = np.loadtxt("Q.dat")
+    state_indicator = np.zeros(len(Q),int)
+    ## Assign every frame a state label. State indicator is integer 1-N for N states.
+    for state_num in range(len(bounds)-1):
+        instate = (Q > bounds[state_num]).astype(int)*(Q <= bounds[state_num+1]).astype(int)
+        state_indicator[instate == 1] = state_num+1
+    if any(state_indicator == 0):
+        print "ERROR! There are unassigned frames!"
+        print sum((state_indicator == 0).astype(int)), " unassigned frames out of ", len(Q)
+        print " Exiting"
+        raise SystemExit
+
+    ## Boolean arrays that indicate which state each frame is in.
+    ## States are defined by their boundaries along coordinate Q.
+    U  = ((Q > bounds[1]).astype(int)*(Q < bounds[2]).astype(int)).astype(bool)
+    TS = ((Q > bounds[3]).astype(int)*(Q < bounds[4]).astype(int)).astype(bool)
+    N  = ((Q > bounds[5]).astype(int)*(Q < bounds[6]).astype(int)).astype(bool)
+    Nframes  = float(sum(N.astype(int)))
+    Uframes  = float(sum(U.astype(int)))
+    TSframes = float(sum(TS.astype(int)))
+    
+    ## Compute deltaG for each state. Then DeltaDelta G with respect to the
+    ## first state (assumed to be the unfolded/denatured state).
+    ## Units of kT.
+    dG = [[],[],[]]
+    ddG = [[],[]]
+    phi = []
+    for k in range(len(mutants)):
+        mut = mutants[k]
+        print "    calculating ddG for ",mut
+        ## Load dH_k for mutation. Eq. (2) minus Eq. (1) from reference (1).
+        dH = np.loadtxt("dH_"+mut+".dat")
+
+        ## Free energy perturbation formula. Equation (4) in reference (1).
+        dG_U  = -np.log(np.sum(np.exp(-beta*dH[U]))/Uframes)
+        dG_TS = -np.log(np.sum(np.exp(-beta*dH[TS]))/TSframes)
+        dG_N  = -np.log(np.sum(np.exp(-beta*dH[N]))/Nframes)
+
+        ## DeltaDeltaG's. Equations (5) in reference (1).
+        ddG_stab = (dG_N - dG_U)
+        ddG_dagg = (dG_TS - dG_U)
+
+        ## Phi-value
+        phi_value = ddG_dagg/ddG_stab
+
+        dG[0].append(dG_U)
+        dG[1].append(dG_TS)
+        dG[2].append(dG_N)
+        ddG[0].append(ddG_dagg)
+        ddG[1].append(ddG_stab)
+        phi.append(phi_value)
+    
+    save_phi_values(mutants,"Q",state_labels,dG,ddG,phi)
+
 def get_mutant_dH(path,mutants):
-    """ Load the mutant energy perturbations dH_<mut>.dat"""
+    """ Load the mutant energy perturbations dH_<mut>.dat
+
+    Soon to be DEPRECATED 7-6-2014
+    """
 
     i = 0
     for mut in mutants:
@@ -348,7 +285,7 @@ def get_Tf_choice():
     return Tf,Tnum
 
 def load_beadbead(subdir):
-
+    """ Should be DEPRECATED """
     print "  Loading BeadBead.dat"
     beadbead = np.loadtxt(subdir+"/BeadBead.dat",dtype=str) 
     sigij = beadbead[:,5].astype(float)

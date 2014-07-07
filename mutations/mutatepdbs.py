@@ -115,12 +115,9 @@ def get_core_mutation_ddG():
     
     return ddG_N_D,ddG_N_D_err,ddG_TS_D,ddG_TS_D_err
 
-def get_sim_ddG(savedir,mutants,coord,bounds):
+def get_sim_ddG(mutants,coord):
     """ Get the saved ddG from simulation that should have been computed already."""
 
-    index_sim = len(bounds)+1
-    num = len(bounds)-1
-    
     ddGsim_TS_D = ddG = np.zeros(len(mutants),float)
     ddGsim_N_D = ddG = np.zeros(len(mutants),float)
     ddG_sim_all = np.loadtxt(savedir+"/phi/"+coord+"_phi.dat",skiprows=1,usecols=(0,4,5),dtype=str)
@@ -136,6 +133,8 @@ def get_sim_ddG(savedir,mutants,coord,bounds):
             raise SystemExit
         ddGsim_TS_D[k] = float(ddG_sim_all[temp_indx,1])
         ddGsim_N_D[k] = float(ddG_sim_all[temp_indx,2])
+        #ddGsim_TS_D_err[k] = float(ddG_sim_all[temp_indx,1])
+        #ddGsim_N_D_err[k] = float(ddG_sim_all[temp_indx,2])
         
     return ddGsim_TS_D, ddGsim_N_D
 
