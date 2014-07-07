@@ -64,7 +64,7 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
     if np.any(flag):
         print "  One of the following does not exist: M.dat, ddG.dat, eps.dat. Calculating."
         os.chdir(model.subdir)
-        ddG, eps, M = calculate_matrix_ddG_eps_M(model,savedir,beta,coord)
+        ddG, eps, M = calculate_matrix_ddG_eps_M(model,coord)
         print "  IMPORTANT: Look at the singular value spectrum and choose a number of singular values to use."
         print "  IMPORTANT: Make sure ",savedir+"/mut/num_singular_values_include.txt  exists."
         os.chdir(cwd)
@@ -272,9 +272,6 @@ def calculate_matrix_ddG_eps_M(model,coord):
     ''' Calculates and saves and returns the matrix from equation (9) in 
         Matysiak Clementi 2004. '''
 
-    #print "  Getting state bounds for coordinate:",coord
-    bounds, states = phi.get_state_bounds()
-    bounds = [0] + bounds + [model.n_contacts]
 
     cwd = os.getcwd()
     sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
@@ -289,12 +286,14 @@ def calculate_matrix_ddG_eps_M(model,coord):
 
     os.chdir(sub)
 
+    bounds, states = phi.get_state_bounds()
+    bounds = [0] + bounds + [model.n_contacts]
+
     temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
     directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
 
-    ## Compute 
-
-    ddGsim_TS_D, ddGsim_N_D = mut.get_sim_ddG(mutants,coord)
+    ## 
+    #ddGsim_TS_D, ddGsim_N_D = mut.get_sim_ddG(mutants,coord)
 
     bounds, state_labels = get_state_bounds()
     bounds = [0] + bounds + [model.n_contacts]
@@ -308,8 +307,8 @@ def calculate_matrix_ddG_eps_M(model,coord):
         T = temperatures[n]
         Tdir = directories[n]
         os.chdir(Tdir)
-        if not os.path.exists("phi"):
-            os.mkdir("phi")
+        if not os.path.exists("mut"):
+            os.mkdir("mut")
         ## Compute M vectorized
         beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
         traj = md.load("traj.xtc",top="Native.pdb")
@@ -330,6 +329,10 @@ def calculate_matrix_ddG_eps_M(model,coord):
         Nframes  = float(sum(N.astype(int)))
         Uframes  = float(sum(U.astype(int)))
         TSframes = float(sum(TS.astype(int)))
+    
+        Vij_U  = sum(Vij[U,:])/Uframes
+        Vij_TS = sum(Vij[TS,:])/TSframes
+        Vij_N  = sum(Vij[N,:])/Nframes
 
         #rij = md.compute_distances(traj,Fij_pairs[k])
 
@@ -345,10 +348,6 @@ def calculate_matrix_ddG_eps_M(model,coord):
             expdHk_U  = sum(np.exp(-beta*dHk[U]))/Uframes
             expdHk_TS = sum(np.exp(-beta*dHk[TS]))/TSframes
             expdHk_N  = sum(np.exp(-beta*dHk[N]))/Nframes
-        
-            Vij_U  = sum(Vij[U,:])/Uframes
-            Vij_TS = sum(Vij[TS,:])/TSframes
-            Vij_N  = sum(Vij[N,:])/Nframes
 
             Vij_expdHk_U  = sum(Vij[U,:]*np.exp(-beta*dHk[U]))/Uframes
             Vij_expdHk_TS = sum(Vij[TS,:]*np.exp(-beta*dHk[TS]))/TSframes
@@ -356,7 +355,7 @@ def calculate_matrix_ddG_eps_M(model,coord):
 
             ## Compute all columns with Fij_k zero.
             M[k,:] = -beta*((Vij_TS - Vij_U) -  ((Vij_expdHk_TS/expdHk_TS) - (Vij_expdHk_U/expdHk_U)))
-            M[k + len(mutants),:] = -beta*((Vij_N - Vij_U)  -  ((Vij_expdHk_N/expdHk_N) - (Vij_expdHk_U/expdHk_U))))
+            M[k + len(mutants),:] = -beta*((Vij_N - Vij_U)  -  ((Vij_expdHk_N/expdHk_N) - (Vij_expdHk_U/expdHk_U)))
 
             ## Replace columns for which Fij_k is not zero.
             M[k,Fij_conts[k]] = -beta*((Vij_TS[Fij_conts[k]] - Vij_U[Fij_conts[k]])  - \
@@ -365,66 +364,69 @@ def calculate_matrix_ddG_eps_M(model,coord):
 
             M[k + len(mutants),Fij_conts[k]] = -beta*((Vij_N[Fij_conts[k]] - Vij_U[Fij_conts[k]])  -  \
                 (1. - Fij[k])*((Vij_expdHk_N[Fij_conts[k]]/expdHk_N[Fij_conts[k]])   - \
-                              (Vij_expdHk_U[Fij_conts[k]]/expdHk_U[Fij_conts[k]]))))
+                              (Vij_expdHk_U[Fij_conts[k]]/expdHk_U[Fij_conts[k]])))
                 
-
-    np.savetxt("phi/eps.dat",epsij)
-    np.savetxt("phi/delta.dat",deltaij)
-    np.savetxt("phi/sigma.dat",sigij)
-
-            ## Compute entries with fij_k
+        u,s,v = np.linalg.svd(M)
+        rank = len(s)
+        np.savetxt("mut/M.dat",M)
+        np.savetxt("mut/singular_values.dat",s)
+        np.savetxt("mut/singular_values_norm.dat",s/max(s))
+        plt.figure()
+        plt.plot(s/max(s),'ro')
+        plt.title(model.subdir+" "+Tdir)
+        plt.savefig("mut/spectrum.pdf")
+        plt.close()
 
         os.chdir("..")
 
     os.chdir(cwd)
 
-    ## Load ddG from theory. 
-
-    ddG_all = np.concatenate(((ddGexp_TS_D - ddGsim_TS_D),(ddGexp_N_D - ddGsim_N_D)), axis=0)
-
-    np.savetxt(savedir+"/mut/ddG.dat",ddG_all)
-    
-    ## Then compute each term of MC2004 equation (9) in a vectorized fashion. 
-    ## This is the formula derived from thermodynamic perturbation.
-    termA_TS_D = np.ones(Fij.shape,float)*(sum(qij[states[1],:])/float(len(qij[states[1],:])) - sum(qij[states[0],:])/float(len(qij[states[0],:])))
-    termA_N_D = np.ones(Fij.shape,float)*(sum(qij[states[2],:])/float(len(qij[states[2],:])) - sum(qij[states[0],:])/float(len(qij[states[0],:])))
-    termA_all = np.concatenate((termA_TS_D,termA_N_D),axis=0)
-    
-    termB_all = 1. - np.concatenate((Fij,Fij),axis=0) 
-
-    termC_TS_D = ((np.dot(np.exp(beta*dH[:,states[1]]),qij[states[1],:])).T/sum(np.exp(beta*dH[:,states[1]]).T)).T \
-              - ((np.dot(np.exp(beta*dH[:,states[0]]),qij[states[0],:])).T/sum(np.exp(beta*dH[:,states[0]]).T)).T
-    termC_N_D = ((np.dot(np.exp(beta*dH[:,states[2]]),qij[states[2],:])).T/sum(np.exp(beta*dH[:,states[2]]).T)).T \
-              - ((np.dot(np.exp(beta*dH[:,states[0]]),qij[states[0],:])).T/sum(np.exp(beta*dH[:,states[0]]).T)).T
-    termC_all = np.concatenate((termC_TS_D,termC_N_D),axis=0)
-
-    ## Then contruct the matrix M. 
-    M = -beta*( termA_all -  termB_all*termC_all)
-
-    ## DEBUGGING
-    #print "Term A", termA_all.shape
-    #print "Term B", termB_all.shape
-    #print "Term C", termC_all.shape
-    #print "M", M.shape
-    #print "ddG", ddG_all.shape
-
-    ## Singular value decomposition. As a test you can recover M by,
-    ## S = np.zeros(M.shape)
-    ## S[:M.shape[1],:M.shape[1]] = np.diag(s)
-    ## np.allclose(M,np.dot(u,np.dot(S,v))) --> should be True
-    u,s,v = np.linalg.svd(M)
-    rank = len(s)
-    np.savetxt("mut/singular_values.dat",s)
-    np.savetxt("mut/singular_values_norm.dat",s/max(s))
-    print "  Matrix M singular values saved as: mut/singular_values.dat"
-    print "  Normed singular value spectrum:"
-    print s/max(s)
-
-    np.savetxt("mut/termA.dat",termA_all)
-    np.savetxt("mut/termB.dat",termB_all)
-    np.savetxt("mut/termC.dat",termC_all)
-    np.savetxt("mut/M.dat",M)
-    print "  Matrices: termA, termB, termC, and M computed and saved to ", savedir+"/mut"
+    ### Load ddG from theory. 
+    #ddG_all = np.concatenate(((ddGexp_TS_D - ddGsim_TS_D),(ddGexp_N_D - ddGsim_N_D)), axis=0)
+    #
+    #np.savetxt(savedir+"/mut/ddG.dat",ddG_all)
+    #
+    ### Then compute each term of MC2004 equation (9) in a vectorized fashion. 
+    ### This is the formula derived from thermodynamic perturbation.
+    #termA_TS_D = np.ones(Fij.shape,float)*(sum(qij[states[1],:])/float(len(qij[states[1],:])) - sum(qij[states[0],:])/float(len(qij[states[0],:])))
+    #termA_N_D = np.ones(Fij.shape,float)*(sum(qij[states[2],:])/float(len(qij[states[2],:])) - sum(qij[states[0],:])/float(len(qij[states[0],:])))
+    #termA_all = np.concatenate((termA_TS_D,termA_N_D),axis=0)
+    #
+    #termB_all = 1. - np.concatenate((Fij,Fij),axis=0) 
+    #
+    #termC_TS_D = ((np.dot(np.exp(beta*dH[:,states[1]]),qij[states[1],:])).T/sum(np.exp(beta*dH[:,states[1]]).T)).T \
+    #          - ((np.dot(np.exp(beta*dH[:,states[0]]),qij[states[0],:])).T/sum(np.exp(beta*dH[:,states[0]]).T)).T
+    #termC_N_D = ((np.dot(np.exp(beta*dH[:,states[2]]),qij[states[2],:])).T/sum(np.exp(beta*dH[:,states[2]]).T)).T \
+    #          - ((np.dot(np.exp(beta*dH[:,states[0]]),qij[states[0],:])).T/sum(np.exp(beta*dH[:,states[0]]).T)).T
+    #termC_all = np.concatenate((termC_TS_D,termC_N_D),axis=0)
+    #
+    ### Then contruct the matrix M. 
+    #M = -beta*( termA_all -  termB_all*termC_all)
+    #
+    ### DEBUGGING
+    ##print "Term A", termA_all.shape
+    ##print "Term B", termB_all.shape
+    ##print "Term C", termC_all.shape
+    ##print "M", M.shape
+    ##print "ddG", ddG_all.shape
+    #
+    ### Singular value decomposition. As a test you can recover M by,
+    ### S = np.zeros(M.shape)
+    ### S[:M.shape[1],:M.shape[1]] = np.diag(s)
+    ### np.allclose(M,np.dot(u,np.dot(S,v))) --> should be True
+    #u,s,v = np.linalg.svd(M)
+    #rank = len(s)
+    #np.savetxt("mut/singular_values.dat",s)
+    #np.savetxt("mut/singular_values_norm.dat",s/max(s))
+    #print "  Matrix M singular values saved as: mut/singular_values.dat"
+    #print "  Normed singular value spectrum:"
+    #print s/max(s)
+    #
+    #np.savetxt("mut/termA.dat",termA_all)
+    #np.savetxt("mut/termB.dat",termB_all)
+    #np.savetxt("mut/termC.dat",termC_all)
+    #np.savetxt("mut/M.dat",M)
+    #print "  Matrices: termA, termB, termC, and M computed and saved to ", savedir+"/mut"
     
     return ddG_all,epsij,M
 
@@ -477,42 +479,51 @@ def save_new_parameters(sub,eps,delta_eps,delta_eps_xp,savebeadbead,savebeadbead
     open(savebeadbeadxp,"w").write(beadbead_string)
 
 if __name__ == '__main__':
+
+    import numpy as np
+    import os
+
+    import mdtraj as md
+    import cplex
+
+    import phi_values as phi
+    import mutatepdbs as mut
+
+    import model_builder.models as models
+    import model_builder.systems as systems
+
+    import matplotlib.pyplot as plt
+
+    global GAS_CONSTANT_KJ_MOL
+    GAS_CONSTANT_KJ_MOL = 0.0083144621
+
     def dummy_func(sub,string):
         pass 
     
-    subdirs = ["r16"]
-    Tf_choice = open(subdirs[0]+"/Mut_0/Tf_choice.txt","r").read()[:-1]
+    subdirs = ["r17"]
     Models = models.load_models(subdirs,dryrun=True)
-    Systems = systems.load_systems(subdirs)
     model = Models[0]
-    path = model.subdir+"/Mut_"+str(model.Mut_iteration)+"/"+Tf_choice+"_agg"
 
+    #path = model.subdir+"/Mut_"+str(model.Mut_iteration)+"/"+Tf_choice+"_agg"
+    #target_ratio = 1.0
+    #newbeadbead="test_threshold_lb_0.01_ub_4.0_"+str(target_ratio)+".dat"
+    #cwd = os.getcwd()
+    #sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
+    #beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
 
-    '''
-    #bounds, states = phi.get_state_bounds(path,"Q") ## DEBUGGING
-    dH, states = calculate_phi_values(Model,System,dummy_func)
-    '''
-    target_ratio = 1.0
-    calculate_MC2004_perturbation_debug(model,dummy_func,newbeadbead="test_threshold_sing_val_0.2_"+str(target_ratio)+".dat",target_ratio=target_ratio)
+    os.chdir(model.subdir)
+    ddG, eps, M = calculate_matrix_ddG_eps_M(model,"Q")
 
     raise SystemExit
-    newbeadbead="test_threshold_lb_0.01_ub_4.0_"+str(target_ratio)+".dat"
 
-    cwd = os.getcwd()
-    sub = cwd+"/"+System.subdir+"/"+System.mutation_active_directory
-    T = phi.get_Tf_choice(sub)
-    savedir = sub+"/"+T+"_agg"
-    beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
-
-    if not os.path.exists(savedir+"/mut"):
-        os.mkdir(savedir+"/mut")
+    #if not os.path.exists("mut"):
+    #    os.mkdir("mut")
 
     files = ["M.dat","ddG.dat","eps.dat"] 
     flag = np.array([ not os.path.exists(savedir+"/mut/"+file) for file in files ])
     if np.any(flag):
         print "  One of the following does not exist: M.dat, ddG.dat, eps.dat. Calculating."
         os.chdir(System.subdir)
-        ddG, eps, M = calculate_matrix_ddG_eps_M(model,savedir,beta,coord)
         os.chdir(cwd)
     else:
         print "  Loading M.dat, ddG.dat, eps.dat"

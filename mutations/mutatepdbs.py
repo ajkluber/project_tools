@@ -120,7 +120,7 @@ def get_sim_ddG(mutants,coord):
 
     ddGsim_TS_D = ddG = np.zeros(len(mutants),float)
     ddGsim_N_D = ddG = np.zeros(len(mutants),float)
-    ddG_sim_all = np.loadtxt(savedir+"/phi/"+coord+"_phi.dat",skiprows=1,usecols=(0,4,5),dtype=str)
+    ddG_sim_all = np.loadtxt("phi/"+coord+"_phi.dat",skiprows=1,usecols=(0,4,5),dtype=str)
     sim_muts = list(ddG_sim_all[:,0])
     for k in range(len(mutants)):
         try:
