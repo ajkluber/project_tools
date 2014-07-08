@@ -13,6 +13,7 @@ the Characterization of the Protein Folding Landscape of S6: How Far Can a
 Minimalist Model Go? J. Mol. Biol. 2004, 343, 235-248.
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 
@@ -20,17 +21,15 @@ import mdtraj as md
 import cplex
 
 import phi_values as phi
-import mutatepdbs as mute
+import mutatepdbs as mut
 
 import model_builder.models as models
 import model_builder.systems as systems
 
-import matplotlib.pyplot as plt
-
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
-def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBeadBead.dat",target_ratio=0.95):
+def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBeadBead.dat"):
     """ Calculate the new contact parameters with Matysiak Clementi 2004 method
 
     Description:
@@ -40,7 +39,10 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
     is based off of trying to match experimental DeltaDelta G's (from 
     phi value analysis) to simulation DeltaDelta G's. It involves Taylor 
     expanding the simulation DeltaDelta G's around 
-
+        A linear system is solved for the parameter corrections and optionally
+    adjusted with the nullspace degrees of freedom using a linear (quadratic)
+    programming algorithm that seeks to minimize the norm of the resulting
+    perturbation.
 
     Reference:
 
@@ -51,85 +53,94 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
     
     cwd = os.getcwd()
     sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
+
+    os.chdir(model.subdir+"/mutants")
+    ddGexp, ddGexp_err = mut.get_exp_ddG()
     os.chdir(sub)
+    ddGsim, ddGsim_err, M = get_ddG_matrix_M()
+    ddG = ddGexp - ddGsim
 
-    ## Throw error if more than one temperature been used (?)
-    temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
-    directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
-    unique_temps = []
-    counts = []
-    for t in temperatures:
-        if t not in unique_temps:
-            unique_temps.append(t)
-            counts.append(temperatures.count(t))
-        else:
-            pass
-
-    if not os.path.exists("mut"):
-        os.mkdir("mut")
-
-    ## To Do:
-    ## 0.
-    ## 1. If M or ddG don't exist in Mut_#/mut directory:
-    ##   1a. Collect ddG & M from Mut_#/<temp>_*/{mut,phi} directories.
-    ##   1b. Take avg. and std error of mean for error bars. Save in Mut_#/mut
-    ##   1c. Compute correlation matrix for all possible xp's.
-    ##   1d. Compute correlation matrix for all possible xp's with cplex.
-    ## 2. If num_singular_values_include.txt exists
-    ##   2a. Compute solution epsilon_prime and save in Mut_#/mut directory
-    ##   2b. Save model object with new contact parameters
- 
-    #T = phi.get_Tf_choice()
-    beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
-
-    files = ["M.dat","ddG.dat","eps.dat"] 
-    flag = np.array([ not os.path.exists("mut/"+file) for file in files ])
-    if np.any(flag):
-        print "  One of the following does not exist: M.dat, ddG.dat, eps.dat. Calculating."
-        os.chdir(model.subdir)
-        print "  IMPORTANT: Look at the singular value spectrum and choose a number of singular values to use."
-        print "  IMPORTANT: Make sure Mut_#/mut/num_singular_values_include.txt  exists."
-        os.chdir(cwd)
-    else:
-        print "  Loading M.dat, ddG.dat, eps.dat"
-        ddG = np.loadtxt(savedir+"/mut/ddG.dat")
-        eps = np.loadtxt(savedir+"/mut/eps.dat")
-        M = np.loadtxt(savedir+"/mut/M.dat")
+    eps = model.contact_epsilons
 
     u,s,v = np.linalg.svd(M)
     s_norm = s/max(s)
-    cutoffs = s_norm - 0.01*np.ones(len(s_norm))
-    #If s_norm is lower than 0.01, cutoffs should still be positve
-    if cutoffs <0.:
-        cutoffs = 0.
+    cutoffs = np.array(list(0.5*(s_norm[:-1] + s_norm[1:])) + [0.0])
 
-    if not os.path.exists(savedir+"/mut/num_singular_values_include.txt"):
+    Mnorm = np.linalg.norm(M)
+    cond_num = np.zeros(len(cutoffs),float)
+    Xps = [] 
+    Xp_cpxs = [] 
+    ratios_xp = []
+    ratios_cpx = []
+    ## 2. If num_singular_values_include.txt exists
+    ##   2a. Compute solution epsilon_prime and save in Mut_#/mut directory
+    print "  Solving for new parameters. Parameters will be saved in mut/"
+    print "# Sing. %10s %10s %10s" % ("Cond.Num.","|xp|/|eps|","|xp_cpx|/|eps|")
+    solution_string = "# Sing. %10s %10s %10s\n" % ("Cond.Num.","|xp|/|eps|","|xp_cpx|/|eps|")
+    for i in range(len(cutoffs)):
+
+        cutoff = cutoffs[i]
+        Mpinv = np.linalg.pinv(M,rcond=cutoff)
+        Mpinvnorm = np.linalg.norm(Mpinv)
+        cond_num[i] = Mnorm*Mpinvnorm
+
+        x_particular = np.dot(Mpinv,ddG)
+        np.savetxt("mut/xp%d.dat" % (i+1),x_particular)
+        delta_eps_xp = x_particular
+        ratio_xp = np.linalg.norm(delta_eps_xp)/np.linalg.norm(eps)
+        Xps.append(delta_eps_xp)
+        ratios_xp.append(ratio_xp)
+
+        try: 
+            LP_problem, solution, x_particular, N = apply_constraints_with_cplex(model,ddG,M,cutoff)
+            delta_eps = x_particular + np.dot(N,solution)
+            ratio_cpx = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
+            Xp_cpxs.append(delta_eps)
+            np.savetxt("mut/xp_cplex%d.dat" % (i+1),x_particular)
+        except cplex.CplexSolverError:
+            Xp_cpxs.append(np.zeros(len(x_particular)))
+            ratio_cpx = 0.
+        iteration_string = "%5d %10.5e %10.5f %10.5f" % (i+1,cond_num[i],ratio_xp,ratio_cpx)
+        print iteration_string
+        ratios_cpx.append(ratio_cpx)
+        solution_string += iteration_string + "\n"
+    open("mut/solution.log","w").write(solution_string) 
+    plot_solution_info(model,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs)
+    # Choose
+    return Xps
+    print "Succes"
+    raise SystemExit
+
+    ##   2b. Save model object with new contact parameters
+
+    if not os.path.exists("mut/num_singular_values_include.txt"):
         print "ERROR!"
-        print "  Need file ", savedir+"/mut/num_singular_values_include.txt", " to proceed"
+        print "  Need file mut/num_singular_values_include.txt", " to proceed"
         print "  Exiting"
         raise SystemExit
     else:
-        temp = open(savedir+"/mut/num_singular_values_include.txt").read()[:-1]
+        temp = open("mut/num_singular_values_include.txt").read().rstrip("\n")
         if temp.endswith("xp"):
             compute_xp = True
             num_singular_values = int(temp.split()[0])
-            savebeadbeadxp = savedir+"/mut/"+newbeadbead.split(".dat")[0]+"_xp.dat"
+            savebeadbeadxp = "mut/"+newbeadbead.split(".dat")[0]+"_xp.dat"
             savebeadbead = savebeadbeadxp
         else:
             compute_xp = False
             num_singular_values = int(temp)
-            savebeadbeadxp = savedir+"/mut/"+newbeadbead.split(".dat")[0]+"_xp.dat"
-            savebeadbead = savedir+"/mut/"+newbeadbead
+            savebeadbeadxp = "mut/"+newbeadbead.split(".dat")[0]+"_xp.dat"
+            savebeadbead = "mut/"+newbeadbead
         cutoff = cutoffs[num_singular_values-1]
         print "  Using ",num_singular_values," singular values. Cutoff of = ",cutoff
 
     append_log(model.subdir,"Starting: Calculating_MC2004") 
 
     if compute_xp == True:
+        ## Load solution for requested number of singular values.
         print "  Using ONLY the particular solution x_p as delta_eps!"
         Mpinv = np.linalg.pinv(M,rcond=cutoff)
         x_particular = np.dot(Mpinv,ddG)
-        np.savetxt(savedir+"/mut/x_p.dat",x_particular)
+        np.savetxt("mut/x_p.dat",x_particular)
 
         delta_eps = x_particular
         ratio = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
@@ -138,7 +149,7 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
         ratio_xp = np.linalg.norm(delta_eps_xp)/np.linalg.norm(eps)
     else:
         print "  Applying CPLEX to the particular solution to get delta_eps!"
-        LP_problem, solution, x_particular, N = apply_constraints_with_cplex(model,savedir,ddG,eps,M,cutoff)
+        LP_problem, solution, x_particular, N = apply_constraints_with_cplex(model,ddG,M,cutoff)
 
         print "    Solution found!"
         delta_eps = x_particular + np.dot(N,solution)
@@ -147,8 +158,8 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
         delta_eps_xp = x_particular
         ratio_xp = np.linalg.norm(delta_eps_xp)/np.linalg.norm(eps)
 
-    np.savetxt(savedir+"/mut/delta_eps.dat",delta_eps)
-    np.savetxt(savedir+"/mut/delta_eps_xp.dat",delta_eps_xp)
+    np.savetxt("mut/delta_eps.dat",delta_eps)
+    np.savetxt("mut/delta_eps_xp.dat",delta_eps_xp)
     print "    Norm of perturbation, |deps|/|eps| = ", ratio
     print "    Norm of just x_p perturbation, |x_p|/|eps| = ", ratio_xp
 
@@ -159,7 +170,7 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
 
     append_log(model.subdir,"Finished: Calculating_MC2004") 
 
-def apply_constraints_with_cplex(model,savedir,ddG,eps,M,cutoff):
+def apply_constraints_with_cplex(model,ddG,M,cutoff):
     """ Construct and solve a linear/quadratic programming problem for new parameters.
 
     Description:
@@ -170,12 +181,12 @@ def apply_constraints_with_cplex(model,savedir,ddG,eps,M,cutoff):
 
     """
 
+    eps = model.contact_epsilons
+
     ## The general solution is a sum of the particular solution and an
     ## arbitrary vector from the nullspace of M.
     Mpinv = np.linalg.pinv(M,rcond=cutoff)
     x_particular = np.dot(Mpinv,ddG)
-    np.savetxt(savedir+"/mut/x_p.dat",x_particular)
-    #print x_particular     ## DEBUGGING
 
     ## Singular value decomposition. As a test you can recover M by,
     ## S = np.zeros(M.shape)
@@ -183,11 +194,9 @@ def apply_constraints_with_cplex(model,savedir,ddG,eps,M,cutoff):
     ## np.allclose(M,np.dot(u,np.dot(S,v))) --> should be True
     u,s,v = np.linalg.svd(M)
     rank = len(s)
-    print "  Matrix M singular values saved as: ", savedir+"/mut/singular_values.dat (and as ..._norm.dat)"
-    print "  Normed singular value spectrum:"
-    print s/max(s)
-    np.savetxt(savedir+"/mut/singular_values.dat",s)
-    np.savetxt(savedir+"/mut/singular_values_norm.dat",s/max(s))
+    #print "  Matrix M singular values saved as: mut/singular_values.dat (and as ..._norm.dat)"
+    #print "  Normed singular value spectrum:"
+    #print s/max(s)
 
     ## Nullspace basis vectors are the last n-r columns of the matrix v.T. As a check
     ## all entries of the matrix np.dot(M,N) should be extremely small ~0. Because 
@@ -270,7 +279,7 @@ def apply_constraints_with_cplex(model,savedir,ddG,eps,M,cutoff):
     upper_bounds = list(10000.*np.ones(N.shape[1]))
     lower_bounds = list(-10000.*np.ones(N.shape[1]))
 
-    ## Populate cplex linear programming problem
+    ## Populate cplex linear (quadratic) programming problem
     LP_problem = cplex.Cplex()
     LP_problem.set_results_stream(None)
     LP_problem.objective.set_sense(LP_problem.objective.sense.minimize)
@@ -278,7 +287,7 @@ def apply_constraints_with_cplex(model,savedir,ddG,eps,M,cutoff):
     LP_problem.linear_constraints.add(lin_expr=rows, senses=senses, rhs=right_hand_side, names=row_names)
     LP_problem.objective.set_quadratic(objective_quadratic_coefficients)
 
-    ## Let cplex do the hard work.
+    ## Let cplex do work.
     LP_problem.solve()
     status = LP_problem.solution.get_status()
     solution_lambda = LP_problem.solution.get_values()
@@ -290,6 +299,73 @@ def apply_constraints_with_cplex(model,savedir,ddG,eps,M,cutoff):
     
     return LP_problem, solution_lambda, x_particular, N
 
+def plot_solution_info(model,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs):
+    """ Plot solution condition number and mutual covariance."""
+
+    ## Plot condition number versus number of included singular values
+    ## The condition number quantifies the intrinsic instability in inverting
+    ## (solving) a given linear system.
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    ax2 = ax1.twinx()
+    ax1.plot(range(1,len(cond_num)+1),cond_num,'b',label="$cond(M)$")
+    ax1.plot([1],[cond_num[0]],'r',label="$log_{10}(cond(M))$")
+    ax1.legend(loc=2)
+    ax1.set_xlim(1,len(cond_num)+1)
+    ax1.set_xlabel("# sing values")
+    ax1.set_ylabel("$cond(M)$")
+    ax1.set_title(model.subdir+" Condition number $cond(M) = ||M||\\cdot||M^+||$")
+    ax2.plot(range(1,len(cond_num)+1),np.log10(cond_num),'r',label="$log(cond(M))$")
+    ax2.set_ylabel("$log_{10}(cond(M))$")
+    plt.savefig("mut/condition_number.pdf")
+    np.savetxt("mut/cond_num.dat",cond_num)
+
+    plt.figure()
+    plt.plot(range(1,len(cond_num)+1),ratios_xp,color='r',marker='o',label="$|x_p|$/$|\\epsilon|$")
+    plt.plot(range(1,len(cond_num)+1),ratios_cpx,color='b',marker='s',label="$|x_{cplex}|$/$|\\epsilon|$")
+    plt.legend(loc=2)
+    plt.title("Perturbation size $|\\delta\\epsilon|$/$|\\epsilon|$ w/ & w/o cplex")
+    plt.savefig("mut/")
+    temp = np.zeros((len(ratios_xp),2),float)
+    temp[:,0] = np.array(ratios_xp)
+    temp[:,1] = np.array(ratios_cpx)
+    np.savetxt("mut/ratios.dat",temp)
+
+    ## Compute correlation matrix for all possible xp's.
+    ## Compute correlation matrix for all possible xp's with cplex.
+    Covar_xp = np.zeros((len(Xps),len(Xps)),float)
+    Covar_cpx = np.zeros((len(Xps),len(Xps)),float)
+    Covar_xp_cpx = np.zeros((len(Xps),len(Xps)),float)
+    for i in range(len(Xps)):
+
+        xp1 = Xps[i]
+        cp1 = Xp_cpxs[i]
+        for j in range(len(Xps)):
+            xp2 = Xps[j]
+            cp2 = Xp_cpxs[j]
+
+            Covar_xp[i,j]     = np.dot(xp1,xp2)/(np.linalg.norm(xp1)*np.linalg.norm(xp2))
+            Covar_cpx[i,j]    = np.dot(cp1,cp2)/(np.linalg.norm(cp1)*np.linalg.norm(cp2))
+            Covar_xp_cpx[i,j] = np.dot(xp1,cp2)/(np.linalg.norm(xp1)*np.linalg.norm(cp2))
+
+    plt.figure()
+    plt.pcolor(Covar_xp)
+    plt.title("Covariance of $x_p$ and $x_p$")
+    plt.colorbar()
+    plt.savefig("mut/Covar_xp.pdf")
+    plt.figure()
+    plt.pcolor(Covar_cpx)
+    plt.title("Covariance of $x_{cplex}$ and $x_{cplex}$")
+    plt.colorbar()
+    plt.savefig("mut/Covar_cpx.pdf")
+    plt.figure()
+    plt.pcolor(Covar_xp_cpx)
+    plt.title("Covariance of $x_p$ and $x_{cplex}$")
+    plt.colorbar()
+    plt.savefig("mut/Covar_xp_cpx.pdf")
+
+    plt.close()
+
 def calculate_matrix_ddG_eps_M(model,coord):
     ''' Calculates and saves and returns the matrix from equation (9) in 
         Matysiak Clementi 2004. '''
@@ -299,10 +375,8 @@ def calculate_matrix_ddG_eps_M(model,coord):
 
     os.chdir(model.subdir+"/mutants")
     print "  Loading mutants"
-    mutants = mute.get_core_mutations()
+    mutants = mut.get_core_mutations()
     Fij, Fij_pairs, Fij_conts = phi.get_mutant_fij(model,mutants)
-    print "  Loading ddG from experiment"
-    ddGexp_N_D,ddGexp_N_D_err,ddGexp_TS_D,ddGexp_TS_D_err = mute.get_core_mutation_ddG()
 
     os.chdir(sub)
 
@@ -311,10 +385,6 @@ def calculate_matrix_ddG_eps_M(model,coord):
 
     temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
     directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
-
-    ## 
-    #print "  Loading ddG from simulation"
-    #ddGsim_TS_D, ddGsim_N_D = mut.get_sim_ddG(mutants,coord)
 
     epsilons = model.contact_epsilons
     deltas = model.contact_deltas
@@ -449,13 +519,59 @@ def save_new_parameters(sub,eps,delta_eps,delta_eps_xp,savebeadbead,savebeadbead
 
     open(savebeadbeadxp,"w").write(beadbead_string)
 
+def get_ddG_matrix_M():
+    ## Throw error if more than one temperature been used (?)
+    temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
+    directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
+    if not os.path.exists("mut"):
+        os.mkdir("mut")
+
+    ## Collect ddG & M from Mut_#/<temp>_*/{mut,phi} directories.
+    ## Take avg. and std error of mean for error bars. Save in Mut_#/mut
+
+    print "  Getting experimental ddG"
+    files = ["ddGsim.dat","ddGsim_err.dat","M.dat"] 
+    flag = np.array([ not os.path.exists("mut/"+file) for file in files ])
+    if np.any(flag):
+        print "  One of the following does not exist: M.dat, ddG.dat. Calculating."
+        ddGlist = []
+        Mlist = []
+        for n in range(len(directories)):
+            dir = directories[n]
+            ddG_temp = np.loadtxt(dir+"/phi/Q_phi.dat",usecols=(4,5),dtype=float)
+            ddG = np.concatenate((ddG_temp[:,0],ddG_temp[:,1]),axis=0)
+            ddGlist.append(ddG)
+            M = np.loadtxt(dir+"/mut/M.dat",dtype=float)
+            Mlist.append(M)
+        #print "  IMPORTANT: Look at the singular value spectrum and choose a number of singular values to use."
+        #print "  IMPORTANT: Make sure Mut_#/mut/num_singular_values_include.txt  exists."
+        ddGlist = np.array(ddGlist)
+        ddGsim = sum(ddGlist)/float(n+1)
+        ddGsim_err = np.std(ddGlist,axis=0)/np.sqrt(float(n+1))
+        Mlist = np.array(Mlist)
+        M = sum(Mlist)/float(n+1)
+        Merr = np.std(Mlist,axis=0)/np.sqrt(float(n+1))
+        np.savetxt("mut/ddGsim.dat",ddGsim)
+        np.savetxt("mut/ddGsim_err.dat",ddGsim_err)
+        np.savetxt("mut/M.dat",M)
+        np.savetxt("mut/Merr.dat",Merr)
+    else:
+        print "  Loading M.dat, ddG.dat, eps.dat"
+        ddGsim= np.loadtxt("mut/ddGsim.dat")
+        ddGsim_err = np.loadtxt("mut/ddGsim_err.dat")
+        M = np.loadtxt("mut/M.dat")
+
+    return ddGsim, ddGsim_err, M
+
+
 if __name__ == '__main__':
 
     def dummy_func(sub,string):
         pass 
     
-    subdirs = ["r16"]
+    subdirs = ["r15"]
     Models = models.load_models(subdirs,dryrun=True)
     model = Models[0]
 
-    calculate_matrix_ddG_eps_M(model,"Q")
+    Xps = calculate_MC2004_perturbation(model,dummy_func)
+    #calculate_matrix_ddG_eps_M(model,"Q")
