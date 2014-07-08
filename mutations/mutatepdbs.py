@@ -237,7 +237,7 @@ def make_all_mutations():
 
     modelname = 'wt'
     mutants = get_core_mutations()
-    for i in range(len(mut_indx)):
+    for i in range(len(mutants)):
         mut = mutants[i]
         saveas = mut+".pdb"
         if not os.path.exists(saveas):
