@@ -51,6 +51,7 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
     Minimalist Model Go? J. Mol. Biol. 2004, 343, 235-248.
     """
     
+    append_log(model.subdir,"Starting: Calculating_MC2004") 
     cwd = os.getcwd()
     sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
 
@@ -72,13 +73,12 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
     Xp_cpxs = [] 
     ratios_xp = []
     ratios_cpx = []
-    ## 2. If num_singular_values_include.txt exists
-    ##   2a. Compute solution epsilon_prime and save in Mut_#/mut directory
     print "  Solving for new parameters. Parameters will be saved in mut/"
     print "# Sing. %10s %10s %10s" % ("Cond.Num.","|xp|/|eps|","|xp_cpx|/|eps|")
     solution_string = "# Sing. %10s %10s %10s\n" % ("Cond.Num.","|xp|/|eps|","|xp_cpx|/|eps|")
     for i in range(len(cutoffs)):
 
+        ## Generical solution uses pseudo-inverse of M.
         cutoff = cutoffs[i]
         Mpinv = np.linalg.pinv(M,rcond=cutoff)
         Mpinvnorm = np.linalg.norm(Mpinv)
@@ -90,14 +90,15 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
         ratio_xp = np.linalg.norm(delta_eps_xp)/np.linalg.norm(eps)
         Xps.append(delta_eps_xp)
         ratios_xp.append(ratio_xp)
-
+        
+        ## Apply 
         try: 
-            LP_problem, solution, x_particular, N = apply_constraints_with_cplex(model,ddG,M,cutoff)
-            delta_eps = x_particular + np.dot(N,solution)
+            LP_problem, solution, x_particular_cpx, N = apply_constraints_with_cplex(model,ddG,M,cutoff)
+            delta_eps = x_particular_cpx + np.dot(N,solution)
             ratio_cpx = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
             Xp_cpxs.append(delta_eps)
-            np.savetxt("mut/xp_cplex%d.dat" % (i+1),x_particular)
-        except cplex.CplexSolverError:
+            np.savetxt("mut/xp_cplex%d.dat" % (i+1),delta_eps)
+        except cplex.exceptions.CplexSolverError:
             Xp_cpxs.append(np.zeros(len(x_particular)))
             ratio_cpx = 0.
         iteration_string = "%5d %10.5e %10.5f %10.5f" % (i+1,cond_num[i],ratio_xp,ratio_cpx)
@@ -106,68 +107,31 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
         solution_string += iteration_string + "\n"
     open("mut/solution.log","w").write(solution_string) 
     plot_solution_info(model,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs)
-    # Choose
-    return Xps
-    print "Succes"
-    raise SystemExit
-
-    ##   2b. Save model object with new contact parameters
 
     if not os.path.exists("mut/num_singular_values_include.txt"):
         print "ERROR!"
-        print "  Need file mut/num_singular_values_include.txt", " to proceed"
+        print "  Need file mut/num_singular_values_include.txt to proceed"
         print "  Exiting"
         raise SystemExit
     else:
         temp = open("mut/num_singular_values_include.txt").read().rstrip("\n")
+        num_singular_values = temp.split()[0]
+        print "  Using delta eps with %s singular values." % num_singular_values
         if temp.endswith("xp"):
-            compute_xp = True
-            num_singular_values = int(temp.split()[0])
-            savebeadbeadxp = "mut/"+newbeadbead.split(".dat")[0]+"_xp.dat"
-            savebeadbead = savebeadbeadxp
+            savebeadbeadxp = sub+"/mut/"+newbeadbead.split(".dat")[0]+"_xp.dat"
+            savebeadbead = sub+"/mut/"+savebeadbeadxp
+            delta_eps = np.loadtxt("xp"+num_singular_values+".dat")
         else:
-            compute_xp = False
-            num_singular_values = int(temp)
-            savebeadbeadxp = "mut/"+newbeadbead.split(".dat")[0]+"_xp.dat"
-            savebeadbead = "mut/"+newbeadbead
-        cutoff = cutoffs[num_singular_values-1]
-        print "  Using ",num_singular_values," singular values. Cutoff of = ",cutoff
+            savebeadbeadxp = sub+"/mut/"+newbeadbead.split(".dat")[0]+"_xp.dat"
+            savebeadbead = sub+"/mut/"+newbeadbead
+            delta_eps = np.loadtxt("xp_cplex"+num_singular_values+".dat")
 
-    append_log(model.subdir,"Starting: Calculating_MC2004") 
-
-    if compute_xp == True:
-        ## Load solution for requested number of singular values.
-        print "  Using ONLY the particular solution x_p as delta_eps!"
-        Mpinv = np.linalg.pinv(M,rcond=cutoff)
-        x_particular = np.dot(Mpinv,ddG)
-        np.savetxt("mut/x_p.dat",x_particular)
-
-        delta_eps = x_particular
-        ratio = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
-
-        delta_eps_xp = x_particular
-        ratio_xp = np.linalg.norm(delta_eps_xp)/np.linalg.norm(eps)
-    else:
-        print "  Applying CPLEX to the particular solution to get delta_eps!"
-        LP_problem, solution, x_particular, N = apply_constraints_with_cplex(model,ddG,M,cutoff)
-
-        print "    Solution found!"
-        delta_eps = x_particular + np.dot(N,solution)
-        ratio = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
-
-        delta_eps_xp = x_particular
-        ratio_xp = np.linalg.norm(delta_eps_xp)/np.linalg.norm(eps)
-
-    np.savetxt("mut/delta_eps.dat",delta_eps)
-    np.savetxt("mut/delta_eps_xp.dat",delta_eps_xp)
-    print "    Norm of perturbation, |deps|/|eps| = ", ratio
-    print "    Norm of just x_p perturbation, |x_p|/|eps| = ", ratio_xp
-
-    print "  Saving new parameters as: ",savebeadbead
-    save_new_parameters(sub,eps,delta_eps,delta_eps_xp,savebeadbead, savebeadbeadxp, T)
-
+    ## Write new beadbead to file
+    model.contact_epsilons += delta_eps
+    model.get_pairs_string()
+    open(savebeadbead,"w").write(model.beadbead)
     model.contact_energies = savebeadbead
-
+    os.chdir(cwd)
     append_log(model.subdir,"Finished: Calculating_MC2004") 
 
 def apply_constraints_with_cplex(model,ddG,M,cutoff):
@@ -256,8 +220,8 @@ def apply_constraints_with_cplex(model,ddG,M,cutoff):
 
     ## Constraints version 4:
     ## Require that native contacts remain within a fixed interval.
-    eps_lower_bound = 0.001
-    eps_upper_bound = 20.0
+    eps_lower_bound = 0.1
+    eps_upper_bound = 10.0
     right_hand_side = list(eps + x_particular - eps_lower_bound*np.ones(len(eps)))
     right_hand_side_2 = list(eps + x_particular - eps_upper_bound*np.ones(len(eps)))
     right_hand_side.extend(right_hand_side_2)
@@ -325,7 +289,9 @@ def plot_solution_info(model,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs):
     plt.plot(range(1,len(cond_num)+1),ratios_cpx,color='b',marker='s',label="$|x_{cplex}|$/$|\\epsilon|$")
     plt.legend(loc=2)
     plt.title("Perturbation size $|\\delta\\epsilon|$/$|\\epsilon|$ w/ & w/o cplex")
-    plt.savefig("mut/")
+    plt.xlabel("# sing values")
+    plt.ylabel("Size of perturbation")
+    plt.savefig("mut/perturb_size.pdf")
     temp = np.zeros((len(ratios_xp),2),float)
     temp[:,0] = np.array(ratios_xp)
     temp[:,1] = np.array(ratios_cpx)
@@ -343,10 +309,25 @@ def plot_solution_info(model,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs):
         for j in range(len(Xps)):
             xp2 = Xps[j]
             cp2 = Xp_cpxs[j]
+            nrmxp1 = np.linalg.norm(xp1)
+            nrmxp2 = np.linalg.norm(xp2)
+            nrmcp1 = np.linalg.norm(cp1)
+            nrmcp2 = np.linalg.norm(cp2)
 
-            Covar_xp[i,j]     = np.dot(xp1,xp2)/(np.linalg.norm(xp1)*np.linalg.norm(xp2))
-            Covar_cpx[i,j]    = np.dot(cp1,cp2)/(np.linalg.norm(cp1)*np.linalg.norm(cp2))
-            Covar_xp_cpx[i,j] = np.dot(xp1,cp2)/(np.linalg.norm(xp1)*np.linalg.norm(cp2))
+            if (nrmxp1 == 0.) or (nrmxp2 == 0.):
+                Covar_xp[i,j]     = 0. 
+            else:
+                Covar_xp[i,j]     = np.dot(xp1,xp2)/(nrmxp1*nrmxp2)
+
+            if (nrmcp1 == 0.) or (nrmcp2 == 0.):
+                Covar_cpx[i,j]    = 0. 
+            else:
+                Covar_cpx[i,j]    = np.dot(cp1,cp2)/(nrmcp1*nrmcp2)
+
+            if (nrmxp1 == 0.) or (nrmcp2 == 0.):
+                Covar_xp_cpx[i,j]    = 0. 
+            else:
+                Covar_xp_cpx[i,j] = np.dot(xp1,cp2)/(nrmxp1*nrmcp2)
 
     plt.figure()
     plt.pcolor(Covar_xp)
@@ -474,8 +455,7 @@ def calculate_matrix_ddG_eps_M(model,coord):
 def save_new_parameters(sub,eps,delta_eps,delta_eps_xp,savebeadbead,savebeadbeadxp, T):
     """ Save new parameters as a BeadBead file
 
-    Description:
-
+    DEPRECATED 7-7-14
     """
     beadbead, keep_interactions = phi.load_beadbead(sub+"/"+T+"_agg")
 
@@ -569,7 +549,7 @@ if __name__ == '__main__':
     def dummy_func(sub,string):
         pass 
     
-    subdirs = ["r15"]
+    subdirs = ["r17"]
     Models = models.load_models(subdirs,dryrun=True)
     model = Models[0]
 

@@ -102,6 +102,19 @@ def run_wham_expdH_k(mut,Tf,bounds):
         Concatenates all the data from the same temperature for the histogram
     files in the whamQ subdirectory.
     """
+    ## To Do:
+    ##  1. Run WHAM to get F(Q) and Cv(T). DONE
+    ##      1a. User adjusts T for F(Q) to find Tf --> Save as Mut_0/whamQ/Tf.txt
+    ##      1b. User determines bounds for TS, U, N states --> Save as Mut_0/whamQ/state_bounds
+    ##  2. Calculate dH  TESTING --> WORKS
+    ##  3. Run WHAM to get the following thermal averages as function
+    ##    of Q at Tf:
+    ##    3a. <Q_ij>_X the interaction energy of contact ij.
+    ##    3b. <exp(-beta*dH_k)>_X the perturbation due to mutation k.
+    ##    [ 3c. <Q_i>_X the contact probability ]
+    ##
+    ##  4. Calculate DeltaDeltaG's for simulation and phi_values
+    ##  5. Calculate matrix M and solve for new parameters.
 
     directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ]
     temperatures = [ x.split("_")[0] for x in open("T_array_last.txt","r").readlines() ]
