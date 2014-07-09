@@ -35,35 +35,32 @@ class FRETFit(ProjectManager):
     """
 
 
-    def logical_flowchart_starting(self,System,Model,sub,task):
+    def logical_flowchart_starting(self,model,task):
+        sub = model.subdir
         if task == "Tf_loop_iteration":
             print "Checking if Tf_loop_iteration completed..."
-            simulation.Tf_loop.check_completion(System,self.append_log)
+            simulation.Tf_loop.check_completion(model,self.append_log)
             lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
             if action2 == "Finished:":
                 print "Finished Tf_loop_iteration..."
                 print "Starting Tf_loop_analysis..."
-                analysis.Tf_loop.analyze_temperature_array(System,self.append_log)
+                analysis.Tf_loop.analyze_temperature_array(model,self.append_log)
         elif task == "Tf_loop_analysis":
             print "Checking if Tf_loop_analysis completed..."
-            analysis.Tf_loop.check_completion(System,self.append_log)
-#        elif task == "wham_Cv":
-#            print "Starting to check if wham_Cv completed..."
-#            analysis.Tf_loop.continue_wham(System,self.append_log)
-#        elif task == "wham_FreeEnergy":
-#            print "Starting Equil_Tf..."
-#            simulation.Tf_loop.run_equilibrium_simulations(Model,System,self.append_log)
-#        elif task == "Equil_Tf":
-#            print "Starting to check if Equil_Tf completed..."
-#            simulation.Tf_loop.check_completion(System,self.append_log,equil=True)
-#            lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
-#            if action2 == "Finished:":
-#                print "Finished Equil_Tf_iteration..."
-#                print "Starting Equil_Tf_analysis..."
-#                analysis.Tf_loop.analyze_temperature_array(System,self.append_log,equil=True)
-#        elif task == "Equil_Tf_analysis":
-#            print "Starting to check if Equil_Tf_analysis completed..."
-#            analysis.Tf_loop.check_completion(System,self.append_log,equil=True)
+            analysis.Tf_loop.check_completion(model,self.append_log)
+        elif task == "Equil_Tf":
+            print "Starting to check if Equil_Tf completed..."
+            simulation.Tf_loop.check_completion(model,self.append_log,equil=True)
+            lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
+            if action2 == "Finished:":
+                print "Finished Equil_Tf_iteration..."
+                print "Starting Equil_Tf_analysis..."
+                analysis.Tf_loop.analyze_temperature_array(model,self.append_log,equil=True)
+        elif task == "Equil_Tf_analysis":
+            print "Starting to check if Equil_Tf_analysis completed..."
+            analysis.Tf_loop.check_completion(model,self.append_log,equil=True)
+        elif task == "Calculating_MC2004":
+            mutations.perturbation.calculate_MC2004_perturbation(model,self.append_log)
         else:
             print "ERROR!"
             print "  Couldn't find next option for task:",task
@@ -71,44 +68,32 @@ class FRETFit(ProjectManager):
             print "  Exiting."
             raise SystemExit
 
-    def logical_flowchart_finished(self,System,Model,sub,task):
+
+    def logical_flowchart_finished(self,model,task):
+        sub = model.subdir
         if task == "Tf_loop_iteration":
             print "Finished Tf_loop_iteration..."
             print "Starting Tf_loop_analysis..."
-            analysis.Tf_loop.analyze_temperature_array(System,self.append_log)
-#        elif task == "Tf_loop_analysis":
-#            print "Finished Tf_loop_analysis..."
-#            flag = analysis.Tf_loop.check_if_wham_is_next(System,self.append_log)
-#            if flag == 1:
-#                pass 
-#            else:
-#                print "Starting Tf_loop_iteration..."
-#                simulation.Tf_loop.folding_temperature_loop(Model,System,self.append_log)
-#        elif task == "wham_Cv":
-#            print "Finished wham_Cv..."
-#            print "Stating wham_FreeEnergy..."
-#            analysis.Tf_loop.continue_wham(System,self.append_log)
-#        elif task == "Equil_Tf":
-#            print "Starting Equil_Tf_analysis..."
-#            analysis.Tf_loop.analyze_temperature_array(System,self.append_log,equil=True)
-#        elif task == "Equil_Tf_analysis":
-#            ## Aggregrate equil_Tf data for each temperature and plot PMFs
-#            print "Starting aggregate data..."
-#            analysis.Tf_loop.aggregate_equilibrium_runs(System,self.append_log)
-#            print "Plotting aggregated data PMFS..."
-#            analysis.plot.pmfs.plot_aggregated_data(System,self.append_log)
-#        elif task == "Aggregating_Equil_Runs":
-#            ## If plotting diddn't work before
-#            print "Plotting aggregated data PMFS..."
-#            analysis.plot.pmfs.plot_aggregated_data(System,self.append_log)
-#        elif task == "Plotting_Agg_Data":
-#            print "Starting prepping mutant pdbs..."
-#            mutations.analyzepdbs.prep_mutants(System,self.append_log)
-#            print "Starting calculating dH for mutants..."
-#            mutations.phi_values.calculate_dH_for_mutants(Model,System,self.append_log)
-#        elif task == "Calculating_dH":
-#            mutations.phi_values.calculate_phi_values(Model,System,self.append_log,"Q")
-#            #mutations.phi_values.calculate_new_epsilons(Model,System,self.append_log)
+            analysis.Tf_loop.analyze_temperature_array(model,self.append_log)
+        #elif task == "Tf_loop_analysis":
+        #    print "Finished Tf_loop_analysis..."
+        #    flag = analysis.Tf_loop.run_wham_heat_capacity(model,self.append_log)
+        #    if flag == 1:
+        #        pass 
+        #    else:
+        #        print "Starting Tf_loop_iteration..."
+        #        simulation.Tf_loop.folding_temperature_loop(model,self.append_log)
+        #elif task == "Tf_wham":
+        #    print "Starting equilibrium simulations at Tf..."
+        #    simulation.Tf_loop.run_equilibrium_simulations(model,self.append_log)
+        #elif task == "Equil_Tf":
+        #    print "Starting Equil_Tf_analysis..."
+        #    analysis.Tf_loop.analyze_temperature_array(model,self.append_log,equil=True)
+        #elif task == "Equil_Tf_analysis":
+        ### Use the following sub module to plot PMFS of coordinates:
+        ### analysis.plot.pmfs
+        #    ## Run heat capacity for equilibrium runs. Cv(T), F(Q)
+        #    analysis.Tf_loop.run_wham_heat_capacity(model,self.append_log,Mut=True)
         else:
             print "ERROR!"
             print "  Couldn't find next option for task:",task
@@ -127,26 +112,19 @@ class FRETFit(ProjectManager):
                 print "Subdirectory: ", sub, " already exists! just fyi"
 
         print "Starting a new simulation project..."
-        Models = models.new_models(subdirs,modeloptions)
-        Systems = systems.new_systems(subdirs)
+        Models = mdb.models.new_models(subdirs,modeloptions)
 
-        self.prepare_systems(Models,Systems)
-        self.save_model_system_info(Models,Systems,subdirs)
-
+        self.save_model_system_info(Models)
         if args.temparray != None:
             for n in range(len(subdirs)):
-                Systems[n].initial_T_array = args.temparray
+                Models[n].initial_T_array = args.temparray
 
-        ## Estimate the folding temperature and run
+        for k in range(len(Models)):
+            model = Models[k]
+            print "Starting Tf_loop_iteration for subdirectory: ", model.subdir
+            simulation.Tf_loop.folding_temperature_loop(model,self.append_log,new=True)
 
-        for k in range(len(subdirs)):
-            print "Starting Tf_loop_iteration for subdirectory: ", subdirs[k]
-            ## To Do: Prepare each Model System pair. 
-            Model = Models[k]
-            System = Systems[k]
-            simulation.Tf_loop.folding_temperature_loop(Model,System,self.append_log,new=True)
-
-        self.save_model_system_info(Models,Systems,subdirs)
+        self.save_model_system_info(Models)
         print "Success"
 
 
@@ -176,6 +154,15 @@ def get_args():
     add_parser.add_argument('--mutarray', type=int, nargs='+', help='T_initial T_final dT for new mutational sims array')
     add_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
 
+    ## Options for manually extending some temperatures.
+    ext_parser = sp.add_parser('extend')
+    ext_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
+    ext_parser.add_argument('--factor', type=float, help='Factor by which you want to extend simulations. e.g. --factor 2 doubles length',required=True)
+    ext_parser.add_argument('--Tf_temps', type=float, nargs='+', help='Temperatures that you want extended')
+    ext_parser.add_argument('--Mut_temps', type=float, nargs='+', help='T_initial T_final dT for new mutational sims array')
+    ext_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
+
+
     args = parser.parse_args()
 
     if args.dryrun != False:
@@ -198,9 +185,6 @@ def get_args():
 
     options["Model_Code"] = "HetGo"
     options["Bead_Model"] = "CA"
-    options["Solvent"] = None
-    options["R_CD"] = None
-    options["Disulfides"] = args.disulfides
     options["Contact_Energies"] = "FRETFit"
 
     modeloptions = models.check_options(options)
