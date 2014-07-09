@@ -125,7 +125,7 @@ class MatysiakClementi2004(ProjectManager):
             mutations.phi_values.calculate_phi_values(model,self.append_log,"Q")
         elif task == "Calculating_phi_values":
             self.append_log(model.subdir,"Starting: Calculating_matrix_M") 
-            mutations.perturbations.calculate_matrix_ddG_eps_M(model,"Q")
+            mutations.perturbation.calculate_matrix_ddG_eps_M(model,"Q")
             self.append_log(model.subdir,"Finished: Calculating_matrix_M") 
         elif task == "Calculating_matrix_M":
             mutations.perturbation.calculate_MC2004_perturbation(model,self.append_log)

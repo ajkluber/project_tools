@@ -303,7 +303,7 @@ def start_next_Tf_loop_iteration(model,append_log):
 
     ## Update System counters and estimate new Tf
     model.Tf_iteration += 1
-    model.mutation_iteration += 1
+    model.Mut_iteration += 1
     E = float(sum(model.contact_epsilons[model.contact_deltas == 1]))
     N = float(model.n_residues)
     Tf_guess = (36.081061*E/N) + 56.218196 ## calibration circa June 2014

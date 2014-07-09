@@ -124,7 +124,7 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
         else:
             savebeadbeadxp = sub+"/mut/"+newbeadbead.split(".dat")[0]+"_xp.dat"
             savebeadbead = sub+"/mut/"+newbeadbead
-            delta_eps = np.loadtxt("xp_cplex"+num_singular_values+".dat")
+            delta_eps = np.loadtxt(sub+"/mut/xp_cplex"+num_singular_values+".dat")
 
         print "  Saving new beadbead as: ",savebeadbead
         ## Write new beadbead to file
@@ -358,6 +358,7 @@ def calculate_matrix_ddG_eps_M(model,coord):
 
     os.chdir(model.subdir+"/mutants")
     print "  Loading mutants"
+    import mutatepdbs as mut
     mutants = mut.get_core_mutations()
     Fij, Fij_pairs, Fij_conts = phi.get_mutant_fij(model,mutants)
 
