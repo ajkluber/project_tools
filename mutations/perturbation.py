@@ -126,13 +126,15 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
             savebeadbead = sub+"/mut/"+newbeadbead
             delta_eps = np.loadtxt("xp_cplex"+num_singular_values+".dat")
 
-    ## Write new beadbead to file
-    model.contact_epsilons += delta_eps
-    model.get_pairs_string()
-    open(savebeadbead,"w").write(model.beadbead)
-    model.contact_energies = savebeadbead
+        print "  Saving new beadbead as: ",savebeadbead
+        ## Write new beadbead to file
+        model.contact_epsilons += delta_eps
+        model.contacts[model.contact_epsilons < 0.1] = 0.1
+        model.get_pairs_string()
+        open(savebeadbead,"w").write(model.beadbead)
+        model.contact_energies = savebeadbead
+        append_log(model.subdir,"Finished: Calculating_MC2004") 
     os.chdir(cwd)
-    append_log(model.subdir,"Finished: Calculating_MC2004") 
 
 def apply_constraints_with_cplex(model,ddG,M,cutoff):
     """ Construct and solve a linear/quadratic programming problem for new parameters.
