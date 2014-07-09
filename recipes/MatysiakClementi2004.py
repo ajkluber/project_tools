@@ -78,11 +78,7 @@ class MatysiakClementi2004(ProjectManager):
             print "Starting to check if Equil_Tf_analysis completed..."
             analysis.Tf_loop.check_completion(model,self.append_log,equil=True)
         elif task == "Calculating_MC2004":
-            print "ERROR!"
-            print "  ",task, " should have finished!"
-            print "  Please check that things are ok."
-            print "  Exiting."
-            raise SystemExit
+            mutations.perturbation.calculate_MC2004_perturbation(model,self.append_log)
         else:
             print "ERROR!"
             print "  Couldn't find next option for task:",task

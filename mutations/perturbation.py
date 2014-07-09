@@ -51,7 +51,6 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
     Minimalist Model Go? J. Mol. Biol. 2004, 343, 235-248.
     """
     
-    append_log(model.subdir,"Starting: Calculating_MC2004") 
     cwd = os.getcwd()
     sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
 
@@ -63,64 +62,60 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
 
     eps = model.contact_epsilons
 
-    u,s,v = np.linalg.svd(M)
-    s_norm = s/max(s)
-    cutoffs = np.array(list(0.5*(s_norm[:-1] + s_norm[1:])) + [0.0])
-
-    Mnorm = np.linalg.norm(M)
-    cond_num = np.zeros(len(cutoffs),float)
-    Xps = [] 
-    Xp_cpxs = [] 
-    ratios_xp = []
-    ratios_cpx = []
-    print "  Solving for new parameters. Parameters will be saved in mut/"
-    print "# Sing. %10s %10s %10s" % ("Cond.Num.","|xp|/|eps|","|xp_cpx|/|eps|")
-    solution_string = "# Sing. %10s %10s %10s\n" % ("Cond.Num.","|xp|/|eps|","|xp_cpx|/|eps|")
-    for i in range(len(cutoffs)):
-
-        ## Generical solution uses pseudo-inverse of M.
-        cutoff = cutoffs[i]
-        Mpinv = np.linalg.pinv(M,rcond=cutoff)
-        Mpinvnorm = np.linalg.norm(Mpinv)
-        cond_num[i] = Mnorm*Mpinvnorm
-
-        x_particular = np.dot(Mpinv,ddG)
-        np.savetxt("mut/xp%d.dat" % (i+1),x_particular)
-        delta_eps_xp = x_particular
-        ratio_xp = np.linalg.norm(delta_eps_xp)/np.linalg.norm(eps)
-        Xps.append(delta_eps_xp)
-        ratios_xp.append(ratio_xp)
-        
-        ## Apply 
-        try: 
-            LP_problem, solution, x_particular_cpx, N = apply_constraints_with_cplex(model,ddG,M,cutoff)
-            delta_eps = x_particular_cpx + np.dot(N,solution)
-            ratio_cpx = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
-            Xp_cpxs.append(delta_eps)
-            np.savetxt("mut/xp_cplex%d.dat" % (i+1),delta_eps)
-        except cplex.exceptions.CplexSolverError:
-            Xp_cpxs.append(np.zeros(len(x_particular)))
-            ratio_cpx = 0.
-        iteration_string = "%5d %10.5e %10.5f %10.5f" % (i+1,cond_num[i],ratio_xp,ratio_cpx)
-        print iteration_string
-        ratios_cpx.append(ratio_cpx)
-        solution_string += iteration_string + "\n"
-    open("mut/solution.log","w").write(solution_string) 
-    plot_solution_info(model,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs)
-
     if not os.path.exists("mut/num_singular_values_include.txt"):
-        print "ERROR!"
-        print "  Need file mut/num_singular_values_include.txt to proceed"
-        print "  Exiting"
-        raise SystemExit
+        append_log(model.subdir,"Starting: Calculating_MC2004") 
+        u,s,v = np.linalg.svd(M)
+        s_norm = s/max(s)
+        cutoffs = np.array(list(0.5*(s_norm[:-1] + s_norm[1:])) + [0.0])
+
+        Mnorm = np.linalg.norm(M)
+        cond_num = np.zeros(len(cutoffs),float)
+        Xps = [] 
+        Xp_cpxs = [] 
+        ratios_xp = []
+        ratios_cpx = []
+        print "  Solving for new parameters. Parameters will be saved in mut/"
+        print "# Sing. %10s %10s %10s" % ("Cond.Num.","|xp|/|eps|","|xp_cpx|/|eps|")
+        solution_string = "# Sing. %10s %10s %10s\n" % ("Cond.Num.","|xp|/|eps|","|xp_cpx|/|eps|")
+        for i in range(len(cutoffs)):
+
+            ## Generical solution uses pseudo-inverse of M.
+            cutoff = cutoffs[i]
+            Mpinv = np.linalg.pinv(M,rcond=cutoff)
+            Mpinvnorm = np.linalg.norm(Mpinv)
+            cond_num[i] = Mnorm*Mpinvnorm
+
+            x_particular = np.dot(Mpinv,ddG)
+            np.savetxt("mut/xp%d.dat" % (i+1),x_particular)
+            delta_eps_xp = x_particular
+            ratio_xp = np.linalg.norm(delta_eps_xp)/np.linalg.norm(eps)
+            Xps.append(delta_eps_xp)
+            ratios_xp.append(ratio_xp)
+            
+            ## Apply 
+            try: 
+                LP_problem, solution, x_particular_cpx, N = apply_constraints_with_cplex(model,ddG,M,cutoff)
+                delta_eps = x_particular_cpx + np.dot(N,solution)
+                ratio_cpx = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
+                Xp_cpxs.append(delta_eps)
+                np.savetxt("mut/xp_cplex%d.dat" % (i+1),delta_eps)
+            except cplex.exceptions.CplexSolverError:
+                Xp_cpxs.append(np.zeros(len(x_particular)))
+                ratio_cpx = 0.
+            iteration_string = "%5d %10.5e %10.5f %10.5f" % (i+1,cond_num[i],ratio_xp,ratio_cpx)
+            print iteration_string
+            ratios_cpx.append(ratio_cpx)
+            solution_string += iteration_string + "\n"
+        open("mut/solution.log","w").write(solution_string) 
+        plot_solution_info(model,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs)
     else:
         temp = open("mut/num_singular_values_include.txt").read().rstrip("\n")
         num_singular_values = temp.split()[0]
         print "  Using delta eps with %s singular values." % num_singular_values
         if temp.endswith("xp"):
             savebeadbeadxp = sub+"/mut/"+newbeadbead.split(".dat")[0]+"_xp.dat"
-            savebeadbead = sub+"/mut/"+savebeadbeadxp
-            delta_eps = np.loadtxt("xp"+num_singular_values+".dat")
+            savebeadbead = savebeadbeadxp
+            delta_eps = np.loadtxt(sub+"/mut/xp"+num_singular_values+".dat")
         else:
             savebeadbeadxp = sub+"/mut/"+newbeadbead.split(".dat")[0]+"_xp.dat"
             savebeadbead = sub+"/mut/"+newbeadbead
