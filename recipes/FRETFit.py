@@ -15,8 +15,7 @@ import argparse
 
 from project_tools.manager import ProjectManager
 from project_tools import simulation, analysis, mutations
-from model_builder import models
-from model_builder import systems
+import model_builder as mdb
 
 
 class FRETFit(ProjectManager):
@@ -187,7 +186,7 @@ def get_args():
     options["Bead_Model"] = "CA"
     options["Contact_Energies"] = "FRETFit"
 
-    modeloptions = models.check_options(options)
+    modeloptions = mdb.models.check_options(options)
 
     return args, modeloptions
 

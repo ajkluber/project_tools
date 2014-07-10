@@ -124,7 +124,7 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
         print "  Saving new beadbead as: ",savebeadbead
         ## Write new beadbead to file
         model.contact_epsilons += delta_eps
-        model.contacts[model.contact_epsilons < 0.1] = 0.1
+        model.contact_epsilons[model.contact_epsilons < 0.1] = 0.1
         model.get_pairs_string()
         open(savebeadbead,"w").write(model.beadbead)
         model.contact_energies = savebeadbead
@@ -551,5 +551,6 @@ if __name__ == '__main__':
     Models = models.load_models(subdirs,dryrun=True)
     model = Models[0]
 
-    Xps = calculate_MC2004_perturbation(model,dummy_func)
+    #calculate_MC2004_perturbation(model,dummy_func)
+
     #calculate_matrix_ddG_eps_M(model,"Q")
