@@ -511,7 +511,8 @@ def get_pbs_string(jobname,queue,ppn,walltime):
     pbs_string +="#PBS -l walltime=%s \n" % walltime
     pbs_string +="#PBS -V \n\n"
     pbs_string +="cd $PBS_O_WORKDIR\n"
-    pbs_string +="mdrun -nt 1 -s topol_4.6.tpr -table table.xvg -tablep table.xvg"
+    #pbs_string +="mdrun -nt 1 -s topol_4.6.tpr -table table.xvg -tablep table.xvg"
+    pbs_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg"
     return pbs_string
 
 def get_rst_pbs_string(jobname,queue,ppn,walltime):
@@ -524,7 +525,8 @@ def get_rst_pbs_string(jobname,queue,ppn,walltime):
     rst_string +="#PBS -l walltime=%s \n" % walltime
     rst_string +="#PBS -V \n\n"
     rst_string +="cd $PBS_O_WORKDIR\n"
-    rst_string +="mdrun -nt 1 -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
+    #rst_string +="mdrun -nt 1 -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
+    rst_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
     return rst_string
 
 def submit_run(jobname,walltime="23:00:00",queue="serial",ppn="1"):
