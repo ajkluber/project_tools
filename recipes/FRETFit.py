@@ -58,8 +58,6 @@ class FRETFit(ProjectManager):
         elif task == "Equil_Tf_analysis":
             print "Starting to check if Equil_Tf_analysis completed..."
             analysis.Tf_loop.check_completion(model,self.append_log,equil=True)
-        elif task == "Calculating_MC2004":
-            mutations.perturbation.calculate_MC2004_perturbation(model,self.append_log)
         else:
             print "ERROR!"
             print "  Couldn't find next option for task:",task
@@ -74,6 +72,9 @@ class FRETFit(ProjectManager):
             print "Finished Tf_loop_iteration..."
             print "Starting Tf_loop_analysis..."
             analysis.Tf_loop.analyze_temperature_array(model,self.append_log)
+        elif task == "Tf_loop_analysis":
+            print "Finished Tf_loop_analysis..."
+            flag = analysis.Tf_loop.run_wham_heat_capacity(model,self.append_log)
         #elif task == "Tf_loop_analysis":
         #    print "Finished Tf_loop_analysis..."
         #    flag = analysis.Tf_loop.run_wham_heat_capacity(model,self.append_log)
