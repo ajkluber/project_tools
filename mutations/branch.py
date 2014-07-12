@@ -8,8 +8,7 @@ import os
 import shutil
 from glob import glob
 
-from model_builder import models
-from model_builder import systems
+import model_builder as mdb
 
 import phi_values as phi
 import mutatepdbs as mut
@@ -24,30 +23,18 @@ def get_args():
 
 if __name__ == "__main__":
 
-    def dummy_func(sub,string):
-        pass 
-
     args = get_args()
     subdir = args.subdir
     destination = args.dest
 
-    Tf_choice = open(subdir+"/Mut_0/Tf_choice.txt","r").read()[:-1]
-    Models = models.load_models([subdir],dryrun=True)
-    Systems = systems.load_systems([subdir])
-    Model = Models[0]
-    System = Systems[0]
-    path = System.subdir+"/Mut_0/"+Tf_choice+"_agg"
+    Models = mdb.models.load_models([subdir],dryrun=True)
+    model = Models[0]
+    path = model.subdir+"/Mut_0/"
 
     cwd = os.getcwd()
-    sub = cwd+"/"+System.subdir+"/Mut_0"
-    T = phi.get_Tf_choice(sub)
-    savedir = sub+"/"+T+"_agg"
+    sub = cwd+"/"+model.subdir+"/Mut_0"
 
-    paths = [ \
-    "/Mut_0/"+Tf_choice+"_agg/mut",
-    "/Mut_0/"+Tf_choice+"_agg/phi",
-    "/mutants",
-    "/Qref_shadow"]
+    paths = ["/Mut_0/mut","/mutants","/Qref_shadow"]
 
     for P in paths:
         if not os.path.exists(destination+"/"+subdir+P):
@@ -57,15 +44,10 @@ if __name__ == "__main__":
     files = [ \
     "/mutants/calculated_ddG.dat",
     "/Qref_cryst.dat",
+    "/contacts.dat",
     "/model.info",
-    "/system.info",
     "/modelbuilder.log",
-    "/Mut_0/Tf_choice.txt",
-    "/Mut_0/"+Tf_choice+"_agg/BeadBead.dat",
-    "/Mut_0/"+Tf_choice+"_agg/mut/M.dat",
-    "/Mut_0/"+Tf_choice+"_agg/mut/eps.dat",
-    "/Mut_0/"+Tf_choice+"_agg/mut/ddG.dat",
-    "/Mut_0/"+Tf_choice+"_agg/phi/Q_phi.dat" ]
+    "/Mut_0/T_array_last.txt"]
 
     shutil.copy(subdir+".pdb",destination+"/")
     shutil.copy(subdir+"_calculated_ddG.dat",destination+"/")
@@ -73,6 +55,12 @@ if __name__ == "__main__":
         if not os.path.exists(destination+"/"+subdir+file):
             print " copying ",file
             shutil.copy(subdir+file,destination+"/"+subdir+file)
+
+    
+    mut_data = glob(subdir+"/Mut_0/mut/*")
+    print " copying Mut_0/mut/*"
+    for data in mut_data:
+        shutil.copy(data,destination+"/"+subdir+"/Mut_0/mut/")
 
     mutants = glob(subdir+"/mutants/fij*.dat")
     print " copying mutant fij_*dat"
