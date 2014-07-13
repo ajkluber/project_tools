@@ -59,6 +59,8 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
     os.chdir(sub)
     ddGsim, ddGsim_err, M = get_ddG_matrix_M()
     ddG = ddGexp - ddGsim
+    np.savetxt("mut/ddGexp.dat",ddGexp)
+    np.savetxt("mut/ddGexp_err.dat",ddGexp_err)
 
     eps = model.contact_epsilons
 
@@ -107,7 +109,7 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
             ratios_cpx.append(ratio_cpx)
             solution_string += iteration_string + "\n"
         open("mut/solution.log","w").write(solution_string) 
-        plot_solution_info(model,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs)
+        plot_solution_info(model,s,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs)
     else:
         temp = open("mut/num_singular_values_include.txt").read().rstrip("\n")
         num_singular_values = temp.split()[0]
@@ -260,8 +262,15 @@ def apply_constraints_with_cplex(model,ddG,M,cutoff):
     
     return LP_problem, solution_lambda, x_particular, N
 
-def plot_solution_info(model,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs):
+def plot_solution_info(model,s,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs):
     """ Plot solution condition number and mutual covariance."""
+
+    plt.figure()
+    plt.plot(s/max(s),'ro')
+    plt.title(model.subdir+" Singular value spectrum for $\\bm{M}$")
+    plt.savefig("mut/spectrum.pdf")
+    np.savetxt("mut/singular_vals.dat",s)
+    np.savetxt("mut/singular_vals_norm.dat",s/max(s))
 
     ## Plot condition number versus number of included singular values
     ## The condition number quantifies the intrinsic instability in inverting
@@ -346,7 +355,16 @@ def plot_solution_info(model,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs):
 
 def calculate_matrix_ddG_eps_M(model,coord):
     ''' Calculates and saves and returns the matrix from equation (9) in 
-        Matysiak Clementi 2004. '''
+        Matysiak Clementi 2004. 
+
+    Description:
+
+
+    To Do:
+    - Add support for surface mutations (of helices):
+        1. Read in surface mutations.
+        2. Estimate fij of local interactions. fij ~ 0.3
+    '''
 
     cwd = os.getcwd()
     sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
@@ -498,7 +516,7 @@ def save_new_parameters(sub,eps,delta_eps,delta_eps_xp,savebeadbead,savebeadbead
     open(savebeadbeadxp,"w").write(beadbead_string)
 
 def get_ddG_matrix_M():
-    ## Throw error if more than one temperature been used (?)
+    ## T_array_last.txt should hold names of directories 145.00_# where #=1,2,3
     temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
     directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
     if not os.path.exists("mut"):
@@ -506,8 +524,7 @@ def get_ddG_matrix_M():
 
     ## Collect ddG & M from Mut_#/<temp>_*/{mut,phi} directories.
     ## Take avg. and std error of mean for error bars. Save in Mut_#/mut
-
-    print "  Getting experimental ddG"
+    print "  Getting simulation ddG"
     files = ["ddGsim.dat","ddGsim_err.dat","M.dat"] 
     flag = np.array([ not os.path.exists("mut/"+file) for file in files ])
     if np.any(flag):
