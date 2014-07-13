@@ -267,7 +267,7 @@ def plot_solution_info(model,s,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs):
 
     plt.figure()
     plt.plot(s/max(s),'ro')
-    plt.title(model.subdir+" Singular value spectrum for $\\bm{M}$")
+    plt.title(model.subdir+" Singular value spectrum for M")
     plt.savefig("mut/spectrum.pdf")
     np.savetxt("mut/singular_vals.dat",s)
     np.savetxt("mut/singular_vals_norm.dat",s/max(s))
