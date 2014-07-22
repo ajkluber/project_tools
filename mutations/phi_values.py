@@ -136,10 +136,11 @@ def calculate_ddG_for_temperature(mutants,T,bounds,state_labels):
         instate = (Q > bounds[state_num]).astype(int)*(Q <= bounds[state_num+1]).astype(int)
         state_indicator[instate == 1] = state_num+1
     if any(state_indicator == 0):
-        print "ERROR! There are unassigned frames!"
-        print sum((state_indicator == 0).astype(int)), " unassigned frames out of ", len(Q)
-        print " Exiting"
-        raise SystemExit
+        num_not_assign = sum((state_indicator == 0).astype(int))
+        print "  Warning! %d frames were not assigned out of %d total frames!" % (num_not_assign,len(Q))
+        #print sum((state_indicator == 0).astype(int)), " unassigned frames out of ", len(Q)
+        #print " Exiting"
+        #raise SystemExit
 
     ## Boolean arrays that indicate which state each frame is in.
     ## States are defined by their boundaries along coordinate Q.

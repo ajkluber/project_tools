@@ -24,7 +24,6 @@ import phi_values as phi
 import mutatepdbs as mut
 
 import model_builder.models as models
-import model_builder.systems as systems
 
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
