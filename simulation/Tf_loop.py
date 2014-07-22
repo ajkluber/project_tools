@@ -345,6 +345,8 @@ def manually_add_equilibrium_runs(model,append_log,temps):
     cwd = os.getcwd()
     sub = model.path+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
     os.chdir(sub)
+    ## Run for longer if the protein is really big.
+    walltime, queue, ppn, nsteps = determine_equil_walltime(model)
 
     T_string = ''
     for i in range(len(temps)):
@@ -358,8 +360,7 @@ def manually_add_equilibrium_runs(model,append_log,temps):
                 os.chdir(simpath)
                 model.append_log("  running T=%s" % simpath)
                 print "    Running temperature ", simpath
-                #run_constant_temp(model,T,nsteps=str(1000000000),walltime="60:00:00",queue="serial_long")
-                run_constant_temp(model,T,nsteps=str(500000000),walltime="60:00:00",queue="serial_long")
+                run_constant_temp(model,T,nsteps=nsteps,walltime=walltime,queue=queue)
                 os.chdir("..")
             else:
                 ## Directory exists for this temperature: continue.
@@ -380,6 +381,7 @@ def run_equilibrium_simulations(model,append_log):
     Tf = open(Tfsub+"/Tf.txt","r").read().split()[0]
 
     model.append_log("Starting Equil_Tf")
+    walltime, queue, ppn, nsteps = determine_equil_walltime(model)
 
     if not os.path.exists(mutsub):
         os.mkdir(mutsub)
@@ -396,8 +398,7 @@ def run_equilibrium_simulations(model,append_log):
                 os.chdir(simpath)
                 model.append_log("  running T=%s" % simpath)
                 print "    Running temperature ", simpath
-                #run_constant_temp(model,T,nsteps=str(1000000000),walltime="60:00:00",queue="serial_long")
-                run_constant_temp(model,T,nsteps=str(500000000),walltime="60:00:00",queue="serial_long")
+                run_constant_temp(model,T,nsteps=nsteps,walltime=walltime,queue=queue)
                 os.chdir("..")
             else:
                 ## Directory exists for this temperature: continue.
@@ -412,19 +413,15 @@ def determine_equil_walltime(model):
     """ Estimate an efficient walltime."""
     N = model.n_residues
     ppn = "1"
-    nsteps = "1000000000"
+    nsteps = "500000000"
     queue="serial"
     if N < 60:
-        walltime="24:00:00"
+        walltime="12:00:00"
     else:
-        if N > 160:
-            if N > 250:
-                walltime="72:00:00"
-                queue="serial_long"
-            else:
-                walltime="24:00:00"
+        if N > 100:
+            walltime="60:00:00"
         else:
-            walltime="12:00:00"
+            walltime="24:00:00"
     return walltime, queue, ppn,nsteps
 
 def determine_walltime(model):
