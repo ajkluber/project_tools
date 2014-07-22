@@ -33,10 +33,11 @@ def get_args():
 
 
 def plot_ddGs(protein, current_dir, iteration, select_temp):
-    select_path = current_dir+'/'+protein+'/Mut_'+iteration+'/'+select_temp+'/phi/'
+    select_path = current_dir+'/'+protein+'/Mut_'+iteration+'/'+select_temp+'_1/phi/'
 
     ddGdag_sim = np.loadtxt(select_path+'Q_phi.dat', usecols=(4,))
     ddG0_sim = np.loadtxt(select_path+'Q_phi.dat', usecols=(5,))
+
     ddGdag_exp_raw = np.loadtxt(current_dir+'/'+protein+'_calculated_ddG.dat', usecols=(6,))
     ddG0_exp_raw = np.loadtxt(current_dir+'/'+protein+'_calculated_ddG.dat', usecols=(4,))
     index_raw = np.loadtxt(current_dir+'/'+protein+'_calculated_ddG.dat', usecols=(1,))
@@ -83,41 +84,39 @@ def plot_ddGs(protein, current_dir, iteration, select_temp):
     d = np.min(ddGdag_exp)
     e = np.max(ddGdag_sim)
     f = np.max(ddGdag_exp)
-    upper = np.max([e,f]) + 1
-    lower = np.min([c,d,0]) - 1
-    
-    plt.plot(ddGdag_sim, ddGdag_exp, 'ro')
-    # Plot the 45 degree line
-    plt.plot([lower,upper],[lower,upper],'b-', lw=2)
+    g = np.min(ddG0_sim)
+    h = np.min(ddG0_exp)
+    m = np.max(ddG0_sim)
+    n = np.max(ddG0_exp)
+    upper = np.max([e,f,m,n]) + 1
+    lower = np.min([c,d,g,h,0]) - 1
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
 
-    plt.title("Comparison of simulation and experimental ddGdag for "+protein+", iteration "+iteration)
+#    ax1.plot(ddGdag_sim, ddGdag_exp, 'ro', label="ddGdag ")                                                                    
+    ax1.errorbar(ddGdag_sim, ddGdag_exp, fmt='ro', label="ddGdag ", xerr = err_ddGdag_sim, yerr= err_ddGdag_exp)
+#    ax1.errorbar(ddGdag_sim, ddGdag_exp, fmt='ro', label="ddGdag ", xerr =0.08 , yerr=0.05)                                     
+#    ax1.plot(ddG0_sim, ddG0_exp, 'go', label="ddG0")                                                                               
+    ax1.errorbar(ddG0_sim, ddG0_exp, fmt='go', label="ddG0" , xerr = err_ddG0_sim, yerr=err_ddG0_exp)
+
+    #Plot the tendency line of the entire sim vs exp ddGs (as in MatysiakClementi(20040                                             
+    ddG_sim = np.concatenate((ddGdag_sim,ddG0_sim))
+    ddG_exp = np.concatenate((ddGdag_exp,ddG0_exp))
+    fit = np.polyfit(ddG_sim,ddG_exp, 1)
+    fit_fn = np.poly1d(fit)
+    ax1.plot([lower,upper], fit_fn([lower,upper]), '-k')
+    # Plot the 45 degree line                                                                                                       
+    ax1.plot([lower,upper],[lower,upper],'b-', lw=2)
+    plt.title("Comparison of simulation and experimental ddG for "+protein+", iteration "+iteration)
     plt.xlim([lower,upper])
     plt.ylim([lower,upper])
-    plt.xlabel('ddGdag from simulation')
-    plt.ylabel('ddGdag from experiment')
-    plt.savefig(current_dir+'/metrics/ddG_comparison/'+protein+'_ddGdag_'+iteration+'_'+select_temp+'.pdf')
+    plt.xlabel('ddG from simulation')
+    plt.ylabel('ddG from experiment')
+    plt.legend(loc='lower right')
+    plt.savefig(current_dir+'/metrics/ddG_comparison/'+protein+'_ddGs_'+iteration+'_'+select_temp+'.pdf')
     plt.clf()
 
-    #Second plot
-    #Finding the maxima and minima to size plot and draw y=x line  
-    c = np.min(ddG0_sim)
-    d = np.min(ddG0_exp)
-    e = np.max(ddG0_sim)
-    f = np.max(ddG0_exp)
-    upper = np.max([e,f]) + 1
-    lower = np.min([c,d,0]) - 1
-    
-    plt.plot(ddG0_sim, ddG0_exp, 'go')
-    #Plot the 45 degree line
-    plt.plot([lower,upper],[lower,upper],'b-', lw=2)
 
-    plt.title("Comparison of simulation and experimental ddG0 for "+protein+", iteration "+iteration)
-    plt.xlim([lower,upper])
-    plt.ylim([lower,upper])
-    plt.xlabel('ddG0 from simulation')
-    plt.ylabel('ddG0 from experiment')
-    plt.savefig(current_dir+'/metrics/ddG_comparison/'+protein+'_ddG0_'+iteration+'_'+select_temp+'.pdf')
-    plt.clf()
 
     #Third plot: Phi values exp vs sim
     #Finding the maxima and minima to size plot and draw y=x line                                                                                     
@@ -198,7 +197,7 @@ def plot_ddGs(protein, current_dir, iteration, select_temp):
     plt.clf()
 
     #Fifth plot: Eigenvalues of M matrix for decomposition                                                                    
-    select_path_mut = current_dir+'/'+protein+'/Mut_'+iteration+'/'+select_temp+'_agg/mut/singular_values_norm.dat'
+    select_path_mut = current_dir+'/'+protein+'/Mut_'+iteration+'/mut/singular_values_norm.dat'
     protein_dict={'r15':'ro', 'r16':'go', 'r17':'bo'}
     if protein in protein_dict:
         chosen_color = protein_dict[protein]
@@ -227,7 +226,7 @@ def main():
     if os.path.isdir(current_dir+'/metrics/ddG_comparison')==False:
         os.mkdir('ddG_comparison')
     
-    temps_file = open(current_dir+'/'+protein+'/Mut_'+iteration+'/T_array.txt').readlines()
+    temps_file = open(current_dir+'/'+protein+'/Mut_'+iteration+'/Tf_choice.txt').readlines()
     for temp in temps_file:
         select_temp = temp.split()[0]
         plot_ddGs(protein, current_dir, iteration,select_temp)
