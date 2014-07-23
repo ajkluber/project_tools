@@ -201,6 +201,7 @@ def get_args():
 
     modeloptions = mdb.models.check_options(options,firstpass=True)
 
+    return args, modeloptions
 
 if __name__ == "__main__":
     
