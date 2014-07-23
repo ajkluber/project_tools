@@ -475,7 +475,7 @@ def main():
         if x == 'Q_pmf':
             for y in proteins_choice:
                 select_temp = open(current_dir+'/'+y+'/Mut_'+iteration_number+'/Tf_choice.txt').readline().split()[0]
-                select_path = current_dir+'/'+y+'/Mut_'+iteration_number+'/'+select_temp+'_agg/'
+                select_path = current_dir+'/'+y+'/Mut_'+iteration_number+'/'+select_temp+'_1/'
                 f = metrics_dict.get(x)
                 f(y,current_dir,select_path,iteration_number)
                 
@@ -486,7 +486,7 @@ def main():
 
                 # Find out the proper path for each protein according to the folding temperature 
                 select_temp = open(current_dir+'/'+y+'/Mut_'+iteration_number+'/Tf_choice.txt').readline().split()[0]
-                select_path = current_dir+'/'+y+'/Mut_'+iteration_number+'/'+select_temp+'_agg/'
+                select_path = current_dir+'/'+y+'/Mut_'+iteration_number+'/'+select_temp+'_1/'
 
                 data_matrix.append(f(y, current_dir, select_path))
             # And then feed into the plotting function

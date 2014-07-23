@@ -13,7 +13,7 @@ Usage :
 Changelog:
 May 2014 Created by AJK
 May 2014 Modified by FY: Added Qlocal, Qnonlocal to plots
-
+July 2014 Updated by FY to reflect changes in package directory structure
 """
 
 import numpy as np
@@ -41,14 +41,16 @@ def plot_thermodynamic_mechanism(current_dir, protein, iteration_number, bins=40
     # Get the Q files from the folding temperature directory                                                          
     path = current_dir + '/' + protein + '/Mut_'+iteration_number+'/'
     temp = open(path+'Tf_choice.txt', 'r').readline().split()[0]
-    path += temp+'_agg/'
+    # Tf_choice.txt should be manually edited to contain the temperature directory closest to the actual Tf 
+    path += temp+'_1/'
+    # We assume that each of the 3 directories for a given temperature 
 
     print "Loading Q.dat, Qres.dat"
     Q = np.loadtxt(path+"Q.dat")
-    Qres = np.loadtxt(path+"Qres.dat")
+    Qres = np.loadtxt(path+"qimap.dat")
 
     calculate_locals = True
-
+    #This should soon be deprecated, since Qlocalres, etc. are no longer calculated
     try:
         Qres_local = np.loadtxt(path+"Qlocalres.dat")
     except: 
@@ -158,7 +160,7 @@ def get_contact_pair_distribution_versus_Q(current_dir, protein, iteration_numbe
     # Get the BeadBead.dat file from the folding temperature directory
     path = current_dir + '/' + protein + '/Mut_'+iteration_number+'/'
     temp = open(path+'Tf_choice.txt', 'r').readline().split()[0]
-    path += temp+'_agg/'
+    path += temp+'_1/'
 
     pairs, epsij, sigij = get_beadbead_info(path)
     print " Loading trajectory"

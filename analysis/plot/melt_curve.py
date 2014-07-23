@@ -4,7 +4,7 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 import os
 import argparse
-
+import model_builder.models as models
 '''                                                                                                                                           
 Author: Fernando Yrazu
 Created: June 2014                
@@ -17,7 +17,8 @@ Procedure:
         --prot = (Required) Input the proteins that you want to evaluate  
         --iter = (Required) Input the iteration number you are working with. Defaults to 0.                                   
 Changelog:                      
-June 2014 Created                  
+June 2014 Created
+July 2014 Modified to account for new directory structure                  
 '''
 
 def get_args(proteins_list):
@@ -30,10 +31,31 @@ def get_args(proteins_list):
     return args
 
 def cv_melting(protein, iteration_number, current_dir):
+    path = current_dir+'/'+protein+'/Tf_'+iteration_number+'/whamQ/'
+    model = models.load_model(protein,dryrun=True)
+
+    Cv = np.loadtxt(path+"cv",usecols=(0,1))
+    QvsT = np.loadtxt(path+"Q_vs_T",dtype=float)
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    ax2 = ax1.twinx()
+    ax1.plot(Cv[:,0],Cv[:,1],'r')
+    ax1.set_xlabel("Temperature (K)")
+    ax1.set_ylabel("Heat Capacity (kJ/mol K)")
+    ax1.set_title("$C_v(T)$ and $\\left< Q \\right>(T)$ for %s" % model.name)
+
+    ax2.plot(QvsT[:,0],QvsT[:,1]/model.n_contacts,'b')
+    ax2.set_ylim(0,1)
+    ax2.set_ylabel("$\\left< Q \\right>(T)$")
+    plt.savefig('metrics/cv_melting/cv_and_melt_'+protein+'_iter_'+iteration_number+'.pdf')
+
+
+def old_cv_melting(protein, iteration_number, current_dir):
+    # This is the old version of the function, now rendered obsolete by new arrangement of directories 22-Jul-2014
     path = current_dir+'/'+protein+'/Tf_'+iteration_number+'/'
     
     # First plot the heat capacity curve
-    cv = np.loadtxt(path+'wham/Heat_rmsd_Rg.dat', usecols=([0,2])).astype(float)
+    cv = np.loadtxt(path+'whamQ/Heat_rmsd_Rg.dat', usecols=([0,2])).astype(float)
     plt.plot(cv[:,0],cv[:,1])
     plt.title('Heat capacity curve for '+protein+', iteration '+iteration_number)
     plt.xlabel('T [K]')
