@@ -418,6 +418,7 @@ def determine_equil_walltime(model):
     if N < 60:
         walltime="24:00:00"
     else:
+        queue="serial_long"
         if N > 100:
             walltime="60:00:00"
         else:
