@@ -60,54 +60,6 @@ def get_AApdb_coords(pdb):
     atm_coords = np.array(atm_coords)
     return atm_nums,atm_names,atm_coords,res_nums,res_names
 
-def get_heavy_atom_contact_map(name):
-    """ Parses the output of shadow.jar to determine heavy atom contact
-        map. Works. Requires the following files be present: name.contacts
-        name.pdb
-    """
-    atoms, num_heavy, heavy_indices, atms_per_res = get_shadow_pdb_atoms(name+".wH")
-    wt_conts = np.loadtxt(name+".contacts",usecols=(1,3),dtype=int)
-    C = np.zeros((num_heavy,num_heavy))
-
-    for pair in wt_conts:
-        atm1 = atoms[pair[0]-1]
-        atm2 = atoms[pair[1]-1]
-
-        if (atm1 != "BAD") and (atm2 != "BAD"):
-            hvy1 = heavy_indices.index(pair[0])
-            hvy2 = heavy_indices.index(pair[1])
-            C[hvy1,hvy2] = 1
-    return C, atms_per_res
-
-def get_shadow_pdb_atoms(name):
-    """ Parse the pdb file output by Shadow Jar."""
-    prev_resid = 1
-    num_heavy = 0
-    atoms = []
-    heavy_indices = []
-    atms_per_res = []
-    temp_num_atoms = 0
-    for line in open(name+".pdb","r"):
-        if line[:3] in ["TER","END"]:
-            break
-        else:
-            atm = line[12:16].split()[0]
-            atoms.append(atm)
-            if atm != "BAD":
-                index = int(line[6:11])
-                heavy_indices.append(index)
-                num_heavy += 1
-                resid = int(line[22:26])
-                if resid != prev_resid:
-                    atms_per_res.append(temp_num_atoms)
-                    temp_num_atoms = 1
-                    prev_resid = resid
-                else:
-                    temp_num_atoms += 1
-
-    atms_per_res.append(temp_num_atoms)
-    return atoms,num_heavy,heavy_indices,atms_per_res
-
 def get_all_core_mutations():
     """ Extract mutational data. Only return info for useable mutations """
     mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
@@ -208,42 +160,6 @@ def get_sim_ddG(mutants,coord):
         
     return ddGsim_TS_D, ddGsim_N_D
 
-def get_res_res_conts(name):
-    """ Get number of residue-residue heavy atom contacts from 
-        all-atom contact map output from Shadowmap.
-    """
-    C, atms_per_res = get_heavy_atom_contact_map(name)
-    N = len(atms_per_res)
-    C_res = np.zeros((N,N),float)
-    for i in range(4,N):
-        lindx = sum(atms_per_res[:i])
-        rindx = sum(atms_per_res[:i+1])
-        for j in range(i+4,N):
-            bindx = sum(atms_per_res[:j])
-            tindx = sum(atms_per_res[:j+1])
-            res_res_conts = C[lindx:rindx,bindx:tindx]
-            C_res[i,j] = float(sum(sum(res_res_conts)))
-    return C_res
-
-def calculate_fraction_contact_loss(name):
-    """ Calculate f^k_ij matrices for mutant."""
-
-    Cwt = get_res_res_conts("wt.cutoff")
-    Cmut = get_res_res_conts(name+".cutoff")
-    diff = (Cwt - Cmut)
-    print "    Number of contacts lost for ",name,sum(sum(diff))
-    Cwt[ Cwt < 1 ] = 1.
-    diff /= Cwt
-    np.savetxt("fij_"+name+".dat",diff,fmt="%.5f",delimiter=" ")
-
-def calculate_contacts_from_pdb(name):
-    """ Calls shadow map to calculate"""
-    if not os.path.exists(name+".gro"):
-        cmd1 = 'echo -e "9\\n3\\n" | pdb2gmx -f %s.pdb -o %s.gro -p %s.top' % (name,name,name)
-        sb.call(cmd1,shell=True,stdout=open("cutoff.out","w"),stderr=open("cutoff.err","w"))
-    cmd2 = 'java -jar SCM.1.31.jar -g %s.gro -t %s.top -o %s.cutoff.contacts -m cutoff -p %s.cutoff.wH.pdb' % (name,name,name,name)
-    sb.call(cmd2,shell=True,stdout=open("cutoff.out","w"),stderr=open("cutoff.err","w"))
-
 def count_heavy_atom_contacts(pdb):
     """ Calculate # of residue-residue heavy atom contacts. """
 
@@ -287,52 +203,44 @@ def calculate_contacts_lost_for_mutants():
     if not os.path.exists("Cwt.dat"):
         Cwt, wtresidues, wtcoords = count_heavy_atom_contacts("wt.pdb")
         np.savetxt("Cwt.dat",Cwt)
+    modelname = 'wt'
     mutants = get_all_core_mutations()
     log_string = ""
     for k in range(len(mutants)):
         mut = mutants[k]
-        mutindx = int(mut[1:-1])
-        print "    Mutation: ",mut
-
-        Cmut, residues, coords = count_heavy_atom_contacts(mut+".pdb")
-        tempstring = "%-8s%-10s%-4s%-5s%-7s%-5s\n" % ("Resi","Resj","Cwt","Cmut","diff","fij")
-        Dmut = Cwt - Cmut
-        indices = np.nonzero(Dmut)
-        Fij = np.zeros(Cwt.shape)
-        for m in range(len(indices[0])):
-            a = indices[0][m]
-            b = indices[1][m]
-            fij = Dmut[a,b]/Cwt[a,b]
-            Fij[a,b] = fij
-            tempstring += "%3s %-3d %3s %-3d  %3d  %3d  %3d  %9.5f\n" % \
-                (residues[a], a+1, residues[b], b+1, Cwt[a,b], Cmut[a,b], Dmut[a,b],fij)
-        np.savetxt("fij_"+mut+".dat",Fij,fmt="%.6f",delimiter=" ")
-        print tempstring
-        log_string += tempstring+"\n"
-    open("mutatepdbs.log","w").write(log_string)
-
-def make_all_mutations():
-    """ Read in mutational data from file. Parse the file into lists of mutation
-        indices mut_indx, wt residue identity wt_res, and desired mutation 
-        mut_res.
-        
-        MODELLER uses 3-letter amino acid code (e.g. ALA instead of A) whereas 
-        the mutational data files will probably use single-letter code.
-    """
-
-    modelname = 'wt'
-    mutants = get_all_core_mutations()
-    for i in range(len(mutants)):
-        mut = mutants[i]
         saveas = mut+".pdb"
-        if not os.path.exists(saveas):
-            print "    Performing mutation: %s" % mut
+        if not os.path.exists("fij_"+mut+".dat"):
+            print "    Calculating fij for: %s" % mut
             respos = mut[1:-1]
             restyp = residue_three_letter_code(mut[-1])
             saveas = mut+".pdb"
             modeller_mutate_pdb(modelname,respos,restyp,saveas)
+
+            mutindx = int(mut[1:-1])
+
+            Cmut, residues, coords = count_heavy_atom_contacts(mut+".pdb")
+            tempstring = "Mutation: %s\n" % mut
+            tempstring += "%-8s%-10s%-4s%-5s%-7s%-5s\n" % ("Resi","Resj","Cwt","Cmut","diff","fij")
+            Dmut = Cwt - Cmut
+            indices = np.nonzero(Dmut)
+            Fij = np.zeros(Cwt.shape)
+            for m in range(len(indices[0])):
+                a = indices[0][m]
+                b = indices[1][m]
+                fij = Dmut[a,b]/Cwt[a,b]
+                Fij[a,b] = fij
+                tempstring += "%3s %-3d %3s %-3d  %3d  %3d  %3d  %9.5f\n" % \
+                    (residues[a], a+1, residues[b], b+1, Cwt[a,b], Cmut[a,b], Dmut[a,b],fij)
+            np.savetxt("fij_"+mut+".dat",Fij,fmt="%.6f",delimiter=" ")
+            print tempstring
         else:
+            Fij = np.loadtxt("fij_"+mut+".dat")
+            indices = np.nonzero(Fij)
+            tempstring = "Mutation: \n"+mut
+            tempstring += "%-8s%-10s%-4s%-5s%-7s%-5s\n" % ("Resi","Resj","Cwt","Cmut","diff","fij")
             print "    Skipping mutation: %s" % mut
+        log_string += tempstring+"\n"
+    open("mutatepdbs.log","w").write(log_string)
 
 def modeller_mutate_pdb(modelname,respos,restyp,saveas,chain='A'):
     """ Use MODELLER to mutate the pdb modelname at respos to restyp then save as saveas.
@@ -429,39 +337,6 @@ def modeller_mutate_pdb(modelname,respos,restyp,saveas,chain='A'):
 
     mdl1.write(file=saveas)
 
-def prepare_mutants(System,append_log):
-    """ Creates a mutated pdb for every mutant."""
-
-    append_log(System.subdir,"Starting: Preparing_Mutants")
-    cwd = os.getcwd()
-    sub = cwd+"/"+System.subdir+"/mutants"
-    mut_filename = System.subdir+"_calculated_ddG.dat"
-    if not os.path.exists(sub):
-        print "  Creating direcotory",sub
-        os.mkdir(sub)
-    if not os.path.exists("wt.pdb"):
-        print "  Copying wt"
-        shutil.copy(System.subdir+"/clean_noH.pdb",System.subdir+"/mutants/wt.pdb")
-    if (not os.path.exists(sub+"/calculated_ddG.dat")):
-        print "  Didn't find "+sub+"/calculated_ddG.dat. Looking for "+System.path+"/"+mut_filename
-        if os.path.exists(System.path+"/"+mut_filename):
-            shutil.copy(System.path+"/"+mut_filename,sub+"/calculated_ddG.dat")
-        else:
-            print "ERROR!"
-            print "  Didn't find "+mut_filename+" in "+System.path
-            print "  Prepare the mutational data using prepare_ddG.py"
-            print "  Exiting."
-            raise SystemExit
-
-    os.chdir(sub)
-
-    print "  Mutating pdbs with MODELLER..."
-    make_all_mutations() 
-    print "  Calculating fraction of contact loss fij..."
-    calculate_contacts_lost_for_mutants()
-    os.chdir(cwd)
-    append_log(System.subdir,"Finished: Preparing_Mutants")
-
 def command_line_prepare_mutants():
     """ Creates a mutated pdb for every mutant."""
 
@@ -471,8 +346,6 @@ def command_line_prepare_mutants():
         print "  exiting..."
         raise SystemExit
 
-    print "  Mutating pdbs with MODELLER..."
-    make_all_mutations() 
     print "  Calculating fraction of contact loss fij..."
     calculate_contacts_lost_for_mutants()
 
