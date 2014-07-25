@@ -112,9 +112,9 @@ class MatysiakClementi2004(ProjectManager):
             ## Run heat capacity for equilibrium runs. Cv(T), F(Q)
             analysis.Tf_loop.run_wham_heat_capacity(model,self.append_log,Mut=True)
         elif task == "Equil_Tf_wham":
-            print "Starting prepping mutant pdbs..."
-            mutations.mutatepdbs.prepare_mutants(model,self.append_log)
-        elif task == "Preparing_Mutants":
+        #    print "Starting prepping mutant pdbs..."
+        #    mutations.mutatepdbs.prepare_mutants(model,self.append_log)
+        #elif task == "Preparing_Mutants":
             print "Starting calculating dH for mutants..."
             mutations.phi_values.calculate_dH_for_mutants(model,self.append_log)
         elif task == "Calculating_dH":

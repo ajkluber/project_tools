@@ -1,4 +1,4 @@
-""" Mutate the pdbs with MODLLER
+""" Mutate the pdbs with MODELLER
 
 Description:
 
@@ -12,10 +12,7 @@ Follow instructions at:
 https://docs.rice.edu/confluence/display/ITDIY/How+to+use+BLAS+and+LAPACK+libraries
 
 """
-import subprocess as sb
 import numpy as np
-import shutil
-import sys
 import os
 
 from modeller import *
@@ -30,35 +27,6 @@ def residue_three_letter_code(rescode):
                     'S': 'SER', 'T': 'THR', 'W': 'TRP',
                     'Y': 'TYR', 'V': 'VAL'}
     return residue_code[rescode]
-
-def get_AApdb_coords(pdb):
-    """ Parse atom names, indices, coordinates; residue names, indices from all-atom pdb """
-
-    ## Only interested in ATOM lines.
-    atmlines = [ line.rstrip('\n') for line in open(pdb,'r').readlines() if line.startswith("ATOM") ] 
-
-    atm_nums   = []
-    atm_names  = []
-    atm_coords = []
-    res_nums   = []
-    res_names  = []
-
-    for line in atmlines:
-        atom_type = line[12:16].strip()
-        atom_type = atom_type.rstrip()
-
-        ## Only keep heavy atoms
-        if atom_type.startswith("H"):
-            continue
-        else:
-            atm_nums.append(int(line[6:11]))
-            atm_names.append(atom_type)
-            atm_coords.append(np.array([float(line[30:38]),float(line[38:46]),float(line[46:54])]))
-            res_nums.append(int(line[22:26]))
-            res_names.append(line[17:20])
-
-    atm_coords = np.array(atm_coords)
-    return atm_nums,atm_names,atm_coords,res_nums,res_names
 
 def get_all_core_mutations():
     """ Extract mutational data. Only return info for useable mutations """
@@ -136,7 +104,6 @@ def get_exp_ddG():
     
     return ddGexp, ddGexp_err
 
-
 def get_sim_ddG(mutants,coord):
     """ Get the saved ddG from simulation that should have been computed already."""
 
@@ -159,6 +126,35 @@ def get_sim_ddG(mutants,coord):
         #ddGsim_N_D_err[k] = float(ddG_sim_all[temp_indx,2])
         
     return ddGsim_TS_D, ddGsim_N_D
+
+def get_AApdb_coords(pdb):
+    """ Parse atom names, indices, coordinates; residue names, indices from all-atom pdb """
+
+    ## Only interested in ATOM lines.
+    atmlines = [ line.rstrip('\n') for line in open(pdb,'r').readlines() if line.startswith("ATOM") ] 
+
+    atm_nums   = []
+    atm_names  = []
+    atm_coords = []
+    res_nums   = []
+    res_names  = []
+
+    for line in atmlines:
+        atom_type = line[12:16].strip()
+        atom_type = atom_type.rstrip()
+
+        ## Only keep heavy atoms
+        if atom_type.startswith("H"):
+            continue
+        else:
+            atm_nums.append(int(line[6:11]))
+            atm_names.append(atom_type)
+            atm_coords.append(np.array([float(line[30:38]),float(line[38:46]),float(line[46:54])]))
+            res_nums.append(int(line[22:26]))
+            res_names.append(line[17:20])
+
+    atm_coords = np.array(atm_coords)
+    return atm_nums,atm_names,atm_coords,res_nums,res_names
 
 def count_heavy_atom_contacts(pdb):
     """ Calculate # of residue-residue heavy atom contacts. """
@@ -200,8 +196,8 @@ def calculate_contacts_lost_for_mutants():
         for mutant k:  f^k_ij . Must be in mutants directory which holds wild-type 
         pdb wt.pdb."""
 
+    Cwt, wtresidues, wtcoords = count_heavy_atom_contacts("wt.pdb")
     if not os.path.exists("Cwt.dat"):
-        Cwt, wtresidues, wtcoords = count_heavy_atom_contacts("wt.pdb")
         np.savetxt("Cwt.dat",Cwt)
     modelname = 'wt'
     mutants = get_all_core_mutations()
@@ -209,36 +205,28 @@ def calculate_contacts_lost_for_mutants():
     for k in range(len(mutants)):
         mut = mutants[k]
         saveas = mut+".pdb"
-        if not os.path.exists("fij_"+mut+".dat"):
-            print "    Calculating fij for: %s" % mut
-            respos = mut[1:-1]
-            restyp = residue_three_letter_code(mut[-1])
-            saveas = mut+".pdb"
-            modeller_mutate_pdb(modelname,respos,restyp,saveas)
+        print "    Calculating fij for: %s" % mut
+        respos = mut[1:-1]
+        restyp = residue_three_letter_code(mut[-1])
+        saveas = mut+".pdb"
+        modeller_mutate_pdb(modelname,respos,restyp,saveas)
 
-            mutindx = int(mut[1:-1])
+        mutindx = int(mut[1:-1])
 
-            Cmut, residues, coords = count_heavy_atom_contacts(mut+".pdb")
-            tempstring = "Mutation: %s\n" % mut
-            tempstring += "%-8s%-10s%-4s%-5s%-7s%-5s\n" % ("Resi","Resj","Cwt","Cmut","diff","fij")
-            Dmut = Cwt - Cmut
-            indices = np.nonzero(Dmut)
-            Fij = np.zeros(Cwt.shape)
-            for m in range(len(indices[0])):
-                a = indices[0][m]
-                b = indices[1][m]
-                fij = Dmut[a,b]/Cwt[a,b]
-                Fij[a,b] = fij
-                tempstring += "%3s %-3d %3s %-3d  %3d  %3d  %3d  %9.5f\n" % \
-                    (residues[a], a+1, residues[b], b+1, Cwt[a,b], Cmut[a,b], Dmut[a,b],fij)
-            np.savetxt("fij_"+mut+".dat",Fij,fmt="%.6f",delimiter=" ")
-            print tempstring
-        else:
-            Fij = np.loadtxt("fij_"+mut+".dat")
-            indices = np.nonzero(Fij)
-            tempstring = "Mutation: \n"+mut
-            tempstring += "%-8s%-10s%-4s%-5s%-7s%-5s\n" % ("Resi","Resj","Cwt","Cmut","diff","fij")
-            print "    Skipping mutation: %s" % mut
+        Cmut, residues, coords = count_heavy_atom_contacts(mut+".pdb")
+        tempstring = "Mutation: %s\n" % mut
+        tempstring += "%-8s%-10s%-4s%-5s%-7s%-5s\n" % ("Resi","Resj","Cwt","Cmut","diff","fij")
+        Dmut = Cwt - Cmut
+        indices = np.nonzero(Dmut)
+        Fij = np.zeros(Cwt.shape)
+        for m in range(len(indices[0])):
+            a = indices[0][m]
+            b = indices[1][m]
+            fij = Dmut[a,b]/Cwt[a,b]
+            Fij[a,b] = fij
+            tempstring += "%3s %-3d %3s %-3d  %3d  %3d  %3d  %9.5f\n" % \
+                (residues[a], a+1, residues[b], b+1, Cwt[a,b], Cmut[a,b], Dmut[a,b],fij)
+        np.savetxt("fij_"+mut+".dat",Fij,fmt="%.6f",delimiter=" ")
         log_string += tempstring+"\n"
     open("mutatepdbs.log","w").write(log_string)
 
@@ -337,7 +325,7 @@ def modeller_mutate_pdb(modelname,respos,restyp,saveas,chain='A'):
 
     mdl1.write(file=saveas)
 
-def command_line_prepare_mutants():
+if __name__ == '__main__':
     """ Creates a mutated pdb for every mutant."""
 
     if not os.path.exists("calculated_ddG.dat"):
@@ -346,8 +334,6 @@ def command_line_prepare_mutants():
         print "  exiting..."
         raise SystemExit
 
-    print "  Calculating fraction of contact loss fij..."
+    print "  Calculating fraction of contact loss fij."
     calculate_contacts_lost_for_mutants()
-
-if __name__ == '__main__':
-    command_line_prepare_mutants()
+    print "  See mutatepdbs.log for summary of contact loss per mutant."
