@@ -222,10 +222,13 @@ def calculate_contacts_lost_for_mutants():
         for m in range(len(indices[0])):
             a = indices[0][m]
             b = indices[1][m]
-            fij = Dmut[a,b]/Cwt[a,b]
-            Fij[a,b] = fij
-            tempstring += "%3s %-3d %3s %-3d  %3d  %3d  %3d  %9.5f\n" % \
-                (residues[a], a+1, residues[b], b+1, Cwt[a,b], Cmut[a,b], Dmut[a,b],fij)
+            if Cwt[a,b] == 0.:
+                continue
+            else:
+                fij = Dmut[a,b]/Cwt[a,b]
+                Fij[a,b] = fij
+                tempstring += "%3s %-3d %3s %-3d  %3d  %3d  %3d  %9.5f\n" % \
+                    (residues[a], a+1, residues[b], b+1, Cwt[a,b], Cmut[a,b], Dmut[a,b],fij)
         np.savetxt("fij_"+mut+".dat",Fij,fmt="%.6f",delimiter=" ")
         log_string += tempstring+"\n"
     open("mutatepdbs.log","w").write(log_string)
