@@ -79,6 +79,24 @@ def get_shadow_pdb_atoms(name):
     atms_per_res.append(temp_num_atoms)
     return atoms,num_heavy,heavy_indices,atms_per_res
 
+def get_all_core_mutations():
+    """ Extract mutational data. Only return info for useable mutations """
+    mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
+    core_muts = []
+    for i in range(mutation_data.shape[0]):
+        if (mutation_data[i,0] == "core"):
+            core_muts.append(True)
+        else:
+            core_muts.append(False)
+    core_muts = np.array(core_muts)
+
+    mut_indx = mutation_data[(core_muts == True),1] 
+    wt_res = mutation_data[(core_muts == True),2] 
+    mut_res = mutation_data[(core_muts == True),3] 
+    mutants = [ wt_res[i]+mut_indx[i]+mut_res[i]  for i in range(len(mut_indx)) ]
+    
+    return mutants
+
 def get_core_mutations():
     """ Extract mutational data. Only return info for useable mutations """
     mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
@@ -202,7 +220,7 @@ def calculate_contacts_lost_for_mutants():
         for mutant k:  f^k_ij . Must be in mutants directory which holds wild-type 
         pdb wt.pdb, a file hold mutations information mutations.dat."""
 
-    mutants = get_core_mutations()
+    mutants = get_all_core_mutations()
 
     if os.path.exists("SCM.1.31.jar") == False:
         cmd0 = 'cp /projects/cecilia/SCM.1.31.jar .'
@@ -236,7 +254,7 @@ def make_all_mutations():
     """
 
     modelname = 'wt'
-    mutants = get_core_mutations()
+    mutants = get_all_core_mutations()
     for i in range(len(mutants)):
         mut = mutants[i]
         saveas = mut+".pdb"
