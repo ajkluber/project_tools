@@ -85,6 +85,7 @@ if __name__ == "__main__":
 
     mutants = get_all_core_mutations()
 
+    fij_err = []
     for k in range(len(mutants)):
     #for k in [11]:     ## DEUBUGGING
         mut = mutants[k]
@@ -94,6 +95,7 @@ if __name__ == "__main__":
         temp2 = np.nonzero(Cwt[:,mutindx-1])
         #print temp1,temp2
         #print Cwt[mutindx-1,temp1],Cwt[temp2,mutindx-1]
+        Fij = np.loadtxt("fij_"+mut+".dat")
 
         Cmut, residues, coords = count_heavy_atom_contacts(mut+".pdb")
 
@@ -106,7 +108,9 @@ if __name__ == "__main__":
             #print wtresidues[a+1],wtresidues[b+1]
             #print residues[a+1], residues[b+1]
             fij = Dmut[a,b]/Cwt[a,b]
-            print "%3s %-3d %3s %-3d  %3d  %3d  %3d  %9.5f" % (residues[a], a+1, residues[b], b+1, Cwt[a,b], Cmut[a,b], Dmut[a,b],fij)
+            oldfij = Fij[a,b]
+            fij_err.append(fij - oldfij)
+            print "%3s %-3d %3s %-3d  %3d  %3d  %3d  %9.5f  %9.5f" % (residues[a], a+1, residues[b], b+1, Cwt[a,b], Cmut[a,b], Dmut[a,b],fij,oldfij)
 
             #if a == mutindx-1:     ## DEBUGGING
             #    print "%3s*%-3d %3s %-3d  %3d  %3d  %3d  %9.5f" % (residues[a], a+1, residues[b], b+1, Cwt[a,b], Cmut[a,b], Dmut[a,b],fij)

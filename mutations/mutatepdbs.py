@@ -298,7 +298,7 @@ def modeller_mutate_pdb(modelname,respos,restyp,saveas,chain='A'):
     (A) would result in a pdb: F90A.pdb
     """
 
-    log.verbose()
+    log.none()
 
     # Set a different value for rand_seed to get a different final model
     env = environ(rand_seed=-49837)
