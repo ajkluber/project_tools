@@ -31,6 +31,35 @@ def residue_three_letter_code(rescode):
                     'Y': 'TYR', 'V': 'VAL'}
     return residue_code[rescode]
 
+def get_AApdb_coords(pdb):
+    """ Parse atom names, indices, coordinates; residue names, indices from all-atom pdb """
+
+    ## Only interested in ATOM lines.
+    atmlines = [ line.rstrip('\n') for line in open(pdb,'r').readlines() if line.startswith("ATOM") ] 
+
+    atm_nums   = []
+    atm_names  = []
+    atm_coords = []
+    res_nums   = []
+    res_names  = []
+
+    for line in atmlines:
+        atom_type = line[12:16].strip()
+        atom_type = atom_type.rstrip()
+
+        ## Only keep heavy atoms
+        if atom_type.startswith("H"):
+            continue
+        else:
+            atm_nums.append(int(line[6:11]))
+            atm_names.append(atom_type)
+            atm_coords.append(np.array([float(line[30:38]),float(line[38:46]),float(line[46:54])]))
+            res_nums.append(int(line[22:26]))
+            res_names.append(line[17:20])
+
+    atm_coords = np.array(atm_coords)
+    return atm_nums,atm_names,atm_coords,res_nums,res_names
+
 def get_heavy_atom_contact_map(name):
     """ Parses the output of shadow.jar to determine heavy atom contact
         map. Works. Requires the following files be present: name.contacts
@@ -215,34 +244,72 @@ def calculate_contacts_from_pdb(name):
     cmd2 = 'java -jar SCM.1.31.jar -g %s.gro -t %s.top -o %s.cutoff.contacts -m cutoff -p %s.cutoff.wH.pdb' % (name,name,name,name)
     sb.call(cmd2,shell=True,stdout=open("cutoff.out","w"),stderr=open("cutoff.err","w"))
 
+def count_heavy_atom_contacts(pdb):
+    """ Calculate # of residue-residue heavy atom contacts. """
+
+    atm_nums,atm_names,atm_coords,res_nums,res_names = get_AApdb_coords(pdb)
+    n_atoms = len(res_nums)
+    n_residues = max(res_nums)
+
+    residues = []
+    temp = -1
+    for m in range(n_atoms):
+        if res_nums[m] != temp:
+            residues.append(res_names[m])
+            temp = res_nums[m]
+        else:
+            continue
+    #print residues      ## DEBUGGING
+
+    C = np.zeros((n_residues,n_residues),float)
+    for i in range(n_atoms):
+
+        for j in range(i,n_atoms):
+
+            if res_nums[j] <= (res_nums[i]+3):
+                pass
+            else:
+                #print np.linalg.norm(atm_coords[i] - atm_coords[j])    ## DEBUGGING
+                if np.linalg.norm(atm_coords[i] - atm_coords[j]) <= 5.0:
+                    C[res_nums[i]-1,res_nums[j]-1] += 1.0
+    ## DEBUGGING
+    #indices = np.nonzero(C)
+    #for m in range(len(indices[0])):
+    #    print "%5d %5d %5d" % (indices[0][m], indices[1][m], C[indices[0][m],indices[1][m]])
+
+    return C, residues, atm_coords
+
 def calculate_contacts_lost_for_mutants():
     """ Calculates the fraction of heavy-atom contact loss between residues i and j
         for mutant k:  f^k_ij . Must be in mutants directory which holds wild-type 
-        pdb wt.pdb, a file hold mutations information mutations.dat."""
+        pdb wt.pdb."""
 
+    if not os.path.exists("Cwt.dat"):
+        Cwt, wtresidues, wtcoords = count_heavy_atom_contacts("wt.pdb")
+        np.savetxt("Cwt.dat",Cwt)
     mutants = get_all_core_mutations()
-
-    if os.path.exists("SCM.1.31.jar") == False:
-        cmd0 = 'cp /projects/cecilia/SCM.1.31.jar .'
-        sb.call(cmd0,shell=True,stdout=open("cutoff.out","w"),stderr=open("cutoff.err","w"))
-    if os.path.exists("wt.cutoff.contacts") == False:
-        if os.path.exists("wt.gro") == False:
-            cmd1 = 'echo -e "9\\n3\\n" | pdb2gmx -f wt.pdb -o wt.gro -p wt.top' 
-            sb.call(cmd1,shell=True,stdout=open("cutoff.out","w"),stderr=open("cutoff.err","w"))
-        cmd2 = 'java -jar SCM.1.31.jar -g wt.gro -t wt.top -o wt.cutoff.contacts -m cutoff -p wt.cutoff.wH.pdb'
-        sb.call(cmd2,shell=True,stdout=open("cutoff.out","w"),stderr=open("cutoff.err","w"))
-
-    ## Use shadow map to create all-atom contact map. For each mutated pdb
-    ## determine the fraction of heavy-atom contacts lost .
+    log_string = ""
     for k in range(len(mutants)):
-        name = mutants[k]
-        if os.path.exists(name+".cutoff.contacts") == False:
-            #print "    Calculating contacts for", name
-            calculate_contacts_from_pdb(name)
-        if os.path.exists("fij_"+name+".dat") == False:
-            #print "    Calculating fij for ", name
-            calculate_fraction_contact_loss(name)
+        mut = mutants[k]
+        mutindx = int(mut[1:-1])
+        print "    Mutation: ",mut
 
+        Cmut, residues, coords = count_heavy_atom_contacts(mut+".pdb")
+        tempstring = "%-8s%-10s%-4s%-5s%-7s%-5s\n" % ("Resi","Resj","Cwt","Cmut","diff","fij")
+        Dmut = Cwt - Cmut
+        indices = np.nonzero(Dmut)
+        Fij = np.zeros(Cwt.shape)
+        for m in range(len(indices[0])):
+            a = indices[0][m]
+            b = indices[1][m]
+            fij = Dmut[a,b]/Cwt[a,b]
+            Fij[a,b] = fij
+            tempstring += "%3s %-3d %3s %-3d  %3d  %3d  %3d  %9.5f\n" % \
+                (residues[a], a+1, residues[b], b+1, Cwt[a,b], Cmut[a,b], Dmut[a,b],fij)
+        np.savetxt("fij_"+mut+".dat",Fij,fmt="%.6f",delimiter=" ")
+        print tempstring
+        log_string += tempstring+"\n"
+    open("mutatepdbs.log","w").write(log_string)
 
 def make_all_mutations():
     """ Read in mutational data from file. Parse the file into lists of mutation
