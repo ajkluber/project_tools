@@ -57,8 +57,12 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
     ddGexp, ddGexp_err = mut.get_exp_ddG()
     os.chdir(sub)
     ddGsim, ddGsim_err, M = get_ddG_matrix_M()
-    ddG = ddGexp - ddGsim
+    weight = 2.
+    ddGtarget = (ddGexp + (weight-1)*ddGsim)/2.
+    dg = ddGtarget - ddGsim
     np.savetxt("mut/ddGexp.dat",ddGexp)
+    np.savetxt("mut/ddGtarget.dat",ddGtarget)
+    np.savetxt("mut/dg.dat",dg)
     np.savetxt("mut/ddGexp_err.dat",ddGexp_err)
 
     eps = model.contact_epsilons
@@ -86,7 +90,7 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
             Mpinvnorm = np.linalg.norm(Mpinv)
             cond_num[i] = Mnorm*Mpinvnorm
 
-            x_particular = np.dot(Mpinv,ddG)
+            x_particular = np.dot(Mpinv,dg)
             np.savetxt("mut/xp%d.dat" % (i+1),x_particular)
             delta_eps_xp = x_particular
             ratio_xp = np.linalg.norm(delta_eps_xp)/np.linalg.norm(eps)
@@ -95,7 +99,7 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
             
             ## Apply 
             try: 
-                LP_problem, solution, x_particular_cpx, N = apply_constraints_with_cplex(model,ddG,M,cutoff)
+                LP_problem, solution, x_particular_cpx, N = apply_constraints_with_cplex(model,dg,M,cutoff)
                 delta_eps = x_particular_cpx + np.dot(N,solution)
                 ratio_cpx = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
                 Xp_cpxs.append(delta_eps)
@@ -132,7 +136,7 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
         append_log(model.subdir,"Finished: Calculating_MC2004") 
     os.chdir(cwd)
 
-def apply_constraints_with_cplex(model,ddG,M,cutoff):
+def apply_constraints_with_cplex(model,dg,M,cutoff):
     """ Construct and solve a linear/quadratic programming problem for new parameters.
 
     Description:
@@ -148,7 +152,7 @@ def apply_constraints_with_cplex(model,ddG,M,cutoff):
     ## The general solution is a sum of the particular solution and an
     ## arbitrary vector from the nullspace of M.
     Mpinv = np.linalg.pinv(M,rcond=cutoff)
-    x_particular = np.dot(Mpinv,ddG)
+    x_particular = np.dot(Mpinv,dg)
 
     ## Singular value decomposition. As a test you can recover M by,
     ## S = np.zeros(M.shape)
@@ -353,7 +357,7 @@ def plot_solution_info(model,s,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs):
     plt.close()
 
 def calculate_matrix_ddG_eps_M(model,coord):
-    ''' Calculates and saves and returns the matrix from equation (9) in 
+    """ Calculates and saves and returns the matrix from equation (9) in 
         Matysiak Clementi 2004. 
 
     Description:
@@ -362,8 +366,7 @@ def calculate_matrix_ddG_eps_M(model,coord):
     To Do:
     - Add support for surface mutations (of helices):
         1. Read in surface mutations.
-        2. Estimate fij of local interactions. fij ~ 0.3
-    '''
+    """
 
     cwd = os.getcwd()
     sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
@@ -541,10 +544,10 @@ def get_ddG_matrix_M():
         #print "  IMPORTANT: Make sure Mut_#/mut/num_singular_values_include.txt  exists."
         ddGlist = np.array(ddGlist)
         ddGsim = sum(ddGlist)/float(n+1)
-        ddGsim_err = np.std(ddGlist,axis=0)/np.sqrt(float(n+1))
+        ddGsim_err = np.std(ddGlist,axis=0)
         Mlist = np.array(Mlist)
         M = sum(Mlist)/float(n+1)
-        Merr = np.std(Mlist,axis=0)/np.sqrt(float(n+1))
+        Merr = np.std(Mlist,axis=0)
         np.savetxt("mut/ddGsim.dat",ddGsim)
         np.savetxt("mut/ddGsim_err.dat",ddGsim_err)
         np.savetxt("mut/M.dat",M)

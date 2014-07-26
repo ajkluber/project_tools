@@ -46,6 +46,25 @@ def get_all_core_mutations():
     
     return mutants
 
+def get_all_scanning_mutations():
+    """ Return alanine-glycine scanning mutants."""
+    mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
+    scan_muts = []
+    for i in range(mutation_data.shape[0]):
+        if (mutation_data[i,0] == "surf") and (mutation_data[i,2] == "A") and (mutation_data[i,2] == "A"):
+            scan_muts.append(True)
+        else:
+            scan_muts.append(False)
+
+    scan_muts = np.array(scan_muts)
+
+    mut_indx = mutation_data[(scan_muts == True),1] 
+    wt_res = mutation_data[(scan_muts == True),2] 
+    mut_res = mutation_data[(scan_muts == True),3] 
+    mutants = [ wt_res[i]+mut_indx[i]+mut_res[i]  for i in range(len(mut_indx)) ]
+    
+    return mutants
+
 def get_core_mutations():
     """ Extract mutational data. Only return info for useable mutations """
     mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
@@ -201,7 +220,7 @@ def calculate_contacts_lost_for_mutants():
         np.savetxt("Cwt.dat",Cwt)
     modelname = 'wt'
     mutants = get_all_core_mutations()
-    log_string = ""
+    log_string = "Core Mutations:\n"
     for k in range(len(mutants)):
         mut = mutants[k]
         saveas = mut+".pdb"
@@ -231,6 +250,13 @@ def calculate_contacts_lost_for_mutants():
                     (residues[a], a+1, residues[b], b+1, Cwt[a,b], Cmut[a,b], Dmut[a,b],fij)
         np.savetxt("fij_"+mut+".dat",Fij,fmt="%.6f",delimiter=" ")
         log_string += tempstring+"\n"
+
+    log_string += "\nAlanine-Glycine Mutations:\n"
+    scanmuts = get_all_scanning_mutations()
+    for k in range(len(scanmuts)): 
+        mut = scanmuts[k]
+        mutindx = int(mut[1:-1])
+
     open("mutatepdbs.log","w").write(log_string)
 
 def modeller_mutate_pdb(modelname,respos,restyp,saveas,chain='A'):
