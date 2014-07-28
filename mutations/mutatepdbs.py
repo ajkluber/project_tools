@@ -199,7 +199,7 @@ def count_heavy_atom_contacts(pdb):
                 pass
             else:
                 #print np.linalg.norm(atm_coords[i] - atm_coords[j])    ## DEBUGGING
-                if np.linalg.norm(atm_coords[i] - atm_coords[j]) <= 4.0:
+                if np.linalg.norm(atm_coords[i] - atm_coords[j]) <= 4.5:
                     C[res_nums[i]-1,res_nums[j]-1] += 1.0
     ## DEBUGGING
     #indices = np.nonzero(C)
