@@ -194,14 +194,12 @@ def count_heavy_atom_contacts(pdb):
 
     C = np.zeros((n_residues,n_residues),float)
     for i in range(n_atoms):
-
         for j in range(i,n_atoms):
-
             if res_nums[j] <= (res_nums[i]+3):
                 pass
             else:
                 #print np.linalg.norm(atm_coords[i] - atm_coords[j])    ## DEBUGGING
-                if np.linalg.norm(atm_coords[i] - atm_coords[j]) <= 5.0:
+                if np.linalg.norm(atm_coords[i] - atm_coords[j]) <= 4.0:
                     C[res_nums[i]-1,res_nums[j]-1] += 1.0
     ## DEBUGGING
     #indices = np.nonzero(C)
