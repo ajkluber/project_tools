@@ -55,18 +55,23 @@ def plot_ddGs(protein, current_dir, iteration, select_temp):
     err_ddGdag_exp_raw = np.loadtxt(current_dir+'/'+protein+'_calculated_ddG.dat', usecols=(7,))
     ddG0_exp_raw = np.loadtxt(current_dir+'/'+protein+'_calculated_ddG.dat', usecols=(4,))
     err_ddG0_exp_raw = np.loadtxt(current_dir+'/'+protein+'_calculated_ddG.dat', usecols=(5,))
+
     index_raw = np.loadtxt(current_dir+'/'+protein+'_calculated_ddG.dat', usecols=(1,))
     usable = np.loadtxt(current_dir+'/'+protein+'_calculated_ddG.dat', usecols=(8,), dtype=str)
     location = np.loadtxt(current_dir+'/'+protein+'_calculated_ddG.dat', usecols=(0,), dtype=str)
     exclude = np.loadtxt(current_dir+'/'+protein+'_calculated_ddG.dat', usecols=(11,), dtype=int)
 
     ddGdag_exp = []
+    err_ddGdag_exp = []
     ddG0_exp = []
+    err_ddG0_exp = []
     index =[]
     for i in range(len(usable)):
         if all([usable[i]=='True', location[i]=='core',exclude[i]==0]):
             ddGdag_exp.append(ddGdag_exp_raw[i])
+            err_ddGdag_exp.append(err_ddGdag_exp_raw[i])
             ddG0_exp.append(ddG0_exp_raw[i])
+            err_ddG0_exp.append(err_ddG0_exp_raw[i])
             index.append(index_raw[i])
   
     #Calculate Phi values        
