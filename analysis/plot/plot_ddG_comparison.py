@@ -33,13 +33,28 @@ def get_args():
 
 
 def plot_ddGs(protein, current_dir, iteration, select_temp):
-    select_path = current_dir+'/'+protein+'/Mut_'+iteration+'/'+select_temp+'_1/phi/'
+    select_path_1 = current_dir+'/'+protein+'/Mut_'+iteration+'/'+select_temp+'_1/phi/'
+    select_path_2 = current_dir+'/'+protein+'/Mut_'+iteration+'/'+select_temp+'_2/phi/'
+    select_path_3 = current_dir+'/'+protein+'/Mut_'+iteration+'/'+select_temp+'_3/phi/'
 
-    ddGdag_sim = np.loadtxt(select_path+'Q_phi.dat', usecols=(4,))
-    ddG0_sim = np.loadtxt(select_path+'Q_phi.dat', usecols=(5,))
+    ddGdag_sim_1 = np.loadtxt(select_path_1+'Q_phi.dat', usecols=(4,))
+    ddG0_sim_1 = np.loadtxt(select_path_1+'Q_phi.dat', usecols=(5,))
+    ddGdag_sim_2 = np.loadtxt(select_path_2+'Q_phi.dat', usecols=(4,))
+    ddG0_sim_2 = np.loadtxt(select_path_2+'Q_phi.dat', usecols=(5,))
+    ddGdag_sim_3 = np.loadtxt(select_path_3+'Q_phi.dat', usecols=(4,))
+    ddG0_sim_3 = np.loadtxt(select_path_3+'Q_phi.dat', usecols=(5,))
+
+    ddGdag_sim = np.mean(np.column_stack((ddGdag_sim_1,ddGdag_sim_2,ddGdag_sim_3)), axis=1)
+    ddG0_sim = np.mean(np.column_stack((ddG0_sim_1,ddG0_sim_2,ddG0_sim_3)), axis=1)
+    err_ddGdag_sim = np.abs(np.amax(np.column_stack((ddGdag_sim_1,ddGdag_sim_2,ddGdag_sim_3)), axis=1)-
+                            np.amin(np.column_stack((ddGdag_sim_1,ddGdag_sim_2,ddGdag_sim_3)), axis=1))
+    err_ddG0_sim = np.abs(np.amax(np.column_stack((ddG0_sim_1,ddG0_sim_2,ddG0_sim_3)), axis=1)-
+                          np.amin(np.column_stack((ddG0_sim_1,ddG0_sim_2,ddG0_sim_3)), axis=1))
 
     ddGdag_exp_raw = np.loadtxt(current_dir+'/'+protein+'_calculated_ddG.dat', usecols=(6,))
+    err_ddGdag_exp_raw = np.loadtxt(current_dir+'/'+protein+'_calculated_ddG.dat', usecols=(7,))
     ddG0_exp_raw = np.loadtxt(current_dir+'/'+protein+'_calculated_ddG.dat', usecols=(4,))
+    err_ddG0_exp_raw = np.loadtxt(current_dir+'/'+protein+'_calculated_ddG.dat', usecols=(5,))
     index_raw = np.loadtxt(current_dir+'/'+protein+'_calculated_ddG.dat', usecols=(1,))
     usable = np.loadtxt(current_dir+'/'+protein+'_calculated_ddG.dat', usecols=(8,), dtype=str)
     location = np.loadtxt(current_dir+'/'+protein+'_calculated_ddG.dat', usecols=(0,), dtype=str)
