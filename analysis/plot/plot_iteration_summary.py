@@ -1,14 +1,46 @@
+""" Plot a summary of perturbation iteration
+
+
+Description:
+
+
+"""
+
+
 import os
+import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib
 
-import argparse
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
 
 colors = [('white')] + [(cm.Blues(i)) for i in xrange(1,256)]
 global new_map
 new_map = matplotlib.colors.LinearSegmentedColormap.from_list('new_map', colors, N=256)
+
+def get_contact_probability(name,iteration,n_residues,contacts,state_label,state_bound):
+
+    if not os.path.exists("%s/Mut_%d/cont_prob_%s.dat" % (name,iteration,state_label)):
+        contact_probability = np.zeros(len(contacts),float) 
+        n_frames = 0.
+        temps = [ x.rstrip("\n") for x in open("%s/Mut_%d/T_array_last.txt" % (name,iteration), "r").readlines() ]
+        for i in range(len(temps)):
+            T = temps[i]
+            Q = np.loadtxt("%s/Mut_%d/%s/Q.dat" % (name,iteration,T))
+            qimap = np.loadtxt("%s/Mut_%d/%s/qimap.dat" % (name,iteration,T))
+
+            state_indicator = ((Q > state_bound[0]).astype(int)*(Q < state_bound[1]).astype(int)).astype(bool)
+            n_frames += float(sum(state_indicator.astype(int)))
+            contact_probability += sum(qimap[(state_indicator == True),:])
+        contact_probability /= n_frames
+        np.savetxt("%s/Mut_%d/cont_prob_%s.dat" % (name,iteration,state_label),contact_probability)
+    else:
+        contact_probability = np.loadtxt("%s/Mut_%d/cont_prob_%s.dat" % (name,iteration,state_label))
+
+    return contact_probability
 
 def get_iteration_data(name,iteration):
     """ Get summary data for iteration """
@@ -131,8 +163,8 @@ def plot_ddG_comparison(name,iteration,ddGsim,ddGexp,individual=False):
     plt.errorbar(ddGsim[N/2:,0],ddGexp[N/2:,0],xerr=ddGsim[N/2:,1],yerr=ddGexp[N/2:,1],marker='o',linestyle="none",color='r',label="$\\Delta\\Delta G^{\\circ}$")
     plt.errorbar(ddGsim[:N/2,0],ddGexp[:N/2,0],xerr=ddGsim[:N/2,1],yerr=ddGexp[:N/2,1],marker='o',linestyle="none",color='b',label="$\\Delta\\Delta G^{\\dagger}$")
     plt.plot(range(-1,8),range(-1,8),color='k',lw=1)
-    plt.xlabel("$\\Delta\\Delta G_{sim}$")
-    plt.ylabel("$\\Delta\\Delta G_{exp}$")
+    plt.xlabel("$\\Delta\\Delta G_{sim}$ (kT)")
+    plt.ylabel("$\\Delta\\Delta G_{exp}$ (kT)")
     if individual:
         plt.title("%s iteration %d" % (name,iteration))
     plt.xlim(-.2,7)
@@ -140,6 +172,53 @@ def plot_ddG_comparison(name,iteration,ddGsim,ddGexp,individual=False):
     plt.grid(True)
     lg = plt.legend(loc=4)
     lg.draw_frame(False)
+
+def plot_contact_probability(name,iteration,n_residues,contacts,state_label,state_bound,contact_probability,individual=False):
+    """ """
+
+    C = np.zeros((n_residues,n_residues),float)
+    for j in range(len(contacts)):
+        C[contacts[j,1]-1,contacts[j,0]-1] = contact_probability[j]
+
+    plt.pcolor(C,cmap=plt.get_cmap("Blues"),vmin=0.,vmax=1.0)
+    if individual:
+        cbar = plt.colorbar()
+        cbar.set_clim(0,1)
+    for i in range(len(contacts)):
+        plt.plot(contacts[i,0]-0.5,contacts[i,1]-0.5,marker='s',ms=6,markeredgecolor="k",markerfacecolor=new_map(contact_probability[i]))
+    plt.xlim(0,n_residues)
+    plt.ylim(0,n_residues)
+    plt.grid(True)
+    if individual:
+        plt.title("%s iteration %d. %s contact probability" % (name,iteration,state_label))
+    else:
+        plt.title("%s contact probability" % (state_label))
+
+def plot_contact_probability_subplot(name,iteration,n_residues,contacts,state_labels,Contact_maps):
+
+
+    plt.figure(figsize=(15,4))
+    for X in range(len(state_labels)):
+        ax = plt.subplot(1,len(state_labels),X+1,aspect=1.0)
+    
+        C = np.zeros((n_residues,n_residues),float)
+        for j in range(len(contacts)):
+            C[contacts[j,1]-1,contacts[j,0]-1] = Contact_maps[X][j]
+
+        im = ax.pcolor(C,cmap=plt.get_cmap("Blues"),vmin=0.,vmax=1.0)
+        plt.title("%s" % state_labels[X])
+        for i in range(len(contacts)):
+            plt.plot(contacts[i,0]-0.5,contacts[i,1]-0.5,marker='s',ms=6,markeredgecolor="k",markerfacecolor=new_map(Contact_maps[X][i]))
+        plt.xlim(0,n_residues)
+        plt.ylim(0,n_residues)
+        plt.grid(True)
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cbar = plt.colorbar(im, cax=cax)
+    cbar.set_clim(0,1)
+
+    plt.suptitle("%s iteration %d" % (name,iteration))
+    plt.savefig("%s/Mut_%d/contact_prob_all.pdf" % (name,iteration))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='.')
@@ -151,27 +230,47 @@ if __name__ == "__main__":
     iteration = args.iteration
 
     epsilons, epsilon_map, n_residues, contacts, n_contacts, Tf, whamFree, state_labels, state_bounds, ddGsim, ddGexp = get_iteration_data(name,iteration)
+    
+    print "Plotting summary for %s iteration %d..." % (name,iteration)
 
-    plt.figure()
-    plot_free_energy(name,iteration,n_contacts,Tf,whamFree,state_labels,state_bounds,individual=True)
-    plt.savefig("%s/Mut_%d/FreeEnergy_Q.pdf" % (name,iteration))
-    plt.close()
+    Contact_maps = []
+    for X in range(len(state_labels)):
+        print " Saving: %s/Mut_%d/contact_prob_%s.pdf          - %s contact probabilities" % (name,iteration,state_labels[X],state_labels[X])
+        plt.figure()
+        contact_probability = get_contact_probability(name,iteration,n_residues,contacts,state_labels[X],state_bounds[X])
+        plot_contact_probability(name,iteration,n_residues,contacts,state_labels[X],state_bounds[X],contact_probability,individual=True)
+        Contact_maps.append(contact_probability)
+        plt.savefig("%s/Mut_%d/contact_prob_%s.pdf" % (name,iteration,state_labels[X]))
+        plt.close()
 
+    print " Saving subplot: %s/Mut_%d/contact_prob_all.pdf       - contact probabilities" % (name,iteration)
+    plot_contact_probability_subplot(name,iteration,n_residues,contacts,state_labels,Contact_maps)
+
+    print "  Saving: %s/Mut_%d/current_epsilon_map.pdf    - epsilon map" % (name,iteration)
     plt.figure()
     plot_epsilon_map(name,iteration,epsilons,epsilon_map,contacts,n_residues,individual=True)
     plt.savefig("%s/Mut_%d/current_epsilon_map.pdf" % (name,iteration))
     plt.close()
 
+    print "  Saving: %s/Mut_%d/current_epsilon_hist.pdf   - epsilon histogram" % (name,iteration)
     plt.figure()
     plot_epsilon_histogram(name,iteration,epsilons,individual=True)
     plt.savefig("%s/Mut_%d/current_epsilon_hist.pdf" % (name,iteration))
     plt.close()
 
+    print "  Saving: %s/Mut_%d/FreeEnergy_Q.pdf            - free energy" % (name,iteration)
+    plt.figure()
+    plot_free_energy(name,iteration,n_contacts,Tf,whamFree,state_labels,state_bounds,individual=True)
+    plt.savefig("%s/Mut_%d/FreeEnergy_Q.pdf" % (name,iteration))
+    plt.close()
+
+    print "  Saving: %s/Mut_%d/compareddG.pdf              - ddG comparison" % (name,iteration)
     plt.figure()
     plot_ddG_comparison(name,iteration,ddGsim,ddGexp,individual=True)
     plt.savefig("%s/Mut_%d/compareddG.pdf" % (name,iteration))
     plt.close()
 
+    print " Summary figure: %s/Mut_%d/summary_%s_%d.pdf" % (name,iteration,name,iteration)
     plt.figure(figsize=(12,10))
     plt.subplot(2,2,1)
     plot_epsilon_map(name,iteration,epsilons,epsilon_map,contacts,n_residues)
