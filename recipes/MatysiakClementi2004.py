@@ -172,6 +172,7 @@ def get_args():
     new_parser = sp.add_parser('new')
     new_parser.add_argument('--pdbs', type=str, required=True, nargs='+',help='PDBs to start simulations.')
     new_parser.add_argument('--epsilon_bar', type=float, help='Optional, average strength of contacts. epsilon bar.')
+    new_parser.add_argument('--contact_params', type=str, default=None, help='Optional, specify contact epsilons, deltas.')
     new_parser.add_argument('--disulfides', type=int, nargs='+', help='Optional pairs of disulfide linked residues.')
     new_parser.add_argument('--temparray', type=int, nargs='+',help='Optional initial temp array: T_min T_max deltaT. Default: 50 350 50')
     new_parser.add_argument('--dryrun', action='store_true', help='Add this option for dry run. No simulations started.')
@@ -212,13 +213,16 @@ def get_args():
             options["Disulfides"] = args.disulfides
         else:
             options["Disulfides"] = None
+        if args.contact_params != None:
+            options["Contact_Energies"] = args.contact_params
+        else:
+            options["Contact_Energies"] = "MC2004"
     else:
         options["Epsilon_Bar"] = None
         options["Disulfides"] = None
 
     options["Model_Code"] = "HetGo"
     options["Bead_Model"] = "CA"
-    options["Contact_Energies"] = "MC2004"
 
     modeloptions = mdb.models.check_options(options,firstpass=True)
 

@@ -20,7 +20,6 @@ import argparse
 import mdtraj as md
 
 import model_builder.models as models
-import model_builder.systems as systems
 
 from mutatepdbs import get_core_mutations
 

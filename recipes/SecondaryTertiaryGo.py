@@ -1,6 +1,11 @@
 """ A recipe to run the Secondary Tertiary Go-model
 
 
+CURRENTLY NOT RIGHT.
+
+UPDATE TO REMOVE "model_builder.systems" REFERENCE
+
+
 Description:
 
     This recipes performs an algorithm to add energetic heterogeneity to a
@@ -22,7 +27,6 @@ import argparse
 from project_tools.manager import ProjectManager
 from project_tools import simulation, analysis, mutations
 from model_builder import models
-from model_builder import systems
 
 
 class SecondaryTertiaryGo(ProjectManager):

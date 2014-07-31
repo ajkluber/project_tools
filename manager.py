@@ -35,7 +35,6 @@ import analysis
 import mutations
 
 from model_builder import models
-from model_builder import systems
 
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621

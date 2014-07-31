@@ -118,8 +118,6 @@ def get_exp_ddG():
     ddG_TS_D = mutation_data[(useable_and_core == True),6].astype(float) 
     ddG_TS_D_err = mutation_data[(useable_and_core == True),7].astype(float) 
     
-    #ddGexp = np.concatenate((ddG_N_D,ddG_TS_D),axis=0) 
-    #ddGexp_err = np.concatenate((ddG_N_D_err,ddG_TS_D_err),axis=0) 
     ddGexp = np.concatenate((ddG_TS_D,ddG_N_D),axis=0) 
     ddGexp_err = np.concatenate((ddG_TS_D_err,ddG_N_D_err),axis=0) 
     
