@@ -21,6 +21,10 @@ colors = [('white')] + [(cm.Blues(i)) for i in xrange(1,256)]
 global new_map
 new_map = matplotlib.colors.LinearSegmentedColormap.from_list('new_map', colors, N=256)
 
+colors2 = [('gray')] + [(cm.Blues(i)) for i in xrange(1,256)]
+global new_map2
+new_map2 = matplotlib.colors.LinearSegmentedColormap.from_list('new_map2', colors2, N=256)
+
 def get_contact_probability(name,iteration,n_residues,contacts,state_label,state_bound):
 
     if not os.path.exists("%s/Mut_%d/cont_prob_%s.dat" % (name,iteration,state_label)):
@@ -107,20 +111,22 @@ def get_iteration_data(name,iteration):
 
 def plot_epsilon_map(name,iteration,epsilons,epsilon_map,contacts,n_residues,individual=False):
     """ Get  """
-    maxeps = max(epsilons)
-    mineps = min(epsilons)
-    if iteration == 0:
-        plt.pcolor(epsilon_map,cmap=plt.get_cmap("Blues"))
-        cbar = plt.colorbar()
-        for i in range(len(contacts)):
-            plt.plot(contacts[i,0]-0.5,contacts[i,1]-0.5,marker='s',ms=6,markeredgecolor="k",markerfacecolor=new_map(1.0))
-    else:
-        plt.pcolor(epsilon_map,cmap=plt.get_cmap("Blues"))
-        cbar = plt.colorbar()
-        cbar.set_clim(mineps,maxeps)
-        for i in range(len(contacts)):
-            plt.plot(contacts[i,0]-0.5,contacts[i,1]-0.5,marker='s',ms=6,markeredgecolor="k",markerfacecolor=new_map((epsilons[i]-mineps)/maxeps))
 
+    if iteration == 0:
+        mineps = 0.
+        maxeps = 2.
+
+    if os.path.exists("%s/epsilon_range"):
+        temp = np.loadtxt("%s/epsilon_range") 
+        mineps = temp[0]
+        maxeps = temp[1]
+    else:
+        mineps = 0
+        maxeps = max(epsilons)
+
+    plt.pcolor(epsilon_map,cmap=new_map2)
+    cbar = plt.colorbar()
+    cbar.set_clim(mineps,maxeps)
     plt.xticks(range(0,n_residues+1,10))
     plt.yticks(range(0,n_residues+1,10))
     if individual:
@@ -180,14 +186,17 @@ def plot_contact_probability(name,iteration,n_residues,contacts,state_label,stat
     for j in range(len(contacts)):
         C[contacts[j,1]-1,contacts[j,0]-1] = contact_probability[j]
 
-    plt.pcolor(C,cmap=plt.get_cmap("Blues"),vmin=0.,vmax=1.0)
+    #plt.pcolor(C,cmap=plt.get_cmap("Blues"),vmin=0.,vmax=1.0)
+    plt.pcolor(C,cmap=new_map2,vmin=0.,vmax=1.0)
     if individual:
         cbar = plt.colorbar()
         cbar.set_clim(0,1)
-    for i in range(len(contacts)):
-        plt.plot(contacts[i,0]-0.5,contacts[i,1]-0.5,marker='s',ms=6,markeredgecolor="k",markerfacecolor=new_map(contact_probability[i]))
+    #for i in range(len(contacts)):
+    #    plt.plot(contacts[i,0]-0.5,contacts[i,1]-0.5,marker='s',ms=6,markeredgecolor="k",markerfacecolor=new_map(contact_probability[i]))
     plt.xlim(0,n_residues)
     plt.ylim(0,n_residues)
+    plt.xticks(range(0,n_residues,10))
+    plt.yticks(range(0,n_residues,10))
     plt.grid(True)
     if individual:
         plt.title("%s iteration %d. %s contact probability" % (name,iteration,state_label))
@@ -197,7 +206,7 @@ def plot_contact_probability(name,iteration,n_residues,contacts,state_label,stat
 def plot_contact_probability_subplot(name,iteration,n_residues,contacts,state_labels,Contact_maps):
 
 
-    plt.figure(figsize=(15,4))
+    plt.figure(figsize=(9,4.2))
     for X in range(len(state_labels)):
         ax = plt.subplot(1,len(state_labels),X+1,aspect=1.0)
     
@@ -205,12 +214,15 @@ def plot_contact_probability_subplot(name,iteration,n_residues,contacts,state_la
         for j in range(len(contacts)):
             C[contacts[j,1]-1,contacts[j,0]-1] = Contact_maps[X][j]
 
-        im = ax.pcolor(C,cmap=plt.get_cmap("Blues"),vmin=0.,vmax=1.0)
+        #im = ax.pcolor(C,cmap=plt.get_cmap("Blues"),vmin=0.,vmax=1.0)
+        im = ax.pcolor(C,cmap=new_map2,vmin=0.,vmax=1.0)
         plt.title("%s" % state_labels[X])
-        for i in range(len(contacts)):
-            plt.plot(contacts[i,0]-0.5,contacts[i,1]-0.5,marker='s',ms=6,markeredgecolor="k",markerfacecolor=new_map(Contact_maps[X][i]))
+        #for i in range(len(contacts)):
+        #    plt.plot(contacts[i,0]-0.5,contacts[i,1]-0.5,marker='s',ms=6,markeredgecolor="k",markerfacecolor=new_map(Contact_maps[X][i]))
         plt.xlim(0,n_residues)
         plt.ylim(0,n_residues)
+        plt.xticks(range(0,n_residues,10))
+        plt.yticks(range(0,n_residues,10))
         plt.grid(True)
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -219,6 +231,7 @@ def plot_contact_probability_subplot(name,iteration,n_residues,contacts,state_la
 
     plt.suptitle("%s iteration %d" % (name,iteration))
     plt.savefig("%s/Mut_%d/contact_prob_all.pdf" % (name,iteration))
+    plt.savefig("%s/Mut_%d/contact_prob_all.png" % (name,iteration))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='.')
@@ -241,11 +254,12 @@ if __name__ == "__main__":
         plot_contact_probability(name,iteration,n_residues,contacts,state_labels[X],state_bounds[X],contact_probability,individual=True)
         Contact_maps.append(contact_probability)
         plt.savefig("%s/Mut_%d/contact_prob_%s.pdf" % (name,iteration,state_labels[X]))
+        plt.savefig("%s/Mut_%d/contact_prob_%s.png" % (name,iteration,state_labels[X]))
         plt.close()
 
     print " Saving subplot: %s/Mut_%d/contact_prob_all.pdf       - contact probabilities" % (name,iteration)
     plot_contact_probability_subplot(name,iteration,n_residues,contacts,state_labels,Contact_maps)
-
+    
     print "  Saving: %s/Mut_%d/current_epsilon_map.pdf    - epsilon map" % (name,iteration)
     plt.figure()
     plot_epsilon_map(name,iteration,epsilons,epsilon_map,contacts,n_residues,individual=True)
