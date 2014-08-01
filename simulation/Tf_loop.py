@@ -416,13 +416,13 @@ def determine_equil_walltime(model):
     nsteps = "500000000"
     queue="serial"
     if N < 60:
-        walltime="24:00:00"
+        walltime="16:00:00"
     else:
-        queue="serial_long"
         if N > 100:
-            walltime="60:00:00"
+            queue="serial_long"
+            walltime="30:00:00"
         else:
-            walltime="36:00:00"
+            walltime="24:00:00"
     return walltime, queue, ppn,nsteps
 
 def determine_walltime(model):
