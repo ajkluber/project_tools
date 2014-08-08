@@ -1,4 +1,4 @@
-""" Plot a summary of perturbation iteration
+""" Plot a summary of MC2004 iteration
 
 
 Description:
@@ -173,8 +173,10 @@ def plot_ddG_comparison(name,iteration,ddGsim,ddGexp,individual=False):
     plt.ylabel("$\\Delta\\Delta G_{exp}$ (kT)")
     if individual:
         plt.title("%s iteration %d" % (name,iteration))
-    plt.xlim(-.2,7)
-    plt.ylim(-.2,7)
+    maxddg = max([max(ddGsim[:,0]),max(ddGexp[:,0]))
+    minddg = min([min(ddGsim[:,0]),min(ddGexp[:,0]))
+    plt.xlim(minddg-0.1,maxddg+0.1)
+    plt.ylim(minddg-0.1,maxddg+0.1)
     plt.grid(True)
     lg = plt.legend(loc=4)
     lg.draw_frame(False)

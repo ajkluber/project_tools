@@ -274,3 +274,11 @@ execute a particular logical flow. For example, to run the Matysiak Clementi
 2004 algorithm one would run the MatysiakClementi2004.py recipe in recipes/.
 
 ------------------------------------------------------------------------------
+Sat Aug  2 17:40:39 CDT 2014
+Alexander Kluber
+
+    The Matysiak, Clementi 2004 method now works. I have also figured out some
+formulas to represent the method in a general way. It is Newton's method
+applied to a vector-valued function of many variables.
+
+------------------------------------------------------------------------------
