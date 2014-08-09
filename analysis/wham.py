@@ -323,7 +323,7 @@ def run_wham_for_heat_capacity(model,Mut=False):
         stopT = max(temps) + 2.
         deltaTCv = 0.01
         ntempsCv = int(round((stopT - startT)/deltaTCv))
-        ntempsF = 10
+        ntempsF = 30
         #ntempsF = (float(max(temps)) - float(startT))/deltaTF
         deltaTF = (float(max(temps)) - float(startT))/ntempsF
     else:
