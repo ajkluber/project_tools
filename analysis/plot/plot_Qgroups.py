@@ -21,10 +21,9 @@ Am. Chem. Soc. 2004, 126, 8426-8432.
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import os
 import argparse
-
-import mdtraj as md
 
 def plot_kinetic_mechanism():
     ''' The kinetic mechanism is defined as the mechanism of only successful or
@@ -61,216 +60,7 @@ def plot_kinetic_mechanism():
             if (Q[i] > left_bound) and (Q[i-1] < left_bound):
                 folding = 1
 
-def plot_thermodynamic_mechanism(bins=10):
-    """ Plot residue ordering versus folding progress.
-
-    Description:
-
-        This plots the average native structure for each residue as a function
-    of folding progress (overall Q). This visualizes how ordering proceeds at
-    different parts of the chain.
-
-    """
-    bins = 10
-
-    print "Loading Q.dat, Qres.dat"
-    Q = np.loadtxt("Q.dat")
-    Qres = np.loadtxt("Qres.dat")
-
-    minQ = min(Q)
-    maxQ = max(Q)
-    incQ = (float(maxQ) - float(minQ))/bins
-
-    Qprogress = np.zeros((bins,len(Qres[0])),float)
-    counts = np.zeros(bins,float)
-
-
-    print "Histogram Qres depending on Q"
-    for i in range(len(Q)):
-        for n in range(bins):
-            if ((minQ + n*incQ)  < Q[i]) and (Q[i] < (minQ + (n+1)*incQ)):
-                Qprogress[n,:] += Qres[i,:]
-                counts[n] += 1
-
-    native = Qres[0,:]
-    native[ native == 0 ] = 1
-
-    print "Calculating fraction of formed native contacts for each bin"
-    Qprogress = ((Qprogress/native).T)/counts
-
-    print "Plotting thermodynamic mechanism"
-    plt.figure()
-    #plt.subplot(1,1,1,aspect=1)
-    plt.pcolor(Qprogress,edgecolors='k')
-    cbar = plt.colorbar()
-    cbar.set_label("Fraction local contacts formed $Q_{local}$")
-    plt.xlabel("Folding Progress from $[Q_{min},Q_{max}] = [%.2f,%.2f]$" % (minQ/float(maxQ),1.0))
-    plt.ylabel("Sequence index")
-    plt.title("Thermodynamic Folding Progress")
-    plt.savefig("thermodynamic_mechanism_profile.pdf")
-    #plt.savefig("mechanism_profile_square.pdf")
-    plt.show()
-
-
-def get_beadbead_info():
-
-    print " Loading BeadBead.dat"
-    beadbead = np.loadtxt("BeadBead.dat",dtype=str)
-    sigij = beadbead[:,5].astype(float)
-    epsij = beadbead[:,6].astype(float)
-    deltaij = beadbead[:,7].astype(float)
-    interaction_numbers = beadbead[:,4].astype(str)
-    pairs = beadbead[:,:2].astype(int)
-    pairs -= np.ones(pairs.shape,int)
-
-    keep_interactions = np.zeros(len(interaction_numbers),int)
-    for i in range(len(interaction_numbers)):
-        if interaction_numbers[i] in ["ds","ss"]:
-            pass
-        else:
-            keep_interactions[i] = int(interaction_numbers[i])
-
-    sigij = sigij[keep_interactions != 0]
-    epsij = epsij[keep_interactions != 0]
-    deltaij = deltaij[keep_interactions != 0]
-    pairs = pairs[keep_interactions != 0]
-
-    return pairs, epsij, sigij
-
-def get_contact_groups_distribution_versus_Q():
-    """ Calculate contact probabilities and histogram by foldedness (Q)
-
-    Description:
-        
-        Return a contact probabilities
-
-
-    """
-    #groups = []
-    #for line in open("","r"):
-    #    pass    
-
-    pairs, epsij, sigij = get_beadbead_info()
-    print " Loading trajectory"
-    traj = md.load("traj.xtc",top="Native.pdb")
-    print " Computing distances with mdtraj..."
-    distances = md.compute_contacts(traj,pairs)
-    print " Computing contacts with mdtraj..."
-    contacts = (distances[0][:] <= 1.2*sigij).astype(int)
-
-
-    print " Loading Q.dat"
-    bins = 40
-    Q = np.loadtxt("Q.dat")
-    Q /= float(max(Q))
-    minQ = min(Q)
-    maxQ = max(Q)
-    incQ = (float(maxQ) - float(minQ))/bins
-
-    Q_i_for_bin = np.zeros((bins,len(contacts[0])),float)
-    counts = np.zeros(bins,float)
-
-    print " Histogram contacts depending on Q"
-    for i in range(traj.n_frames):
-        for n in range(bins):
-            if ((minQ + n*incQ) < Q[i]) and (Q[i] < (minQ + (n+1)*incQ)):
-                Q_i_for_bin[n,:] += contacts[i,:]
-                counts[n] += 1
-
-    print " Averaging contacts for each bin"
-    Q_i_avg = (Q_i_for_bin.T/counts).T
-    return minQ, maxQ, bins, Q_i_avg
-
-def get_contact_pair_distribution_versus_Q():
-    """ Calculate contact probabilities and histogram by foldedness (Q)
-
-    Description:
-        
-        Return a contact probabilities
-
-
-    """
-    pairs, epsij, sigij = get_beadbead_info()
-    print " Loading trajectory"
-    traj = md.load("traj.xtc",top="Native.pdb")
-    print " Computing distances with mdtraj..."
-    distances = md.compute_contacts(traj,pairs)
-    print " Computing contacts with mdtraj..."
-    contacts = (distances[0][:] <= 1.2*sigij).astype(int)
-
-
-    print " Loading Q.dat"
-    bins = 40
-    Q = np.loadtxt("Q.dat")
-    Q /= float(max(Q))
-    minQ = min(Q)
-    maxQ = max(Q)
-    incQ = (float(maxQ) - float(minQ))/bins
-
-    Q_i_for_bin = np.zeros((bins,len(contacts[0])),float)
-    counts = np.zeros(bins,float)
-
-    print " Histogram contacts depending on Q"
-    for i in range(traj.n_frames):
-        for n in range(bins):
-            if ((minQ + n*incQ) < Q[i]) and (Q[i] < (minQ + (n+1)*incQ)):
-                Q_i_for_bin[n,:] += contacts[i,:]
-                counts[n] += 1
-
-    print " Averaging contacts for each bin"
-    Q_i_avg = (Q_i_for_bin.T/counts).T
-    return minQ, maxQ, bins, Q_i_avg
-
-def plot_contact_groups_versus_Q():
-    """ Plot contact group ordering versus folding progress.
-
-    Description:
-
-    """
-
-    minQ, maxQ, bins, Q_i_avg = get_contact_pair_distribution_versus_Q()
-
-    Nbins = 25 
-    Qbins = np.linspace(minQ,maxQ,bins-1)
-    Qi_bins = np.linspace(0.,1.0,Nbins)
-    Q_i_distribution = np.zeros((bins,Nbins-1))
-    for j in range(0,bins):
-        #n,bins,patches = plt.hist(Q_i_avg[j],bins=bins2,alpha=0.3,label=str(j),histtype='stepfilled')
-        #plt.clf()
-        n,tempbins = np.histogram(Q_i_avg[j],bins=Qi_bins,density=True)
-        Q_i_distribution[j,:] = n
-
-    x = np.linspace(minQ,maxQ,bins+1)
-    y = np.linspace(0.,1.0,Nbins)
-    X,Y = np.meshgrid(x,y)
-
-    ## Set 
-    Qi_dist = Q_i_distribution.T
-    maxQi_dist = max(Qi_dist[1:-1,:].ravel())
-    minQi_dist = min(Qi_dist[1:-1,:].ravel())
-
-    print "  Saving data..."
-    np.savetxt("plots/Qi_distribution.dat",Qi_dist)
-    np.savetxt("plots/Q_bins.dat",x)
-    np.savetxt("plots/Qi_bins.dat",y)
-
-
-    print "  Plotting.."
-    plt.figure()
-    #plt.pcolor(X,Y,Q_i_distribution.T)
-    #plt.pcolor(X,Y,Q_i_distribution.T[1:-1,:])
-    plt.pcolor(X,Y,Qi_dist)
-    plt.clim(minQi_dist,maxQi_dist)
-    plt.xlabel("Folding Reaction ($Q$)")
-    plt.ylabel("$\\left< Q_i \\right>$ Distribution")
-    plt.title("Mechanism Heterogeneity")
-    plt.xlim(minQ,maxQ)
-    plt.ylim(0.,1)
-    print "  Saving plot..."
-    plt.savefig("plots/mechanism_heterogeneity_versus_Q.pdf")
-    plt.show()
-
-def plot_contact_pair_distribution_versus_Q():
+def plot_QivsQ(name,iteration,Qbins,Qi_vs_Q,n_bins,epsilons,loops,state_bounds):
     """ Plot contact ordering versus folding progress.
 
     Description:
@@ -302,96 +92,47 @@ def plot_contact_pair_distribution_versus_Q():
     in protein folding. I. Theory. J. Chem. Phys. 2002, 116, 5263.
     """
 
-    minQ, maxQ, bins, Q_i_avg = get_contact_pair_distribution_versus_Q()
+    ## Contact probability colored by loop length
+    sortedindx = loops.argsort()
+    fig, axes = plt.subplots(1,2,sharey=True,figsize=(11,5.5))
+    for i in range(len(loops)):
+        index = sortedindx[i]
+        if (loops[index] > np.mean(loops)):
+            ax = axes[0]
+        else:
+            ax = axes[1]
+        ax.plot(Qbins,Qi_vs_Q[:,index],lw=2.5,alpha=0.5,color=cm.spectral((loops[index] - min(loops))/float(max(loops))))
 
-    Nbins = 25 
-    Qbins = np.linspace(minQ,maxQ,bins-1)
-    Qi_bins = np.linspace(0.,1.0,Nbins)
-    Q_i_distribution = np.zeros((bins,Nbins-1))
-    for j in range(0,bins):
-        #n,bins,patches = plt.hist(Q_i_avg[j],bins=bins2,alpha=0.3,label=str(j),histtype='stepfilled')
-        #plt.clf()
-        n,tempbins = np.histogram(Q_i_avg[j],bins=Qi_bins,density=True)
-        Q_i_distribution[j,:] = n
+    plt.subplots_adjust(wspace=0)
+    axes[0].set_ylabel("Contact Probability $\\langle Q_i \\rangle$")
+    axes[0].set_title("$l_i > \\overline{l}$")
+    axes[1].set_title("$l_i < \\overline{l}$")
+    fig.text(0.5,0.04,"Foldedness $Q$",ha='center',va='center')
+    fig.text(0.5,0.96,"Longer loops = longer wavelengths. %s iteration %d" % (name,iteration),ha='center',va='center')
+    plt.savefig("%s/Mut_%d/QivsQ_loops_%s_%d.png" % (name,iteration,name,iteration))
+    plt.savefig("%s/Mut_%d/QivsQ_loops_%s_%d.pdf" % (name,iteration,name,iteration))
 
-    x = np.linspace(minQ,maxQ,bins+1)
-    y = np.linspace(0.,1.0,Nbins)
-    X,Y = np.meshgrid(x,y)
+    ## Contact probability growth colored by loop length
+    dQi_dQ = (np.gradient(Qi_vs_Q,Qbins[1]-Qbins[0],Qbins[1]-Qbins[0]))[0]
+    fig, axes = plt.subplots(1,2,sharey=True,figsize=(11,5.5))
+    for i in range(len(loops)):
+        index = sortedindx[i]
+        if (loops[index] > np.mean(loops)):
+            ax = axes[0]
+        else:
+            ax = axes[1]
+        ax.plot(Qbins,dQi_dQ[:,index],lw=2.5,alpha=0.5,color=cm.spectral((loops[index] - min(loops))/float(max(loops))))
 
-    ## Set 
-    Qi_dist = Q_i_distribution.T
-    maxQi_dist = max(Qi_dist[1:-1,:].ravel())
-    minQi_dist = min(Qi_dist[1:-1,:].ravel())
+    plt.subplots_adjust(wspace=0)
+    axes[0].set_ylabel("Contact Growth $\\frac{d\\langle Q_i \\rangle}{dQ}$")
+    axes[0].set_title("$l_i > \\overline{l}$")
+    axes[1].set_title("$l_i < \\overline{l}$")
+    fig.text(0.5,0.04,"Foldedness $Q$",ha='center',va='center')
+    fig.text(0.5,0.96,"Longer loops = longer wavelengths. %s iteration %d" % (name,iteration),ha='center',va='center')
+    plt.savefig("%s/Mut_%d/dQidQ_loops_%s_%d.png" % (name,iteration,name,iteration))
+    plt.savefig("%s/Mut_%d/dQidQ_loops_%s_%d.pdf" % (name,iteration,name,iteration))
 
-    print "  Saving data..."
-    np.savetxt("plots/Qi_distribution.dat",Qi_dist)
-    np.savetxt("plots/Q_bins.dat",x)
-    np.savetxt("plots/Qi_bins.dat",y)
-
-
-    print "  Plotting.."
-    plt.figure()
-    #plt.pcolor(X,Y,Q_i_distribution.T)
-    #plt.pcolor(X,Y,Q_i_distribution.T[1:-1,:])
-    plt.pcolor(X,Y,Qi_dist)
-    plt.clim(minQi_dist,maxQi_dist)
-    plt.xlabel("Folding Reaction ($Q$)")
-    plt.ylabel("$\\left< Q_i \\right>$ Distribution")
-    plt.title("Mechanism Heterogeneity")
-    plt.xlim(minQ,maxQ)
-    plt.ylim(0.,1)
-    print "  Saving plot..."
-    plt.savefig("plots/mechanism_heterogeneity_versus_Q.pdf")
-    plt.show()
-
-
-def plot_route_measure_versus_Q():
-    """ Plot route measure as defined in ref (1)
-
-    Description:
-
-        Given the distribution of contact probabilities at a given overall
-    degree of foldedness (Q), the route measure is the variance of this 
-    distribution divided by the maximum possible variance at the given Q, which
-    is Q*(1-Q).
-        A route measure R(Q)=1 means that contacts are forming in a binary 
-    manner, i.e. contact probabilities take only values 0 or 1. On the other
-    hand R(Q)=0 means every contact probabilities is equal to Q, i.e. the 
-    mechanism is uniform.
-        See reference (1) for more information.
-
-
-    References:
-    (1) Chavez, L.; Onuchic, J.; Clementi, C. Quantifying the roughness on the
-    free energy landscape: Entropic bottlenecks and protein folding rates. J.
-    Am. Chem. Soc. 2004, 126, 8426-8432.
-
-    """
-
-    minQ, maxQ, N_Qbins, Q_i_avg = get_contact_pair_distribution_versus_Q()
-
-    print " Computing route measure"
-    incQ = (float(maxQ) - float(minQ))/N_Qbins
-    route_measure = np.zeros(N_Qbins,float)
-    for k in range(N_Qbins):
-        qtemp = minQ + k*incQ
-        R_Q = (1./(qtemp*(1.-qtemp)))*np.mean((Q_i_avg[k] - qtemp)**2)
-        route_measure[k] = R_Q
-
-    print " Plotting.."
-    Qbins = np.arange(N_Qbins)*incQ + minQ
-    plt.plot(Qbins,route_measure,'ro')
-    plt.title("Route Measure")
-    plt.xlabel("Q")
-    plt.ylabel("R(Q)")
-    plt.xlim(0,1)
-    plt.ylim(0,0.5)
-    #plt.ylim(0,max(route_measure)+0.05)
-    print " Saving.."
-    plt.savefig("plots/route_measure.pdf")
-    plt.show()
-
-if __name__ == "__main__":
+def some_old_plot_Qgoups():
     if not os.path.exists("plots"):
         os.mkdir("plots")
     #plot_thermodynamic_mechanism(5)
@@ -468,4 +209,193 @@ if __name__ == "__main__":
     plt.ylim(0,len(Qref))
     plt.show()
 
+def get_some_iteration_data(name,iteration,n_bins):
+    """ Get summary data for iteration """
+    Tuse = open("%s/Mut_%d/T_array_last.txt" % (name,iteration),"r").readlines()[0].rstrip("\n")
+    Tf = float(open("%s/Mut_%d/Tf.txt" % (name,iteration),"r").read().rstrip("\n"))
+
+    beadbead = np.loadtxt("%s/Mut_%d/%s/BeadBead.dat" % (name,iteration,Tuse),usecols=(0,1,6))
+    contacts = beadbead[:,:2]
+    epsilons = beadbead[:,2]
+
+    loops = contacts[:,1] - contacts[:,0]
+    n_residues = len(open("%s/Native.pdb" % name,"r").readlines()) - 1
+
+    state_labels = []
+    state_bounds = []
+    for line in open("%s/Mut_%d/state_bounds.txt" % (name,iteration),"r"):
+        state_labels.append(line.split()[0])
+        state_bounds.append([int(line.split()[1]),int(line.split()[2])])
+
+    n_contacts = len(contacts)
+
+    ## Calculate or load cont. prob. Qi versus reaction coordinate, Q.
+    Qbins, Qi_vs_Q = get_contact_probability_versus_Q(name,iteration,n_bins)
+
+    return epsilons, loops, n_residues, contacts, n_contacts, Tf, state_labels, state_bounds, Qbins, Qi_vs_Q
+
+def get_contact_probability_versus_Q(name,iteration,n_bins):
+    """ Get the contact probabilities versus Q
+
+    Description:
+        
+        If the contact probabilities have not been calculated for this
+    name and iteration, QivsQ.dat, then calculate them and save them.
+    
+    """
+    print "Plotting mechanism info for %s iteration %d..." % (name,iteration)
+    if not os.path.exists("%s/Mut_%d/QivsQ.dat" % (name,iteration)):
+        print "  calculating Qi vs Q"
+        n_frames = 0.
+        temps = [ x.rstrip("\n") for x in open("%s/Mut_%d/T_array_last.txt" % (name,iteration), "r").readlines() ]
+        for i in range(len(temps)):
+            T = temps[i]
+            Q_temp = np.loadtxt("%s/Mut_%d/%s/Q.dat" % (name,iteration,T))
+            Qi_temp = np.loadtxt("%s/Mut_%d/%s/qimap.dat" % (name,iteration,T))
+            if i == 0:
+                Qi = Qi_temp
+                Q = Q_temp
+            else:
+                Qi = np.concatenate((Qi,Qi_temp),axis=0)
+                Q = np.concatenate((Q,Q_temp),axis=0)
+
+        counts = np.zeros(n_bins)
+        Qi_vs_bins = np.zeros((n_bins,len(Qi[0,:])),float)
+        minQ = min(Q)
+        maxQ = max(Q)
+        incQ = (float(maxQ) - float(minQ))/float(n_bins)
+
+        print "  sorting Qi"
+        for i in range(len(Q)):
+            for n in range(n_bins):
+                if ((minQ + n*incQ) < Q[i]) and (Q[i] < (minQ + (n+1)*incQ)):
+                    Qi_vs_bins[n,:] += Qi[i,:]
+                    counts[n] += 1.
+
+        Qi_vs_Q = (Qi_vs_bins.T/counts).T
+        Qbins = np.linspace(minQ,maxQ,n_bins)
+        np.savetxt("%s/Mut_%d/QivsQ.dat" % (name,iteration),Qi_vs_Q)
+        np.savetxt("%s/Mut_%d/Qbins.dat" % (name,iteration),Qbins)
+
+    else:
+        print "  loading Qi vs Q"
+        Qi_vs_Q = np.loadtxt("%s/Mut_%d/QivsQ.dat" % (name,iteration))
+        Qbins = np.loadtxt("%s/Mut_%d/Qbins.dat" % (name,iteration))
+    return Qbins, Qi_vs_Q
+
+def plot_route_measure(name,iteration,Qbins,Qi_vs_Q,n_bins):
+    """ Plot route measure as defined in ref (1)
+
+    Description:
+
+        Given the distribution of contact probabilities at a given overall
+    degree of foldedness (Q), the route measure is the variance of this 
+    distribution divided by the maximum possible variance at the given Q, which
+    is Q*(1-Q).
+        A route measure R(Q)=1 means that contacts are forming in a binary 
+    manner, i.e. contact probabilities take only values 0 or 1. On the other
+    hand R(Q)=0 means every contact probabilities is equal to Q, i.e. the 
+    mechanism is uniform.
+        See reference (1) for more information. And reference (2) for original
+    discussion.
+
+
+    References:
+    (1) Chavez, L.; Onuchic, J.; Clementi, C. Quantifying the roughness on the
+    free energy landscape: Entropic bottlenecks and protein folding rates. J.
+    Am. Chem. Soc. 2004, 126, 8426-8432.
+
+    (2) Plotkin, S.; Onuchic, J.; Structural and energetic heterogeneity in 
+    protein folding. I, Theory. Jour. Chem. Phys. 2002, 116, 12. 5263-5283
+
+    """
+
+    Q = Qbins/float(max(Qbins))
+    route = np.zeros(n_bins)
+    for i in range(n_bins):
+        if (Q[i] == 0) or (Q[i] == 1):
+            pass
+        else:
+            route[i] = (1./(Q[i]*(1. - Q[i])))*(np.std(Qi_vs_Q[i,:])**2)
+
+    np.savetxt("%s/Mut_%d/route.dat" % (name,iteration),route)
+    plt.figure()
+    plt.plot(Q,route,lw=2,color='r')
+    plt.xlabel("Q")
+    plt.ylabel("R(Q)")
+    plt.title("Route measure %s iteration %d"  % (name,iteration))
+    plt.savefig("%s/Mut_%d/route_%s_%d.pdf" % (name,iteration,name,iteration))
+    plt.savefig("%s/Mut_%d/route_%s_%d.png" % (name,iteration,name,iteration))
+
+def plot_Qi_histogram_vs_Q(name,iteration,Qbins,Qi_vs_Q,n_bins):
+
+    n_probbins = 20
+    probbins = np.linspace(0,1,n_probbins+1)
+    deltaprob = probbins[1] - probbins[0]
+    Qihist_vs_Q = np.zeros((n_probbins,n_bins),float)
+    for i in range(n_bins):
+        n, bins = np.histogram(Qi_vs_Q[i,:],density=True,bins=probbins)
+        Qihist_vs_Q[:,i] = n*deltaprob
+
+    Q = Qbins/float(max(Qbins))
+    X,Y = np.meshgrid(Q,probbins)
+    minQprob = min(Qihist_vs_Q[1:-1,:].ravel())
+    maxQprob = max(Qihist_vs_Q[1:-1,:].ravel())
+
+    plt.figure()
+    #plt.pcolor(X[1:-1,:],Y[1:-1,:],Qihist_vs_Q[1:-1,:])
+    plt.pcolor(X,Y,Qihist_vs_Q,vmin=minQprob,vmax=maxQprob)
+    cbar = plt.colorbar()
+    #cbar.set_clim(0.2*deltaprob,0.8*deltaprob)
+    cbar.set_clim(minQprob,maxQprob)
+    cbar.set_label("Probability")
+    plt.ylim(0,max(Y.ravel()))
+    plt.xlim(0,max(X.ravel()))
+    plt.xlabel("Folding Reaction $Q$")
+    plt.ylabel("$\\left< Q_i \\right>$ Distribution")
+    plt.title("Contact formation %s iteration %s"  % (name,iteration))
+    plt.savefig("%s/Mut_%d/QihistvsQ_%s_%d.pdf" % (name,iteration,name,iteration))
+    plt.savefig("%s/Mut_%d/QihistvsQ_%s_%d.png" % (name,iteration,name,iteration))
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='.')
+    parser.add_argument('--name', type=str, required=True, help='Name of protein to plot.')
+    parser.add_argument('--iteration', type=int, required=True, help='Iteration to plot.')
+    parser.add_argument('--n_bins', type=int, default=35, help='Number of bins along Q.')
+    args = parser.parse_args()
+
+    name = args.name
+    iteration = args.iteration
+    n_bins = args.n_bins
+
+    ## Get some iteration data
+    epsilons, loops, n_residues, contacts, n_contacts, Tf, state_labels, state_bounds, Qbins, Qi_vs_Q = get_some_iteration_data(name,iteration,n_bins)
+
+    ## Plot:
+    ## 1. Route measure         DONE
+    ## 2. Qi histogram versus Q. i.e. pcolor DONE
+    ## 3. Qi vs Q
+    ##   - colored by loop length Try colormaps: spectral, cool, spring DONE
+    ##   - colored by TS rate of formation Try colormaps: spectral, cool, spring DONE
+    ## 4. variance of Qi vs Q
+    ##   - To see if the avg is a good description. If parallel pathways exist then.
+    ## 5. Qgroups vs Q with computed groups:
+    ##  i.   TS contact probability (early, middle, late) 
+    ##  ii.  TS rate of formation  (slow forming, quickly forming)
+
+    ## 6. Qgroups vs Q with user defined groups:
+    ##  i. inter secondary structural elements - read in secondary structure assignment name/secondary_struct.txt 
+    ##  ii. tertiary contact groups - read in defined sets of contacts
+
+    print "  plotting route measure.     saving %s/Mut_%d/route_%s_%d.png" % (name,iteration,name,iteration)
+    plot_route_measure(name,iteration,Qbins,Qi_vs_Q,n_bins)
+
+    print "  plotting Qi histogram vs Q. saving %s/Mut_%d/QihistvsQ_%s_%d.png" % (name,iteration,name,iteration)
+    plot_Qi_histogram_vs_Q(name,iteration,Qbins,Qi_vs_Q,n_bins)
+
+    print "  plotting Qi vs Q            saving %s/Mut_%d/QivsQ_loops_%s_%d.png" % (name,iteration,name,iteration)
+    print "  plotting dQi/dQ vs Q        saving %s/Mut_%d/dQidQ_loops_%s_%d.png" % (name,iteration,name,iteration)
+    plot_QivsQ(name,iteration,Qbins,Qi_vs_Q,n_bins,epsilons,loops,state_bounds)
+
+    plt.show()
 
