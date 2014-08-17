@@ -159,7 +159,7 @@ def get_beadbead_info(path):
 def get_contact_pair_distribution_versus_Q(current_dir, protein, iteration_number):
     # Get the BeadBead.dat file from the folding temperature directory
     path = current_dir + '/' + protein + '/Mut_'+iteration_number+'/'
-    temp = open(path+'Tf_choice.txt', 'r').readline().split()[0]
+    temp = open(path+'T_array_last.txt', 'r').readline().split('_')[0]
     path += temp+'_1/'
 
     pairs, epsij, sigij = get_beadbead_info(path)
@@ -323,7 +323,7 @@ def plot_contact_pair_distribution_versus_Q(current_dir, protein, iteration_numb
 if __name__ == "__main__":
     
     #List of possible proteins to choose from                                                                                   
-    proteins_list = ['r15', 'r16', 'r17','1SHG', '1RIS', '1TEN', '1K85','1E0G','1E41']
+    proteins_list = ['r15', 'r16', 'r17','1SHG', '1RIS', '1TEN', '1K85','1E0G','1E41','sh3']
     proteins_choice = [x for x in get_args(proteins_list).prot]
     #Mutation number (defaults to 0)                                                                                           
     iteration_number = get_args(proteins_list).iter
