@@ -443,7 +443,7 @@ def main():
                     'Qnonlocal':'nonlocal_contacts_flow',
                     'Q':'total_contacts_flow', 'select_contacts_flow':'select_contacts_flow', 'Q_pmf':'Q_pmf'}
 
-    proteins_list = ['r15', 'r16', 'r17', '1SHG', '1RIS', '1TEN', '1K85','1E0G','1E41']
+    proteins_list = ['r15', 'r16', 'r17', '1SHG', '1RIS', '1TEN', '1K85','1E0G','1E41', 'sh3']
     
     # User selects which metrics to display based on the available options
     metrics_choice = [x for x in get_args(metrics_dict, proteins_list).type]
