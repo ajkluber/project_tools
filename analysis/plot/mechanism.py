@@ -40,7 +40,7 @@ def plot_thermodynamic_mechanism(current_dir, protein, iteration_number, bins=40
     """
     # Get the Q files from the folding temperature directory                                                          
     path = current_dir + '/' + protein + '/Mut_'+iteration_number+'/'
-    temp = open(path+'Tf_choice.txt', 'r').readline().split()[0]
+    temp = open(path+'T_array_last.txt', 'r').readline().split('_')[0]
     # Tf_choice.txt should be manually edited to contain the temperature directory closest to the actual Tf 
     path += temp+'_1/'
     # We assume that each of the 3 directories for a given temperature 
