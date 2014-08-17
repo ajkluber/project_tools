@@ -485,7 +485,7 @@ def main():
             for y in proteins_choice:
 
                 # Find out the proper path for each protein according to the folding temperature 
-                select_temp = open(current_dir+'/'+y+'/Mut_'+iteration_number+'/T_array_last.txt').readline('_').split()[0]
+                select_temp = open(current_dir+'/'+y+'/Mut_'+iteration_number+'/T_array_last.txt').readline().split('_')[0]
                 select_path = current_dir+'/'+y+'/Mut_'+iteration_number+'/'+select_temp+'_1/'
 
                 data_matrix.append(f(y, current_dir, select_path))
