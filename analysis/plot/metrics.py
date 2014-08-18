@@ -300,7 +300,7 @@ def coordinate_contacts_flow(protein, current_dir, select_path, coordinate, iter
 
 def local_contacts_flow(protein, current_dir, select_path, iteration_number):
     coordinate = 'Qlocal'
-    Qlocal_flow = coordinate_contacts_flow(protein, current_dir, select_path, coordinate)
+    Qlocal_flow = coordinate_contacts_flow(protein, current_dir, select_path, coordinate, iteration_number)
     #Save the Qlocal matrix
     np.savetxt(current_dir+'/metrics/by_contact/'+protein+'_'+iteration_number+'_Qlocal_flow.dat', Qlocal_flow)
 
@@ -308,7 +308,7 @@ def local_contacts_flow(protein, current_dir, select_path, iteration_number):
 
 def nonlocal_contacts_flow(protein, current_dir, select_path, iteration_number):
     coordinate = 'Qnonlocal'
-    Qnonlocal_flow = coordinate_contacts_flow(protein, current_dir, select_path, coordinate)
+    Qnonlocal_flow = coordinate_contacts_flow(protein, current_dir, select_path, coordinate, iteration_number)
     #Save the Qnonlocal matrix     
     np.savetxt(current_dir+'/metrics/by_contact/'+protein+'_'+iteration_number+'_Qnonlocal_flow.dat', Qnonlocal_flow)
     return Qnonlocal_flow
