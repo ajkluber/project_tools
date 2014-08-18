@@ -105,7 +105,7 @@ def plot_thermodynamic_mechanism(current_dir, protein, iteration_number, bins=40
     plt.xlabel("Folding Progress from $[Q_{min},Q_{max}] = [%.2f,%.2f]$" % (minQ/float(maxQ),1.0))
     plt.ylabel("Sequence index")
     plt.title("Thermodynamic Folding Progress")
-    plt.savefig(current_dir+"/metrics/thermodynamic/thermodynamic_mechanism_profile_"+protein+".pdf")
+    plt.savefig(current_dir+"/metrics/thermodynamic/thermodynamic_mechanism_profile_"+protein+"_"+iteration_number".pdf")
     plt.clf()
 
     if calculate_locals==True:
