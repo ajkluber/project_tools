@@ -116,26 +116,42 @@ def plot_Qgroups_ss_map(name,iteration,Qgrp_conts,Qgrp_indxs,n_ss_elements,ss_la
     
 def plot_secondary_structure_Qgroups(name,iteration,Qbins,Qi_vs_Q,n_bins,contacts,n_contacts,state_labels,state_bounds,Qgrp_indxs,colors):
 
-    plt.figure()
+    plt.figure(1)
+    plt.figure(2)
     n_grps = len(Qgrp_indxs)
     Qgrp_vs_Q = np.zeros((n_bins,n_grps),float)
     Qgrp_vs_Q_nrm = np.zeros((n_bins,n_grps),float)
     for n in range(n_grps):
         if Qgrp_indxs[n].shape == ():
-            n_grp_members = 1
+            Qgrp_vs_Q[:,n] = Qi_vs_Q[:,Qgrp_indxs[n]]
+            Qgrp_vs_Q_nrm[:,n] = Qi_vs_Q[:,Qgrp_indxs[n]]
         else:
             n_grp_members = Qgrp_indxs[n].shape[0]
+            Qgrp_vs_Q[:,n] = sum(Qi_vs_Q[:,Qgrp_indxs[n]].T)
+            Qgrp_vs_Q_nrm[:,n] = sum(Qi_vs_Q[:,Qgrp_indxs[n]].T)/n_grp_members
 
-        Qgrp_vs_Q[:,n] = sum(Qi_vs_Q[:,Qgrp_indxs[n]].T)
-        Qgrp_vs_Q_nrm[:,n] = sum(Qi_vs_Q[:,Qgrp_indxs[n]].T)/n_grp_members
+        plt.figure(1)
         plt.plot(Qbins,Qgrp_vs_Q[:,n],color=colors[n],lw=2)
+        plt.figure(2)
+        plt.plot(Qbins,Qgrp_vs_Q_nrm[:,n],color=colors[n],lw=2)
 
+    plt.figure(1)
     plt.xlim(0,max(Qbins))
     #plt.ylim(0,1)
-    plt.title("$Q_{group}$ by sec struct %s iteration %d" % (name, iteration))
-    plt.xlabel("$Q$")
-    plt.ylabel("$Q_{group}$")
-    #plt.savefig("%s/Mut_%d/ ")
+    plt.title("$Q_{group}$ by sec struct %s iteration %d" % (name, iteration),fontsize=18)
+    plt.xlabel("$Q$",fontsize=20)
+    plt.ylabel("$Q_{group}$",fontsize=20)
+    plt.savefig("%s/Mut_%d/QssvsQ_%s_%d.pdf" % (name,iteration,name,iteration))
+    plt.savefig("%s/Mut_%d/QssvsQ_%s_%d.png" % (name,iteration,name,iteration))
+
+    plt.figure(2)
+    plt.xlim(0,max(Qbins))
+    plt.ylim(0,1)
+    plt.title("$Q_{group}$ by sec struct %s iteration %d" % (name, iteration),fontsize=18)
+    plt.xlabel("$Q$",fontsize=20)
+    plt.ylabel("$Q_{group}$",fontsize=20)
+    plt.savefig("%s/Mut_%d/QssvsQ_nrm_%s_%d.pdf" % (name,iteration,name,iteration))
+    plt.savefig("%s/Mut_%d/QssvsQ_nrm_%s_%d.png" % (name,iteration,name,iteration))
     plt.show()
 
 
