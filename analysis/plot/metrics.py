@@ -315,7 +315,7 @@ def nonlocal_contacts_flow(protein, current_dir, select_path, iteration_number):
 
 def total_contacts_flow(protein, current_dir, select_path, iteration_number):
     coordinate = 'Q'
-    Q_flow = coordinate_contacts_flow(protein, current_dir, select_path, coordinate)
+    Q_flow = coordinate_contacts_flow(protein, current_dir, select_path, coordinate, iteration_number)
     #Save the Q matrix 
     np.savetxt(current_dir+'/metrics/by_contact/'+protein+'_'+iteration_number+'_Q_flow.dat', Q_flow)
 
