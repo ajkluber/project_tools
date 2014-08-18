@@ -120,7 +120,7 @@ def partial_averages(Q_avg_frame, Q_joint):
     return Qi_matrix, Q_bin_edges, Q_sorted, Q_midpoint, temparray
 
 
-def R_Q(protein, current_dir, select_path):
+def R_Q(protein, current_dir, select_path, iteration_number):
     print 'Calculating R_Q for ', protein
     # Calculate the R(Q) measure as per Chavez,Onuchic,Clementi(2004). For this we only need the Q evaluation per residue (Q_per_residue) 
     # as well as the overall Q_per_frame
@@ -155,11 +155,11 @@ def R_Q(protein, current_dir, select_path):
     R_Q = np.column_stack((Q_midpoint,R_Q_single))
 
     #Save the R_Q matrix
-    np.savetxt(current_dir+'/metrics/rq/'+protein+'_R_Q.dat', R_Q)
+    np.savetxt(current_dir+'/metrics/rq/'+protein+'_'+iteration_number+'_R_Q.dat', R_Q)
         
     return R_Q 
 
-def Leff(protein, current_dir, select_path):
+def Leff(protein, current_dir, select_path, iteration_number):
     # We have the contact maps for the entire trajectory already calculated
     beadbead = np.loadtxt(select_path+"BeadBead.dat",dtype=str)
     pairs = beadbead[:,:2].astype(int)
@@ -252,7 +252,7 @@ def Leff(protein, current_dir, select_path):
     L_eff = np.column_stack((Q_midpoint, L_eff))
     return L_eff, L_eff_Q1, Qi_matrix, Q_midpoint
 
-def pCO(protein, current_dir, select_path):
+def pCO(protein, current_dir, select_path, iteration_number):
 
     L_eff, L_eff_Q1, Qi_matrix, Q_midpoint = Leff(protein, current_dir, select_path)
     number_of_contacts = float(len(Qi_matrix.T))
@@ -262,7 +262,7 @@ def pCO(protein, current_dir, select_path):
     p_CO = np.column_stack((Q_midpoint, p_CO)) 
     return p_CO
     
-def coordinate_contacts_flow(protein, current_dir, select_path, coordinate):
+def coordinate_contacts_flow(protein, current_dir, select_path, coordinate, iteration_number):
     
     # Frames are always indexed by Q (total native contacts). number_of_native_contacts is not used in this function
     Q_avg_frame, number_of_native_contacts = Q_avg(select_path, 'Q')
@@ -298,26 +298,26 @@ def coordinate_contacts_flow(protein, current_dir, select_path, coordinate):
     
     return Qc_flow
 
-def local_contacts_flow(protein, current_dir, select_path):
+def local_contacts_flow(protein, current_dir, select_path, iteration_number):
     coordinate = 'Qlocal'
     Qlocal_flow = coordinate_contacts_flow(protein, current_dir, select_path, coordinate)
     #Save the Qlocal matrix
-    np.savetxt(current_dir+'/metrics/by_contact/'+protein+'_Qlocal_flow.dat', Qlocal_flow)
+    np.savetxt(current_dir+'/metrics/by_contact/'+protein+'_'+iteration_number+'_Qlocal_flow.dat', Qlocal_flow)
 
     return Qlocal_flow
 
-def nonlocal_contacts_flow(protein, current_dir, select_path):
+def nonlocal_contacts_flow(protein, current_dir, select_path, iteration_number):
     coordinate = 'Qnonlocal'
     Qnonlocal_flow = coordinate_contacts_flow(protein, current_dir, select_path, coordinate)
     #Save the Qnonlocal matrix     
-    np.savetxt(current_dir+'/metrics/by_contact/'+protein+'_Qnonlocal_flow.dat', Qnonlocal_flow)
+    np.savetxt(current_dir+'/metrics/by_contact/'+protein+'_'+iteration_number+'_Qnonlocal_flow.dat', Qnonlocal_flow)
     return Qnonlocal_flow
 
-def total_contacts_flow(protein, current_dir, select_path):
+def total_contacts_flow(protein, current_dir, select_path, iteration_number):
     coordinate = 'Q'
     Q_flow = coordinate_contacts_flow(protein, current_dir, select_path, coordinate)
     #Save the Q matrix 
-    np.savetxt(current_dir+'/metrics/by_contact/'+protein+'_Q_flow.dat', Q_flow)
+    np.savetxt(current_dir+'/metrics/by_contact/'+protein+'_'+iteration_number+'_Q_flow.dat', Q_flow)
 
     return Q_flow
 
@@ -327,7 +327,7 @@ def select_contacts_flow(*args):
 def Q_pmf(protein, current_dir, select_path, iteration_number):
     shutil.copy2(select_path+'pmfs/Q_pmf.pdf', current_dir+'/metrics/pmfs/'+protein+'_iter_'+iteration_number+'_Q_pmf.pdf')
 
-def plot_metrics(x, data_matrix, metrics_names, proteins_choice, current_dir):
+def plot_metrics(x, data_matrix, metrics_names, proteins_choice, current_dir, iteration_number):
     print 'Plotting for ', x
     # get the correct name of the protein 
     coordinate = metrics_names[x]
@@ -361,7 +361,7 @@ def plot_metrics(x, data_matrix, metrics_names, proteins_choice, current_dir):
             proteins_file = proteins_choice[0] + proteins_choice[1] + proteins_choice[2]
 
         plt.title(coordinate + " for "+ proteins_text )
-        plt.savefig(current_dir +"/metrics/rq/"+x+ "_" + proteins_file +".pdf")
+        plt.savefig(current_dir +"/metrics/rq/"+x+ "_" + proteins_file +"_"+iteration_number+".pdf")
         plt.clf()
 
     elif coordinate == "pCO":
@@ -384,7 +384,7 @@ def plot_metrics(x, data_matrix, metrics_names, proteins_choice, current_dir):
             proteins_file = proteins_choice[0] + proteins_choice[1] + proteins_choice[2]
 
         plt.title(coordinate + " for "+ proteins_text )
-        plt.savefig(current_dir +"/metrics/pCO_Leff/"+x+ "_" + proteins_file +".pdf")
+        plt.savefig(current_dir +"/metrics/pCO_Leff/"+x+ "_" + proteins_file +"_"+iteration_number+".pdf")
         plt.clf()
 
     elif coordinate == "Leff":
@@ -408,7 +408,7 @@ def plot_metrics(x, data_matrix, metrics_names, proteins_choice, current_dir):
             proteins_file = proteins_choice[0] + proteins_choice[1] + proteins_choice[2]
 
         plt.title(coordinate + " for "+ proteins_text )
-        plt.savefig(current_dir +"/metrics/pCO_Leff/"+x+ "_" + proteins_file +".pdf")
+        plt.savefig(current_dir +"/metrics/pCO_Leff/"+x+ "_" + proteins_file +"_"+iteration_number+".pdf")
         plt.clf()
 
     elif any([coordinate == "local_contacts_flow", coordinate=="nonlocal_contacts_flow", coordinate=="total_contacts_flow"]):
@@ -425,7 +425,7 @@ def plot_metrics(x, data_matrix, metrics_names, proteins_choice, current_dir):
             plt.xlabel("Folding Progress from $[Q_{min},Q_{max}] = [%.2f,%.2f]$" % (minQ/float(maxQ),1.0))
             plt.ylabel(plot_legend_y[coordinate])
             plt.title(x + " for "+ i)
-            plt.savefig(current_dir+'/metrics/by_contact/'+x+'_'+i+'.pdf')
+            plt.savefig(current_dir+'/metrics/by_contact/'+x+'_'+i+'_'+iteration_number+'.pdf')
             plt.clf()
             pass
     elif coordinate == "select_contacts_flow":
@@ -488,9 +488,9 @@ def main():
                 select_temp = open(current_dir+'/'+y+'/Mut_'+iteration_number+'/T_array_last.txt').readline().split('_')[0]
                 select_path = current_dir+'/'+y+'/Mut_'+iteration_number+'/'+select_temp+'_1/'
 
-                data_matrix.append(f(y, current_dir, select_path))
+                data_matrix.append(f(y, current_dir, select_path,iteration_number))
             # And then feed into the plotting function
-            plot_metrics(x,data_matrix,metrics_names, proteins_choice, current_dir)
+            plot_metrics(x,data_matrix,metrics_names, proteins_choice, current_dir,iteration_number)
     
 
 if __name__ == "__main__":
