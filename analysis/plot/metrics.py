@@ -443,7 +443,7 @@ def main():
                     'Qnonlocal':'nonlocal_contacts_flow',
                     'Q':'total_contacts_flow', 'select_contacts_flow':'select_contacts_flow', 'Q_pmf':'Q_pmf'}
 
-    proteins_list = ['r15', 'r16', 'r17', '1SHG', '1RIS', '1TEN', '1K85','1E0G','1E41']
+    proteins_list = ['r15', 'r16', 'r17', '1SHG', '1RIS', '1TEN', '1K85','1E0G','1E41', 'sh3']
     
     # User selects which metrics to display based on the available options
     metrics_choice = [x for x in get_args(metrics_dict, proteins_list).type]
@@ -474,7 +474,7 @@ def main():
         data_matrix = []
         if x == 'Q_pmf':
             for y in proteins_choice:
-                select_temp = open(current_dir+'/'+y+'/Mut_'+iteration_number+'/Tf_choice.txt').readline().split()[0]
+                select_temp = open(current_dir+'/'+y+'/Mut_'+iteration_number+'/T_array_last.txt').readline().split('_')[0]
                 select_path = current_dir+'/'+y+'/Mut_'+iteration_number+'/'+select_temp+'_1/'
                 f = metrics_dict.get(x)
                 f(y,current_dir,select_path,iteration_number)
@@ -485,7 +485,7 @@ def main():
             for y in proteins_choice:
 
                 # Find out the proper path for each protein according to the folding temperature 
-                select_temp = open(current_dir+'/'+y+'/Mut_'+iteration_number+'/Tf_choice.txt').readline().split()[0]
+                select_temp = open(current_dir+'/'+y+'/Mut_'+iteration_number+'/T_array_last.txt').readline().split('_')[0]
                 select_path = current_dir+'/'+y+'/Mut_'+iteration_number+'/'+select_temp+'_1/'
 
                 data_matrix.append(f(y, current_dir, select_path))
