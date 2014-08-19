@@ -398,7 +398,7 @@ if __name__ == "__main__":
     n_bins = args.n_bins
 
     if not os.path.exists("%s/Mut_%d/plots" % (name,iteration)):
-        os.mkdir("%s/Mut_%d/plots" % (name,iteration)):
+        os.mkdir("%s/Mut_%d/plots" % (name,iteration))
 
     ## Get some iteration data
     epsilons, loops, n_residues, contacts, n_contacts, Tf, state_labels, state_bounds, Qbins, Qi_vs_Q = get_some_iteration_data(name,iteration,n_bins)

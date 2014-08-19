@@ -5,7 +5,7 @@ import matplotlib.cm as cm
 import os
 import argparse
 
-from project_tools.analysis.plot.plot_Qgroups import get_some_iteration_data
+from project_tools.analysis.plot.QivsQ import get_some_iteration_data
 from project_tools.analysis.plot.drawss import add_secondary_struct_icons
 
 def get_secondary_structure_Qgroups(name,iteration,Qbins,Qi_vs_Q,n_bins,contacts,n_contacts,state_labels,state_bounds):
@@ -92,8 +92,13 @@ def plot_Qgroups_ss_map(name,iteration,Qgrp_conts,Qgrp_indxs,n_ss_elements,ss_la
             else:
                 pass
 
+    if not os.path.exists("%s/Qgroups_ss/colors.txt" % name):
+        open("%s/Qgroups_ss/colors.txt" % name, "w").write(colorstring)
+    else:
+        colors = [ x.rstrip("\n") for x in open("%s/Qgroup_ss/colors.txt" % name,"r").readlines() ] 
+        
+
     open("%s/Qgroups_ss/labels.txt" % name, "w").write(labelstring)
-    open("%s/Qgroups_ss/colors.txt" % name, "w").write(colorstring)
     ticks = []
     for a,b in ss_bounds:
         ticks.append(a)
@@ -167,7 +172,7 @@ if __name__ == '__main__':
     n_bins = args.n_bins
 
     if not os.path.exists("%s/Mut_%d/plots" % (name,iteration)):
-        os.mkdir("%s/Mut_%d/plots" % (name,iteration)):
+        os.mkdir("%s/Mut_%d/plots" % (name,iteration))
 
     ## Get some iteration data
     epsilons, loops, n_residues, contacts, n_contacts, Tf, state_labels, state_bounds, Qbins, Qi_vs_Q = get_some_iteration_data(name,iteration,n_bins)

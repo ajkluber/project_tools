@@ -249,7 +249,7 @@ if __name__ == "__main__":
     print "Plotting summary for %s iteration %d..." % (name,iteration)
 
     if not os.path.exists("%s/Mut_%d/summary" % (name,iteration)):
-        os.mkdir("%s/Mut_%d/summary" % (name,iteration)):
+        os.mkdir("%s/Mut_%d/summary" % (name,iteration))
 
     Contact_maps = []
     for X in range(len(state_labels)):
