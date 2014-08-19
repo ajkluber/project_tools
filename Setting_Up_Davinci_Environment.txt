@@ -21,11 +21,22 @@ because numpy is a common dependency it should be the first package installed.
 Sometimes "python setup.py install --user" will be enough, but numpy is
 different because it should be compiled with Intel MKL optimized routines for
 best performance. On Davinci, the Intel MKL libaries are found in
-/opt/apps/intel/2013.1.039/mkl, but the last part of the path (with the
-numbers) may change when they update the server.
+/opt/apps/intel/2013.1.039/mkl (**NOTE: This location changes with time!!**),
+but the last part of the path (with the numbers) may change when they update
+the server.
 
     After installing python2.7, numpy, and scipy the order doesn't matter, but
-I retain the order I did everything for accuracy.
+I retain the order I did everything for accuracy. All packages except two are
+standard python packages. The two third-party packages are mdtraj, developed
+in Vijay Pande's group at Stanford and MODELLER developed in Andre Sali's lab
+at University of California San Francisco. MODELLER installation requires that
+you request a registration key. They can be accessed at the following links:
+
+mdtraj    http://mdtraj.org/
+MODELLER  http://salilab.org/modeller/
+
+    The rest of the python packages can be found online in the Python Package
+Index PyPI.
 
 List and order of packages installed in this HOW-TO:
 
