@@ -105,7 +105,7 @@ def plot_thermodynamic_mechanism(current_dir, protein, iteration_number, bins=40
     plt.xlabel("Folding Progress from $[Q_{min},Q_{max}] = [%.2f,%.2f]$" % (minQ/float(maxQ),1.0))
     plt.ylabel("Sequence index")
     plt.title("Thermodynamic Folding Progress")
-    plt.savefig(current_dir+"/metrics/thermodynamic/thermodynamic_mechanism_profile_"+protein+".pdf")
+    plt.savefig(current_dir+"/metrics/thermodynamic/thermodynamic_mechanism_profile_"+protein+"_"+iteration_number+".pdf")
     plt.clf()
 
     if calculate_locals==True:
@@ -116,7 +116,8 @@ def plot_thermodynamic_mechanism(current_dir, protein, iteration_number, bins=40
         plt.xlabel("Folding Progress from $[Q_{min},Q_{max}] = [%.2f,%.2f]$" % (minQ/float(maxQ),1.0))
         plt.ylabel("Sequence index")
         plt.title("Thermodynamic Folding Progress for $Q_{local}-protein "+protein)
-        plt.savefig(current_dir+"/metrics/thermodynamic/thermodynamic_mechanism_profile_Qlocal_"+protein+".pdf")
+        plt.savefig(current_dir+"/metrics/thermodynamic/thermodynamic_mechanism_profile_Qlocal_"+protein+
+                    "-"+iteration_number+".pdf")
         plt.clf()
 
         plt.figure()
@@ -126,7 +127,8 @@ def plot_thermodynamic_mechanism(current_dir, protein, iteration_number, bins=40
         plt.xlabel("Folding Progress from $[Q_{min},Q_{max}] = [%.2f,%.2f]$" % (minQ/float(maxQ),1.0))
         plt.ylabel("Sequence index")
         plt.title("Thermodynamic Folding Progress for $Q_{nonlocal}$-protein "+protein)
-        plt.savefig(current_dir+"/metrics/thermodynamic/thermodynamic_mechanism_profile_Qnonlocal_"+protein+".pdf")
+        plt.savefig(current_dir+"/metrics/thermodynamic/thermodynamic_mechanism_profile_Qnonlocal_"+protein+
+                    "_"+iteration_number+".pdf")
         plt.clf()
 
 
@@ -272,11 +274,11 @@ def plot_contact_pair_distribution_versus_Q(current_dir, protein, iteration_numb
     minQnonlocal_i_dist = min(Qnonlocal_i_dist[1:-1,:].ravel())
   
     print "  Saving data..."
-    np.savetxt(current_dir+'/metrics/mechanism/Qi_distribution_'+protein+'.dat',Qi_dist)
-    np.savetxt(current_dir+'/metrics/mechanism/Q_bins_'+protein+'.dat',x)
-    np.savetxt(current_dir+'/metrics/mechanism/Qi_bins_'+protein+'.dat',y)
-    np.savetxt(current_dir+'/metrics/mechanism/Qlocal_i_distribution_'+protein+'.dat', Qlocal_i_dist)
-    np.savetxt(current_dir+'/metrics/mechanism/Qnonlocal_i_distribution_'+protein+'.dat', Qnonlocal_i_dist)
+    np.savetxt(current_dir+'/metrics/mechanism/Qi_distribution_'+protein+'_'+iteration_number+'.dat',Qi_dist)
+    np.savetxt(current_dir+'/metrics/mechanism/Q_bins_'+protein+'_'+iteration_number+'.dat',x)
+    np.savetxt(current_dir+'/metrics/mechanism/Qi_bins_'+protein+'_'+iteration_number+'.dat',y)
+    np.savetxt(current_dir+'/metrics/mechanism/Qlocal_i_distribution_'+protein+'_'+iteration_number+'.dat', Qlocal_i_dist)
+    np.savetxt(current_dir+'/metrics/mechanism/Qnonlocal_i_distribution_'+protein+'_'+iteration_number+'.dat', Qnonlocal_i_dist)
 
     print "  Plotting.."
     plt.figure()
@@ -290,7 +292,7 @@ def plot_contact_pair_distribution_versus_Q(current_dir, protein, iteration_numb
     plt.xlim(minQ,maxQ)
     plt.ylim(0.,1)
     print "  Saving plot..."
-    plt.savefig(current_dir+'/metrics/mechanism/mechanism_heterogeneity_versus_Q_'+protein+'.pdf')
+    plt.savefig(current_dir+'/metrics/mechanism/mechanism_heterogeneity_versus_Q_'+protein+'_'+iteration_number+'.pdf')
     plt.clf()
 
     #Plot for Qlocal
@@ -303,7 +305,7 @@ def plot_contact_pair_distribution_versus_Q(current_dir, protein, iteration_numb
     plt.xlim(minQ,maxQ)
     plt.ylim(0.,1)
     print "  Saving plot..."
-    plt.savefig(current_dir+'/metrics/mechanism/mechanism_heterogeneity_local_versus_Q_'+protein+'.pdf')
+    plt.savefig(current_dir+'/metrics/mechanism/mechanism_heterogeneity_local_versus_Q_'+protein+'_'+iteration_number+'.pdf')
     plt.clf()
 
     #Plot for Qnonlocal                                                                                                             
@@ -316,7 +318,7 @@ def plot_contact_pair_distribution_versus_Q(current_dir, protein, iteration_numb
     plt.xlim(minQ,maxQ)
     plt.ylim(0.,1)
     print "  Saving plot..."
-    plt.savefig(current_dir+'/metrics/mechanism/mechanism_heterogeneity_nonlocal_versus_Q_'+protein+'.pdf')
+    plt.savefig(current_dir+'/metrics/mechanism/mechanism_heterogeneity_nonlocal_versus_Q_'+protein+'_'+iteration_number+'.pdf')
     plt.clf()
     
 
