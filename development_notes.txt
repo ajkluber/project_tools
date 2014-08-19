@@ -282,3 +282,19 @@ formulas to represent the method in a general way. It is Newton's method
 applied to a vector-valued function of many variables.
 
 ------------------------------------------------------------------------------
+
+    ## Plot:
+    ## 1. Route measure         DONE
+    ## 2. Qi histogram versus Q. i.e. pcolor DONE
+    ## 3. Qi vs Q
+    ##   - colored by loop length Try colormaps: spectral, cool, spring DONE
+    ##   - colored by TS rate of formation Try colormaps: spectral, cool, spring DONE
+    ## 4. variance of Qi vs Q
+    ##   - To see if the avg is a good description. If parallel pathways exist then.
+    ## 5. Qgroups vs Q with computed groups:
+    ##  i.   TS contact probability (early, middle, late) 
+    ##  ii.  TS rate of formation  (slow forming, quickly forming)
+
+    ## 6. Qgroups vs Q with user defined groups:
+    ##  i. inter secondary structural elements - read in secondary structure assignment name/secondary_struct.txt DONE
+    ##  ii. tertiary contact groups - read in defined sets of contacts 

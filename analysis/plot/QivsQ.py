@@ -1,16 +1,45 @@
-""" Different ways to visualize the folding mechanism
+""" Calcuate and plot contact probability (Qi) vs foldedness (Q) 
 
 Description:
+    Contact probabilities are the elementary descriptors of the folding
+mechanism. Since there are usually >100 contacts it is usually too hard to
+visualize/understand whats going on just by looking at the contact
+probabilities. 
+    This module first calculates then plots several coarse ways of visualizing
+contact probabilities:
 
-    There are many ways to visualize the folding mechanism. For a description
-of several topological measures see reference (1).
+1. Route measure (see reference (1))
+    The normalized variance of the contact probilities as a function of Q (the
+mean of the contact probailities at a given Q is equal to Q). The variance
+indicates how polarized the mechanism is: a route measure of 1 is the maximum
+possible polarization where contacts are formed in a binary way (1 or 0), a
+lower route measure indicates that contact probabilities are fractional due to
+averaging of diverse structures.
+
+2. Qi hist vs Q
+    More details can be seen by visualizing how the distribution of contact
+probabilities change as a function of Q. For example, is it bimodial with
+clusters of well-formed and un-formed contacts? or is it unimodal?
+Hypothetically different distributions can result in the same route measure,
+e.g. a vary wide unimodal distribution and a tightly clustered bimodal
+distribution. 
+    For this figure, contact probabilities are histogrammed at a given Q
+then the values of the histogram are visualized in a color plot.
+
+3. Qi vs Q colored by loop length
+    The greatest level of detail is to look at all individual contact
+probabilities as a function of Q. This is not easy to digest visually so this
+figure separates loop lengths (less)greater than the average loop length into
+two adjacent subplots (contact loop length is the sequence separation of
+residues in contact). The contact probabilities are also colored by loop length
+from shortest loops with shortest wavelength (black/blue) to longest loops
+with the longest wavelength (red/white).
 
 
-To Do: 
-    
-- Have option to select particular partitions of contacts
-
-
+See also:
+1. Qgroups_ss
+2. Qgroups
+3. mechanism
 
 References:
 
@@ -109,8 +138,8 @@ def plot_QivsQ(name,iteration,Qbins,Qi_vs_Q,n_bins,epsilons,loops,state_bounds):
     axes[1].set_title("$l_i < \\overline{l}$")
     fig.text(0.5,0.04,"Foldedness $Q$",ha='center',va='center')
     fig.text(0.5,0.96,"Longer loops = longer wavelengths. %s iteration %d" % (name,iteration),ha='center',va='center')
-    plt.savefig("%s/Mut_%d/QivsQ_loops_%s_%d.png" % (name,iteration,name,iteration))
-    plt.savefig("%s/Mut_%d/QivsQ_loops_%s_%d.pdf" % (name,iteration,name,iteration))
+    plt.savefig("%s/Mut_%d/plots/QivsQ_loops_%s_%d.png" % (name,iteration,name,iteration))
+    plt.savefig("%s/Mut_%d/plots/QivsQ_loops_%s_%d.pdf" % (name,iteration,name,iteration))
 
     ## Contact probability growth colored by loop length
     dQi_dQ = (np.gradient(Qi_vs_Q,Qbins[1]-Qbins[0],Qbins[1]-Qbins[0]))[0]
@@ -129,8 +158,8 @@ def plot_QivsQ(name,iteration,Qbins,Qi_vs_Q,n_bins,epsilons,loops,state_bounds):
     axes[1].set_title("$l_i < \\overline{l}$")
     fig.text(0.5,0.04,"Foldedness $Q$",ha='center',va='center')
     fig.text(0.5,0.96,"Longer loops = longer wavelengths. %s iteration %d" % (name,iteration),ha='center',va='center')
-    plt.savefig("%s/Mut_%d/dQidQ_loops_%s_%d.png" % (name,iteration,name,iteration))
-    plt.savefig("%s/Mut_%d/dQidQ_loops_%s_%d.pdf" % (name,iteration,name,iteration))
+    plt.savefig("%s/Mut_%d/plots/dQidQ_loops_%s_%d.png" % (name,iteration,name,iteration))
+    plt.savefig("%s/Mut_%d/plots/dQidQ_loops_%s_%d.pdf" % (name,iteration,name,iteration))
 
 def some_old_plot_Qgoups():
     if not os.path.exists("plots"):
@@ -324,8 +353,8 @@ def plot_route_measure(name,iteration,Qbins,Qi_vs_Q,n_bins):
     plt.xlabel("Q")
     plt.ylabel("R(Q)")
     plt.title("Route measure %s iteration %d"  % (name,iteration))
-    plt.savefig("%s/Mut_%d/route_%s_%d.pdf" % (name,iteration,name,iteration))
-    plt.savefig("%s/Mut_%d/route_%s_%d.png" % (name,iteration,name,iteration))
+    plt.savefig("%s/Mut_%d/plots/route_%s_%d.pdf" % (name,iteration,name,iteration))
+    plt.savefig("%s/Mut_%d/plots/route_%s_%d.png" % (name,iteration,name,iteration))
 
 def plot_Qi_histogram_vs_Q(name,iteration,Qbins,Qi_vs_Q,n_bins):
 
@@ -354,8 +383,8 @@ def plot_Qi_histogram_vs_Q(name,iteration,Qbins,Qi_vs_Q,n_bins):
     plt.xlabel("Folding Reaction $Q$")
     plt.ylabel("$\\left< Q_i \\right>$ Distribution")
     plt.title("Contact formation %s iteration %s"  % (name,iteration))
-    plt.savefig("%s/Mut_%d/QihistvsQ_%s_%d.pdf" % (name,iteration,name,iteration))
-    plt.savefig("%s/Mut_%d/QihistvsQ_%s_%d.png" % (name,iteration,name,iteration))
+    plt.savefig("%s/Mut_%d/plots/QihistvsQ_%s_%d.pdf" % (name,iteration,name,iteration))
+    plt.savefig("%s/Mut_%d/plots/QihistvsQ_%s_%d.png" % (name,iteration,name,iteration))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='.')
@@ -368,34 +397,22 @@ if __name__ == "__main__":
     iteration = args.iteration
     n_bins = args.n_bins
 
+    if not os.path.exists("%s/Mut_%d/plots" % (name,iteration)):
+        os.mkdir("%s/Mut_%d/plots" % (name,iteration)):
+
     ## Get some iteration data
     epsilons, loops, n_residues, contacts, n_contacts, Tf, state_labels, state_bounds, Qbins, Qi_vs_Q = get_some_iteration_data(name,iteration,n_bins)
 
-    ## Plot:
-    ## 1. Route measure         DONE
-    ## 2. Qi histogram versus Q. i.e. pcolor DONE
-    ## 3. Qi vs Q
-    ##   - colored by loop length Try colormaps: spectral, cool, spring DONE
-    ##   - colored by TS rate of formation Try colormaps: spectral, cool, spring DONE
-    ## 4. variance of Qi vs Q
-    ##   - To see if the avg is a good description. If parallel pathways exist then.
-    ## 5. Qgroups vs Q with computed groups:
-    ##  i.   TS contact probability (early, middle, late) 
-    ##  ii.  TS rate of formation  (slow forming, quickly forming)
-
-    ## 6. Qgroups vs Q with user defined groups:
-    ##  i. inter secondary structural elements - read in secondary structure assignment name/secondary_struct.txt 
-    ##  ii. tertiary contact groups - read in defined sets of contacts
-
-    print "  plotting route measure.     saving %s/Mut_%d/route_%s_%d.png" % (name,iteration,name,iteration)
+    print "  plotting route measure.     saving %s/Mut_%d/plots/route_%s_%d.png" % (name,iteration,name,iteration)
     plot_route_measure(name,iteration,Qbins,Qi_vs_Q,n_bins)
 
-    print "  plotting Qi histogram vs Q. saving %s/Mut_%d/QihistvsQ_%s_%d.png" % (name,iteration,name,iteration)
+    print "  plotting Qi histogram vs Q. saving %s/Mut_%d/plots/QihistvsQ_%s_%d.png" % (name,iteration,name,iteration)
     plot_Qi_histogram_vs_Q(name,iteration,Qbins,Qi_vs_Q,n_bins)
 
-    print "  plotting Qi vs Q            saving %s/Mut_%d/QivsQ_loops_%s_%d.png" % (name,iteration,name,iteration)
-    print "  plotting dQi/dQ vs Q        saving %s/Mut_%d/dQidQ_loops_%s_%d.png" % (name,iteration,name,iteration)
+    print "  plotting Qi vs Q            saving %s/Mut_%d/plots/QivsQ_loops_%s_%d.png" % (name,iteration,name,iteration)
+    print "  plotting dQi/dQ vs Q        saving %s/Mut_%d/plots/dQidQ_loops_%s_%d.png" % (name,iteration,name,iteration)
     plot_QivsQ(name,iteration,Qbins,Qi_vs_Q,n_bins,epsilons,loops,state_bounds)
 
     plt.show()
+
 

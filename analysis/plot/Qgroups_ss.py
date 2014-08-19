@@ -141,8 +141,8 @@ def plot_secondary_structure_Qgroups(name,iteration,Qbins,Qi_vs_Q,n_bins,contact
     plt.title("$Q_{group}$ by sec struct %s iteration %d" % (name, iteration),fontsize=18)
     plt.xlabel("$Q$",fontsize=20)
     plt.ylabel("$Q_{group}$",fontsize=20)
-    plt.savefig("%s/Mut_%d/QssvsQ_%s_%d.pdf" % (name,iteration,name,iteration))
-    plt.savefig("%s/Mut_%d/QssvsQ_%s_%d.png" % (name,iteration,name,iteration))
+    plt.savefig("%s/Mut_%d/plots/QssvsQ_%s_%d.pdf" % (name,iteration,name,iteration))
+    plt.savefig("%s/Mut_%d/plots/QssvsQ_%s_%d.png" % (name,iteration,name,iteration))
 
     plt.figure(2)
     plt.xlim(0,max(Qbins))
@@ -150,8 +150,8 @@ def plot_secondary_structure_Qgroups(name,iteration,Qbins,Qi_vs_Q,n_bins,contact
     plt.title("$Q_{group}$ by sec struct %s iteration %d" % (name, iteration),fontsize=18)
     plt.xlabel("$Q$",fontsize=20)
     plt.ylabel("$Q_{group}$",fontsize=20)
-    plt.savefig("%s/Mut_%d/QssvsQ_nrm_%s_%d.pdf" % (name,iteration,name,iteration))
-    plt.savefig("%s/Mut_%d/QssvsQ_nrm_%s_%d.png" % (name,iteration,name,iteration))
+    plt.savefig("%s/Mut_%d/plots/QssvsQ_nrm_%s_%d.pdf" % (name,iteration,name,iteration))
+    plt.savefig("%s/Mut_%d/plots/QssvsQ_nrm_%s_%d.png" % (name,iteration,name,iteration))
     plt.show()
 
 
@@ -165,6 +165,9 @@ if __name__ == '__main__':
     name = args.name
     iteration = args.iteration
     n_bins = args.n_bins
+
+    if not os.path.exists("%s/Mut_%d/plots" % (name,iteration)):
+        os.mkdir("%s/Mut_%d/plots" % (name,iteration)):
 
     ## Get some iteration data
     epsilons, loops, n_residues, contacts, n_contacts, Tf, state_labels, state_bounds, Qbins, Qi_vs_Q = get_some_iteration_data(name,iteration,n_bins)

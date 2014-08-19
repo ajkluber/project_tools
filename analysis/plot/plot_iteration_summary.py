@@ -232,8 +232,8 @@ def plot_contact_probability_subplot(name,iteration,n_residues,contacts,state_la
     cbar.set_clim(0,1)
 
     plt.suptitle("%s iteration %d" % (name,iteration))
-    plt.savefig("%s/Mut_%d/contact_prob_all.pdf" % (name,iteration))
-    plt.savefig("%s/Mut_%d/contact_prob_all.png" % (name,iteration))
+    plt.savefig("%s/Mut_%d/summary/contact_prob_all.pdf" % (name,iteration))
+    plt.savefig("%s/Mut_%d/summary/contact_prob_all.png" % (name,iteration))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='.')
@@ -248,6 +248,9 @@ if __name__ == "__main__":
     
     print "Plotting summary for %s iteration %d..." % (name,iteration)
 
+    if not os.path.exists("%s/Mut_%d/summary" % (name,iteration)):
+        os.mkdir("%s/Mut_%d/summary" % (name,iteration)):
+
     Contact_maps = []
     for X in range(len(state_labels)):
         print " Saving: %s/Mut_%d/contact_prob_%s.pdf          - %s contact probabilities" % (name,iteration,state_labels[X],state_labels[X])
@@ -255,39 +258,39 @@ if __name__ == "__main__":
         contact_probability = get_contact_probability(name,iteration,n_residues,contacts,state_labels[X],state_bounds[X])
         plot_contact_probability(name,iteration,n_residues,contacts,state_labels[X],state_bounds[X],contact_probability,individual=True)
         Contact_maps.append(contact_probability)
-        plt.savefig("%s/Mut_%d/contact_prob_%s.pdf" % (name,iteration,state_labels[X]))
-        plt.savefig("%s/Mut_%d/contact_prob_%s.png" % (name,iteration,state_labels[X]))
+        plt.savefig("%s/Mut_%d/summary/contact_prob_%s.pdf" % (name,iteration,state_labels[X]))
+        plt.savefig("%s/Mut_%d/summary/contact_prob_%s.png" % (name,iteration,state_labels[X]))
         plt.close()
 
-    print " Saving subplot: %s/Mut_%d/contact_prob_all.pdf       - contact probabilities" % (name,iteration)
+    print " Saving subplot: %s/Mut_%d/summary/contact_prob_all.pdf       - contact probabilities" % (name,iteration)
     plot_contact_probability_subplot(name,iteration,n_residues,contacts,state_labels,Contact_maps)
     
-    print "  Saving: %s/Mut_%d/current_epsilon_map.pdf    - epsilon map" % (name,iteration)
+    print "  Saving: %s/Mut_%d/summary/current_epsilon_map.pdf    - epsilon map" % (name,iteration)
     plt.figure()
     plot_epsilon_map(name,iteration,epsilons,epsilon_map,contacts,n_residues,individual=True)
-    plt.savefig("%s/Mut_%d/current_epsilon_map.pdf" % (name,iteration))
-    plt.savefig("%s/Mut_%d/current_epsilon_map.png" % (name,iteration))
+    plt.savefig("%s/Mut_%d/summary/current_epsilon_map.pdf" % (name,iteration))
+    plt.savefig("%s/Mut_%d/summary/current_epsilon_map.png" % (name,iteration))
     plt.close()
 
-    print "  Saving: %s/Mut_%d/current_epsilon_hist.pdf   - epsilon histogram" % (name,iteration)
+    print "  Saving: %s/Mut_%d/summary/current_epsilon_hist.pdf   - epsilon histogram" % (name,iteration)
     plt.figure()
     plot_epsilon_histogram(name,iteration,epsilons,individual=True)
-    plt.savefig("%s/Mut_%d/current_epsilon_hist.pdf" % (name,iteration))
-    plt.savefig("%s/Mut_%d/current_epsilon_hist.png" % (name,iteration))
+    plt.savefig("%s/Mut_%d/summary/current_epsilon_hist.pdf" % (name,iteration))
+    plt.savefig("%s/Mut_%d/summary/current_epsilon_hist.png" % (name,iteration))
     plt.close()
 
-    print "  Saving: %s/Mut_%d/FreeEnergy_Q.pdf            - free energy" % (name,iteration)
+    print "  Saving: %s/Mut_%d/summary/FreeEnergy_Q.pdf            - free energy" % (name,iteration)
     plt.figure()
     plot_free_energy(name,iteration,n_contacts,Tf,whamFree,state_labels,state_bounds,individual=True)
-    plt.savefig("%s/Mut_%d/FreeEnergy_Q.pdf" % (name,iteration))
-    plt.savefig("%s/Mut_%d/FreeEnergy_Q.png" % (name,iteration))
+    plt.savefig("%s/Mut_%d/summary/FreeEnergy_Q.pdf" % (name,iteration))
+    plt.savefig("%s/Mut_%d/summary/FreeEnergy_Q.png" % (name,iteration))
     plt.close()
 
     print "  Saving: %s/Mut_%d/compareddG.pdf              - ddG comparison" % (name,iteration)
     plt.figure()
     plot_ddG_comparison(name,iteration,ddGsim,ddGexp,individual=True)
-    plt.savefig("%s/Mut_%d/compareddG.pdf" % (name,iteration))
-    plt.savefig("%s/Mut_%d/summary_%s_%d.png" % (name,iteration,name,iteration))
+    plt.savefig("%s/Mut_%d/summary/compareddG.pdf" % (name,iteration))
+    plt.savefig("%s/Mut_%d/summary/summary_%s_%d.png" % (name,iteration,name,iteration))
     plt.close()
 
     print " Summary figure: %s/Mut_%d/summary_%s_%d.pdf" % (name,iteration,name,iteration)
@@ -301,6 +304,6 @@ if __name__ == "__main__":
     plt.subplot(2,2,4)
     plot_ddG_comparison(name,iteration,ddGsim,ddGexp)
     plt.suptitle("%s iteration %d" % (name,iteration))
-    plt.savefig("%s/Mut_%d/summary_%s_%d.pdf" % (name,iteration,name,iteration))
-    plt.savefig("%s/Mut_%d/summary_%s_%d.png" % (name,iteration,name,iteration))
+    plt.savefig("%s/Mut_%d/summary/summary_%s_%d.pdf" % (name,iteration,name,iteration))
+    plt.savefig("%s/Mut_%d/summary/summary_%s_%d.png" % (name,iteration,name,iteration))
     plt.show()
