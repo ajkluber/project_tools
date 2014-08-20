@@ -182,11 +182,11 @@ class ProjectManager(object):
             sub = model.subdir
             if Mut == False:
                 print "Manually adding temperature array Ti=%d Tf=%d dT=%d" % (T_min,T_max,deltaT)
-                print "Starting Tf_loop_iteration..."
-                simulation.Tf_loop.manually_add_temperature_array(model,self.append_log,T_min,T_max,deltaT)
+                print "Starting constant_temp_iteration..."
+                simulation.constant_temp.manually_add_temperature_array(model,self.append_log,T_min,T_max,deltaT)
             elif Mut == True:
                 print "Manually adding equilibrium sims ", temps
-                simulation.Tf_loop.manually_add_equilibrium_runs(model,self.append_log,temps)
+                simulation.constant_temp.manually_add_equilibrium_runs(model,self.append_log,temps)
             
             
         self.save_model_info(Models)
@@ -221,7 +221,7 @@ class ProjectManager(object):
         for i in range(len(subdirs)):
             model = Models[i]
             sub = model.subdir
-            simulation.Tf_loop.manually_extend_temperatures(model,self.append_log,method,temps,factor)
+            simulation.constant_temp.manually_extend_temperatures(model,self.append_log,method,temps,factor)
             
         self.save_model_info(Models)
         print "Success"
