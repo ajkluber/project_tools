@@ -57,26 +57,26 @@ class MatysiakClementi2004(ProjectManager):
         sub = model.subdir
         if task == "Tf_loop_iteration":
             print "Checking if Tf_loop_iteration completed..."
-            simulation.Tf_loop.check_completion(model,self.append_log)
+            simulation.constant_temp.check_completion(model,self.append_log)
             lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
             if action2 == "Finished:":
                 print "Finished Tf_loop_iteration..."
                 print "Starting Tf_loop_analysis..."
-                analysis.Tf_loop.analyze_temperature_array(model,self.append_log)
+                analysis.constant_temp.analyze_temperature_array(model,self.append_log)
         elif task == "Tf_loop_analysis":
             print "Checking if Tf_loop_analysis completed..."
-            analysis.Tf_loop.check_completion(model,self.append_log)
+            analysis.constant_temp.check_completion(model,self.append_log)
         elif task == "Equil_Tf":
             print "Starting to check if Equil_Tf completed..."
-            simulation.Tf_loop.check_completion(model,self.append_log,equil=True)
+            simulation.constant_temp.check_completion(model,self.append_log,equil=True)
             lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
             if action2 == "Finished:":
                 print "Finished Equil_Tf_iteration..."
                 print "Starting Equil_Tf_analysis..."
-                analysis.Tf_loop.analyze_temperature_array(model,self.append_log,equil=True)
+                analysis.constant_temp.analyze_temperature_array(model,self.append_log,equil=True)
         elif task == "Equil_Tf_analysis":
             print "Starting to check if Equil_Tf_analysis completed..."
-            analysis.Tf_loop.check_completion(model,self.append_log,equil=True)
+            analysis.constant_temp.check_completion(model,self.append_log,equil=True)
         elif task == "Calculating_MC2004":
             mutations.perturbation.calculate_MC2004_perturbation(model,self.append_log)
         else:
@@ -91,26 +91,26 @@ class MatysiakClementi2004(ProjectManager):
         if task == "Tf_loop_iteration":
             print "Finished Tf_loop_iteration..."
             print "Starting Tf_loop_analysis..."
-            analysis.Tf_loop.analyze_temperature_array(model,self.append_log)
+            analysis.constant_temp.analyze_temperature_array(model,self.append_log)
         elif task == "Tf_loop_analysis":
             print "Finished Tf_loop_analysis..."
-            flag = analysis.Tf_loop.run_wham_heat_capacity(model,self.append_log)
+            flag = analysis.constant_temp.run_wham_heat_capacity(model,self.append_log)
             if flag == 1:
                 pass 
             else:
                 print "Starting Tf_loop_iteration..."
-                simulation.Tf_loop.folding_temperature_loop(model,self.append_log)
+                simulation.constant_temp.folding_temperature_loop(model,self.append_log)
         elif task == "Tf_wham":
             print "Starting equilibrium simulations at Tf..."
-            simulation.Tf_loop.run_equilibrium_simulations(model,self.append_log)
+            simulation.constant_temp.run_equilibrium_simulations(model,self.append_log)
         elif task == "Equil_Tf":
             print "Starting Equil_Tf_analysis..."
-            analysis.Tf_loop.analyze_temperature_array(model,self.append_log,equil=True)
+            analysis.constant_temp.analyze_temperature_array(model,self.append_log,equil=True)
         elif task == "Equil_Tf_analysis":
         ## Use the following sub module to plot PMFS of coordinates:
         ## analysis.plot.pmfs
             ## Run heat capacity for equilibrium runs. Cv(T), F(Q)
-            analysis.Tf_loop.run_wham_heat_capacity(model,self.append_log,Mut=True)
+            analysis.constant_temp.run_wham_heat_capacity(model,self.append_log,Mut=True)
         elif task == "Equil_Tf_wham":
         #    print "Starting prepping mutant pdbs..."
         #    mutations.mutatepdbs.prepare_mutants(model,self.append_log)
@@ -127,7 +127,7 @@ class MatysiakClementi2004(ProjectManager):
             mutations.perturbation.calculate_MC2004_perturbation(model,self.append_log)
         elif task == "Calculating_MC2004":
             ## Start the next round of simulations with new parameters.
-            simulation.Tf_loop.start_next_Tf_loop_iteration(model,self.append_log)
+            simulation.constant_temp.start_next_Tf_loop_iteration(model,self.append_log)
         else:
             print "ERROR!"
             print "  Couldn't find next option for task:",task
@@ -148,7 +148,7 @@ class MatysiakClementi2004(ProjectManager):
         print "Starting a new simulation project..."
         Models = mdb.models.new_models(subdirs,modeloptions)
 
-        self.save_model_system_info(Models)
+        self.save_model_info(Models)
         if args.temparray != None:
             for n in range(len(subdirs)):
                 Models[n].initial_T_array = args.temparray
@@ -156,9 +156,9 @@ class MatysiakClementi2004(ProjectManager):
         for k in range(len(Models)):
             model = Models[k]
             print "Starting Tf_loop_iteration for subdirectory: ", model.subdir
-            simulation.Tf_loop.folding_temperature_loop(model,self.append_log,new=True)
+            simulation.constant_temp.folding_temperature_loop(model,self.append_log,new=True)
 
-        self.save_model_system_info(Models)
+        self.save_model_info(Models)
         print "Success"
 
 

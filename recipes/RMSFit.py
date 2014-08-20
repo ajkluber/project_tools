@@ -1,13 +1,17 @@
-""" A recipe to apply the FRETFit algorithm
+""" A recipes to fit RMS fluctuations
 
 
 Description:
 
-    This recipes performs an algorithm to add energetic heterogeneity to a
-Go-model in order to reproduce a FRET pairwise distance distribution.
+    This recipes performs the algorithm in reference (1) to add energetic
+heterogeneity to a Go-model. Parameter fitting to match rms fluctuations.
 
 
 Reference:
+
+(1) Matysiak, S.; Clementi, C. Optimal Combination of Theory and Experiment for
+the Characterization of the Protein Folding Landscape of S6: How Far Can a
+Minimalist model Go? J. Mol. Biol. 2004, 343, 235-248.
 """
 
 import os
@@ -18,19 +22,21 @@ from project_tools import simulation, analysis, mutations
 import model_builder as mdb
 
 
-class FRETFit(ProjectManager):
+class MatysiakClementi2004(ProjectManager):
     
-    """ A recipe to apply the FRETFit algorithm
+    """ A recipes to fit RMS fluctuations
 
 
     Description:
+        
 
-        This recipes performs an algorithm to add energetic heterogeneity to a
-    Go-model in order to reproduce a FRET pairwise distance distribution. The
-    algorithm was inspired by Matysiak
-
+    Recipe:
 
     Reference:
+
+    (1) Matysiak, S.; Clementi, C. Optimal Combination of Theory and Experiment for
+    the Characterization of the Protein Folding Landscape of S6: How Far Can a
+    Minimalist model Go? J. Mol. Biol. 2004, 343, 235-248.
     """
 
 
@@ -58,13 +64,14 @@ class FRETFit(ProjectManager):
         elif task == "Equil_Tf_analysis":
             print "Starting to check if Equil_Tf_analysis completed..."
             analysis.constant_temp.check_completion(model,self.append_log,equil=True)
+        elif task == "Calculating_MC2004":
+            mutations.perturbation.calculate_MC2004_perturbation(model,self.append_log)
         else:
             print "ERROR!"
             print "  Couldn't find next option for task:",task
             print "  Please check that things are ok."
             print "  Exiting."
             raise SystemExit
-
 
     def logical_flowchart_finished(self,model,task):
         sub = model.subdir
@@ -75,25 +82,39 @@ class FRETFit(ProjectManager):
         elif task == "Tf_loop_analysis":
             print "Finished Tf_loop_analysis..."
             flag = analysis.constant_temp.run_wham_heat_capacity(model,self.append_log)
-        #elif task == "Tf_loop_analysis":
-        #    print "Finished Tf_loop_analysis..."
-        #    flag = analysis.constant_temp.run_wham_heat_capacity(model,self.append_log)
-        #    if flag == 1:
-        #        pass 
-        #    else:
-        #        print "Starting Tf_loop_iteration..."
-        #        simulation.constant_temp.folding_temperature_loop(model,self.append_log)
-        #elif task == "Tf_wham":
-        #    print "Starting equilibrium simulations at Tf..."
-        #    simulation.constant_temp.run_equilibrium_simulations(model,self.append_log)
-        #elif task == "Equil_Tf":
-        #    print "Starting Equil_Tf_analysis..."
-        #    analysis.constant_temp.analyze_temperature_array(model,self.append_log,equil=True)
-        #elif task == "Equil_Tf_analysis":
-        ### Use the following sub module to plot PMFS of coordinates:
-        ### analysis.plot.pmfs
-        #    ## Run heat capacity for equilibrium runs. Cv(T), F(Q)
-        #    analysis.constant_temp.run_wham_heat_capacity(model,self.append_log,Mut=True)
+            if flag == 1:
+                pass 
+            else:
+                print "Starting Tf_loop_iteration..."
+                simulation.constant_temp.folding_temperature_loop(model,self.append_log)
+        elif task == "Tf_wham":
+            print "Starting equilibrium simulations at Tf..."
+            simulation.constant_temp.run_equilibrium_simulations(model,self.append_log)
+        elif task == "Equil_Tf":
+            print "Starting Equil_Tf_analysis..."
+            analysis.constant_temp.analyze_temperature_array(model,self.append_log,equil=True)
+        elif task == "Equil_Tf_analysis":
+        ## Use the following sub module to plot PMFS of coordinates:
+        ## analysis.plot.pmfs
+            ## Run heat capacity for equilibrium runs. Cv(T), F(Q)
+            analysis.constant_temp.run_wham_heat_capacity(model,self.append_log,Mut=True)
+        elif task == "Equil_Tf_wham":
+        #    print "Starting prepping mutant pdbs..."
+        #    mutations.mutatepdbs.prepare_mutants(model,self.append_log)
+        #elif task == "Preparing_Mutants":
+            print "Starting calculating dH for mutants..."
+            mutations.phi_values.calculate_dH_for_mutants(model,self.append_log)
+        elif task == "Calculating_dH":
+            mutations.phi_values.calculate_phi_values(model,self.append_log,"Q")
+        elif task == "Calculating_phi_values":
+            self.append_log(model.subdir,"Starting: Calculating_matrix_M") 
+            mutations.perturbation.calculate_matrix_ddG_eps_M(model,"Q")
+            self.append_log(model.subdir,"Finished: Calculating_matrix_M") 
+        elif task == "Calculating_matrix_M":
+            mutations.perturbation.calculate_MC2004_perturbation(model,self.append_log)
+        elif task == "Calculating_MC2004":
+            ## Start the next round of simulations with new parameters.
+            simulation.constant_temp.start_next_Tf_loop_iteration(model,self.append_log)
         else:
             print "ERROR!"
             print "  Couldn't find next option for task:",task
@@ -138,8 +159,9 @@ def get_args():
     new_parser = sp.add_parser('new')
     new_parser.add_argument('--pdbs', type=str, required=True, nargs='+',help='PDBs to start simulations.')
     new_parser.add_argument('--epsilon_bar', type=float, help='Optional, average strength of contacts. epsilon bar.')
+    new_parser.add_argument('--contact_params', type=str, default=None, help='Optional, specify contact epsilons, deltas.')
     new_parser.add_argument('--disulfides', type=int, nargs='+', help='Optional pairs of disulfide linked residues.')
-    new_parser.add_argument('--temparray', type=int, nargs='+',help='Optional initial temp array: Ti Tf dT. Default: 50 350 50')
+    new_parser.add_argument('--temparray', type=int, nargs='+',help='Optional initial temp array: T_min T_max deltaT. Default: 50 350 50')
     new_parser.add_argument('--dryrun', action='store_true', help='Add this option for dry run. No simulations started.')
 
     ## Options for continuing from a previously saved simulation project.
@@ -150,8 +172,8 @@ def get_args():
     ## Options for manually adding a temperature array.
     add_parser = sp.add_parser('add')
     add_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
-    add_parser.add_argument('--temparray', type=int, nargs='+', help='T_initial T_final dT for new temp array',required=True)
-    add_parser.add_argument('--mutarray', type=int, nargs='+', help='T_initial T_final dT for new mutational sims array')
+    add_parser.add_argument('--temparray', type=int, nargs='+', help='T_initial T_final dT for new temp array')
+    add_parser.add_argument('--mutarray', type=float, nargs='+', help='T_initial T_final dT for new mutational sims array')
     add_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
 
     ## Options for manually extending some temperatures.
@@ -161,7 +183,6 @@ def get_args():
     ext_parser.add_argument('--Tf_temps', type=float, nargs='+', help='Temperatures that you want extended')
     ext_parser.add_argument('--Mut_temps', type=float, nargs='+', help='T_initial T_final dT for new mutational sims array')
     ext_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
-
 
     args = parser.parse_args()
 
@@ -179,19 +200,23 @@ def get_args():
             options["Disulfides"] = args.disulfides
         else:
             options["Disulfides"] = None
+        if args.contact_params != None:
+            options["Contact_Energies"] = args.contact_params
+        else:
+            options["Contact_Energies"] = "RMSFit"
     else:
         options["Epsilon_Bar"] = None
         options["Disulfides"] = None
 
+    options["Fitting_Method"] = "RMSFit"
     options["Model_Code"] = "HetGo"
     options["Bead_Model"] = "CA"
-    options["Contact_Energies"] = "FRETFit"
 
-    modeloptions = mdb.models.check_options(options)
+    modeloptions = mdb.models.check_options(options,firstpass=True)
 
     return args, modeloptions
 
 if __name__ == "__main__":
     
     args, options = get_args()
-    FRETFit(args,options)
+    MatysiakClementi2004(args,options)

@@ -37,6 +37,6 @@ for T in range(T_min,T_max+deltaT,deltaT):
 
     ## Write simulation files to subdirectory and submit job
     os.chdir(str(T))
-    pjt.simulation.Tf_loop.run_constant_temp(model,T,nsteps=nsteps)
+    pjt.simulation.constant_temp.run_constant_temp(model,T,nsteps=nsteps)
     os.chdir(cwd)
 

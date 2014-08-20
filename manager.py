@@ -182,14 +182,14 @@ class ProjectManager(object):
             sub = model.subdir
             if Mut == False:
                 print "Manually adding temperature array Ti=%d Tf=%d dT=%d" % (T_min,T_max,deltaT)
-                print "Starting Tf_loop_iteration..."
-                simulation.Tf_loop.manually_add_temperature_array(model,self.append_log,T_min,T_max,deltaT)
+                print "Starting constant_temp_iteration..."
+                simulation.constant_temp.manually_add_temperature_array(model,self.append_log,T_min,T_max,deltaT)
             elif Mut == True:
                 print "Manually adding equilibrium sims ", temps
-                simulation.Tf_loop.manually_add_equilibrium_runs(model,self.append_log,temps)
+                simulation.constant_temp.manually_add_equilibrium_runs(model,self.append_log,temps)
             
             
-        self.save_model_system_info(Models)
+        self.save_model_info(Models)
         print "Success"
 
     def extend_temperatures(self,args):
@@ -221,9 +221,9 @@ class ProjectManager(object):
         for i in range(len(subdirs)):
             model = Models[i]
             sub = model.subdir
-            simulation.Tf_loop.manually_extend_temperatures(model,self.append_log,method,temps,factor)
+            simulation.constant_temp.manually_extend_temperatures(model,self.append_log,method,temps,factor)
             
-        self.save_model_system_info(Models)
+        self.save_model_info(Models)
         print "Success"
 
     def check_modelbuilder_log(self,sub):
@@ -255,10 +255,10 @@ class ProjectManager(object):
                 elif action == "Error":
                     pass
 
-        self.save_model_system_info(Models)
+        self.save_model_info(Models)
         print "Success"
 
-    def save_model_system_info(self,Models):
+    def save_model_info(self,Models):
         ''' Save the model.info strings.'''
         print "Saving system.info progress..."
         for i in range(len(Models)):
