@@ -126,7 +126,7 @@ class Clementi2000(ProjectManager):
         print "Starting a new simulation project..."
         Models = mdb.models.new_models(subdirs,modeloptions)
 
-        self.save_model_system_info(Models)
+        self.save_model_info(Models)
         if args.temparray != None:
             for n in range(len(subdirs)):
                 Models[n].initial_T_array = args.temparray
@@ -136,7 +136,7 @@ class Clementi2000(ProjectManager):
             print "Starting Tf_loop_iteration for subdirectory: ", model.subdir
             simulation.Tf_loop.folding_temperature_loop(model,self.append_log,new=True)
 
-        self.save_model_system_info(Models)
+        self.save_model_info(Models)
         print "Success"
 
 

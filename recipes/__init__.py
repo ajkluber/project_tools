@@ -25,3 +25,5 @@ Minimalist Model Go? J. Mol. Biol. 2004, 343, 235-248.
 """
 
 import MatysiakClementi2004
+import Clementi2000
+import FRETFit 
