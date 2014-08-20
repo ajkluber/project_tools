@@ -346,7 +346,7 @@ def plot_metrics(x, data_matrix, metrics_names, proteins_choice, current_dir, it
             R_Q = data_matrix[index]
             plt.plot(R_Q[1:,0],R_Q[1:,1],color_code[index], label=proteins_choice[index])
         
-    
+        plt.ylim((0,1))
         plt.xlabel(plot_legend_x[coordinate])
         plt.ylabel(plot_legend_y[coordinate])
         plt.legend()
