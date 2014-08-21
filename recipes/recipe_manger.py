@@ -32,7 +32,7 @@ import numpy as np
 
 import simulation
 import analysis
-import mutations
+import parameter_fitting
 
 from model_builder import models
 
@@ -239,7 +239,7 @@ class ProjectManager(object):
         Models = models.load_models(subdirs,dryrun=args.dryrun)
 
         if args.dryrun == True:
-            print "  Dry run complete. Saving and Exiting."
+            print "  Dry run complete. Exiting."
         else:
             for i in range(len(subdirs)):
                 model = Models[i]        
@@ -260,7 +260,7 @@ class ProjectManager(object):
 
     def save_model_info(self,Models):
         ''' Save the model.info strings.'''
-        print "Saving system.info progress..."
+        print "Saving model.info ..."
         for i in range(len(Models)):
             open(Models[i].subdir+"/model.info","w").write(Models[i].__repr__())
 

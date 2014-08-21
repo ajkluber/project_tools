@@ -23,7 +23,7 @@ References:
 the Characterization of the Protein Folding Landscape of S6: How Far Can a
 Minimalist Model Go? J. Mol. Biol. 2004, 343, 235-248.
 """
-
+import recipe_manager
 import MatysiakClementi2004
 import Clementi2000
 import FRETFit 

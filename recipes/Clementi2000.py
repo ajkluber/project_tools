@@ -17,8 +17,8 @@ Small Globular Proteins. J. Mol. Biol. 2000, 298, 937-953
 import os
 import argparse
 
-from project_tools.manager import ProjectManager
-from project_tools import simulation, analysis, mutations
+from project_tools import simulation, analysis, parameter_fitting
+from recipe_manager import ProjectManager
 import model_builder as mdb
 
 
@@ -100,12 +100,12 @@ class Clementi2000(ProjectManager):
             analysis.constant_temp.run_wham_heat_capacity(model,self.append_log,Mut=True)
         elif task == "Equil_Tf_wham":
             print "Starting prepping mutant pdbs..."
-            mutations.mutatepdbs.prepare_mutants(model,self.append_log)
+            parameter_fitting.mutatepdbs.prepare_mutants(model,self.append_log)
         elif task == "Preparing_Mutants":
             print "Starting calculating dH for mutants..."
-            mutations.phi_values.calculate_dH_for_mutants(model,self.append_log)
+            parameter_fitting.phi_values.calculate_dH_for_mutants(model,self.append_log)
         elif task == "Calculating_dH":
-            mutations.phi_values.calculate_phi_values(model,self.append_log,"Q")
+            parameter_fitting.phi_values.calculate_phi_values(model,self.append_log,"Q")
         else:
             print "ERROR!"
             print "  Couldn't find next option for task:",task

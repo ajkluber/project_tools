@@ -282,19 +282,44 @@ formulas to represent the method in a general way. It is Newton's method
 applied to a vector-valued function of many variables.
 
 ------------------------------------------------------------------------------
+Alexander Kluber
 
-    ## Plot:
-    ## 1. Route measure         DONE
-    ## 2. Qi histogram versus Q. i.e. pcolor DONE
-    ## 3. Qi vs Q
-    ##   - colored by loop length Try colormaps: spectral, cool, spring DONE
-    ##   - colored by TS rate of formation Try colormaps: spectral, cool, spring DONE
-    ## 4. variance of Qi vs Q
-    ##   - To see if the avg is a good description. If parallel pathways exist then.
-    ## 5. Qgroups vs Q with computed groups:
-    ##  i.   TS contact probability (early, middle, late) 
-    ##  ii.  TS rate of formation  (slow forming, quickly forming)
+Worked on some analysis tools.
 
-    ## 6. Qgroups vs Q with user defined groups:
-    ##  i. inter secondary structural elements - read in secondary structure assignment name/secondary_struct.txt DONE
-    ##  ii. tertiary contact groups - read in defined sets of contacts 
+Plot:
+1. Route measure         DONE
+2. Qi histogram versus Q. i.e. pcolor DONE
+3. Qi vs Q
+  - colored by loop length Try colormaps: spectral, cool, spring DONE
+  - dQi vs dQ, rate of formation Try colormaps: spectral, cool, spring DONE
+4. variance of Qi vs Q
+  - To see if the avg is a good description. If parallel pathways exist then.
+5. Qgroups vs Q with computed groups:
+ i.   TS contact probability (early, middle, late) 
+ ii.  TS rate of formation  (slow forming, quickly forming)
+
+6. Qgroups vs Q with user defined groups:
+ i. inter secondary structural elements - read in secondary structure
+    assignment name/secondary_struct.txt DONE
+ ii. tertiary contact groups - read in defined sets of contacts  DONE
+
+------------------------------------------------------------------------------
+Thu Aug 21 13:43:01 CDT 2014
+Alexander Kluber
+
+    Reorganizing the code to be more logical/intuitive. For example the
+mutations submodule will now be parameter_fitting to reflect its general
+purpose. Also parameter_fitting will hold submodules for calculating the
+feature vector f(eps_0) and the Jacobian J(eps_0) for different types of data.
+Finally, parameter_fitting will have a submodule that finds a solution for
+these types of problems.
+
+    Also, renamed 
+analysis/Tf_loop   -> analysis/constant_temp
+simulation/Tf_loop -> simulation/constant_temp
+
+    Other recent improvements were switching to using Jeff Noel's WHAM code in
+place of the old Fortran code.
+
+
+------------------------------------------------------------------------------
