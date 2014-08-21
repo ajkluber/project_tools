@@ -183,6 +183,7 @@ def get_args():
         options["Epsilon_Bar"] = None
         options["Disulfides"] = None
 
+    options["Fitting_Data"] = "FRET"
     options["Model_Code"] = "HetGo"
     options["Bead_Model"] = "CA"
     options["Contact_Energies"] = "FRETFit"

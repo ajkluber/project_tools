@@ -208,7 +208,7 @@ def get_args():
         options["Epsilon_Bar"] = None
         options["Disulfides"] = None
 
-    options["Fitting_Method"] = "RMSFit"
+    options["Fitting_Data"] = "RMSF"
     options["Model_Code"] = "HetGo"
     options["Bead_Model"] = "CA"
 

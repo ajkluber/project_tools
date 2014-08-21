@@ -195,6 +195,7 @@ def get_args():
         options["Epsilon_Bar"] = None
         options["Disulfides"] = None
 
+    options["Fitting_Data"] = None
     options["Model_Code"] = "HetGo"
     options["Bead_Model"] = "CA"
     options["Contact_Energies"] = args.contact_params
