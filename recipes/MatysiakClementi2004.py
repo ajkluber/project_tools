@@ -18,7 +18,7 @@ import os
 import argparse
 
 from project_tools import simulation, analysis, parameter_fitting
-from recipe_manager import ProjectManager, 
+from recipe_manager import ProjectManager
 import model_builder as mdb
 
 
@@ -78,7 +78,7 @@ class MatysiakClementi2004(ProjectManager):
             print "Starting to check if Equil_Tf_analysis completed..."
             analysis.constant_temp.check_completion(model,self.append_log,equil=True)
         elif task == "Calculating_MC2004":
-            parameter_fitting.perturbation.calculate_MC2004_perturbation(model,self.append_log)
+            parameter_fitting.ddG_MC2004.perturbation.calculate_MC2004_perturbation(model,self.append_log)
         else:
             print "ERROR!"
             print "  Couldn't find next option for task:",task
@@ -113,18 +113,18 @@ class MatysiakClementi2004(ProjectManager):
             analysis.constant_temp.run_wham_heat_capacity(model,self.append_log,Mut=True)
         elif task == "Equil_Tf_wham":
         #    print "Starting prepping mutant pdbs..."
-        #    parameter_fitting.mutatepdbs.prepare_mutants(model,self.append_log)
+        #    parameter_fitting.ddG_MC2004.mutatepdbs.prepare_mutants(model,self.append_log)
         #elif task == "Preparing_Mutants":
             print "Starting calculating dH for mutants..."
-            parameter_fitting.phi_values.calculate_dH_for_mutants(model,self.append_log)
+            parameter_fitting.ddG_MC2004.phi_values.calculate_dH_for_mutants(model,self.append_log)
         elif task == "Calculating_dH":
-            parameter_fitting.phi_values.calculate_phi_values(model,self.append_log,"Q")
+            parameter_fitting.ddG_MC2004.phi_values.calculate_phi_values(model,self.append_log,"Q")
         elif task == "Calculating_phi_values":
             self.append_log(model.subdir,"Starting: Calculating_matrix_M") 
-            parameter_fitting.perturbation.calculate_matrix_ddG_eps_M(model,"Q")
+            parameter_fitting.ddG_MC2004.perturbation.calculate_matrix_ddG_eps_M(model,"Q")
             self.append_log(model.subdir,"Finished: Calculating_matrix_M") 
         elif task == "Calculating_matrix_M":
-            parameter_fitting.perturbation.calculate_MC2004_perturbation(model,self.append_log)
+            parameter_fitting.ddG_MC2004.perturbation.calculate_MC2004_perturbation(model,self.append_log)
         elif task == "Calculating_MC2004":
             ## Start the next round of simulations with new parameters.
             simulation.constant_temp.start_next_Tf_loop_iteration(model,self.append_log)

@@ -3,8 +3,6 @@
 Description:
 
 
-References: 
-
 
 """
 

@@ -100,12 +100,12 @@ class Clementi2000(ProjectManager):
             analysis.constant_temp.run_wham_heat_capacity(model,self.append_log,Mut=True)
         elif task == "Equil_Tf_wham":
             print "Starting prepping mutant pdbs..."
-            parameter_fitting.mutatepdbs.prepare_mutants(model,self.append_log)
-        elif task == "Preparing_Mutants":
+            parameter_fitting.ddG_MC2004.mutatepdbs.prepare_mutants(model,self.append_log)
+
             print "Starting calculating dH for mutants..."
-            parameter_fitting.phi_values.calculate_dH_for_mutants(model,self.append_log)
+            parameter_fitting.ddG_MC2004.phi_values.calculate_dH_for_mutants(model,self.append_log)
         elif task == "Calculating_dH":
-            parameter_fitting.phi_values.calculate_phi_values(model,self.append_log,"Q")
+            parameter_fitting.ddG_MC2004.phi_values.calculate_phi_values(model,self.append_log,"Q")
         else:
             print "ERROR!"
             print "  Couldn't find next option for task:",task
