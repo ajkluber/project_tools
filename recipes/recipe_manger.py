@@ -1,26 +1,14 @@
-""" Basic project manager class automates projects at top level.
+""" Top-level class that automates the execution of a recipe
 
 Description:
 
 ProjectManager
-    The ProjectManager class is top-level helper class to track and execute
-varied procedures for structure-based modeling. At this level the tasks that
-need to be done are abstract (such as 'determining folding temperature' or
-'refining parameter'). 
-    ProjectManager relies on model_builder to generate the proper Gromacs input
-files for the desired coarse-grain model, but doesn't need to know of the
-details.
-    The goal is to conceal as much of the details as possible away from the
-user, so that the user can focus on top-level questions. For this reason any
-function that requires manipulating the data is best moved to a different 
-module. 
+    The ProjectManager class is a task manager that executes a preset procedure
+specified in a recipe. Recipes hold the logical flow to for example perform
+parameter fitting of a structure-based model.
+
 
     
-See Also: 
-
-    development_notes.txt for chronological list of changes and development
-plan.
-
 """
 
 import argparse
@@ -30,21 +18,17 @@ import subprocess as sb
 import time
 import numpy as np
 
-import simulation
-import analysis
-import parameter_fitting
-
+from project_tools import simulation, analysis, parameter_fitting
 from model_builder import models
 
 global GAS_CONSTANT_KJ_MOL
-GAS_CONSTANT_KJ_MOL = 0.0083144621
+GAS_CONSTANT_KJ_MOL = 0.0083144621  ## Gas constant in kJ/(mole K)
 
 def print_header():
 
     print "------------------------------ project_tools ---------------------------------"
-    print " Your using model_builder!  A helper module for prepping CG simulations for"
-    print " Gromacs. More coming soon!"
-    print " Version 0.1 "
+    print " Your using project_tools, a multiscale toolbox from the Clementi lab"
+    print " Version 1.0 "
     print " Words to live by:\n"
     print "             'If you can calculate it, you should calculate it' - PGW \n"
     #print "               'One never notices what has been done; "
@@ -53,7 +37,7 @@ def print_header():
     #print "'A ship in port is safe, but that's not what ships are built for' - Grace Hopper'\n"
     #print "                 'Science and everyday life cannot and"
     #print "                  should not be separated' - Rosalind Franklin\n"
-    print "-------------------------------- Good Luck! ----------------------------------"
+    print "------------------------------------------------------------------------------"
 
 def get_args():
     ''' Get command line arguments and check that they are consistent/allowed.
