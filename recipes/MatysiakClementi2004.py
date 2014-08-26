@@ -165,14 +165,16 @@ class MatysiakClementi2004(ProjectManager):
 def get_args():
     """ Get command line arguments """
 
-    parser = argparse.ArgumentParser(description='Run .')
+    parser = argparse.ArgumentParser(description='Options for MatysiakClementi2004 recipe.')
     sp = parser.add_subparsers(dest='action')
 
     ## Options for initializing a new simulation project.
     new_parser = sp.add_parser('new')
     new_parser.add_argument('--pdbs', type=str, required=True, nargs='+',help='PDBs to start simulations.')
+    new_parser.add_argument('--contacts', type=str, default=None, help='Specify contacts.')
     new_parser.add_argument('--epsilon_bar', type=float, help='Optional, average strength of contacts. epsilon bar.')
     new_parser.add_argument('--contact_params', type=str, default=None, help='Optional, specify contact epsilons, deltas.')
+    new_parser.add_argument('--fitting_includes', type=str, nargs='+', default=None, help='Optional, specify directories included in fitting.')
     new_parser.add_argument('--disulfides', type=int, nargs='+', help='Optional pairs of disulfide linked residues.')
     new_parser.add_argument('--temparray', type=int, nargs='+',help='Optional initial temp array: T_min T_max deltaT. Default: 50 350 50')
     new_parser.add_argument('--dryrun', action='store_true', help='Add this option for dry run. No simulations started.')
@@ -205,6 +207,7 @@ def get_args():
         options = {"Dry_Run":False}
 
     if args.action == "new":
+        options["PDB"] = args.pdbs[0]
         if args.epsilon_bar != False:
             options["Epsilon_Bar"] = args.epsilon_bar
         else:
@@ -217,6 +220,14 @@ def get_args():
             options["Contact_Energies"] = args.contact_params
         else:
             options["Contact_Energies"] = "MC2004"
+        if args.contacts != None:
+            options["Contacts"] = args.contacts
+        else:
+            options["Contacts"] = None
+        if args.fitting_includes != None:
+            options["Fitting_Includes"] = args.fitting_includes
+        else:
+            options["Fitting_Includes"] = [ None ]
     else:
         options["Epsilon_Bar"] = None
         options["Disulfides"] = None

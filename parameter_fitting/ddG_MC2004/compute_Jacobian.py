@@ -21,69 +21,216 @@ import mdtraj as md
 
 import model_builder.models as models
 
-from mutatepdbs import get_core_mutations
-
-from project_tools.analysis import wham
-
+from mutatepdbs import get_core_mutations,get_exp_ddG
 
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
-def calculate_dH_for_mutants(model,append_log):
-    """ Calculate Hamiltonian perturbation for each mutation dH_k """
+def calculate_average_Jacobian(model,append_log):
+    """ Calculate the average feature vector (ddG's) and Jacobian """
     
-    append_log(model.subdir,"Starting: Calculating_dH")
+    append_log(model.subdir,"Starting: Calculating_Jacobian")
 
     cwd = os.getcwd()
     sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
-    ## Get the fraction of native contacts deleted for each mutation.
     os.chdir(model.subdir+"/mutants")
+    ## Get list of mutations and fraction of native contacts deleted for 
+    ## each mutation.
     mutants = get_core_mutations()
+    ddGexp, ddGexp_err = get_exp_ddG()
     Fij, Fij_pairs, Fij_conts = get_mutant_fij(model,mutants)
     os.chdir(sub)
 
+    temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
     directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
 
-    ## Loop over all directories in Mut subdirectory. For each trajectory
-    ## and each mutation crunch dH.
-    for dir in directories:
+    epsilons = model.contact_epsilons
+    deltas = model.contact_deltas
+    sigmas = model.contact_sigmas
+
+    bounds, state_labels = get_state_bounds()
+    bounds = [0] + bounds + [model.n_contacts]
+
+    ## Loop over temperatures in Mut subdir. Calculate ddG vector and 
+    ## Jacobian for each directory indpendently then save. Save the average
+    ## feature vector and Jacobian in the Mut/newton directory.
+    sim_feature_all = []
+    Jacobian_all = []
+    for n in range(len(directories)):
+        T = temperatures[n]
+        dir = directories[n]
+        beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
+        print "  Calculating Jacobian for Mut_%d/%s" % (model.Mut_iteration,dir)
         os.chdir(dir)
-        print "  Loading traj for: ", "Mut_"+str(model.Mut_iteration)+"/"+dir
-        traj = md.load("traj.xtc",top="Native.pdb")
-        for k in range(len(mutants)):
-            mut = mutants[k]
-            #if not os.path.exists("dH_"+mut+".dat"):
-            if True:
-                print "    calc dH for ", mutants[k]
-                ## Use mdtraj to compute the distances between pairs.
-                rij = md.compute_distances(traj,Fij_pairs[k])
-                
-                ## Epsilons, deltas, and sigmas for relevant pairs for this mutation.
-                eps = model.contact_epsilons[Fij_conts[k]]
-                deltas = model.contact_deltas[Fij_conts[k]]
-                sigmas = model.contact_sigmas[Fij_conts[k]]
-
-                ## Sometimes the energies calculated here blow up because small
-                ## changes in distance can lead to large energies on the
-                ## repulsive wall. (The actual energies of the simulation do not
-                ## blow up). Since this calculation is meant to estimation of 
-                ## the change in energy upon mutation, dH_k, I just use frames
-                ## where the contact energy LJ12-10 is negative. Without this
-                ## consideration, the results are crazy
-                x = sigmas/rij
-                x[(x > 1.09)] = 1.09  # <-- 1.09 is where LJ12-10 crosses zero.
-                #x[(x > 1.211)] = 1.211     ## Old, arbitrary cutoff.
-
-                ## Calculate dH_k using distances and parameters. Save.
-                Vij = -Fij[k]*eps*(5.*(x**12) - 6.*deltas*(x**10))
-                dH_k = sum(Vij.T)
-                np.savetxt("dH_"+mut+".dat",dH_k)
-            else:
-                pass
+        sim_feature, Jacobian = compute_Jacobian_for_directory(model,traj,dir,beta,mutants,Fij_pairs,Fij_conts,bounds,state_labels,epsilons,delta,sigmas)
+        sim_feature_all.append(sim_feature)
+        Jacobian_all.append(Jacobian)
         os.chdir("..")
-    os.chdir(cwd)
-    append_log(model.subdir,"Finished: Calculating_dH")
 
+    sim_feaure_all = np.array(sim_feaure_all)
+    Jacobian_all = np.array(Jacobian_all)
+
+    ## Take avg. and use standard deviation as error bars.
+    sim_feature_avg = sum(sim_feature_all)/float(len(directories))
+    sim_feature_err = np.std(sim_feature_all,axis=0)
+    Jacobian_avg = sum(Jacobian_all)/float(len(directories))
+    Jacobian_err = np.std(Jacobian_all,axis=0)
+
+    if not os.path.exists("newton"):
+        os.mkdir("newton")
+
+    print "  Saving feature vector and Jacobian in Mut_%d/newton" % model.Mut_iteration
+    np.savetxt("newton/target_feature.dat",ddGexp)
+    np.savetxt("newton/target_feature_err.dat",ddGexp_err)
+    np.savetxt("newton/sim_feature.dat",sim_feature_avg)
+    np.savetxt("newton/sim_feature_err.dat",sim_feature_err)
+    np.savetxt("newton/Jacobian.dat",Jacobian_avg)
+    np.savetxt("newton/Jacobian_err.dat",Jacobian_err)
+
+    os.chdir(cwd)
+    append_log(model.subdir,"Finished: Calculating_Jacobian")
+
+def compute_Jacobian_for_directory(model,traj,dir,beta,mutants,Fij_pairs,Fij_conts,bounds,state_labels,epsilons,delta,sigmas):
+    """ Calculates the feature vector (ddG's) and Jacobian for one directory """
+    ## Get trajectory, state indicators, contact energy
+    traj,U,TS,N,Uframes,TSframes,Nframes,Vij = get_states_Vij(model,bounds,epsilons,delta,sigmas)
+
+    ## Avg. contact energy for each state.
+    Vij_U  = sum(Vij[U,:])/Uframes
+    Vij_TS = sum(Vij[TS,:])/TSframes
+    Vij_N  = sum(Vij[N,:])/Nframes
+
+    ## Compute deltaG for each state. Then DeltaDelta G with respect to the
+    ## first state (assumed to be the unfolded/denatured state).
+    ## Units of kT.
+    dG = [[],[],[]]
+    ddG = [[],[]]
+    phi = []
+
+    ## Initialize Jacobian
+    Jacobian = np.zeros((2*len(mutants),model.n_contacts),float)
+    sim_feature = np.zeros(2*len(mutants),float)
+    
+
+    for k in range(len(mutants)):
+        mut = mutants[k]
+        print "    row %d   mutant %s" % (k,mut)
+        ## Compute energy perturbation
+        dHk = compute_dHk(model,traj,mut,Fij_pairs[k],Fij_conts[k])
+
+        ## Free energy perturbation formula. Equation (4) in reference (1).
+        dG_U  = -np.log(np.sum(np.exp(-beta*dHk[U]))/Uframes)
+        dG_TS = -np.log(np.sum(np.exp(-beta*dHk[TS]))/TSframes)
+        dG_N  = -np.log(np.sum(np.exp(-beta*dHk[N]))/Nframes)
+
+        ## DeltaDeltaG's. Equations (5) in reference (1).
+        ddG_stab = (dG_N - dG_U)
+        ddG_dagg = (dG_TS - dG_U)
+
+        ## Phi-value
+        phi_value = ddG_dagg/ddG_stab
+
+        dG[0].append(dG_U)
+        dG[1].append(dG_TS)
+        dG[2].append(dG_N)
+        ddG[0].append(ddG_dagg)
+        ddG[1].append(ddG_stab)
+        phi.append(phi_value)
+
+        ## Thermal averages for matrix equation (9).
+        expdHk_U  = sum(np.exp(-beta*dHk[U]))/Uframes
+        expdHk_TS = sum(np.exp(-beta*dHk[TS]))/TSframes
+        expdHk_N  = sum(np.exp(-beta*dHk[N]))/Nframes
+
+        Vij_expdHk_U  = sum((Vij[U,:].T*np.exp(-beta*dHk[U])).T)/Uframes
+        Vij_expdHk_TS = sum((Vij[TS,:].T*np.exp(-beta*dHk[TS])).T)/TSframes
+        Vij_expdHk_N  = sum((Vij[N,:].T*np.exp(-beta*dHk[N])).T)/Nframes
+
+        ## Compute all columns with Fij_k zero.
+        Jacobian[k,:] = -beta*((Vij_TS - Vij_U) -  ((Vij_expdHk_TS/expdHk_TS) - (Vij_expdHk_U/expdHk_U)))
+        Jacobian[k + len(mutants),:] = -beta*((Vij_N - Vij_U)  -  ((Vij_expdHk_N/expdHk_N) - (Vij_expdHk_U/expdHk_U)))
+
+        ## Replace columns for which Fij_k is not zero.
+        Jacobian[k,Fij_conts[k]] = -beta*((Vij_TS[Fij_conts[k]] - Vij_U[Fij_conts[k]])  - \
+            (1. - Fij[k])*((Vij_expdHk_TS[Fij_conts[k]]/expdHk_TS) - \
+                           (Vij_expdHk_U[Fij_conts[k]]/expdHk_U)))
+
+        Jacobian[k + len(mutants),Fij_conts[k]] = -beta*((Vij_N[Fij_conts[k]] - Vij_U[Fij_conts[k]])  -  \
+            (1. - Fij[k])*((Vij_expdHk_N[Fij_conts[k]]/expdHk_N)   - \
+                          (Vij_expdHk_U[Fij_conts[k]]/expdHk_U)))
+
+        ## return feature vector and Jacobian
+        sim_feature[:len(mutants)] = ddG_dagg
+        sim_feature[len(mutants):] = ddG_stab
+
+    np.savetxt("mut/Jacobian.dat",Jacobian)
+    np.savetxt("mut/sim_feature.dat",sim_feature)
+    save_phi_values(mutants,"Q",state_labels,dG,ddG,phi)
+
+    return sim_feature, Jacobian
+
+def get_states_Vij(model,bounds,epsilons,delta,sigmas):
+    """ Load trajectory, state indicators, and contact energy """
+
+    traj = md.load("traj.xtc",top="Native.pdb")     ## Loading from file takes most time.
+    rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape))
+    Q = np.loadtxt("Q.dat")
+
+    state_indicator = np.zeros(len(Q),int)
+    ## Assign every frame a state label. State indicator is integer 1-N for N states.
+    for state_num in range(len(bounds)-1):
+        instate = (Q > bounds[state_num]).astype(int)*(Q <= bounds[state_num+1]).astype(int)
+        state_indicator[instate == 1] = state_num+1
+    if any(state_indicator == 0):
+        num_not_assign = sum((state_indicator == 0).astype(int))
+        print "  Warning! %d frames were not assigned out of %d total frames!" % (num_not_assign,len(Q))
+    ## Boolean arrays that indicate which state each frame is in.
+    ## States are defined by their boundaries along coordinate Q.
+    U  = ((Q > bounds[1]).astype(int)*(Q < bounds[2]).astype(int)).astype(bool)
+    TS = ((Q > bounds[3]).astype(int)*(Q < bounds[4]).astype(int)).astype(bool)
+    N  = ((Q > bounds[5]).astype(int)*(Q < bounds[6]).astype(int)).astype(bool)
+    Nframes  = float(sum(N.astype(int)))
+    Uframes  = float(sum(U.astype(int)))
+    TSframes = float(sum(TS.astype(int)))
+
+    ## Only count values of potential energy function where interaction is
+    ## attractive.
+    x = sigmas/rij
+    x[(x > 1.09)] = 1.09  # <-- 1.09 is where LJ12-10 crosses zero. 
+    Vij = epsilons*(5.*(x**12) - 6.*deltas*(x**10))     ## To Do: Generalize to other contact functions
+
+    return traj,U,TS,N,Uframes,TSframes,Nframes,Vij
+
+def compute_dHk(model,traj,mut,pairs,conts):
+    """ Calculate energetic perturbation to each frame from mutation """
+
+    ## Use mdtraj to compute the distances between pairs.
+    rij = md.compute_distances(traj,pairs)
+    
+    ## Epsilons, deltas, and sigmas for relevant pairs for this mutation.
+    eps = model.contact_epsilons[conts]
+    deltas = model.contact_deltas[conts]
+    sigmas = model.contact_sigmas[conts]
+
+    ## Sometimes the energies calculated here blow up because small
+    ## changes in distance can lead to large energies on the
+    ## repulsive wall. (The actual energies of the simulation do not
+    ## blow up). Since this calculation is meant to estimation of 
+    ## the change in energy upon mutation, dH_k, I just use frames
+    ## where the contact energy LJ12-10 is negative. Without this
+    ## consideration, the results are crazy
+    x = sigmas/rij
+    x[(x > 1.09)] = 1.09  # <-- 1.09 is where LJ12-10 crosses zero.
+    #x[(x > 1.211)] = 1.211     ## Old, arbitrary cutoff.
+
+    ## Calculate dH_k using distances and parameters. Save.
+    Vij = -Fij[k]*eps*(5.*(x**12) - 6.*deltas*(x**10))
+    dH_k = sum(Vij.T)
+    np.savetxt("dH_"+mut+".dat",dH_k)
+
+    return dH_k,Vij
+
+        
 def calculate_phi_values(model,append_log,coord):
     """ Calculate the simulation delta G's, deltadelta G's, and phi-values. 
 
@@ -107,8 +254,6 @@ def calculate_phi_values(model,append_log,coord):
     temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
     directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
 
-    #T,Tnum = get_Tf_choice()
-    #Tdir = "%.2f_%d" % (T,Tnum)
 
     bounds, state_labels = get_state_bounds()
     bounds = [0] + bounds + [model.n_contacts]
@@ -183,25 +328,6 @@ def calculate_ddG_for_temperature(mutants,T,bounds,state_labels):
     
     save_phi_values(mutants,"Q",state_labels,dG,ddG,phi)
 
-def get_mutant_dH(path,mutants):
-    """ Load the mutant energy perturbations dH_<mut>.dat
-
-    Soon to be DEPRECATED 7-6-2014
-    """
-
-    i = 0
-    for mut in mutants:
-        temp = np.loadtxt(path+"/dH_"+mut+".dat")
-        print "    Loading:",mut
-        if i == 0:
-            dH = np.zeros((len(mutants),len(temp)),float)
-            dH[i,:] = temp
-        else:
-            dH[i,:] = temp
-        i += 1
-    
-    return dH
-
 def get_mutant_fij(model,mutants):
     """ Load in the fraction of contact loss for each mutation.
 
@@ -236,20 +362,21 @@ def get_mutant_fij(model,mutants):
     return Fij, Fij_pairs, Fij_conts
 
 def get_Qij(model,r,sig,delta,interaction_nums):
-    """ Calculates the normalized interaction betwen nonbonded pairs."""
+    """ Calculates the normalized interaction betwen nonbonded pairs.
+
+        Might use to generalize for different types of contacts.
+    """
     print "  Calculating Qij..."
     qij = model.nonbond_interaction(r,sig,delta)
     return qij
 
 def get_state_bounds():
     """ Bounds for each state. Bounds are bin edges along Q. """
-    if os.path.exists("whamQ/state_bounds.txt"):
-        statefile = open("whamQ/state_bounds.txt","r").readlines()
     elif os.path.exists("state_bounds.txt"):
         statefile = open("state_bounds.txt","r").readlines()
     else:
         print "ERROR!"
-        print "  Please create state_bounds.txt or whamQ/state_bounds.txt"
+        print "  Please create state_bounds.txt"
         print "  With the boundaries of each state along Q"
         print "  Exiting"
         raise SystemExit
@@ -263,89 +390,6 @@ def get_state_bounds():
         state_labels.append(info[0])
     
     return state_bounds,state_labels
-
-def get_Tf_choice():
-    if os.path.exists("whamQ/Tf.txt"):
-        Tf = open("whamQ/Tf.txt").read().rstrip("\n")
-        print "  Using temp ",Tf
-    elif os.path.exists("Tf.txt"):
-        Tf = open("Tf.txt").read().rstrip("\n")
-        print "  Using temp ",Tf
-    else:
-        print "ERROR!"
-        print "  Please create Tf.txt or whamQ/Tf.txt with your choice to do mutations at."
-        print "  Exiting"
-        raise SystemExit
-    if len(Tf.split("_")) > 1:
-        Tnum = int(Tf.split("_")[1])
-        Tf = float(Tf.split("_")[0])
-    else:
-        Tf = float(Tf)
-        Tnum = 1
-    return Tf,Tnum
-
-def load_beadbead(subdir):
-    """ Should be DEPRECATED """
-    print "  Loading BeadBead.dat"
-    beadbead = np.loadtxt(subdir+"/BeadBead.dat",dtype=str) 
-    sigij = beadbead[:,5].astype(float)
-    epsij = beadbead[:,6].astype(float)
-    deltaij = beadbead[:,7].astype(float)
-    interaction_numbers = beadbead[:,4].astype(str)
-    pairs = beadbead[:,:2].astype(int) 
-    pairs -= np.ones(pairs.shape,int)
-
-    keep_interactions = np.zeros(len(interaction_numbers),int)
-    for i in range(len(interaction_numbers)):
-        if interaction_numbers[i] in ["ds","ss"]:
-            pass
-        else:
-            keep_interactions[i] = int(interaction_numbers[i])
-
-    return beadbead,keep_interactions
-        
-def load_eps_delta_sig_traj(subdir):
-    """ Load in the info from the BeadBead.dat file. Sig_ij, eps_ij, delta_ij and
-        index pairs. This information is constant for a trajectory. Filter all fields
-        to keep only interactions with nonzero interaction type.
-
-        In calculating the mutations only modify parameters that have interaction_type
-        in the BeadBead.dat =/= [0,ds,ss]. 
-
-        SOON TO BE DEPRECATED
-
-    """
-    print "  Loading BeadBead.dat"
-    beadbead = np.loadtxt(subdir+"/BeadBead.dat",dtype=str) 
-    sigij = beadbead[:,5].astype(float)
-    epsij = beadbead[:,6].astype(float)
-    deltaij = beadbead[:,7].astype(float)
-    interaction_numbers = beadbead[:,4].astype(str)
-    pairs = beadbead[:,:2].astype(int) 
-    pairs -= np.ones(pairs.shape,int)
-
-    keep_interactions = np.zeros(len(interaction_numbers),int)
-    for i in range(len(interaction_numbers)):
-        if interaction_numbers[i] in ["ds","ss"]:
-            pass
-        else:
-            keep_interactions[i] = int(interaction_numbers[i])
-
-    #print keep_interactions != 0       ## DEBUGGING
-    #print sum((keep_interactions != 0).astype(int))      ## DEBUGGING
-    sigij = sigij[keep_interactions != 0]
-    epsij = epsij[keep_interactions != 0]
-    deltaij = deltaij[keep_interactions != 0]
-    pairs = pairs[keep_interactions != 0]
-
-    print "  Only modifying ",sum((keep_interactions != 0).astype(int)), " parameters out of ", len(keep_interactions)
-    ## Use mdtraj to compute the distances between pairs.
-    print "  Loading traj.xtc with mdtraj..."
-    traj = md.load(subdir+"/traj.xtc",top=subdir+"/Native.pdb")
-    print "  Computing distances with mdtraj..."
-    traj_dist = md.compute_distances(traj,pairs)
-
-    return sigij,epsij,deltaij,interaction_numbers,keep_interactions,pairs,traj,traj_dist
 
 def save_phi_values(mutants,coord,state_labels,dG,ddG,phi):
     """ Save the calculated dG, ddG, and phi values for states"""
@@ -377,8 +421,7 @@ def save_phi_values(mutants,coord,state_labels,dG,ddG,phi):
     outputfile.close()
 
 if __name__ == "__main__":
-    """ To Do: Make into a command line utility.
-    """
+    ## To Do: Make into a command line utility
 
     #parser = argparse.ArgumentParser(description='Calculate .')
     #parser.add_argument('--subdir', type=str, required=True, help='Directory.')
@@ -391,5 +434,4 @@ if __name__ == "__main__":
 
     pdb = "r15.pdb"
     model = models.SmogCalpha.SmogCalpha(pdb)
-    Fij,Fij_pairs,Fij_conts,eps,deltas,sigmas,rij = calculate_dH_for_mutants(model,dummy)
-    #calculate_phi_values(model,dummy)
+    calculate_average_Jacobian(model,append_log)

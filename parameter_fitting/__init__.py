@@ -4,7 +4,10 @@ Description:
 
     This submodule performs parameter fitting to match simulation features to
 experimental (or designed) data. This parameter fitting is an extension of the
-Matysiak, Clementi 2004 (see reference (1)). 
+Matysiak, Clementi 2004 (see reference (1)). It uses the multivariate
+Newton-Raphson method to correct simulation parameters in order to fit some
+inputted target features. See references (2),(3) for more on Netwon's method in
+general.
 
 
 Submodules:

@@ -20,8 +20,8 @@ import os
 import mdtraj as md
 import cplex
 
-import phi_values as phi
-import mutatepdbs as mut
+from project_tools.parameter_fitting.ddG_MC2004 import phi_values as phi
+from project_tools.parameter_fitting.ddG_MC2004 import mutatepdbs as mut
 
 import model_builder.models as models
 
