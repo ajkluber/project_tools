@@ -11,7 +11,7 @@ designed) Delta Delta G's from phi-value analysis.
 
 
 import mutatepdbs
-import phi_values
+import compute_Jacobian
 import prepare_ddG
 import branch
 import flip_beadbead

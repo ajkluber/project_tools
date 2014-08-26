@@ -1,5 +1,11 @@
-""" Copy only necessary sub tree to proceed with mutation
+""" Copy only necessary sub tree to proceed with mutation 
 
+Use if you want to continue simulation
+
+To Do:
+- Write helper function that converts old naming convention to 
+  new naming convention (mut -> newton) for backwards 
+  compatibility.
 
 """
 
@@ -8,15 +14,10 @@ import os
 import shutil
 from glob import glob
 
-import model_builder as mdb
-
-import phi_values as phi
-import mutatepdbs as mut
-
-
 def get_args():
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--subdir', type=str, required=True, help='')
+    parser.add_argument('--name', type=str, required=True, help='')
+    parser.add_argument('--iteration', type=int, required=True, help='')
     parser.add_argument('--dest', type=str, required=True, help='')
     args = parser.parse_args()
     return args
@@ -24,22 +25,20 @@ def get_args():
 if __name__ == "__main__":
 
     args = get_args()
-    subdir = args.subdir
+    name = args.name
+    iteration = args.iteration
     destination = args.dest
 
-    Models = mdb.models.load_models([subdir],dryrun=True)
-    model = Models[0]
-    path = model.subdir+"/Mut_0/"
-
     cwd = os.getcwd()
-    sub = cwd+"/"+model.subdir+"/Mut_0"
+    path = "%s/Mut_%d/" % (name,iteration)
+    sub = "%s/%s/Mut_%d" % (cwd,name,iteration)
 
-    paths = ["/Mut_0/mut","/mutants","/Qref_shadow"]
+    paths = ["/Mut_%d/mut" % iteration,"/mutants","/Qref_shadow"]
 
     for P in paths:
-        if not os.path.exists(destination+"/"+subdir+P):
-            print " Making directory ",P
-            os.makedirs(destination+"/"+subdir+P)
+        if not os.path.exists("%s/%s%s" % (destination,name,P)):
+            print " Making directory %s" % P
+            os.makedirs("%s/%s%s" % (destination,name,P))
 
     files = [ \
     "/mutants/calculated_ddG.dat",
@@ -47,22 +46,22 @@ if __name__ == "__main__":
     "/contacts.dat",
     "/model.info",
     "/modelbuilder.log",
-    "/Mut_0/T_array_last.txt"]
+    "/Mut_%d/T_array_last.txt" % iteration]
 
-    shutil.copy(subdir+".pdb",destination+"/")
-    shutil.copy(subdir+"_calculated_ddG.dat",destination+"/")
+    shutil.copy("%s.pdb" % name, destination+"/")
+    shutil.copy("%s_calculated_ddG.dat" % name, destination+"/")
     for file in files:
-        if not os.path.exists(destination+"/"+subdir+file):
+        if not os.path.exists("%s/%s%s" % (destination,name,file)):
             print " copying ",file
-            shutil.copy(subdir+file,destination+"/"+subdir+file)
+            shutil.copy("%s%s" % (name,file),"%s/%s%s" % (destination,name,file))
 
     
-    mut_data = glob(subdir+"/Mut_0/mut/*")
-    print " copying Mut_0/mut/*"
+    mut_data = glob("%s/Mut_%d/mut/*" % (name,iteration))
+    print " copying %s/Mut_%d/mut/*" % (name,iteration)
     for data in mut_data:
-        shutil.copy(data,destination+"/"+subdir+"/Mut_0/mut/")
+        shutil.copy(data,"%s/%s/Mut_%d/newton" % (destination,name,iteration))
 
-    mutants = glob(subdir+"/mutants/fij*.dat")
+    mutants = glob("%s/mutants/fij*.dat" % name)
     print " copying mutant fij_*dat"
     for mut in mutants:
-        shutil.copy(mut,destination+"/"+subdir+"/mutants/")
+        shutil.copy(mut,"%s/%s/mutants" % (destination,name))

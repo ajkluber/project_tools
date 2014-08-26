@@ -112,19 +112,12 @@ class MatysiakClementi2004(ProjectManager):
             ## Run heat capacity for equilibrium runs. Cv(T), F(Q)
             analysis.constant_temp.run_wham_heat_capacity(model,self.append_log,Mut=True)
         elif task == "Equil_Tf_wham":
-        #    print "Starting prepping mutant pdbs..."
-        #    parameter_fitting.ddG_MC2004.mutatepdbs.prepare_mutants(model,self.append_log)
-        #elif task == "Preparing_Mutants":
-            print "Starting calculating dH for mutants..."
-            parameter_fitting.ddG_MC2004.phi_values.calculate_dH_for_mutants(model,self.append_log)
-        elif task == "Calculating_dH":
-            parameter_fitting.ddG_MC2004.phi_values.calculate_phi_values(model,self.append_log,"Q")
-        elif task == "Calculating_phi_values":
-            self.append_log(model.subdir,"Starting: Calculating_matrix_M") 
-            parameter_fitting.ddG_MC2004.perturbation.calculate_matrix_ddG_eps_M(model,"Q")
-            self.append_log(model.subdir,"Finished: Calculating_matrix_M") 
-        elif task == "Calculating_matrix_M":
-            parameter_fitting.ddG_MC2004.perturbation.calculate_MC2004_perturbation(model,self.append_log)
+            print "Starting calculating feature vector and Jacobian..."
+            parameter_fitting.ddG_MC2004.compute_Jacobian.calculate_average_Jacobian(model,self.append_log)
+        elif task == "Calculating_Jacobian":
+            ## TO DO:
+            ##  - Solve for new parameters.
+            parameter_fitting.newton.perturbation.calculate_MC2004_perturbation(model,self.append_log)
         elif task == "Calculating_MC2004":
             ## Start the next round of simulations with new parameters.
             simulation.constant_temp.start_next_Tf_loop_iteration(model,self.append_log)

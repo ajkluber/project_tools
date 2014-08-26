@@ -5,21 +5,10 @@ Prerequisites:
 - Finish Equil_Tf_wham step
 - User identifies state_bounds and deletes the temps not used  T_array_last.
 
-Solving for new params: 
-1. compute dH for mutants                                       phi_values.py
-2. compute phi-values, and ddG for mutants (feature vector).    phi_values.py
-3. compute matrix M (Jacobian)                                  perturbation.py
-4. collect subdirectories and solve with Newton's method.   -->  User choses num_singular_values
-5. Save new parameter files
-6. Restart simulations
-
-
 Plan:
 1. Compute feature vector and Jacobian in one step   -->         DONE
 2. Invert and solve for new parameters in one step
 1. MPI code for comuting the feature vector and Jacobian
-
-
 
 Consider reducing/refactoring/removing:
 - module_prepare_ddG, prepare_ddG
