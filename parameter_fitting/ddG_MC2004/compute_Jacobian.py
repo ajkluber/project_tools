@@ -21,7 +21,7 @@ import mdtraj as md
 
 import model_builder.models as models
 
-from mutatepdbs import get_core_mutations,get_exp_ddG
+from mutatepdbs import get_core_mutations, get_exp_ddG
 
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
@@ -228,7 +228,7 @@ def compute_dHk(model,traj,mut,pairs,conts):
     dH_k = sum(Vij.T)
     np.savetxt("dH_"+mut+".dat",dH_k)
 
-    return dH_k,Vij
+    return dH_k
 
 def get_mutant_fij(model,mutants):
     """ Load in the fraction of contact loss for each mutation.
@@ -274,7 +274,7 @@ def get_Qij(model,r,sig,delta,interaction_nums):
 
 def get_state_bounds():
     """ Bounds for each state. Bounds are bin edges along Q. """
-    elif os.path.exists("state_bounds.txt"):
+    if os.path.exists("state_bounds.txt"):
         statefile = open("state_bounds.txt","r").readlines()
     else:
         print "ERROR!"

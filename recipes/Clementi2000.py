@@ -102,10 +102,10 @@ class Clementi2000(ProjectManager):
             print "Starting prepping mutant pdbs..."
             parameter_fitting.ddG_MC2004.mutatepdbs.prepare_mutants(model,self.append_log)
 
-            print "Starting calculating dH for mutants..."
-            parameter_fitting.ddG_MC2004.phi_values.calculate_dH_for_mutants(model,self.append_log)
-        elif task == "Calculating_dH":
-            parameter_fitting.ddG_MC2004.phi_values.calculate_phi_values(model,self.append_log,"Q")
+        #    print "Starting calculating dH for mutants..."
+        #    parameter_fitting.ddG_MC2004.phi_values.calculate_dH_for_mutants(model,self.append_log)
+        #elif task == "Calculating_dH":
+        #    parameter_fitting.ddG_MC2004.phi_values.calculate_phi_values(model,self.append_log,"Q")
         else:
             print "ERROR!"
             print "  Couldn't find next option for task:",task
