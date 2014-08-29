@@ -7,16 +7,19 @@ Software for doing multiscale modeling in the Clementi Lab at Rice University.
 
 Purpose:
 --------
-    The purpose of this software is to make multiscale, combining coarse-grain and all-atom approaches, modeling easier. The intention is that project_tools will become a useful toolset for Clementi group members. It is intended to be used with a complementary module, model_builder, which is responsible for constructing simulation input files (e.g. Gromacs .gro and .top files)
+
+The purpose of this software is to make multiscale, combining coarse-grain and all-atom approaches, modeling easier. The intention is that project_tools will become a useful toolset for Clementi group members. It is intended to be used with a complementary module, model_builder, which is responsible for constructing simulation input files (e.g. Gromacs .gro and .top files)
 
 Description:
 ------------
-    This package.
+
+This package.
 
 
 How To Use this Module:
 -----------------------
-    See the file Setting_Up_Davinci_Environment.txt for instructions on installing dependencies on the Rice University server Davinci. Be aware that these instructions may be outdated.
+
+See the file Setting_Up_Davinci_Environment.txt for instructions on installing dependencies on the Rice University server Davinci. Be aware that these instructions may be outdated.
 
 References:
 -----------
