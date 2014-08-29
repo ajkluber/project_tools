@@ -1,7 +1,7 @@
 Project Tools
 =============
-Created: November 2013
 
+Created: November 2013
 Author: Alexander Kluber
 
 Software for doing multiscale modeling in the Clementi Lab at Rice University. 
@@ -14,7 +14,7 @@ The purpose of this software is to make multiscale, combining coarse-grain and a
 Description:
 ------------
 
-This package currently performs coarse-grain model parameter fitting as developed by Matysiak et.al.(ref. 1). 
+This package currently performs coarse-grain model parameter fitting as developed by Matysiak and Clementi (reference 2). 
 
 
 How To Use this Module:
