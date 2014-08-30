@@ -77,8 +77,6 @@ class MatysiakClementi2004(ProjectManager):
         elif task == "Equil_Tf_analysis":
             print "Starting to check if Equil_Tf_analysis completed..."
             analysis.constant_temp.check_completion(model,self.append_log,equil=True)
-        elif task == "Calculating_MC2004":
-            parameter_fitting.ddG_MC2004.perturbation.calculate_MC2004_perturbation(model,self.append_log)
         else:
             print "ERROR!"
             print "  Couldn't find next option for task:",task
@@ -113,7 +111,7 @@ class MatysiakClementi2004(ProjectManager):
             analysis.constant_temp.run_wham_heat_capacity(model,self.append_log,Mut=True)
         elif task == "Equil_Tf_wham":
             print "Starting calculating feature vector and Jacobian..."
-            parameter_fitting.ddG_MC2004.compute_Jacobian.calculate_average_Jacobian(model,self.append_log)
+            parameter_fitting.prepare_newtons_method(model,"ddG_MC2004",self.append_log)
         elif task == "Calculating_Jacobian":
             ## TO DO:
             ##  - Solve for new parameters.

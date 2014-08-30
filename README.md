@@ -1,8 +1,7 @@
 Project Tools
 =============
 
-Created: November 2013
-Author: Alexander Kluber
+Created: November 2013 by Alexander Kluber
 
 Software for doing multiscale modeling in the Clementi Lab at Rice University. 
 

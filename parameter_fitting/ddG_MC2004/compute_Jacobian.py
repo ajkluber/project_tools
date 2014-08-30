@@ -22,22 +22,36 @@ import mdtraj as md
 import model_builder.models as models
 
 from mutatepdbs import get_core_mutations, get_exp_ddG
+from project_tools.parameter_fitting import get_state_bounds,get_states_Vij
 
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
-def calculate_average_Jacobian(model,append_log):
-    """ Calculate the average feature vector (ddG's) and Jacobian """
-    
-    append_log(model.subdir,"Starting: Calculating_Jacobian")
+def get_target_feature(model):
+    """ Get target features """
+    name = model.subdir
+    iteration = model.Mut_iteration
 
     cwd = os.getcwd()
-    sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
-    os.chdir(model.subdir+"/mutants")
+    sub = "%s/%s/Mut_%d" % (cwd,name,iteration)
+    os.chdir("%s/mutants" % name)
+    target_feature, target_feature_err = get_exp_ddG()
+    os.chdir(cwd)
+
+    return target_feature, target_feature_err
+
+def calculate_average_Jacobian(model):
+    """ Calculate the average feature vector (ddG's) and Jacobian """
+    
+    name = model.subdir
+    iteration = model.Mut_iteration
+
+    cwd = os.getcwd()
+    sub = "%s/%s/Mut_%d" % (cwd,name,iteration)
+    os.chdir("%s/mutants" % name)
     ## Get list of mutations and fraction of native contacts deleted for 
     ## each mutation.
     mutants = get_core_mutations()
-    ddGexp, ddGexp_err = get_exp_ddG()
     Fij, Fij_pairs, Fij_conts = get_mutant_fij(model,mutants)
     os.chdir(sub)
 
@@ -76,19 +90,9 @@ def calculate_average_Jacobian(model,append_log):
     Jacobian_avg = sum(Jacobian_all)/float(len(directories))
     Jacobian_err = np.std(Jacobian_all,axis=0)
 
-    if not os.path.exists("newton"):
-        os.mkdir("newton")
-
-    print "  Saving feature vector and Jacobian in Mut_%d/newton" % model.Mut_iteration
-    np.savetxt("newton/target_feature.dat",ddGexp)
-    np.savetxt("newton/target_feature_err.dat",ddGexp_err)
-    np.savetxt("newton/sim_feature.dat",sim_feature_avg)
-    np.savetxt("newton/sim_feature_err.dat",sim_feature_err)
-    np.savetxt("newton/Jacobian.dat",Jacobian_avg)
-    np.savetxt("newton/Jacobian_err.dat",Jacobian_err)
-
     os.chdir(cwd)
-    append_log(model.subdir,"Finished: Calculating_Jacobian")
+
+    return sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err
 
 def compute_Jacobian_for_directory(model,traj,dir,beta,mutants,Fij_pairs,Fij_conts,bounds,state_labels,epsilons,delta,sigmas):
     """ Calculates the feature vector (ddG's) and Jacobian for one directory """
@@ -110,7 +114,6 @@ def compute_Jacobian_for_directory(model,traj,dir,beta,mutants,Fij_pairs,Fij_con
     ## Initialize Jacobian
     Jacobian = np.zeros((2*len(mutants),model.n_contacts),float)
     sim_feature = np.zeros(2*len(mutants),float)
-    
 
     for k in range(len(mutants)):
         mut = mutants[k]
@@ -168,38 +171,6 @@ def compute_Jacobian_for_directory(model,traj,dir,beta,mutants,Fij_pairs,Fij_con
     save_phi_values(mutants,"Q",state_labels,dG,ddG,phi)
 
     return sim_feature, Jacobian
-
-def get_states_Vij(model,bounds,epsilons,delta,sigmas):
-    """ Load trajectory, state indicators, and contact energy """
-
-    traj = md.load("traj.xtc",top="Native.pdb")     ## Loading from file takes most time.
-    rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape))
-    Q = np.loadtxt("Q.dat")
-
-    state_indicator = np.zeros(len(Q),int)
-    ## Assign every frame a state label. State indicator is integer 1-N for N states.
-    for state_num in range(len(bounds)-1):
-        instate = (Q > bounds[state_num]).astype(int)*(Q <= bounds[state_num+1]).astype(int)
-        state_indicator[instate == 1] = state_num+1
-    if any(state_indicator == 0):
-        num_not_assign = sum((state_indicator == 0).astype(int))
-        print "  Warning! %d frames were not assigned out of %d total frames!" % (num_not_assign,len(Q))
-    ## Boolean arrays that indicate which state each frame is in.
-    ## States are defined by their boundaries along coordinate Q.
-    U  = ((Q > bounds[1]).astype(int)*(Q < bounds[2]).astype(int)).astype(bool)
-    TS = ((Q > bounds[3]).astype(int)*(Q < bounds[4]).astype(int)).astype(bool)
-    N  = ((Q > bounds[5]).astype(int)*(Q < bounds[6]).astype(int)).astype(bool)
-    Nframes  = float(sum(N.astype(int)))
-    Uframes  = float(sum(U.astype(int)))
-    TSframes = float(sum(TS.astype(int)))
-
-    ## Only count values of potential energy function where interaction is
-    ## attractive.
-    x = sigmas/rij
-    x[(x > 1.09)] = 1.09  # <-- 1.09 is where LJ12-10 crosses zero. 
-    Vij = epsilons*(5.*(x**12) - 6.*deltas*(x**10))     ## To Do: Generalize to other contact functions
-
-    return traj,U,TS,N,Uframes,TSframes,Nframes,Vij
 
 def compute_dHk(model,traj,mut,pairs,conts):
     """ Calculate energetic perturbation to each frame from mutation """
@@ -271,27 +242,6 @@ def get_Qij(model,r,sig,delta,interaction_nums):
     print "  Calculating Qij..."
     qij = model.nonbond_interaction(r,sig,delta)
     return qij
-
-def get_state_bounds():
-    """ Bounds for each state. Bounds are bin edges along Q. """
-    if os.path.exists("state_bounds.txt"):
-        statefile = open("state_bounds.txt","r").readlines()
-    else:
-        print "ERROR!"
-        print "  Please create state_bounds.txt"
-        print "  With the boundaries of each state along Q"
-        print "  Exiting"
-        raise SystemExit
-    
-    state_bounds = []
-    state_labels = []
-    for line in statefile:
-        info = line.split()
-        state_bounds.append(float(info[1]))
-        state_bounds.append(float(info[2]))
-        state_labels.append(info[0])
-    
-    return state_bounds,state_labels
 
 def save_phi_values(mutants,coord,state_labels,dG,ddG,phi):
     """ Save the calculated dG, ddG, and phi values for states"""
