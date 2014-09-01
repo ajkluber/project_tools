@@ -20,6 +20,9 @@ Submodules:
       Calculates Jacobian and feature vector for Delta Delta G's to match
     experimental data from phi-value analysis.
 
+  contact_Qi
+      Calculates Jacobian and feature vector for contact probabilities.
+
 
 References:
 
@@ -32,7 +35,6 @@ Optimization and Nonlinear Equations". SIAM. 1996.
 
 3. Jorge Nocedal; Stephen Wright. "Numerical Optimization". Springer. 2000
 
-
 """
 
 import newton
@@ -41,67 +43,11 @@ import FRET
 import RMSF
 import contact_Qi
 
-global available_methods
-available_methods = ["ddG_MC2004","FRET","RMSF","contact_Qi"]
-
-global modules
-modules = {"ddG_MC2004":ddG_MC2004,"FRET":FRET,"RMSF":RMSF,"contact_Qi":contact_Qi}
-
-def get_state_bounds():
-    """ Bounds for each state. Bounds are bin edges along Q. """
-    if os.path.exists("state_bounds.txt"):
-        statefile = open("state_bounds.txt","r").readlines()
-    else:
-        print "ERROR!"
-        print "  Please create state_bounds.txt"
-        print "  With the boundaries of each state along Q"
-        print "  Exiting"
-        raise SystemExit
-    
-    state_bounds = []
-    state_labels = []
-    for line in statefile:
-        info = line.split()
-        state_bounds.append(float(info[1]))
-        state_bounds.append(float(info[2]))
-        state_labels.append(info[0])
-    
-    return state_bounds,state_labels
-
-def get_states_Vij(model,bounds,epsilons,delta,sigmas):
-    """ Load trajectory, state indicators, and contact energy """
-
-    traj = md.load("traj.xtc",top="Native.pdb")     ## Loading from file takes most time.
-    rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape))
-    Q = np.loadtxt("Q.dat")
-
-    state_indicator = np.zeros(len(Q),int)
-    ## Assign every frame a state label. State indicator is integer 1-N for N states.
-    for state_num in range(len(bounds)-1):
-        instate = (Q > bounds[state_num]).astype(int)*(Q <= bounds[state_num+1]).astype(int)
-        state_indicator[instate == 1] = state_num+1
-    if any(state_indicator == 0):
-        num_not_assign = sum((state_indicator == 0).astype(int))
-        print "  Warning! %d frames were not assigned out of %d total frames!" % (num_not_assign,len(Q))
-    ## Boolean arrays that indicate which state each frame is in.
-    ## States are defined by their boundaries along coordinate Q.
-    U  = ((Q > bounds[1]).astype(int)*(Q < bounds[2]).astype(int)).astype(bool)
-    TS = ((Q > bounds[3]).astype(int)*(Q < bounds[4]).astype(int)).astype(bool)
-    N  = ((Q > bounds[5]).astype(int)*(Q < bounds[6]).astype(int)).astype(bool)
-    Nframes  = float(sum(N.astype(int)))
-    Uframes  = float(sum(U.astype(int)))
-    TSframes = float(sum(TS.astype(int)))
-
-    ## Only count values of potential energy function where interaction is
-    ## attractive.
-    x = sigmas/rij
-    x[(x > 1.09)] = 1.09  # <-- 1.09 is where LJ12-10 crosses zero. 
-    Vij = epsilons*(5.*(x**12) - 6.*deltas*(x**10))     ## To Do: Generalize to other contact functions
-
-    return traj,U,TS,N,Uframes,TSframes,Nframes,Vij
-
 def prepare_newtons_method(model,method,append_log):
     """ Prepare the files to do newtons method """
+
+    available_methods = ["ddG_MC2004","FRET","RMSF","contact_Qi"]
+    modules = {"ddG_MC2004":ddG_MC2004,"FRET":FRET,"RMSF":RMSF,"contact_Qi":contact_Qi}
 
     if method not in available_methods:
         print "ERROR! requested method not found %s" % method
@@ -141,3 +87,5 @@ def prepare_newtons_method(model,method,append_log):
     np.savetxt("%s/Mut_%d/newton/Jacobian_err.dat" % (name,iteration) ,Jacobian_err)
 
     append_log(name,"Finished: Calculating_Jacobian")
+
+

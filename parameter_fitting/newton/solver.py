@@ -21,8 +21,8 @@ import mdtraj as md
 import cplex
 
 #from project_tools.parameter_fitting.ddG_MC2004 import phi_values as phi
-from project_tools.parameter_fitting.ddG_MC2004 import mutatepdbs as mut
-from project_tools.parameter_fitting import get_state_bounds
+#from project_tools.parameter_fitting.ddG_MC2004 import mutatepdbs as mut
+#import project_tools.parameter_fitting as fit 
 
 import model_builder.models as models
 
@@ -479,7 +479,7 @@ def calculate_matrix_ddG_eps_M(model,coord):
 
     os.chdir(sub)
 
-    bounds, states = get_state_bounds()
+    bounds, states = fit.get_state_bounds()
     bounds = [0] + bounds + [model.n_contacts]
 
     temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 

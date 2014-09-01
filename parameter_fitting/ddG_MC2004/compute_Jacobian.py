@@ -22,10 +22,62 @@ import mdtraj as md
 import model_builder.models as models
 
 from mutatepdbs import get_core_mutations, get_exp_ddG
-from project_tools.parameter_fitting import get_state_bounds,get_states_Vij
 
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
+
+def get_state_bounds():
+    """ Bounds for each state. Bounds are bin edges along Q. """
+    if os.path.exists("state_bounds.txt"):
+        statefile = open("state_bounds.txt","r").readlines()
+    else:
+        print "ERROR!"
+        print "  Please create state_bounds.txt"
+        print "  With the boundaries of each state along Q"
+        print "  Exiting"
+        raise SystemExit
+    
+    state_bounds = []
+    state_labels = []
+    for line in statefile:
+        info = line.split()
+        state_bounds.append(float(info[1]))
+        state_bounds.append(float(info[2]))
+        state_labels.append(info[0])
+    
+    return state_bounds,state_labels
+
+def get_states_Vij(model,bounds,epsilons,deltas,sigmas):
+    """ Load trajectory, state indicators, and contact energy """
+
+    traj = md.load("traj.xtc",top="Native.pdb")     ## Loading from file takes most time.
+    rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape))
+    Q = np.loadtxt("Q.dat")
+
+    state_indicator = np.zeros(len(Q),int)
+    ## Assign every frame a state label. State indicator is integer 1-N for N states.
+    for state_num in range(len(bounds)-1):
+        instate = (Q > bounds[state_num]).astype(int)*(Q <= bounds[state_num+1]).astype(int)
+        state_indicator[instate == 1] = state_num+1
+    if any(state_indicator == 0):
+        num_not_assign = sum((state_indicator == 0).astype(int))
+        print "  Warning! %d frames were not assigned out of %d total frames!" % (num_not_assign,len(Q))
+    ## Boolean arrays that indicate which state each frame is in.
+    ## States are defined by their boundaries along coordinate Q.
+    U  = ((Q > bounds[1]).astype(int)*(Q < bounds[2]).astype(int)).astype(bool)
+    TS = ((Q > bounds[3]).astype(int)*(Q < bounds[4]).astype(int)).astype(bool)
+    N  = ((Q > bounds[5]).astype(int)*(Q < bounds[6]).astype(int)).astype(bool)
+    Nframes  = float(sum(N.astype(int)))
+    Uframes  = float(sum(U.astype(int)))
+    TSframes = float(sum(TS.astype(int)))
+
+    ## Only count values of potential energy function where interaction is
+    ## attractive.
+    x = sigmas/rij
+    x[(x > 1.09)] = 1.09  # <-- 1.09 is where LJ12-10 crosses zero. 
+    Vij = epsilons*(5.*(x**12) - 6.*deltas*(x**10))     ## To Do: Generalize to other contact functions
+
+    return traj,U,TS,N,Uframes,TSframes,Nframes,Vij
 
 def get_target_feature(model):
     """ Get target features """
@@ -76,7 +128,7 @@ def calculate_average_Jacobian(model):
         beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
         print "  Calculating Jacobian for Mut_%d/%s" % (model.Mut_iteration,dir)
         os.chdir(dir)
-        sim_feature, Jacobian = compute_Jacobian_for_directory(model,traj,dir,beta,mutants,Fij_pairs,Fij_conts,bounds,state_labels,epsilons,delta,sigmas)
+        sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,mutants,Fij_pairs,Fij_conts,bounds,state_labels,epsilons,deltas,sigmas)
         sim_feature_all.append(sim_feature)
         Jacobian_all.append(Jacobian)
         os.chdir("..")
@@ -94,7 +146,7 @@ def calculate_average_Jacobian(model):
 
     return sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err
 
-def compute_Jacobian_for_directory(model,traj,dir,beta,mutants,Fij_pairs,Fij_conts,bounds,state_labels,epsilons,delta,sigmas):
+def compute_Jacobian_for_directory(model,beta,mutants,Fij_pairs,Fij_conts,bounds,state_labels,epsilons,deltas,sigmas):
     """ Calculates the feature vector (ddG's) and Jacobian for one directory """
     ## Get trajectory, state indicators, contact energy
     traj,U,TS,N,Uframes,TSframes,Nframes,Vij = get_states_Vij(model,bounds,epsilons,delta,sigmas)

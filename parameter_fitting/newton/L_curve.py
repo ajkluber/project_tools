@@ -66,10 +66,13 @@ if __name__ == "__main__":
     f_target = np.loadtxt("target_feature.dat") 
     f_sim = np.loadtxt("sim_feature.dat") 
 
+    noise = np.random.random(J.shape)
+    #J = J + noise
+    #J = noise
 
     u,s,v = np.linalg.svd(J)
 
-    print s
+    #print s
 
     df = f_target - f_sim
     df /= np.linalg.norm(df)
@@ -87,13 +90,13 @@ if __name__ == "__main__":
     ## Try using the L-curve test by P.C. Hansen to determine the 
     ## regularization parameter.
     #for gamma in np.arange(0.000001,100,0.001):
-    #Gammas = np.logspace(-7,0.5,num=100000)
-    #Gammas = np.linspace(0.00001,0.1,num=100000)
-    Gammas = np.linspace(min(s)/2.,2.*max(s),num=1000)
+    #Gammas = np.logspace(np.log(min(s)/5.),np.log(10.*max(s)),num=100)
+    Gammas = np.logspace(np.log(min(s[:-20])),np.log(2.*max(s)),num=80)
+    #Gammas = np.linspace(min(s)/5.,2.*max(s),num=1000)
     for gamma in Gammas:
 
-        Tikhonov = A + gamma*dampT
-        #Tikhonov = A + gamma*damp
+        #Tikhonov = A + gamma*dampT
+        Tikhonov = A + gamma*damp
 
         x_soln = np.dot(np.linalg.inv(Tikhonov),b) 
         residual = np.dot(J,x_soln) - df
@@ -118,16 +121,24 @@ if __name__ == "__main__":
     #plt.plot(znew[:-1],dy)
     #plt.xlabel("Gamma")
     #plt.ylabel("Curvature")
+    #plt.ylabel("slope")
     #plt.savefig("curvature_vs_gamma.pdf")
     #plt.savefig("curvature_vs_gamma.png")
 
-    plt.figure()
-    #plt.loglog(nrm_resd,nrm_soln) 
-    for i in range(len(nrm_resd)):
-        plt.loglog(nrm_resd[i],nrm_soln[i],'o',markeredgecolor=None,ms=5,color=cm.Blues(Gammas[i]/max(Gammas))) 
-    plt.xlabel("$||J\\delta\\epsilon - \\delta f||$")
-    plt.ylabel("$||\\delta\\epsilon||$")
-    plt.title("L-curve")
+    #plt.figure()
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx()
+    #ax1.loglog(nrm_resd,nrm_soln,'b') 
+    ax1.loglog(nrm_soln,nrm_resd,'b') 
+    #for i in range(len(nrm_resd)):
+    #    #ax1.loglog(nrm_resd[i],nrm_soln[i],'o',markeredgecolor=None,ms=5,color=cm.Blues(Gammas[i]/max(Gammas))) 
+    #    ax1.loglog(nrm_soln[i],nrm_resd[i],'o',markeredgecolor=None,ms=5,color=cm.Blues(Gammas[i]/max(Gammas))) 
+    ax1.set_xlabel("$||J\\delta\\epsilon - \\delta f||$")
+    ax1.set_ylabel("$||\\delta\\epsilon||$")
+    ax1.set_title("L-curve")
+
+    #ax2.loglog(nrm_resd,Gammas,'r')
+    #ax2.set_ylabel("Gammas")
     #plt.savefig("L_curve.pdf")
     #plt.savefig("L_curve.png")
     plt.show()
