@@ -87,5 +87,30 @@ def prepare_newtons_method(model,method,append_log):
     np.savetxt("%s/Mut_%d/newton/Jacobian_err.dat" % (name,iteration) ,Jacobian_err)
 
     append_log(name,"Finished: Calculating_Jacobian")
+    append_log(name,"Starting: Solving_Newtons_Method")
 
 
+    ## To Do:
+    ##  - Collect Jacobian rows from all fitting_includes directories. Map columns (parameters)
+    ##      to match those of the .
+
+    cwd = os.getcwd()
+    os.chdir("%s/Mut_%d/newton" % (name,iteration))
+    newton.solver.Levenberg_Marquardt_solution(model,method)
+    os.chdir(cwd)
+
+
+
+if __name__ == "__main__":
+    ## Module tested. Works!
+    import model_builder as mdb
+    def dummy(this,that):
+        pass
+
+    name = "1RIS"
+    method = "ddG_MC2004"
+
+    model = mdb.models.load_model(name) 
+    model.Mut_iteration = 0
+
+    prepare_newtons_method(model,method,dummy)

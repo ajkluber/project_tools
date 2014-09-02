@@ -85,16 +85,19 @@ if __name__ == "__main__":
     
     dampT = np.identity(A.shape[0])
 
+    normeps =  np.linalg.norm(np.ones(A.shape[0]))
+
     nrm_soln = []
     nrm_resd = []
     ## Try using the L-curve test by P.C. Hansen to determine the 
     ## regularization parameter.
     #for gamma in np.arange(0.000001,100,0.001):
-    #Gammas = np.logspace(np.log(min(s)/5.),np.log(10.*max(s)),num=100)
-    Gammas = np.logspace(np.log(min(s[:-20])),np.log(2.*max(s)),num=80)
-    #Gammas = np.linspace(min(s)/5.,2.*max(s),num=1000)
+    Gammas = np.logspace(np.log(min(s)/1.2),np.log(2.*max(s)),num=200)
+    #Gammas = np.logspace(np.log(min(s[:-20])),np.log(2.*max(s)),num=80)
+    #Gammas = np.linspace(min(s)/2.,2.*max(s),num=200)
+    size_perturb = []
+    Xps = []
     for gamma in Gammas:
-
         #Tikhonov = A + gamma*dampT
         Tikhonov = A + gamma*damp
 
@@ -103,18 +106,37 @@ if __name__ == "__main__":
 
         nrm_soln.append(np.linalg.norm(x_soln))
         nrm_resd.append(np.linalg.norm(residual))
+        size_perturb.append(np.linalg.norm(x_soln)/normeps)
+        Xps.append(x_soln)
+        #print np.linalg.norm(x_soln),  np.linalg.norm(residual)
         
 
-    x = np.log(nrm_resd)
-    y = np.log(nrm_soln)
-    f = interpolate.interp1d(x,y)
-    g = interpolate.interp1d(x,Gammas)
-    xnew = np.linspace(min(x),max(x),10000)
-    ynew = f(xnew)
-    znew = g(xnew)
-    
-    dy = np.diff(ynew)
-    ddy = np.diff(dy)
+    Covar = np.zeros((len(Xps),len(Xps)),float) 
+    for i in range(len(Xps)):
+        for j in range(len(Xps)):
+            Covar[i,j] = np.dot(Xps[i],Xps[j])/(np.linalg.norm(Xps[i])*np.linalg.norm(Xps[j]))
+
+    X,Y = np.meshgrid(np.log(Gammas),np.log(Gammas))
+    plt.figure()
+    #plt.pcolor(Covar)
+    plt.pcolor(X,Y,Covar)
+    plt.xlabel("$\\log{\\lambda}$")
+    plt.ylabel("$\\log{\\lambda}$")
+    plt.title("Covariance of solutions for different Gammas")
+    plt.colorbar()
+
+
+    Xps = np.array(Xps)
+
+    #x = np.log(nrm_resd)
+    #y = np.log(nrm_soln)
+    #f = interpolate.interp1d(x,y)
+    #g = interpolate.interp1d(x,Gammas)
+    #xnew = np.linspace(min(x),max(x),10000)
+    #ynew = f(xnew)
+    #znew = g(xnew)
+    #dy = np.diff(ynew)
+    #ddy = np.diff(dy)
 
     #plt.figure()
     #plt.plot(znew[:-2],ddy)
@@ -128,8 +150,8 @@ if __name__ == "__main__":
     #plt.figure()
     fig, ax1 = plt.subplots()
     ax2 = ax1.twinx()
-    #ax1.loglog(nrm_resd,nrm_soln,'b') 
-    ax1.loglog(nrm_soln,nrm_resd,'b') 
+    ax1.loglog(nrm_resd,nrm_soln,'b') 
+    #ax1.loglog(nrm_soln,nrm_resd,'b') 
     #for i in range(len(nrm_resd)):
     #    #ax1.loglog(nrm_resd[i],nrm_soln[i],'o',markeredgecolor=None,ms=5,color=cm.Blues(Gammas[i]/max(Gammas))) 
     #    ax1.loglog(nrm_soln[i],nrm_resd[i],'o',markeredgecolor=None,ms=5,color=cm.Blues(Gammas[i]/max(Gammas))) 
@@ -137,8 +159,16 @@ if __name__ == "__main__":
     ax1.set_ylabel("$||\\delta\\epsilon||$")
     ax1.set_title("L-curve")
 
-    #ax2.loglog(nrm_resd,Gammas,'r')
-    #ax2.set_ylabel("Gammas")
+    ax2.loglog(nrm_resd,Gammas,'r')
+    ax2.grid(True)
+    ax2.set_ylabel("$\\lambda$")
     #plt.savefig("L_curve.pdf")
     #plt.savefig("L_curve.png")
+
+    plt.figure()
+    #plt.plot(Gammas,size_perturb,'g')
+    plt.loglog(Gammas,size_perturb,'g')
+    plt.xlabel("Gamma")
+    plt.ylabel("$||\\delta\\epsilon||/||\\epsilon||$")
+
     plt.show()

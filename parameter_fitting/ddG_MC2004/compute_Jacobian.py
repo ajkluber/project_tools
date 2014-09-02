@@ -13,9 +13,10 @@ the Characterization of the Protein Folding Landscape of S6: How Far Can a
 Minimalist model Go? J. Mol. Biol. 2004, 343, 235-248.
 """
 
-import numpy as np
 import os
 import argparse
+import time
+import numpy as np
 
 import mdtraj as md
 
@@ -122,18 +123,21 @@ def calculate_average_Jacobian(model):
     ## feature vector and Jacobian in the Mut/newton directory.
     sim_feature_all = []
     Jacobian_all = []
+    timestart = time.time()
     for n in range(len(directories)):
         T = temperatures[n]
         dir = directories[n]
         beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
         print "  Calculating Jacobian for Mut_%d/%s" % (model.Mut_iteration,dir)
         os.chdir(dir)
-        sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,mutants,Fij_pairs,Fij_conts,bounds,state_labels,epsilons,deltas,sigmas)
+        sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels,epsilons,deltas,sigmas)
         sim_feature_all.append(sim_feature)
         Jacobian_all.append(Jacobian)
         os.chdir("..")
+        calctime = time.time() - timestart
+        print "  calculation took %.2f seconds = %.2f minutes" % (calctime,calctime/60.)
 
-    sim_feaure_all = np.array(sim_feaure_all)
+    sim_feature_all = np.array(sim_feature_all)
     Jacobian_all = np.array(Jacobian_all)
 
     ## Take avg. and use standard deviation as error bars.
@@ -146,10 +150,10 @@ def calculate_average_Jacobian(model):
 
     return sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err
 
-def compute_Jacobian_for_directory(model,beta,mutants,Fij_pairs,Fij_conts,bounds,state_labels,epsilons,deltas,sigmas):
+def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels,epsilons,deltas,sigmas):
     """ Calculates the feature vector (ddG's) and Jacobian for one directory """
     ## Get trajectory, state indicators, contact energy
-    traj,U,TS,N,Uframes,TSframes,Nframes,Vij = get_states_Vij(model,bounds,epsilons,delta,sigmas)
+    traj,U,TS,N,Uframes,TSframes,Nframes,Vij = get_states_Vij(model,bounds,epsilons,deltas,sigmas)
 
     ## Avg. contact energy for each state.
     Vij_U  = sum(Vij[U,:])/Uframes
@@ -171,7 +175,7 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij_pairs,Fij_conts,bounds
         mut = mutants[k]
         print "    row %d   mutant %s" % (k,mut)
         ## Compute energy perturbation
-        dHk = compute_dHk(model,traj,mut,Fij_pairs[k],Fij_conts[k])
+        dHk = compute_dHk(model,traj,mut,Fij[k],Fij_pairs[k],Fij_conts[k])
 
         ## Free energy perturbation formula. Equation (4) in reference (1).
         dG_U  = -np.log(np.sum(np.exp(-beta*dHk[U]))/Uframes)
@@ -224,7 +228,7 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij_pairs,Fij_conts,bounds
 
     return sim_feature, Jacobian
 
-def compute_dHk(model,traj,mut,pairs,conts):
+def compute_dHk(model,traj,mut,fij,pairs,conts):
     """ Calculate energetic perturbation to each frame from mutation """
 
     ## Use mdtraj to compute the distances between pairs.
@@ -244,10 +248,9 @@ def compute_dHk(model,traj,mut,pairs,conts):
     ## consideration, the results are crazy
     x = sigmas/rij
     x[(x > 1.09)] = 1.09  # <-- 1.09 is where LJ12-10 crosses zero.
-    #x[(x > 1.211)] = 1.211     ## Old, arbitrary cutoff.
 
     ## Calculate dH_k using distances and parameters. Save.
-    Vij = -Fij[k]*eps*(5.*(x**12) - 6.*deltas*(x**10))
+    Vij = -fij*eps*(5.*(x**12) - 6.*deltas*(x**10))
     dH_k = sum(Vij.T)
     np.savetxt("dH_"+mut+".dat",dH_k)
 
@@ -286,13 +289,13 @@ def get_mutant_fij(model,mutants):
         Fij_pairs.append(temppairs)
     return Fij, Fij_pairs, Fij_conts
 
-def get_Qij(model,r,sig,delta,interaction_nums):
+def get_Qij(model,r,sig,deltas,interaction_nums):
     """ Calculates the normalized interaction betwen nonbonded pairs.
 
         Might use to generalize for different types of contacts.
     """
     print "  Calculating Qij..."
-    qij = model.nonbond_interaction(r,sig,delta)
+    qij = model.nonbond_interaction(r,sig,deltas)
     return qij
 
 def save_phi_values(mutants,coord,state_labels,dG,ddG,phi):

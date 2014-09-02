@@ -1,9 +1,11 @@
-""" Solve for new parameters with multivariate Newton-Raphson method
+""" Solve for new parameters
 
 Description:
 
     Submodule to solve for the new parameter set using the thermodynamic
-perturbation technique outlined in Matysiak Clementi 2004.
+perturbation technique outlined in Matysiak Clementi 2004. Solutions are
+found with the Levenberg-Marquardt algorithm, an algorithm for damped 
+least-squares.
 
 
 References:
@@ -29,19 +31,56 @@ import model_builder.models as models
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
-def solve_for_new_parameters(model,append_log):
-    """ Solve for new parameters """
+def Levenberg_Marquardt_solution(model,append_log):
+    """ Solve for new parameters using the Levenberg-Marquardt algorithm 
 
+    Description:
+    
+        Solves the ill-posed (rectangular) system for the new parameters
+    using the damped least-squares, Levenberg-Marquardt algorithm. Ill-posed
+    systems usually have some small singular values that would blow the 
+    solution up if the matrix inverse was calculated. The 
+    idea of the algorithm is to reduce the influence of very small 
+    singular values on the solution.
+    """
 
-    ## To Do:
-    ## 1. Determine solution method: Newton's method
-    ## 2. Determine solution protocol 
-    ##  - load feature vectors and Jacobian
-    ##  - invert for every set of singular values?
-    ##  - scale the step size?
-    ##  - 
-    ## 3. Determine how to save new parameters.
+    target_feature = np.loadtxt("target_feature.dat")
+    target_feature_err = np.loadtxt("target_feature_err.dat")
+    sim_feature = np.loadtxt("sim_feature.dat")
+    sim_feature_err = np.loadtxt("sim_feature_err.dat")
+    Jacobian = np.loadtxt("Jacobian.dat")
+    Jacobian_err = np.loadtxt("Jacobian_err.dat")
+    J = Jacobian
 
+    ## Normalize the target step.
+    df = target_feature - sim_feature
+    df /= np.linalg.norm(df)
+
+    JTdf = np.dot(J.T,df)
+    JTJ = np.dot(J.T,J)
+
+    ## 
+    n_rows = JTJ.shape[0]
+    Levenberg = np.identity(n_rows)
+    Levenberg[(np.arange(n_rows),np.arange(n_rows))] = np.diag(JTJ)
+
+    u,s,v = np.linalg.svd(Jacobian)
+
+    nrm_soln = []
+    nrm_resd = []
+    size_perturb = []
+    Xps = []
+    Lambdas = np.logspace(np.log(min(s)/1.2),np.log(2.*max(s)),num=200)
+    for Lambda in Lambdas:
+        lhs = JTJ + Lambda*Levenberg
+
+        x_soln = np.linalg.solve(lhs,b) 
+        residual = np.dot(J,x_soln) - df
+
+        nrm_soln.append(np.linalg.norm(x_soln))
+        nrm_resd.append(np.linalg.norm(residual))
+        size_perturb.append(np.linalg.norm(x_soln)/normeps)
+        Xps.append(x_soln)
     cwd = os.getcwd()
     sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
 
