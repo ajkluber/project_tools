@@ -325,7 +325,7 @@ def get_mutant_fij_scanning(model, mutants, fij_average=0.5):
         for j in range(model.n_contacts):
             if (model.contacts[j,0] == mut_res_number) and (model.contacts[j,1] == (mut_res_number+4)):
                 contact_num = j
-                temppairs.append(mut_res_number-1,mut_res_number+3)  #i, i+4
+                temppairs.append([mut_res_number-1,mut_res_number+3])  #i, i+4
                 tempconts.append(contact_num)
                 tempfij.append(fij_average)
                 break
