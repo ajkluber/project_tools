@@ -3,14 +3,18 @@
 
 Description:
 
-    This module computes the jacobian contact probabilities
+    This module computes the jacobian of the contact probability function.
 
 """
 
-import os
 import numpy as np
+import os
+import time
+import argparse
 
 import mdtraj as md
+
+import model_builder as mdb
 
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
@@ -100,6 +104,7 @@ def calculate_average_Jacobian(model):
     ## Jacobian for each directory indpendently then save. 
     sim_feature_all = []
     Jacobian_all = []
+    timestart = time.time()
     for n in range(len(directories)):
         T = temperatures[n]
         dir = directories[n]
@@ -107,12 +112,12 @@ def calculate_average_Jacobian(model):
         print "  Calculating Jacobian for Mut_%d/%s" % (model.Mut_iteration,dir)
         os.chdir(dir)
         sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,bounds,epsilons,deltas,sigmas)
-        os.chdir(cwd)
-        return sim_feature, Jacobian
-
         sim_feature_all.append(sim_feature)
         Jacobian_all.append(Jacobian)
         os.chdir("..")
+
+        calctime = time.time() - timestart
+        print "  calculation took %.2f seconds = %.2f minutes" % (calctime,calctime/60.)
 
     sim_feaure_all = np.array(sim_feaure_all)
     Jacobian_all = np.array(Jacobian_all)
@@ -154,6 +159,26 @@ def compute_Jacobian_for_directory(model,beta,bounds,epsilons,deltas,sigmas):
 
     return sim_feature, Jacobian
 
-if __name__ == "__main__":
-    pass
+if __name__ == "__main__":    
+    parser = argparse.ArgumentParser(description='Calculate .')
+    parser.add_argument('--name', type=str, required=True, help='Directory.')
+    parser.add_argument('--iteration', type=int, required=True, help='Iteration.')
+    args = parser.parse_args()
+
+    name = args.name
+    iteration = args.iteration
+
+    #print name, iteration
+    #raise SystemExit
+
+    model = mdb.models.load_model(name) 
     
+    sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = calculate_average_Jacobian(model)
+
+    if not os.path.exists("%s/Mut_%d/contact_Qi" % (name,iteration)):
+        os.mkdir("%s/Mut_%d/contact_Qi" % (name,iteration))
+
+    np.savetxt("%s/Mut_%d/contact_Qi/sim_feature.dat" % (name,iteration), sim_feature_avg)
+    np.savetxt("%s/Mut_%d/contact_Qi/sim_feature_err.dat" % (name,iteration), sim_feature_err)
+    np.savetxt("%s/Mut_%d/contact_Qi/Jacobian.dat" % (name,iteration), Jacobian_avg)
+    np.savetxt("%s/Mut_%d/contact_Qi/Jacobian_err.dat" % (name,iteration) ,Jacobian_err)
