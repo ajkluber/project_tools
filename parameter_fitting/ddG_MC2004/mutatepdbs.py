@@ -51,7 +51,7 @@ def get_all_scanning_mutations():
     mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
     scan_muts = []
     for i in range(mutation_data.shape[0]):
-        if (mutation_data[i,0] == "surf") and (mutation_data[i,2] == "A") and (mutation_data[i,2] == "A"):
+        if (mutation_data[i,0] == "surf") and (mutation_data[i,8] == "True") and (mutation_data[i,11] == "0"):
             scan_muts.append(True)
         else:
             scan_muts.append(False)
