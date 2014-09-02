@@ -22,7 +22,7 @@ import mdtraj as md
 
 import model_builder.models as models
 
-from mutatepdbs import get_core_mutations, get_exp_ddG
+from mutatepdbs import get_core_mutations, get_scanning_mutations,  get_exp_ddG
 
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
@@ -104,8 +104,16 @@ def calculate_average_Jacobian(model):
     os.chdir("%s/mutants" % name)
     ## Get list of mutations and fraction of native contacts deleted for 
     ## each mutation.
-    mutants = get_core_mutations()
-    Fij, Fij_pairs, Fij_conts = get_mutant_fij(model,mutants)
+    mutants_core = get_core_mutations()
+    Fij_core, Fij_pairs_core, Fij_conts_core = get_mutant_fij(model,mutants)
+    scanning_mutants = get_scanning_mutations()
+    Fij_scanning, Fij_pairs_scanning, Fij_conts_scanning = get_mutant_fij_scanning(model, mutants)
+
+    mutants = mutants_core + mutants_scanning
+    Fij = Fij_core + Fij_scanning
+    Fij_pairs = Fij_pairs_core + Fij_pairs_scanning
+    Fij_conts = Fij_conts_core + Fij_conts_scanning
+
     os.chdir(sub)
 
     temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
@@ -288,6 +296,45 @@ def get_mutant_fij(model,mutants):
         Fij_conts.append(np.array(tempconts))
         Fij_pairs.append(temppairs)
     return Fij, Fij_pairs, Fij_conts
+
+def get_mutant_fij_scanning(model, mutants, fij_average=0.5):
+    """Estimate the local contact fraction loss for scanning mutations.
+    
+    The ddGs for scanning mutations could be affected by a multiplicity of factors that exceed the mere contacts lost (e.g. effect 
+    of solvent, interaction with helix dipole, interaction with charged residues, loss of hydrogen bonds, among others). As a result,
+    the exact determination varies according to which factor(s) weigh the most. Given that this is a coarse-grained model, as a 
+    first approach we will estimate an average value of fij = 0.5. This is as said before arbitrary, but should give us an estimate
+    of how the local epsilons vary according to the value of the ddGs involved.
+
+    Also, on a first approach only the [i, i+4] contacts will be affected by the said value of fij.
+
+    """
+    
+    Fij_pairs = []
+    Fij_conts = []
+    Fij = []
+
+    for mut in mutants:
+        # For the time being only keeping i, i+4
+        mut_res_number = int("".join(list(mut)[1:-1]))
+        Fij.append(fij_average)
+        temppairs = []
+        tempconts = []
+        tempfij = []
+        for i in range(len(indices[0])):
+            for j in range(model.n_contacts):
+                if (model.contacts[j,0] == mut_res_number) and (model.contacts[j,1] == (mut_res_number+4)):
+                    contact_num = j
+                    temppairs.append(mut_res_number-1,mut_res_number+3)  #i, i+4
+                    tempconts.append(contact_num)
+                    tempfij.append(fij_average)
+                    break
+                else:
+                    continue
+        Fij_conts.append(np.array(tempconts))
+        Fij_pairs.append(temppairs)
+    return Fij, Fij_pairs, Fij_conts
+
 
 def get_Qij(model,r,sig,deltas,interaction_nums):
     """ Calculates the normalized interaction betwen nonbonded pairs.
