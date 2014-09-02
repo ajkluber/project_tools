@@ -20,7 +20,7 @@ import numpy as np
 
 import mdtraj as md
 
-import model_builder.models as models
+import model_builder as mdb
 
 from mutatepdbs import get_core_mutations, get_scanning_mutations,  get_exp_ddG
 
@@ -93,7 +93,7 @@ def get_target_feature(model):
 
     return target_feature, target_feature_err
 
-def calculate_average_Jacobian(model):
+def calculate_average_Jacobian(model,saveas="Q_phi.dat"):
     """ Calculate the average feature vector (ddG's) and Jacobian """
     
     name = model.subdir
@@ -138,7 +138,7 @@ def calculate_average_Jacobian(model):
         beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
         print "  Calculating Jacobian for Mut_%d/%s" % (model.Mut_iteration,dir)
         os.chdir(dir)
-        sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels,epsilons,deltas,sigmas)
+        sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels,epsilons,deltas,sigmas,saveas=saveas)
         sim_feature_all.append(sim_feature)
         Jacobian_all.append(Jacobian)
         os.chdir("..")
@@ -158,7 +158,7 @@ def calculate_average_Jacobian(model):
 
     return sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err
 
-def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels,epsilons,deltas,sigmas):
+def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels,epsilons,deltas,sigmas,saveas="Q_phi.dat"):
     """ Calculates the feature vector (ddG's) and Jacobian for one directory """
     ## Get trajectory, state indicators, contact energy
     traj,U,TS,N,Uframes,TSframes,Nframes,Vij = get_states_Vij(model,bounds,epsilons,deltas,sigmas)
@@ -232,7 +232,7 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
 
     np.savetxt("mut/Jacobian.dat",Jacobian)
     np.savetxt("mut/sim_feature.dat",sim_feature)
-    save_phi_values(mutants,"Q",state_labels,dG,ddG,phi)
+    save_phi_values(mutants,"Q",state_labels,dG,ddG,phi,saveas=saveas)
 
     return sim_feature, Jacobian
 
@@ -345,7 +345,7 @@ def get_Qij(model,r,sig,deltas,interaction_nums):
     qij = model.nonbond_interaction(r,sig,deltas)
     return qij
 
-def save_phi_values(mutants,coord,state_labels,dG,ddG,phi):
+def save_phi_values(mutants,coord,state_labels,dG,ddG,phi,saveas="Q_phi.dat"):
     """ Save the calculated dG, ddG, and phi values for states"""
 
     header_string = "# mut" 
@@ -370,22 +370,23 @@ def save_phi_values(mutants,coord,state_labels,dG,ddG,phi):
     print header_string
     print data_string
 
-    outputfile = open("phi/"+coord+"_phi.dat","w")
+    outputfile = open("phi/%s" % saveas,"w")
     outputfile.write(header_string+"\n"+data_string)
     outputfile.close()
 
 if __name__ == "__main__":
     ## To Do: Make into a command line utility
 
-    #parser = argparse.ArgumentParser(description='Calculate .')
-    #parser.add_argument('--subdir', type=str, required=True, help='Directory.')
-    #parser.add_argument('--calc_dH', action='store_true', help='Calculate dH for mutants.')
-    #args = parser.parse_args()
-    #pdb = args.subdir+".pdb"
+    parser = argparse.ArgumentParser(description='Calculate .')
+    parser.add_argument('--name', type=str, required=True, help='name.')
+    parser.add_argument('--iteration', type=int, required=True, help='iteration.')
+    args = parser.parse_args()
     
+    name = args.name
+    iteration= args.iteration
     def dummy(this,that):
         pass
 
-    pdb = "r15.pdb"
-    model = models.SmogCalpha.SmogCalpha(pdb)
-    calculate_average_Jacobian(model,append_log)
+    model = mdb.models.load_model(name)
+    model.Mut_iteration = iteration
+    calculate_average_Jacobian(model,saveas="scanning_phi.dat")

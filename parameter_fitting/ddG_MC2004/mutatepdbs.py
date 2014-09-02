@@ -46,7 +46,7 @@ def get_all_core_mutations():
     
     return mutants
 
-def get_all_scanning_mutations():
+def get_scanning_mutations():
     """ Return alanine-glycine scanning mutants."""
     mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
     scan_muts = []
