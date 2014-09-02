@@ -106,8 +106,8 @@ def calculate_average_Jacobian(model,saveas="Q_phi.dat"):
     ## each mutation.
     mutants_core = get_core_mutations()
     Fij_core, Fij_pairs_core, Fij_conts_core = get_mutant_fij(model,mutants_core)
-    scanning_mutants = get_scanning_mutations()
-    Fij_scanning, Fij_pairs_scanning, Fij_conts_scanning = get_mutant_fij_scanning(model,scanning_mutants)
+    mutants_scanning = get_scanning_mutations()
+    Fij_scanning, Fij_pairs_scanning, Fij_conts_scanning = get_mutant_fij_scanning(model,mutants_scanning)
 
     mutants = mutants_core + mutants_scanning
     Fij = Fij_core + Fij_scanning
