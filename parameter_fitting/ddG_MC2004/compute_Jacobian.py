@@ -106,8 +106,8 @@ def calculate_average_Jacobian(model,saveas="Q_phi.dat"):
     ## each mutation.
     mutants_core = get_core_mutations()
     Fij_core, Fij_pairs_core, Fij_conts_core = get_mutant_fij(model,mutants_core)
-    scanning_mutants = get_scanning_mutations()
-    Fij_scanning, Fij_pairs_scanning, Fij_conts_scanning = get_mutant_fij_scanning(model,scanning_mutants)
+    mutants_scanning = get_scanning_mutations()
+    Fij_scanning, Fij_pairs_scanning, Fij_conts_scanning = get_mutant_fij_scanning(model,mutants_scanning)
 
     #mutants = mutants_core + mutants_scanning
     #Fij = Fij_core + Fij_scanning
@@ -328,16 +328,17 @@ def get_mutant_fij_scanning(model, mutants, fij_average=0.5):
         temppairs = []
         tempconts = []
         tempfij = []
-        for i in range(len(indices[0])):
-            for j in range(model.n_contacts):
-                if (model.contacts[j,0] == mut_res_number) and (model.contacts[j,1] == (mut_res_number+4)):
-                    contact_num = j
-                    temppairs.append(mut_res_number-1,mut_res_number+3)  #i, i+4
-                    tempconts.append(contact_num)
-                    tempfij.append(fij_average)
-                    break
-                else:
-                    continue
+
+        for j in range(model.n_contacts):
+            if (model.contacts[j,0] == mut_res_number) and (model.contacts[j,1] == (mut_res_number+4)):
+                contact_num = j
+                temppairs.append([mut_res_number-1,mut_res_number+3])  #i, i+4
+                tempconts.append(contact_num)
+                tempfij.append(fij_average)
+                break
+            else:
+                continue
+
         Fij_conts.append(np.array(tempconts))
         Fij_pairs.append(temppairs)
     return Fij, Fij_pairs, Fij_conts
