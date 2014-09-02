@@ -119,7 +119,7 @@ def calculate_average_Jacobian(model):
         calctime = time.time() - timestart
         print "  calculation took %.2f seconds = %.2f minutes" % (calctime,calctime/60.)
 
-    sim_feaure_all = np.array(sim_feaure_all)
+    sim_feature_all = np.array(sim_feature_all)
     Jacobian_all = np.array(Jacobian_all)
 
     ## Take avg. and use standard deviation as error bars.
