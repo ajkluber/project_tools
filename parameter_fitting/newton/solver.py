@@ -31,7 +31,7 @@ import model_builder.models as models
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
-def Levenberg_Marquardt_solution(model,append_log):
+def Levenberg_Marquardt_solution(model,method):
     """ Solve for new parameters using the Levenberg-Marquardt algorithm 
 
     Description:
@@ -39,9 +39,23 @@ def Levenberg_Marquardt_solution(model,append_log):
         Solves the ill-posed (rectangular) system for the new parameters
     using the damped least-squares, Levenberg-Marquardt algorithm. Ill-posed
     systems usually have some small singular values that would blow the 
-    solution up if the matrix inverse was calculated. The 
-    idea of the algorithm is to reduce the influence of very small 
-    singular values on the solution.
+    solution up if the matrix inverse was calculated. The idea is to reduce 
+    the influence of very small singular values, which have a lower signal 
+    to noise ratio, on the solution. 
+
+        The usual least-squares solution seeks to minimize the norm of the
+    residual, 
+                    Jx = df   =>  x s.t. min||Jx - df||
+
+    damped least-squares modifies the problem to,
+
+                A = J^T*J
+
+    (A + lambda*diag(A))x = J^T*df  =>  x s.t. min{||Jx - b|| + lambda*||x||}
+
+    Now a solution is sought that simultaneously minimizes the residual 
+    and the norm of the solution. 
+
     """
 
     target_feature = np.loadtxt("target_feature.dat")
@@ -52,120 +66,57 @@ def Levenberg_Marquardt_solution(model,append_log):
     Jacobian_err = np.loadtxt("Jacobian_err.dat")
     J = Jacobian
 
+    epsilons = model.contact_epsilons
+    norm_eps = np.linalg.norm(epsilons)
+
     ## Normalize the target step.
     df = target_feature - sim_feature
     df /= np.linalg.norm(df)
-
     JTdf = np.dot(J.T,df)
     JTJ = np.dot(J.T,J)
 
-    ## 
+    ## The damping parameter, lambda, is scanned from below the smallest
+    ## singular value to above the largest singular value.
+    ## The contributions from singular values less than the damping 
+    ## parameter are 'damped' out by a filter function.
     n_rows = JTJ.shape[0]
     Levenberg = np.identity(n_rows)
     Levenberg[(np.arange(n_rows),np.arange(n_rows))] = np.diag(JTJ)
-
     u,s,v = np.linalg.svd(Jacobian)
+    Lambdas = np.logspace(np.log(min(s)),np.log(max(s)),num=200)
 
     nrm_soln = []
     nrm_resd = []
-    size_perturb = []
-    Xps = []
-    Lambdas = np.logspace(np.log(min(s)/1.2),np.log(2.*max(s)),num=200)
-    for Lambda in Lambdas:
+    condition_number = []
+    solutions = []
+    for i in range(len(Lambdas)):
+        Lambda = Lambda[i]
         lhs = JTJ + Lambda*Levenberg
-
-        x_soln = np.linalg.solve(lhs,b) 
+        x_soln = np.linalg.solve(lhs,JTdf) 
         residual = np.dot(J,x_soln) - df
 
         nrm_soln.append(np.linalg.norm(x_soln))
         nrm_resd.append(np.linalg.norm(residual))
-        size_perturb.append(np.linalg.norm(x_soln)/normeps)
-        Xps.append(x_soln)
-    cwd = os.getcwd()
-    sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
+        solutions.append(x_soln)
 
+        condition_number.append(np.linalg.norm(lhs)*np.linalg.norm(np.linalg.inv(lhs)))
 
-    weight = 2.
-    ddGtarget = (ddGexp + (weight-1)*ddGsim)/2.
-    dg = ddGtarget - ddGsim
-    np.savetxt("mut/ddGexp.dat",ddGexp)
-    np.savetxt("mut/ddGtarget.dat",ddGtarget)
-    np.savetxt("mut/dg.dat",dg)
-    np.savetxt("mut/ddGexp_err.dat",ddGexp_err)
+    ## Not done
+    #save_solution_data(solutions,Lambdas,nrm_soln,nrm_resd,norm_eps,condition_number,s,J)
 
-    eps = model.contact_epsilons
-
-    if not os.path.exists("mut/num_singular_values_include.txt"):
-        append_log(model.subdir,"Starting: Calculating_MC2004") 
-        u,s,v = np.linalg.svd(M)
-        s_norm = s/max(s)
-        cutoffs = np.array(list(0.5*(s_norm[:-1] + s_norm[1:])) + [0.0])
-
-        Mnorm = np.linalg.norm(M)
-        cond_num = np.zeros(len(cutoffs),float)
-        Xps = [] 
-        Xp_cpxs = [] 
-        ratios_xp = []
-        ratios_cpx = []
-        print "  Solving for new parameters. Parameters will be saved in mut/"
-        print "# Sing. %10s %10s %10s" % ("Cond.Num.","|xp|/|eps|","|xp_cpx|/|eps|")
-        solution_string = "# Sing. %10s %10s %10s\n" % ("Cond.Num.","|xp|/|eps|","|xp_cpx|/|eps|")
-        for i in range(len(cutoffs)):
-
-            ## Generical solution uses pseudo-inverse of M.
-            cutoff = cutoffs[i]
-            Mpinv = np.linalg.pinv(M,rcond=cutoff)
-            Mpinvnorm = np.linalg.norm(Mpinv)
-            cond_num[i] = Mnorm*Mpinvnorm
-
-            x_particular = np.dot(Mpinv,dg)
-            np.savetxt("mut/xp%d.dat" % (i+1),x_particular)
-            delta_eps_xp = x_particular
-            ratio_xp = np.linalg.norm(delta_eps_xp)/np.linalg.norm(eps)
-            Xps.append(delta_eps_xp)
-            ratios_xp.append(ratio_xp)
-            
-            ## Apply 
-            try: 
-                LP_problem, solution, x_particular_cpx, N = apply_constraints_with_cplex(model,dg,M,cutoff)
-                delta_eps = x_particular_cpx + np.dot(N,solution)
-                ratio_cpx = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
-                Xp_cpxs.append(delta_eps)
-                np.savetxt("mut/xp_cplex%d.dat" % (i+1),delta_eps)
-            except cplex.exceptions.CplexSolverError:
-                Xp_cpxs.append(np.zeros(len(x_particular)))
-                ratio_cpx = 0.
-            iteration_string = "%5d %10.5e %10.5f %10.5f" % (i+1,cond_num[i],ratio_xp,ratio_cpx)
-            print iteration_string
-            ratios_cpx.append(ratio_cpx)
-            solution_string += iteration_string + "\n"
-        open("mut/solution.log","w").write(solution_string) 
-        plot_solution_info(model,s,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs)
-    else:
-        temp = open("mut/num_singular_values_include.txt").read().rstrip("\n")
-        num_singular_values = temp.split()[0]
-        print "  Using delta eps with %s singular values." % num_singular_values
-        if temp.endswith("xp"):
-            savebeadbeadxp = sub+"/mut/"+newbeadbead.split(".dat")[0]+"_xp.dat"
-            savebeadbead = savebeadbeadxp
-            delta_eps = np.loadtxt(sub+"/mut/xp"+num_singular_values+".dat")
-        else:
-            savebeadbeadxp = sub+"/mut/"+newbeadbead.split(".dat")[0]+"_xp.dat"
-            savebeadbead = sub+"/mut/"+newbeadbead
-            delta_eps = np.loadtxt(sub+"/mut/xp_cplex"+num_singular_values+".dat")
-
-        print "  Saving new beadbead as: ",savebeadbead
-        ## Write new beadbead to file
-        model.contact_epsilons += delta_eps
-        model.contact_epsilons[model.contact_epsilons < 0.1] = 0.1
-        model.get_pairs_string()
-        open(savebeadbead,"w").write(model.beadbead)
-        model.contact_energies = savebeadbead
-        append_log(model.subdir,"Finished: Calculating_MC2004") 
-    os.chdir(cwd)
-
+    ## To Do:
+    ##  - Save enough information to choose a solution:
+    ##    - Lambdas, solutions, perturb_size, residual
+    ##  
     
 
+def save_solution_data(solutions,Lambdas,nrm_soln,nrm_resd,norm_eps,condition_number,s,J):
+    """ Save all the information needed to pick a solution """
+
+    for i in range(len(solutions)):
+        np.savetxt("xp_%d.dat" % i,solutions[i])
+
+    
 
 def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBeadBead.dat"):
     """ Calculate the new contact parameters with Matysiak Clementi 2004 method
@@ -705,10 +656,9 @@ if __name__ == '__main__':
     def dummy_func(sub,string):
         pass 
     
-    subdirs = ["r17"]
-    Models = models.load_models(subdirs,dryrun=True)
-    model = Models[0]
+    name = "1RIS"
+    model = models.load_models(subdirs,dryrun=True)
+    model.Mut_iteration = 0
+    method = "ddG_MC2004"
 
-    #calculate_MC2004_perturbation(model,dummy_func)
-
-    #calculate_matrix_ddG_eps_M(model,"Q")
+    Levenberg_Marquardt_solution(model,method)

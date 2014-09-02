@@ -46,6 +46,7 @@ import contact_Qi
 def prepare_newtons_method(model,method,append_log):
     """ Prepare the files to do newtons method """
 
+
     available_methods = ["ddG_MC2004","FRET","RMSF","contact_Qi"]
     modules = {"ddG_MC2004":ddG_MC2004,"FRET":FRET,"RMSF":RMSF,"contact_Qi":contact_Qi}
 
@@ -78,6 +79,12 @@ def prepare_newtons_method(model,method,append_log):
     np.savetxt("%s/Mut_%d/%s/Jacobian.dat" % (name,iteration,method), Jacobian_avg)
     np.savetxt("%s/Mut_%d/%s/Jacobian_err.dat" % (name,iteration,method) ,Jacobian_err)
 
+
+    ## To Do:
+    ##  - Collect Jacobian rows from all fitting_includes directories.
+    ##  - Map columns (parameters) to match those of the first directory. Stack the rows.
+    ##  - Save in the first fitting directory.
+
     print "  Saving feature vector and Jacobian in %s/Mut_%d/newton" % (name,iteration)
     np.savetxt("%s/Mut_%d/newton/target_feature.dat" % (name,iteration), target_feature)
     np.savetxt("%s/Mut_%d/newton/target_feature_err.dat" % (name,iteration), target_feature_err)
@@ -90,14 +97,11 @@ def prepare_newtons_method(model,method,append_log):
     append_log(name,"Starting: Solving_Newtons_Method")
 
 
-    ## To Do:
-    ##  - Collect Jacobian rows from all fitting_includes directories. Map columns (parameters)
-    ##      to match those of the .
-
-    cwd = os.getcwd()
-    os.chdir("%s/Mut_%d/newton" % (name,iteration))
-    newton.solver.Levenberg_Marquardt_solution(model,method)
-    os.chdir(cwd)
+    ## Find solutions with Levenbeg_Marquardt algorithm
+    #cwd = os.getcwd()
+    #os.chdir("%s/Mut_%d/newton" % (name,iteration))
+    #newton.solver.Levenberg_Marquardt_solution(model,method)
+    #os.chdir(cwd)
 
 
 
