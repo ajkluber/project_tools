@@ -105,9 +105,9 @@ def calculate_average_Jacobian(model,saveas="Q_phi.dat"):
     ## Get list of mutations and fraction of native contacts deleted for 
     ## each mutation.
     mutants_core = get_core_mutations()
-    Fij_core, Fij_pairs_core, Fij_conts_core = get_mutant_fij(model,mutants)
+    Fij_core, Fij_pairs_core, Fij_conts_core = get_mutant_fij(model,mutants_core)
     scanning_mutants = get_scanning_mutations()
-    Fij_scanning, Fij_pairs_scanning, Fij_conts_scanning = get_mutant_fij_scanning(model, mutants)
+    Fij_scanning, Fij_pairs_scanning, Fij_conts_scanning = get_mutant_fij_scanning(model,scanning_mutants)
 
     mutants = mutants_core + mutants_scanning
     Fij = Fij_core + Fij_scanning
