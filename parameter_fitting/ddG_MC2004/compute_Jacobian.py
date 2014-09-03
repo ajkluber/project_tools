@@ -107,7 +107,7 @@ def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_p
     mutants_core = get_core_mutations()
     Fij_core, Fij_pairs_core, Fij_conts_core = get_mutant_fij(model,mutants_core)
     mutants_scanning = get_scanning_mutations()
-    Fij_scanning, Fij_pairs_scanning, Fij_conts_scanning = get_mutant_fij_scanning(model,mutants_scanning)
+    Fij_scanning, Fij_pairs_scanning, Fij_conts_scanning = get_mutant_fij_scanning(model,mutants_scanning,fij=scanfij)
 
     if scanning_only:
         mutants = mutants_scanning
@@ -306,7 +306,7 @@ def get_mutant_fij(model,mutants):
         Fij_pairs.append(temppairs)
     return Fij, Fij_pairs, Fij_conts
 
-def get_mutant_fij_scanning(model, mutants, fij_average=0.5):
+def get_mutant_fij_scanning(model, mutants, fij=0.5):
     """Estimate the local contact fraction loss for scanning mutations.
     
     The ddGs for scanning mutations could be affected by a multiplicity of factors that exceed the mere contacts lost (e.g. effect 
@@ -326,7 +326,7 @@ def get_mutant_fij_scanning(model, mutants, fij_average=0.5):
     for mut in mutants:
         # For the time being only keeping i, i+4
         mut_res_number = int("".join(list(mut)[1:-1]))
-        Fij.append(fij_average)
+        Fij.append(fij)
         temppairs = []
         tempconts = []
         tempfij = []
@@ -336,7 +336,7 @@ def get_mutant_fij_scanning(model, mutants, fij_average=0.5):
                 contact_num = j
                 temppairs.append([mut_res_number-1,mut_res_number+3])  #i, i+4
                 tempconts.append(contact_num)
-                tempfij.append(fij_average)
+                tempfij.append(fij)
                 break
             else:
                 continue
