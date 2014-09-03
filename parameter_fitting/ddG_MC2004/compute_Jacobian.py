@@ -93,7 +93,7 @@ def get_target_feature(model):
 
     return target_feature, target_feature_err
 
-def calculate_average_Jacobian(model,saveas="Q_phi.dat"):
+def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_phi.dat"):
     """ Calculate the average feature vector (ddG's) and Jacobian """
     
     name = model.subdir
@@ -109,16 +109,17 @@ def calculate_average_Jacobian(model,saveas="Q_phi.dat"):
     mutants_scanning = get_scanning_mutations()
     Fij_scanning, Fij_pairs_scanning, Fij_conts_scanning = get_mutant_fij_scanning(model,mutants_scanning)
 
-    #mutants = mutants_core + mutants_scanning
-    #Fij = Fij_core + Fij_scanning
-    #Fij_pairs = Fij_pairs_core + Fij_pairs_scanning
-    #Fij_conts = Fij_conts_core + Fij_conts_scanning
-
-    mutants = mutants_scanning
-    Fij = Fij_scanning
-    Fij_pairs = Fij_pairs_scanning
-    Fij_conts = Fij_conts_scanning
-    
+    if scanning_only:
+        mutants = mutants_scanning
+        Fij = Fij_scanning
+        Fij_pairs = Fij_pairs_scanning
+        Fij_conts = Fij_conts_scanning
+        saveas = "scan_%.2f.dat" % scanfij
+    else:
+        mutants = mutants_core + mutants_scanning
+        Fij = Fij_core + Fij_scanning
+        Fij_pairs = Fij_pairs_core + Fij_pairs_scanning
+        Fij_conts = Fij_conts_core + Fij_conts_scanning
 
     os.chdir(sub)
 
@@ -137,7 +138,7 @@ def calculate_average_Jacobian(model,saveas="Q_phi.dat"):
     ## feature vector and Jacobian in the Mut/newton directory.
     sim_feature_all = []
     Jacobian_all = []
-    timestart = time.time()
+    lasttime = time.time()
     for n in range(len(directories)):
         T = temperatures[n]
         dir = directories[n]
@@ -148,8 +149,10 @@ def calculate_average_Jacobian(model,saveas="Q_phi.dat"):
         sim_feature_all.append(sim_feature)
         Jacobian_all.append(Jacobian)
         os.chdir("..")
-        calctime = time.time() - timestart
-        print "  calculation took %.2f seconds = %.2f minutes" % (calctime,calctime/60.)
+        thistime = time.time()
+        timediff = thistime - lasttime
+        lasttime = thistime
+        print "  calculation took %.2f seconds = %.2f minutes" % (timediff,timediff/60.)
 
     sim_feature_all = np.array(sim_feature_all)
     Jacobian_all = np.array(Jacobian_all)
@@ -387,6 +390,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Calculate .')
     parser.add_argument('--name', type=str, required=True, help='name.')
     parser.add_argument('--iteration', type=int, required=True, help='iteration.')
+    parser.add_argument('--scanningfij', type=float, required=True, help='Scanning fij.')
     args = parser.parse_args()
     
     name = args.name
@@ -396,4 +400,4 @@ if __name__ == "__main__":
 
     model = mdb.models.load_model(name)
     model.Mut_iteration = iteration
-    calculate_average_Jacobian(model,saveas="scanning_phi.dat")
+    calculate_average_Jacobian(model,scanning_only=True,scanfij=args.scanningfij)
