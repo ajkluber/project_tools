@@ -119,7 +119,6 @@ def calculate_average_Jacobian(model,saveas="Q_phi.dat"):
     Fij_pairs = Fij_pairs_scanning
     Fij_conts = Fij_conts_scanning
     
-    print Fij_pairs
 
     os.chdir(sub)
 
@@ -234,8 +233,8 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
                           (Vij_expdHk_U[Fij_conts[k]]/expdHk_U)))
 
         ## return feature vector and Jacobian
-        sim_feature[:len(mutants)] = ddG_dagg
-        sim_feature[len(mutants):] = ddG_stab
+        sim_feature[k] = ddG_dagg
+        sim_feature[k + len(mutants)] = ddG_stab
 
     np.savetxt("mut/Jacobian.dat",Jacobian)
     np.savetxt("mut/sim_feature.dat",sim_feature)

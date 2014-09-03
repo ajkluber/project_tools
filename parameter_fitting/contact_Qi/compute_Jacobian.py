@@ -172,6 +172,7 @@ if __name__ == "__main__":
     #raise SystemExit
 
     model = mdb.models.load_model(name) 
+    model.Mut_iteration = iteration
     
     sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = calculate_average_Jacobian(model)
 
