@@ -28,8 +28,8 @@ def print_header():
 
     print "------------------------------ project_tools ---------------------------------"
     print " Your using project_tools, a multiscale toolbox from the Clementi lab"
-    print " Version 1.0 "
-    print " Words to live by:\n"
+    print " Version 0.0 \n"
+    #print " Words to live by:\n"
     print "             'If you can calculate it, you should calculate it' - PGW \n"
     #print "               'One never notices what has been done; "
     #print "                one can only see what remains to be done' - Marie Curie \n"
@@ -125,8 +125,11 @@ class ProjectManager(object):
         elif args.action == 'extend':
             self.extend_temperatures(args)
 
-    def append_log(self,sub,string):
-        open(self.path+'/'+sub+'/modelbuilder.log','a').write(self.append_time_label()+' '+string+'\n')
+    def append_log(self,sub,string,subdir=False):
+        if subdir:
+            open('%s/%s/%s.log' % (self.path,sub,sub),'a').write("%s %s\n" % (self.append_time_label(),string))
+        else:
+            open('%s/%s/modelbuilder.log' % (self.path,sub),'a').write("%s %s\n" % (self.append_time_label(),string))
 
     def append_time_label(self):
         now = time.localtime()

@@ -142,10 +142,10 @@ def analyze_temperature_array(model,append_log,equil=False):
         os.chdir(cwd)
         if equil == True:
             append_log(model.subdir,"Starting: Equil_Tf_analysis")
-            model.append_log("Starting: Equil_Tf_analysis")
+            append_log("Starting: Equil_Tf_analysis",subdir=True)
         else:
             append_log(model.subdir,"Starting: Tf_loop_analysis")
-            model.append_log("Starting: Tf_loop_analysis")
+            append_log("Starting: Tf_loop_analysis",subdir=True)
     else:
         pass
 
@@ -177,17 +177,17 @@ def check_completion(model,append_log,equil=False):
             #    print "    Crunch coordinates done. "
             #else:
             #    print "    Crunch coordinates done. Crunching Nh for "+tdir
-            #    model.append_log("    crunching Nh for "+tdir)
+            #    append_log("    crunching Nh for "+tdir,subdir=True)
             #    crunch_coordinates.crunch_Nh()
-            print "    Saving Qh, Qnh, Qlocal, Qnonlocal for "+tdir
-            model.append_log("    Saving Qh, Qnh, Qlocal, Qnonlocal for "+tdir)
+            print "    Saving Qh, Qnh, Qlocal, Qnonlocal for %s" % tdir
+            append_log("    Saving Qh, Qnh, Qlocal, Qnonlocal for %s" % tdir,subdir=True)
             crunch_coordinates.reorganize_qimap()
-            model.append_log("    analysis done for "+tdir)
+            append_log("    analysis done for %s" % tdir,subdir=True)
             done = 1
         else:
             print "    Crunching not done. Retrying for "+tdir
-            crunch_coordinates.crunch_all(model.subdir+"_"+tdir,walltime=cwalltime)
-            crunch_coordinates.crunch_Q(model.subdir+"_"+tdir,walltime=qwalltime)
+            crunch_coordinates.crunch_all("%s_%s" % (model.subdir,tdir),walltime=cwalltime)
+            crunch_coordinates.crunch_Q("%s_%s" % (model.subdir,tdir),walltime=qwalltime)
             done = 0
         os.chdir(cwd2)
 
@@ -196,10 +196,10 @@ def check_completion(model,append_log,equil=False):
         print "  Analysis completed."
         if equil == True:
             append_log(model.subdir,"Finished: Equil_Tf_analysis")
-            model.append_log("Finished: Equil_Tf_analysis")
+            append_log("Finished: Equil_Tf_analysis",subdir=True)
         else:
             append_log(model.subdir,"Finished: Tf_loop_analysis")
-            model.append_log("Finished: Tf_loop_analysis")
+            append_log("Finished: Tf_loop_analysis",subdir=True)
     else:
         print "  Analysis has not finished."
 
@@ -208,7 +208,7 @@ def run_wham_heat_capacity(model,append_log,Mut=False):
         prepping and running WHAM calculation for the Heat Capacity.'''
 
     cwd = os.getcwd()
-    print "*** NOTE: module load jdk/1.7.0.21 required for WHAM ***"
+    print "*** NOTE: module load jdk required for WHAM ***"
     if Mut == True:
         sub = model.subdir+"/Mut_"+str(model.Mut_iteration)
         os.chdir(cwd+"/"+sub)
@@ -216,7 +216,7 @@ def run_wham_heat_capacity(model,append_log,Mut=False):
         print "Running wham for heat capacity, free energy curves, and melting curve"
         if not os.path.exists("whamQ"):
             os.mkdir("whamQ")
-        model.append_log("  running wham for heat capacity, free energy, and melting curve")
+        append_log("  running wham for heat capacity, free energy, and melting curve",subdir=True)
         append_log(model.subdir,"Starting: Equil_Tf_wham")
         wham.run_wham_for_heat_capacity(model,Mut=True)
         append_log(model.subdir,"Finished: Equil_Tf_wham")
@@ -233,7 +233,7 @@ def run_wham_heat_capacity(model,append_log,Mut=False):
             print "Running wham for heat capacity, free energy curves, and melting curve"
             if not os.path.exists("whamQ"):
                 os.mkdir("whamQ")
-            model.append_log("  running wham for heat capacity, free energy, and melting curve")
+            append_log("  running wham for heat capacity, free energy, and melting curve",subdir=True)
             append_log(model.subdir,"Starting: Tf_wham")
             wham.run_wham_for_heat_capacity(model)
             append_log(model.subdir,"Finished: Tf_wham")
@@ -245,37 +245,3 @@ def run_wham_heat_capacity(model,append_log,Mut=False):
     os.chdir(cwd)
     return flag
 
-def continue_wham(model,append_log):
-    ''' If WHAM has already run for the Heat Capacity (Cv) then prep files
-        and run WHAM for 1D & 2D free energy surfaces.
-
-        DEPRECATED JUNE 2014
-    '''
-
-    cwd = os.getcwd()
-    sub = model.subdir+"/Tf_"+str(model.Tf_iteration)
-    os.chdir(cwd+"/"+sub)
-    cwd2 = os.getcwd()
-    Tinfo = open("Ti_Tf_dT.txt","r").read().split()
-    Ti,Tf,dT = int(Tinfo[0]), int(Tinfo[1]), int(Tinfo[2])
-
-    ## Check for completion
-    if os.path.exists(cwd2+"/wham/Heat_rmsd_Rg.dat"):
-        print "Finished wham_Cv..."
-        model.append_log("  wham heat capacity done")
-        append_log(model.subdir,"Finished: wham_Cv")
-        print "Starting wham_FreeEnergy..."
-        append_log(model.subdir,"Starting: wham_FreeEnergy")
-        model.append_log("  prepping wham inputs for 1D PMFs")
-        wham.prep_input_files(Ti,Tf,dT,cwd2,"1DFreeEnergy")
-        model.append_log("  running wham for 1D PMFs")
-        wham.run_wham("1DFreeEnergy")
-        model.append_log("  prepping wham inputs for 2D PMFs")
-        wham.prep_input_files(Ti,Tf,dT,cwd2,"FreeEnergy")
-        model.append_log("  running wham for 2D PMFs")
-        wham.run_wham("FreeEnergy")
-    else:
-        print "wham_Cv may not have finished. Check if Heat_rmsd_Rg.dat exists."
-        print "Exiting."
-
-    os.chdir(cwd)

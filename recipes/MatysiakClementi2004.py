@@ -134,7 +134,7 @@ class MatysiakClementi2004(ProjectManager):
             if os.path.exists(sub) == False:
                 os.mkdir(sub)
             else:
-                print "Subdirectory: ", sub, " already exists! just fyi"
+                print "Subdirectory: %s already exists! just fyi" % sub
 
         print "Starting a new simulation project..."
         Models = mdb.models.new_models(subdirs,modeloptions)
@@ -146,7 +146,17 @@ class MatysiakClementi2004(ProjectManager):
 
         for k in range(len(Models)):
             model = Models[k]
+            open("%s/Native.pdb" % model.subdir,"w").write(model.cleanpdb)
+            open("%s/clean.pdb" % model.subdir,"w").write(model.cleanpdb_full)
+            open("%s/clean_noH.pdb" % model.subdir,"w").write(model.cleanpdb_full_noH)
+            open("%s/%s.pdb" % (model.subdir,model.subdir),"w").write(model.cleanpdb_full_noH)
+            np.savetxt("%s/contact_map.dat" % (model.subdir),model.Qref,delimiter=" ",fmt="%1d")
+            np.savetxt("%s/contacts.dat" % (model.subdir),model.contacts,delimiter=" ",fmt="%4d")
+
+        for k in range(len(Models)):
+            model = Models[k]
             print "Starting Tf_loop_iteration for subdirectory: ", model.subdir
+
             simulation.constant_temp.folding_temperature_loop(model,self.append_log,new=True)
 
         self.save_model_info(Models)

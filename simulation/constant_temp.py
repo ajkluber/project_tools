@@ -60,7 +60,7 @@ def check_completion(model,append_log,equil=False):
         finish_line = "Statistics over " + str(nsteps)
         ## Check if md.log has finished the required number of steps.
         if finish_line in open(tdir+"/md.log","r").read():
-            model.append_log("  %s finished." % tdir)
+            append_log("  %s finished." % tdir, subdir=True)
         else:
             print "    Check %s simulation did not finish." % tdir
             #print "    Cannot continue with errors."
@@ -70,10 +70,10 @@ def check_completion(model,append_log,equil=False):
                 qrst = "qsub rst.pbs"
                 sb.call(qrst.split(),stdout=open("rst.out","w"),stderr=open("rst.err","w"))
                 os.chdir(cwd+"/"+sub)
-                model.append_log("  %s did not finish. restarting" % tdir)
+                append_log("  %s did not finish. restarting" % tdir, subdir=True)
                 print "  %s did not finish. Restarting: submitting rst.pbs. " % tdir
             else:
-                model.append_log("  %s did not finish. did not find a rst.pbs. skipping." % tdir)
+                append_log("  %s did not finish. did not find a rst.pbs. skipping." % tdir, subdir=True)
             error = 1
 
     if error == 1:
@@ -358,7 +358,7 @@ def manually_add_equilibrium_runs(model,append_log,temps):
                 T_string += "%s\n" % simpath
                 os.mkdir(simpath)
                 os.chdir(simpath)
-                model.append_log("  running T=%s" % simpath)
+                append_log("  running T=%s" % simpath, subdir=True)
                 print "    Running temperature ", simpath
                 run_constant_temp(model,T,nsteps=nsteps,walltime=walltime,queue=queue)
                 os.chdir("..")
@@ -380,7 +380,7 @@ def run_equilibrium_simulations(model,append_log):
     Tfsub = model.path+"/"+model.subdir+"/Tf_"+str(model.Tf_iteration)
     Tf = open(Tfsub+"/Tf.txt","r").read().split()[0]
 
-    model.append_log("Starting Equil_Tf")
+    append_log("Starting Equil_Tf", subdir=True)
     walltime, queue, ppn, nsteps = determine_equil_walltime(model)
 
     if not os.path.exists(mutsub):
@@ -396,7 +396,7 @@ def run_equilibrium_simulations(model,append_log):
                 T_string += "%s\n" % simpath
                 os.mkdir(simpath)
                 os.chdir(simpath)
-                model.append_log("  running T=%s" % simpath)
+                append_log("  running T=%s" % simpath, subdir=True)
                 print "    Running temperature ", simpath
                 run_constant_temp(model,T,nsteps=nsteps,walltime=walltime,queue=queue)
                 os.chdir("..")
@@ -443,7 +443,7 @@ def determine_walltime(model):
 def run_temperature_array(model,T_min,T_max,deltaT):
     """ Simulate range of temperatures to find the folding temperature. """
 
-    model.append_log("Starting Tf_loop_iteration %d " % model.Tf_iteration)
+    append_log("Starting Tf_loop_iteration %d " % model.Tf_iteration, subdir=True)
     Temperatures = range(T_min,T_max+deltaT,deltaT)
     ## Run for longer if the protein is really big.
     walltime, queue, ppn, nsteps = determine_walltime(model)
@@ -456,7 +456,7 @@ def run_temperature_array(model,T_min,T_max,deltaT):
             T_string += "%d_0\n" % T
             os.mkdir(simpath)
             os.chdir(simpath)
-            model.append_log("  running T=%d" % T)
+            append_log("  running T=%d" % T, subdir=True)
             if not model.dryrun:
                 print "  Running temperature ", T
             run_constant_temp(model,T,nsteps=nsteps,walltime=walltime,queue=queue,ppn=ppn)
@@ -498,9 +498,12 @@ def run_constant_temp(model,T,nsteps="100000000",walltime="23:00:00",queue="seri
     if model.dryrun == True:
         print "    Dryrun: Successfully saved simulation files for ", T
     else:
-        submit_run(jobname,walltime=walltime,queue=queue,ppn=ppn)
+        if model.contact_type == "Gaussian":
+            submit_run(jobname,walltime=walltime,queue=queue,ppn=ppn,contact_type="Gaussian")
+        else:
+            submit_run(jobname,walltime=walltime,queue=queue,ppn=ppn)
     
-def get_pbs_string(jobname,queue,ppn,walltime):
+def get_pbs_string(jobname,queue,ppn,walltime,contact_type=None):
     """ Return basic PBS job script. """
     pbs_string = "#!/bin/bash \n"
     pbs_string +="#PBS -N %s \n" % jobname
@@ -509,11 +512,14 @@ def get_pbs_string(jobname,queue,ppn,walltime):
     pbs_string +="#PBS -l walltime=%s \n" % walltime
     pbs_string +="#PBS -V \n\n"
     pbs_string +="cd $PBS_O_WORKDIR\n"
-    pbs_string +="mdrun -nt 1 -s topol_4.6.tpr -table table.xvg -tablep table.xvg"
+    if contact_type == "Gaussian":
+        pbs_string +="mdrun_sbm -nt 1 -s topol_4.5.tpr -table table.xvg -tablep table.xvg"
+    else:
+        pbs_string +="mdrun -nt 1 -s topol_4.6.tpr -table table.xvg -tablep table.xvg"
     #pbs_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg"
     return pbs_string
 
-def get_rst_pbs_string(jobname,queue,ppn,walltime):
+def get_rst_pbs_string(jobname,queue,ppn,walltime,contact_type=None):
     """ Return basic PBS job script for restarting. """
     pbs_string = "#!/bin/bash \n"
     rst_string = "#!/bin/bash \n"
@@ -523,11 +529,14 @@ def get_rst_pbs_string(jobname,queue,ppn,walltime):
     rst_string +="#PBS -l walltime=%s \n" % walltime
     rst_string +="#PBS -V \n\n"
     rst_string +="cd $PBS_O_WORKDIR\n"
-    rst_string +="mdrun -nt 1 -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
+    if contact_type == "Gaussian":
+        rst_string +="mdrun_sbm -nt 1 -s topol_4.5.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
+    else:
+        rst_string +="mdrun -nt 1 -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
     #rst_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
     return rst_string
 
-def submit_run(jobname,walltime="23:00:00",queue="serial",ppn="1"):
+def submit_run(jobname,walltime="23:00:00",queue="serial",ppn="1",contact_type=None):
     ''' Executes the constant temperature runs.'''
 
     prep_step1 = 'grompp_sbm -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.5.tpr'
@@ -535,12 +544,12 @@ def submit_run(jobname,walltime="23:00:00",queue="serial",ppn="1"):
     sb.call(prep_step1.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
     sb.call(prep_step2.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
 
-    pbs_string = get_pbs_string(jobname,queue,ppn,walltime)
+    pbs_string = get_pbs_string(jobname,queue,ppn,walltime,contact_type=contact_type)
     open("run.pbs","w").write(pbs_string)
     qsub = "qsub run.pbs"
     sb.call(qsub.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
 
-    rst_string = get_rst_pbs_string(jobname,queue,ppn,walltime)
+    rst_string = get_rst_pbs_string(jobname,queue,ppn,walltime,contact_type=contact_type)
     open("rst.pbs","w").write(rst_string)
 
 if __name__ == '__main__':
