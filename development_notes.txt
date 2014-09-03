@@ -323,3 +323,17 @@ place of the old Fortran code.
 
 
 ------------------------------------------------------------------------------
+Wed Sep  3 10:23:35 CDT 2014
+Alexander Kluber
+
+    New parameters are now found with the damped least-squares
+Levenberg-Marquardt algorithm. This is a type of regularization technique that
+applies a set weights to the singular values to reduce the effect of taking
+the reciprocal of very small singular values. So information from all singular
+values is present but the contribution from the noisiest ones is 'damped'. 
+
+    Calculation of the Jacobian and finding solution are all one step in the
+recipe now to simplify the procedure.
+
+
+------------------------------------------------------------------------------
