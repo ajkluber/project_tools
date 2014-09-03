@@ -9,12 +9,13 @@ Project Tools
 Project Tools is a package of multiscale modeling tools that includes coarse-grain model parameter fitting to experimental data.
 
 
-Tools
------
+
+Using these tools
+-----------------
 
 .. toctree::
-   :maxdepth: 2
-    example
+   :maxdepth: 1
+    setting_up
 
 
 Indices and tables
