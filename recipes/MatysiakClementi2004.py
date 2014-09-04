@@ -175,6 +175,7 @@ def get_args():
     new_parser.add_argument('--contacts', type=str, default=None, help='Specify contacts.')
     new_parser.add_argument('--epsilon_bar', type=float, help='Optional, average strength of contacts. epsilon bar.')
     new_parser.add_argument('--contact_params', type=str, default=None, help='Optional, specify contact epsilons, deltas.')
+    new_parser.add_argument('--contact_type', type=str, default=None, help='Optional, specify contact type.')
     new_parser.add_argument('--fitting_includes', type=str, nargs='+', default=None, help='Optional, specify directories included in fitting.')
     new_parser.add_argument('--disulfides', type=int, nargs='+', help='Optional pairs of disulfide linked residues.')
     new_parser.add_argument('--temparray', type=int, nargs='+',help='Optional initial temp array: T_min T_max deltaT. Default: 50 350 50')
@@ -225,6 +226,10 @@ def get_args():
             options["Contacts"] = args.contacts
         else:
             options["Contacts"] = None
+        if args.contact_type != None:
+            options["Contact_Type"] = args.contact_type
+        else:
+            options["Contact_Type"] = None
         if args.fitting_includes != None:
             options["Fitting_Includes"] = args.fitting_includes
         else:

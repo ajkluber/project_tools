@@ -101,21 +101,23 @@ def Levenberg_Marquardt_solution(model,method):
 
         condition_number.append(np.linalg.norm(lhs)*np.linalg.norm(np.linalg.inv(lhs)))
 
-    ## Not done
-    #save_solution_data(solutions,Lambdas,nrm_soln,nrm_resd,norm_eps,condition_number,s,J)
+    save_solution_data(solutions,Lambdas,nrm_soln,nrm_resd,norm_eps,condition_number,s,J)
 
+def save_solution_data(solutions,Lambdas,nrm_soln,nrm_resd,norm_eps,condition_number,s,J):
+    """ Save all the information needed to pick a solution """
     ## To Do:
     ##  - Save enough information to choose a solution:
     ##    - Lambdas, solutions, perturb_size, residual
     ##  
-    
-
-def save_solution_data(solutions,Lambdas,nrm_soln,nrm_resd,norm_eps,condition_number,s,J):
-    """ Save all the information needed to pick a solution """
 
     for i in range(len(solutions)):
         np.savetxt("xp_%d.dat" % i,solutions[i])
 
+    np.savetxt("lambdas.dat",Lambdas)
+    np.savetxt("solution_norms.dat",nrm_soln)
+    np.savetxt("residual_norms.dat",nrm_resd)
+    np.savetxt("perturbation_norms.dat",nrm_resd)
+    np.savetxt("singular_values.dat",s)
     
 
 def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBeadBead.dat"):
