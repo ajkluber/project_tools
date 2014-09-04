@@ -239,6 +239,8 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
         sim_feature[k] = ddG_dagg
         sim_feature[k + len(mutants)] = ddG_stab
 
+    if not os.path.exists("mut"):
+        os.mkdir("mut")
     np.savetxt("mut/Jacobian.dat",Jacobian)
     np.savetxt("mut/sim_feature.dat",sim_feature)
     save_phi_values(mutants,"Q",state_labels,dG,ddG,phi,saveas=saveas)

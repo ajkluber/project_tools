@@ -98,10 +98,11 @@ def prepare_newtons_method(model,method,append_log):
 
 
     ## Find solutions with Levenbeg_Marquardt algorithm
-    #cwd = os.getcwd()
-    #os.chdir("%s/Mut_%d/newton" % (name,iteration))
-    #newton.solver.Levenberg_Marquardt_solution(model,method)
-    #os.chdir(cwd)
+    print "  Solving for solutions with Levenberg-Marquardt method"
+    cwd = os.getcwd()
+    os.chdir("%s/Mut_%d/newton" % (name,iteration))
+    newton.solver.Levenberg_Marquardt_solution(model,method)
+    os.chdir(cwd)
 
 
 
