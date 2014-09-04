@@ -6,7 +6,7 @@ import numpy as np
 import os 
 import argparse
 
-from project_tools.analysis.whamdata import WhamData
+#from project_tools.analysis.whamdata import WhamData
 
 """
 
