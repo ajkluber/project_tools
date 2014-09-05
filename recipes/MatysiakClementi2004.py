@@ -113,6 +113,7 @@ class MatysiakClementi2004(ProjectManager):
             print "Starting calculating feature vector and Jacobian..."
             parameter_fitting.prepare_newtons_method(model,"ddG_MC2004",self.append_log)
         elif task == "Calculating_Jacobian":
+            pass
             ## TO DO:
             ##  - Solve for new parameters.
             #parameter_fitting.newton.perturbation.calculate_MC2004_perturbation(model,self.append_log)
