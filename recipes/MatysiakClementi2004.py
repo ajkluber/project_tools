@@ -238,6 +238,8 @@ def get_args():
         options["PDB"] = args.subdirs[0] + ".pdb"
         options["Epsilon_Bar"] = None
         options["Disulfides"] = None
+        options["Contacts"] = None
+        options["Contact_Type"] = None
 
     options["Fitting_Data"] = "ddG_MC2004"
     options["Model_Code"] = "HetGo"
