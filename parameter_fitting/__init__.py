@@ -37,6 +37,9 @@ Optimization and Nonlinear Equations". SIAM. 1996.
 
 """
 
+import os 
+import numpy as np
+
 import newton
 import ddG_MC2004
 import FRET
@@ -61,41 +64,42 @@ def prepare_newtons_method(model,method,append_log):
     name = model.subdir
     iteration = model.Mut_iteration
 
-    append_log(name,"Starting: Calculating_Jacobian")
+    if not os.path.exists("%s/Mut_%d/newton/Jacobian.dat" % (name,iteration)):
+        append_log(name,"Starting: Calculating_Jacobian")
 
-    target_feature, target_feature_err = submodule.compute_Jacobian.get_target_feature(model)
-    sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = submodule.compute_Jacobian.calculate_average_Jacobian(model)
+        target_feature, target_feature_err = submodule.compute_Jacobian.get_target_feature(model)
+        sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = submodule.compute_Jacobian.calculate_average_Jacobian(model)
 
-    if not os.path.exists("%s/Mut_%d/newton" % (name,iteration)):
-        os.mkdir("%s/Mut_%d/newton" % (name,iteration))
-    if not os.path.exists("%s/Mut_%d/%s" % (name,iteration,method)):
-        os.mkdir("%s/Mut_%d/%s" % (name,iteration,method))
+        if not os.path.exists("%s/Mut_%d/newton" % (name,iteration)):
+            os.mkdir("%s/Mut_%d/newton" % (name,iteration))
+        if not os.path.exists("%s/Mut_%d/%s" % (name,iteration,method)):
+            os.mkdir("%s/Mut_%d/%s" % (name,iteration,method))
 
-    print "  Saving feature vector and Jacobian in %s/Mut_%d/%s" % (name,iteration,method)
-    np.savetxt("%s/Mut_%d/%s/target_feature.dat" % (name,iteration,method), target_feature)
-    np.savetxt("%s/Mut_%d/%s/target_feature_err.dat" % (name,iteration,method), target_feature_err)
-    np.savetxt("%s/Mut_%d/%s/sim_feature.dat" % (name,iteration,method), sim_feature_avg)
-    np.savetxt("%s/Mut_%d/%s/sim_feature_err.dat" % (name,iteration,method), sim_feature_err)
-    np.savetxt("%s/Mut_%d/%s/Jacobian.dat" % (name,iteration,method), Jacobian_avg)
-    np.savetxt("%s/Mut_%d/%s/Jacobian_err.dat" % (name,iteration,method) ,Jacobian_err)
+        print "  Saving feature vector and Jacobian in %s/Mut_%d/%s" % (name,iteration,method)
+        np.savetxt("%s/Mut_%d/%s/target_feature.dat" % (name,iteration,method), target_feature)
+        np.savetxt("%s/Mut_%d/%s/target_feature_err.dat" % (name,iteration,method), target_feature_err)
+        np.savetxt("%s/Mut_%d/%s/sim_feature.dat" % (name,iteration,method), sim_feature_avg)
+        np.savetxt("%s/Mut_%d/%s/sim_feature_err.dat" % (name,iteration,method), sim_feature_err)
+        np.savetxt("%s/Mut_%d/%s/Jacobian.dat" % (name,iteration,method), Jacobian_avg)
+        np.savetxt("%s/Mut_%d/%s/Jacobian_err.dat" % (name,iteration,method) ,Jacobian_err)
 
 
-    ## To Do:
-    ##  - Collect Jacobian rows from all fitting_includes directories.
-    ##  - Map columns (parameters) to match those of the first directory. Stack the rows.
-    ##  - Save in the first fitting directory.
+        ## To Do:
+        ##  - Collect Jacobian rows from all fitting_includes directories.
+        ##  - Map columns (parameters) to match those of the first directory. Stack the rows.
+        ##  - Save in the first fitting directory.
 
-    print "  Saving feature vector and Jacobian in %s/Mut_%d/newton" % (name,iteration)
-    np.savetxt("%s/Mut_%d/newton/target_feature.dat" % (name,iteration), target_feature)
-    np.savetxt("%s/Mut_%d/newton/target_feature_err.dat" % (name,iteration), target_feature_err)
-    np.savetxt("%s/Mut_%d/newton/sim_feature.dat" % (name,iteration), sim_feature_avg)
-    np.savetxt("%s/Mut_%d/newton/sim_feature_err.dat" % (name,iteration), sim_feature_err)
-    np.savetxt("%s/Mut_%d/newton/Jacobian.dat" % (name,iteration), Jacobian_avg)
-    np.savetxt("%s/Mut_%d/newton/Jacobian_err.dat" % (name,iteration) ,Jacobian_err)
+        print "  Saving feature vector and Jacobian in %s/Mut_%d/newton" % (name,iteration)
+        np.savetxt("%s/Mut_%d/newton/target_feature.dat" % (name,iteration), target_feature)
+        np.savetxt("%s/Mut_%d/newton/target_feature_err.dat" % (name,iteration), target_feature_err)
+        np.savetxt("%s/Mut_%d/newton/sim_feature.dat" % (name,iteration), sim_feature_avg)
+        np.savetxt("%s/Mut_%d/newton/sim_feature_err.dat" % (name,iteration), sim_feature_err)
+        np.savetxt("%s/Mut_%d/newton/Jacobian.dat" % (name,iteration), Jacobian_avg)
+        np.savetxt("%s/Mut_%d/newton/Jacobian_err.dat" % (name,iteration) ,Jacobian_err)
 
-    append_log(name,"Finished: Calculating_Jacobian")
+        append_log(name,"Finished: Calculating_Jacobian")
+
     append_log(name,"Starting: Solving_Newtons_Method")
-
 
     ## Find solutions with Levenbeg_Marquardt algorithm
     print "  Solving for solutions with Levenberg-Marquardt method"
@@ -104,6 +108,7 @@ def prepare_newtons_method(model,method,append_log):
     newton.solver.Levenberg_Marquardt_solution(model,method)
     os.chdir(cwd)
 
+    append_log(name,"Starting: Solving_Newtons_Method")
 
 
 if __name__ == "__main__":
