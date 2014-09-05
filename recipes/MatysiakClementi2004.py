@@ -235,6 +235,7 @@ def get_args():
         else:
             options["Fitting_Includes"] = [ None ]
     else:
+        options["PDB"] = args.subdirs[0] + ".pdb"
         options["Epsilon_Bar"] = None
         options["Disulfides"] = None
 
