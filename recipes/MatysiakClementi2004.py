@@ -115,7 +115,7 @@ class MatysiakClementi2004(ProjectManager):
         elif task == "Calculating_Jacobian":
             ## TO DO:
             ##  - Solve for new parameters.
-            parameter_fitting.newton.perturbation.calculate_MC2004_perturbation(model,self.append_log)
+            #parameter_fitting.newton.perturbation.calculate_MC2004_perturbation(model,self.append_log)
         elif task == "Calculating_MC2004":
             ## Start the next round of simulations with new parameters.
             simulation.constant_temp.start_next_Tf_loop_iteration(model,self.append_log)

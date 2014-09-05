@@ -107,6 +107,7 @@ def get_exp_ddG():
     mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
     useable = []
     for i in range(mutation_data.shape[0]):
+        print "%s %s%s%s" % (mutation_data[i,0],mutation_data[i,2],mutation_data[i,1],mutation_data[i,3])
         if (mutation_data[i,8] == "True") and (mutation_data[i,11] == "0"):
             useable.append(True)
         else:
