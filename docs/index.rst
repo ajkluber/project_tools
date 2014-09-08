@@ -15,7 +15,9 @@ Using these tools
 
 .. toctree::
    :maxdepth: 1
-    setting_up
+
+   setting_up
+   example
 
 
 Indices and tables
