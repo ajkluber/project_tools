@@ -1,10 +1,10 @@
 import argparse
 import shutil
 import os
-import model_builder.models.HeterogeneousGoModel as hetgm
-import model_builder.models.CalphaBase as cab
-import model_builder.models.HomogeneousGoModel as homgm
-import model_builder.models.__init__ as init
+#import model_builder.models.HeterogeneousGoModel as hetgm
+#import model_builder.models.CalphaBase as cab
+#import model_builder.models.HomogeneousGoModel as homgm
+#import model_builder.models.__init__ as init
 
 '''                                                                                                                                                                                      
 Author: Fernando Yrazu                                                                                                                                                                   
@@ -18,6 +18,9 @@ Procedure:
         --iter = (Required) Input the iteration number you are working with                                                   
 Changelog:                                                                                                                                                                               
 June 2014 Created                                                                                                                                                                        
+
+
+
 '''
 
 
