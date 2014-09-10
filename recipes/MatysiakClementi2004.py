@@ -138,7 +138,7 @@ class MatysiakClementi2004(ProjectManager):
                 print "Subdirectory: %s already exists! just fyi" % sub
 
         print "Starting a new simulation project..."
-        Models = mdb.models.new_models(subdirs,modeloptions)
+        Models = mdb.check_inputs.new_models(subdirs,modeloptions)
 
         self.save_model_info(Models)
         if args.temparray != None:

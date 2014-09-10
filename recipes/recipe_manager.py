@@ -149,7 +149,7 @@ class ProjectManager(object):
         ''' Adds manually adds a temperature array.'''
 
         subdirs = args.subdirs
-        Models = mdb.load_models(subdirs,dryrun=args.dryrun)
+        Models = mdb.check_inputs.load_models(subdirs,dryrun=args.dryrun)
     
         if args.temparray != None:
             T_min = args.temparray[0] 
@@ -184,7 +184,7 @@ class ProjectManager(object):
         factor = args.factor
 
         subdirs = args.subdirs
-        Models = mdb.load_models(subdirs,dryrun=args.dryrun)
+        Models = mdb.check_inputs.load_models(subdirs,dryrun=args.dryrun)
 
         if (args.Tf_temps != None) and (args.Mut_temps != None):
             print "ERROR!"
@@ -223,7 +223,7 @@ class ProjectManager(object):
     def continue_project(self,args):
         ''' Checks where something left off and continues it.'''
         subdirs = args.subdirs
-        Models = mdb.load_models(subdirs,dryrun=args.dryrun)
+        Models = mdb.check_inputs.load_models(subdirs,dryrun=args.dryrun)
 
         if args.dryrun == True:
             print "  Dry run complete. Exiting."
