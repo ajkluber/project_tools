@@ -200,7 +200,7 @@ def get_args():
     options["Bead_Model"] = "CA"
     options["Contact_Energies"] = args.contact_params
 
-    modeloptions = mdb.check_options(options,firstpass=True)
+    modeloptions = mdb.check_inputs.check_options(options,firstpass=True)
 
     return args, modeloptions
 

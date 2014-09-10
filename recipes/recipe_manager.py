@@ -97,7 +97,7 @@ def get_args():
         options["Epsilon_Bar"] = args.epsilon_bar
         options["Disulfides"] = args.disulfides
         options["Contact_Energies"] = args.contact_energies
-        modeloptions = mdb.check_options(options)
+        modeloptions = mdb.check_inputs.check_options(options)
     elif args.action == "continue":
         modeloptions = options
     else:

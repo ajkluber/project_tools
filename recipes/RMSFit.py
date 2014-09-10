@@ -197,7 +197,7 @@ def get_args():
     options["Model_Code"] = "HetGo"
     options["Bead_Model"] = "CA"
 
-    modeloptions = mdb.check_options(options,firstpass=True)
+    modeloptions = mdb.check_inputs.check_options(options,firstpass=True)
 
     return args, modeloptions
 
