@@ -19,7 +19,7 @@ import time
 import numpy as np
 
 from project_tools import simulation, analysis, parameter_fitting
-from model_builder import models
+import model_builder as mdb
 
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621  ## Gas constant in kJ/(mole K)
@@ -97,7 +97,7 @@ def get_args():
         options["Epsilon_Bar"] = args.epsilon_bar
         options["Disulfides"] = args.disulfides
         options["Contact_Energies"] = args.contact_energies
-        modeloptions = models.check_options(options)
+        modeloptions = mdb.check_options(options)
     elif args.action == "continue":
         modeloptions = options
     else:
@@ -149,7 +149,7 @@ class ProjectManager(object):
         ''' Adds manually adds a temperature array.'''
 
         subdirs = args.subdirs
-        Models = models.load_models(subdirs,dryrun=args.dryrun)
+        Models = mdb.load_models(subdirs,dryrun=args.dryrun)
     
         if args.temparray != None:
             T_min = args.temparray[0] 
@@ -184,7 +184,7 @@ class ProjectManager(object):
         factor = args.factor
 
         subdirs = args.subdirs
-        Models = models.load_models(subdirs,dryrun=args.dryrun)
+        Models = mdb.load_models(subdirs,dryrun=args.dryrun)
 
         if (args.Tf_temps != None) and (args.Mut_temps != None):
             print "ERROR!"
@@ -223,7 +223,7 @@ class ProjectManager(object):
     def continue_project(self,args):
         ''' Checks where something left off and continues it.'''
         subdirs = args.subdirs
-        Models = models.load_models(subdirs,dryrun=args.dryrun)
+        Models = mdb.load_models(subdirs,dryrun=args.dryrun)
 
         if args.dryrun == True:
             print "  Dry run complete. Exiting."
