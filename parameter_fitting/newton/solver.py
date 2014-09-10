@@ -90,7 +90,7 @@ def Levenberg_Marquardt_solution(model,method):
     condition_number = []
     solutions = []
     for i in range(len(Lambdas)):
-        Lambda = Lambda[i]
+        Lambda = Lambdas[i]
         lhs = JTJ + Lambda*Levenberg
         x_soln = np.linalg.solve(lhs,JTdf) 
         residual = np.dot(J,x_soln) - df
