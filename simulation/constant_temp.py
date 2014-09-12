@@ -443,7 +443,7 @@ def determine_walltime(model):
 def run_temperature_array(model,T_min,T_max,deltaT):
     """ Simulate range of temperatures to find the folding temperature. """
 
-    append_log("Starting Tf_loop_iteration %d " % model.Tf_iteration, subdir=True)
+    #append_log("Starting Tf_loop_iteration %d " % model.Tf_iteration, subdir=True)
     Temperatures = range(T_min,T_max+deltaT,deltaT)
     ## Run for longer if the protein is really big.
     walltime, queue, ppn, nsteps = determine_walltime(model)
@@ -456,7 +456,7 @@ def run_temperature_array(model,T_min,T_max,deltaT):
             T_string += "%d_0\n" % T
             os.mkdir(simpath)
             os.chdir(simpath)
-            append_log("  running T=%d" % T, subdir=True)
+            #append_log("  running T=%d" % T, subdir=True)
             if not model.dryrun:
                 print "  Running temperature ", T
             run_constant_temp(model,T,nsteps=nsteps,walltime=walltime,queue=queue,ppn=ppn)
