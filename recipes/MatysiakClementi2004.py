@@ -16,6 +16,7 @@ Minimalist model Go? J. Mol. Biol. 2004, 343, 235-248.
 
 import os
 import argparse
+import numpy as np
 
 from project_tools import simulation, analysis, parameter_fitting
 from recipe_manager import ProjectManager
