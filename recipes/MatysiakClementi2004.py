@@ -219,19 +219,19 @@ def get_args():
             options["Disulfides"] = args.disulfides
         else:
             options["Disulfides"] = None
-        if args.contact_params != None:
+        if args.contact_params != "None":
             options["Contact_Energies"] = args.contact_params
         else:
             options["Contact_Energies"] = "MC2004"
-        if args.contacts != None:
+        if args.contacts != "None":
             options["Contacts"] = args.contacts
         else:
             options["Contacts"] = None
-        if args.contact_type != None:
+        if args.contact_type != "None":
             options["Contact_Type"] = args.contact_type
         else:
             options["Contact_Type"] = None
-        if args.fitting_includes != None:
+        if args.fitting_includes != "None":
             options["Fitting_Includes"] = args.fitting_includes
         else:
             options["Fitting_Includes"] = [ None ]
