@@ -56,13 +56,13 @@ def get_args():
     new_parser.add_argument('--temparray', type=int, nargs='+',help='Optional initial temp array: Ti Tf dT. Default: 50 350 50')
     new_parser.add_argument('--epsilon_bar', type=float, help='Optional, average strength of contacts. epsilon bar.')
     new_parser.add_argument('--disulfides', type=int, nargs='+', help='Optional pairs of disulfide linked residues.')
-    new_parser.add_argument('--dryrun', action='store_true', help='Add this option for dry run. No simulations started.')
+    new_parser.add_argument('--dry_run', action='store_true', help='Add this option for dry run. No simulations started.')
     new_parser.add_argument('--email', type=str, help='Optional email address for PBS to send sim details.')
 
     ## Options for continuing from a previously saved simulation project.
     run_parser = sp.add_parser('continue')
     run_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to continue',required=True)
-    run_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
+    run_parser.add_argument('--dry_run', action='store_true', help='Dry run. No simulations started.')
     run_parser.add_argument('--email', type=str, help='Optional email address for PBS to send sim details.')
 
     ## Options for manually adding a temperature array.
@@ -70,7 +70,7 @@ def get_args():
     add_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
     add_parser.add_argument('--temparray', type=int, nargs='+', help='T_initial T_final dT for new temp array')
     add_parser.add_argument('--mutarray', type=int, nargs='+', help='T_initial T_final dT for new mutational sims array')
-    add_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
+    add_parser.add_argument('--dry_run', action='store_true', help='Dry run. No simulations started.')
     add_parser.add_argument('--email', type=str, help='Optional email address for PBS to send sim details.')
 
     ## Options for manually adding a temperature array.
@@ -79,11 +79,11 @@ def get_args():
     ext_parser.add_argument('--factor', type=float, help='Factor by which you want to extend simulations. e.g. --factor 2 doubles length',required=True)
     ext_parser.add_argument('--Tf_temps', type=str, nargs='+', help='Temperatures that you want extended')
     ext_parser.add_argument('--Mut_temps', type=str, nargs='+', help='T_initial T_final dT for new mutational sims array')
-    ext_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
+    ext_parser.add_argument('--dry_run', action='store_true', help='Dry run. No simulations started.')
 
     args = parser.parse_args()
 
-    if args.dryrun != False:
+    if args.dry_run != False:
         options = {"Dry_Run":True}
     else:
         options = {"Dry_Run":False}
@@ -149,7 +149,7 @@ class ProjectManager(object):
         ''' Adds manually adds a temperature array.'''
 
         subdirs = args.subdirs
-        Models = mdb.check_inputs.load_models(subdirs,dryrun=args.dryrun)
+        Models = mdb.check_inputs.load_models(subdirs,dry_run=args.dry_run)
     
         if args.temparray != None:
             T_min = args.temparray[0] 
@@ -184,7 +184,7 @@ class ProjectManager(object):
         factor = args.factor
 
         subdirs = args.subdirs
-        Models = mdb.check_inputs.load_models(subdirs,dryrun=args.dryrun)
+        Models = mdb.check_inputs.load_models(subdirs,dry_run=args.dry_run)
 
         if (args.Tf_temps != None) and (args.Mut_temps != None):
             print "ERROR!"
@@ -223,9 +223,9 @@ class ProjectManager(object):
     def continue_project(self,args):
         ''' Checks where something left off and continues it.'''
         subdirs = args.subdirs
-        Models = mdb.check_inputs.load_models(subdirs,dryrun=args.dryrun)
+        Models = mdb.check_inputs.load_models(subdirs,dry_run=args.dry_run)
 
-        if args.dryrun == True:
+        if args.dry_run == True:
             print "  Dry run complete. Exiting."
         else:
             for i in range(len(subdirs)):

@@ -198,7 +198,7 @@ def manually_extend_temperatures(model,append_log,method,temps,factor):
         Tdir = Tlist[k]
         os.chdir(Tdir)
         T = Tdir.split("_")[0]
-        if model.dryrun == True:
+        if model.dry_run == True:
             print "    Dryrun Success! " 
             os.chdir(cwd)
             raise SystemExit
@@ -457,7 +457,7 @@ def run_temperature_array(model,T_min,T_max,deltaT):
             os.mkdir(simpath)
             os.chdir(simpath)
             #append_log("  running T=%d" % T, subdir=True)
-            if not model.dryrun:
+            if not model.dry_run:
                 print "  Running temperature ", T
             run_constant_temp(model,T,nsteps=nsteps,walltime=walltime,queue=queue,ppn=ppn)
             os.chdir("..")
@@ -495,7 +495,7 @@ def run_constant_temp(model,T,nsteps="100000000",walltime="23:00:00",queue="seri
 
     ## Start simulation
     jobname = model.subdir+"_"+str(T)
-    if model.dryrun == True:
+    if model.dry_run == True:
         print "    Dryrun: Successfully saved simulation files for ", T
     else:
         if model.contact_type == "Gaussian":

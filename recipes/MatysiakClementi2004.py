@@ -158,7 +158,6 @@ class MatysiakClementi2004(ProjectManager):
         for k in range(len(Models)):
             model = Models[k]
             print "Starting Tf_loop_iteration for subdirectory: ", model.subdir
-
             simulation.constant_temp.folding_temperature_loop(model,self.append_log,new=True)
 
         self.save_model_info(Models)
@@ -176,24 +175,24 @@ def get_args():
     new_parser.add_argument('--pdbs', type=str, required=True, nargs='+',help='PDBs to start simulations.')
     new_parser.add_argument('--contacts', type=str, default="None", help='Specify contacts.')
     new_parser.add_argument('--contact_params', type=str, default="None", help='Optional, specify contact epsilons, deltas.')
-    new_parser.add_argument('--epsilon_bar', type=float, help='Optional, average strength of contacts. epsilon bar.')
+    new_parser.add_argument('--epsilon_bar', type=float,help='Optional, average strength of contacts. epsilon bar.')
     new_parser.add_argument('--contact_type', type=str, default="None", help='Optional, specify contact type.')
     new_parser.add_argument('--fitting_includes', type=str, nargs='+', default="None", help='Optional, specify directories included in fitting.')
     new_parser.add_argument('--disulfides', type=int, nargs='+', help='Optional pairs of disulfide linked residues.')
     new_parser.add_argument('--temparray', type=int, nargs='+',help='Optional initial temp array: T_min T_max deltaT. Default: 50 350 50')
-    new_parser.add_argument('--dryrun', action='store_true', help='Add this option for dry run. No simulations started.')
+    new_parser.add_argument('--dry_run', action='store_true', help='Add this option for dry run. No simulations started.')
 
     ## Options for continuing from a previously saved simulation project.
     run_parser = sp.add_parser('continue')
     run_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to continue',required=True)
-    run_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
+    run_parser.add_argument('--dry_run', action='store_true', help='Dry run. No simulations started.')
 
     ## Options for manually adding a temperature array.
     add_parser = sp.add_parser('add')
     add_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
     add_parser.add_argument('--temparray', type=int, nargs='+', help='T_initial T_final dT for new temp array')
     add_parser.add_argument('--mutarray', type=float, nargs='+', help='T_initial T_final dT for new mutational sims array')
-    add_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
+    add_parser.add_argument('--dry_run', action='store_true', help='Dry run. No simulations started.')
 
     ## Options for manually extending some temperatures.
     ext_parser = sp.add_parser('extend')
@@ -201,56 +200,19 @@ def get_args():
     ext_parser.add_argument('--factor', type=float, help='Factor by which you want to extend simulations. e.g. --factor 2 doubles length',required=True)
     ext_parser.add_argument('--Tf_temps', type=float, nargs='+', help='Temperatures that you want extended')
     ext_parser.add_argument('--Mut_temps', type=float, nargs='+', help='T_initial T_final dT for new mutational sims array')
-    ext_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
+    ext_parser.add_argument('--dry_run', action='store_true', help='Dry run. No simulations started.')
 
     args = parser.parse_args()
 
-    if args.dryrun != False:
-        options = {"Dry_Run":True}
-    else:
-        options = {"Dry_Run":False}
+    args.fitting_data = "ddG_MC2004"
+    args.model_code = "HetGo"
+    args.bead_model = "CA"
 
     if args.action == "new":
-        options["PDB"] = args.pdbs[0]
-        if args.epsilon_bar != False:
-            options["Epsilon_Bar"] = args.epsilon_bar
-        else:
-            options["Epsilon_Bar"] = None
-        if args.disulfides != False:
-            options["Disulfides"] = args.disulfides
-        else:
-            options["Disulfides"] = None
-        if args.contact_params != "None":
-            options["Contact_Energies"] = args.contact_params
-        else:
-            options["Contact_Energies"] = "MC2004"
-        if args.contacts != "None":
-            options["Contacts"] = args.contacts
-        else:
-            options["Contacts"] = None
-        if args.contact_type != "None":
-            options["Contact_Type"] = args.contact_type
-        else:
-            options["Contact_Type"] = None
-        if args.fitting_includes != "None":
-            options["Fitting_Includes"] = args.fitting_includes
-        else:
-            options["Fitting_Includes"] = [ None ]
+        modeloptions = mdb.check_inputs.new_args(args)
     else:
-        options["PDB"] = args.subdirs[0] + ".pdb"
-        options["Epsilon_Bar"] = None
-        options["Disulfides"] = None
-        options["Contacts"] = None
-        options["Contact_Type"] = None
-
-    options["Fitting_Data"] = "ddG_MC2004"
-    options["Model_Code"] = "HetGo"
-    options["Bead_Model"] = "CA"
-
-    print options
-
-    modeloptions = mdb.check_inputs.check_options(options,firstpass=True)
-
+        modeloptions = []
+        
     return args, modeloptions
 
 if __name__ == "__main__":

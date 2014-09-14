@@ -140,19 +140,19 @@ def get_args():
     new_parser.add_argument('--epsilon_bar', type=float, help='Optional, average strength of contacts. epsilon bar.')
     new_parser.add_argument('--disulfides', type=int, nargs='+', help='Optional pairs of disulfide linked residues.')
     new_parser.add_argument('--temparray', type=int, nargs='+',help='Optional initial temp array: Ti Tf dT. Default: 50 350 50')
-    new_parser.add_argument('--dryrun', action='store_true', help='Add this option for dry run. No simulations started.')
+    new_parser.add_argument('--dry_run', action='store_true', help='Add this option for dry run. No simulations started.')
 
     ## Options for continuing from a previously saved simulation project.
     run_parser = sp.add_parser('continue')
     run_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to continue',required=True)
-    run_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
+    run_parser.add_argument('--dry_run', action='store_true', help='Dry run. No simulations started.')
 
     ## Options for manually adding a temperature array.
     add_parser = sp.add_parser('add')
     add_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
     add_parser.add_argument('--temparray', type=int, nargs='+', help='T_initial T_final dT for new temp array',required=True)
     add_parser.add_argument('--mutarray', type=int, nargs='+', help='T_initial T_final dT for new mutational sims array')
-    add_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
+    add_parser.add_argument('--dry_run', action='store_true', help='Dry run. No simulations started.')
 
     ## Options for manually extending some temperatures.
     ext_parser = sp.add_parser('extend')
@@ -160,12 +160,12 @@ def get_args():
     ext_parser.add_argument('--factor', type=float, help='Factor by which you want to extend simulations. e.g. --factor 2 doubles length',required=True)
     ext_parser.add_argument('--Tf_temps', type=float, nargs='+', help='Temperatures that you want extended')
     ext_parser.add_argument('--Mut_temps', type=float, nargs='+', help='T_initial T_final dT for new mutational sims array')
-    ext_parser.add_argument('--dryrun', action='store_true', help='Dry run. No simulations started.')
+    ext_parser.add_argument('--dry_run', action='store_true', help='Dry run. No simulations started.')
 
 
     args = parser.parse_args()
 
-    if args.dryrun != False:
+    if args.dry_run != False:
         options = {"Dry_Run":True}
     else:
         options = {"Dry_Run":False}
