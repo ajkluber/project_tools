@@ -83,11 +83,11 @@ def prepare_newtons_method(model,method,append_log):
         np.savetxt("%s/Mut_%d/%s/Jacobian.dat" % (name,iteration,method), Jacobian_avg)
         np.savetxt("%s/Mut_%d/%s/Jacobian_err.dat" % (name,iteration,method) ,Jacobian_err)
 
-
         ## To Do:
-        ##  - Collect Jacobian rows from all fitting_includes directories.
-        ##  - Map columns (parameters) to match those of the first directory. Stack the rows.
-        ##  - Save in the first fitting directory.
+        ##  - Code Fitting_Includes option
+        ##      - Collect Jacobian rows from all fitting_includes directories.
+        ##      - Map columns (parameters) to match those of the first directory. Stack the rows.
+        ##      - Save in the first fitting directory.
 
         print "  Saving feature vector and Jacobian in %s/Mut_%d/newton" % (name,iteration)
         np.savetxt("%s/Mut_%d/newton/target_feature.dat" % (name,iteration), target_feature)
@@ -99,17 +99,51 @@ def prepare_newtons_method(model,method,append_log):
 
         append_log(name,"Finished: Calculating_Jacobian")
 
-    append_log(name,"Starting: Solving_Newtons_Method")
+    solve_newton_method(model,method)
 
+def solve_newton_method(model,method,append_log):
+    """ Solve the newton problem """
+    name = model.subdir
+    iteration = model.Mut_iteration
+
+    append_log(name,"Starting: Solving_Newtons_Method")
     ## Find solutions with Levenbeg_Marquardt algorithm
     print "  Solving for solutions with Levenberg-Marquardt method"
     cwd = os.getcwd()
     os.chdir("%s/Mut_%d/newton" % (name,iteration))
     newton.solver.Levenberg_Marquardt_solution(model,method)
     os.chdir(cwd)
-
     append_log(name,"Starting: Solving_Newtons_Method")
 
+def save_new_parameters(model,method,append_log):
+    """ Save new parameters """
+    available_methods = ["ddG_MC2004","FRET","RMSF","contact_Qi"]
+    modules = {"ddG_MC2004":ddG_MC2004,"FRET":FRET,"RMSF":RMSF,"contact_Qi":contact_Qi}
+
+    if method not in available_methods:
+        print "ERROR! requested method not found %s" % method
+        print " Choose from available_methods: ",available_methods
+        print " Exiting."
+        raise SystemExit
+
+    submodule = modules[method]
+
+    name = model.subdir
+    iteration = model.Mut_iteration
+    if not os.path.exists("%s/Mut_%d/newton/Lambda_index.txt" % (name,iteration)):
+        print "ERROR! The file: %s/Mut_%d/newton/Lambda_index.txt must exist to continue!" % (name,iteration)
+        print "  This file should hold the index of the damping parameter, Lambda, to be used."
+        print "Exiting."
+        raise SystemExit
+    else:
+        soln_index = int(open("%s/Mut_%d/newton/Lambda_index.txt" % (name,iteration),"r").read().rstrip("\n"))
+
+    cwd = os.getcwd()
+    os.chdir("%s/Mut_%d/newton" % (name,iteration))
+
+    submodule.save_new_parameters.save(model,soln_index)
+
+    os.chdir(cwd)
 
 if __name__ == "__main__":
     ## Module tested. Works!
@@ -120,7 +154,11 @@ if __name__ == "__main__":
     name = "1RIS"
     method = "ddG_MC2004"
 
-    model = mdb.models.load_model(name) 
+    model = mdb.check_inputs.load_model(name) 
     model.Mut_iteration = 0
 
-    prepare_newtons_method(model,method,dummy)
+    #prepare_newtons_method(model,method,dummy)
+    solve_newton_method(model,method,dummy)
+
+    #soln_index = 10
+    #ddG_MC2004.save_new_parameters.save(model,soln_index) 

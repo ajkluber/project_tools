@@ -11,12 +11,8 @@ parameter fitting of a structure-based model.
     
 """
 
-import argparse
 import os
-import shutil
-import subprocess as sb
 import time
-import numpy as np
 
 from project_tools import simulation, analysis, parameter_fitting
 import model_builder as mdb
@@ -38,72 +34,6 @@ def print_header():
     #print "                 'Science and everyday life cannot and"
     #print "                  should not be separated' - Rosalind Franklin\n"
     print "------------------------------------------------------------------------------"
-
-def get_args():
-    ''' Get command line arguments and check that they are consistent/allowed.
-    '''
-    print_header()
-
-    parser = argparse.ArgumentParser(description='Build a model of a system.')
-    sp = parser.add_subparsers(dest='action')
-
-    ## Options for initializing a new simulation project.
-    new_parser = sp.add_parser('new')
-    new_parser.add_argument('--pdbs', type=str, required=True, nargs='+',help='PDBs to start simulations.')
-    new_parser.add_argument('--model', type=str, required=True, help='Choose model type: HetGo, HomGo, DMC')
-    new_parser.add_argument('--beads', type=str, default="CA", help='Choose model beads: CA, CACB.')
-    new_parser.add_argument('--contact_energies', type=str, help='HetGo Contact energies: MJ, Bach, MC2004, from file.')
-    new_parser.add_argument('--temparray', type=int, nargs='+',help='Optional initial temp array: Ti Tf dT. Default: 50 350 50')
-    new_parser.add_argument('--epsilon_bar', type=float, help='Optional, average strength of contacts. epsilon bar.')
-    new_parser.add_argument('--disulfides', type=int, nargs='+', help='Optional pairs of disulfide linked residues.')
-    new_parser.add_argument('--dry_run', action='store_true', help='Add this option for dry run. No simulations started.')
-    new_parser.add_argument('--email', type=str, help='Optional email address for PBS to send sim details.')
-
-    ## Options for continuing from a previously saved simulation project.
-    run_parser = sp.add_parser('continue')
-    run_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to continue',required=True)
-    run_parser.add_argument('--dry_run', action='store_true', help='Dry run. No simulations started.')
-    run_parser.add_argument('--email', type=str, help='Optional email address for PBS to send sim details.')
-
-    ## Options for manually adding a temperature array.
-    add_parser = sp.add_parser('add')
-    add_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
-    add_parser.add_argument('--temparray', type=int, nargs='+', help='T_initial T_final dT for new temp array')
-    add_parser.add_argument('--mutarray', type=int, nargs='+', help='T_initial T_final dT for new mutational sims array')
-    add_parser.add_argument('--dry_run', action='store_true', help='Dry run. No simulations started.')
-    add_parser.add_argument('--email', type=str, help='Optional email address for PBS to send sim details.')
-
-    ## Options for manually adding a temperature array.
-    ext_parser = sp.add_parser('extend')
-    ext_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
-    ext_parser.add_argument('--factor', type=float, help='Factor by which you want to extend simulations. e.g. --factor 2 doubles length',required=True)
-    ext_parser.add_argument('--Tf_temps', type=str, nargs='+', help='Temperatures that you want extended')
-    ext_parser.add_argument('--Mut_temps', type=str, nargs='+', help='T_initial T_final dT for new mutational sims array')
-    ext_parser.add_argument('--dry_run', action='store_true', help='Dry run. No simulations started.')
-
-    args = parser.parse_args()
-
-    if args.dry_run != False:
-        options = {"Dry_Run":True}
-    else:
-        options = {"Dry_Run":False}
-
-    if args.action == "new":
-        ## Check if options for model make sense.
-        options["Model_Code"] = args.model
-        options["Bead_Model"] = args.beads
-        options["Solvent"] = args.solvent
-        options["R_CD"] = None
-        options["Epsilon_Bar"] = args.epsilon_bar
-        options["Disulfides"] = args.disulfides
-        options["Contact_Energies"] = args.contact_energies
-        modeloptions = mdb.check_inputs.check_options(options)
-    elif args.action == "continue":
-        modeloptions = options
-    else:
-        modeloptions = options
-    return args, modeloptions
-
 
 class ProjectManager(object):
     """ A shell class to handle the simulations for a project.
@@ -250,10 +180,3 @@ class ProjectManager(object):
         print "Saving model.info ..."
         for i in range(len(Models)):
             open(Models[i].subdir+"/model.info","w").write(Models[i].__repr__())
-
-def main():
-    args, modeloptions = get_args()
-    ProjectManager(args,modeloptions)
-
-if __name__ == '__main__':
-    main()

@@ -74,7 +74,11 @@ def Levenberg_Marquardt_solution(model,method):
     Levenberg = np.identity(n_rows)
     Levenberg[(np.arange(n_rows),np.arange(n_rows))] = np.diag(JTJ)
     u,s,v = np.linalg.svd(JTJ)
-    Lambdas = np.logspace(np.log(min(s)),np.log(max(s)),num=200)
+    if np.log10(min(s)) < -10:
+        smin = -10
+    else:
+        smin = np.log10(min(s))
+    Lambdas = np.logspace(smin,np.log10(max(s)),num=200)
 
     nrm_soln = []
     nrm_resd = []
@@ -114,9 +118,22 @@ def save_solution_data(solutions,Lambdas,nrm_soln,nrm_resd,norm_eps,condition_nu
     np.savetxt("singular_values.dat",s)
     np.savetxt("condition_num.dat",condition_number)
 
-    x = np.log(nrm_resd)
-    y = np.log(nrm_soln)
-    y2 = np.log(Lambdas)
+    plot_Lcurve(nrm_resd,nrm_soln,Lambdas)
+    plt.savefig("Lcurve.png")
+    plt.savefig("Lcurve.pdf")
+
+    plot_Lcurve_curvature(nrm_resd,nrm_soln,Lambdas)
+    plt.savefig("Lcurve_curvature.png")
+    plt.savefig("Lcurve_curvature.pdf")
+
+    plot_condition_number(Lambdas,condition_number)
+    plt.savefig("condition_vs_lambda.png")
+    plt.savefig("condition_vs_lambda.pdf")
+
+def plot_Lcurve(nrm_resd,nrm_soln,Lambdas,skip=30):
+    x = np.log10(nrm_resd)
+    y = np.log10(nrm_soln)
+    y2 = np.log10(Lambdas)
 
     ## Plot the L-curve
     fig, ax1 =  plt.subplots()
@@ -137,14 +154,11 @@ def save_solution_data(solutions,Lambdas,nrm_soln,nrm_resd,norm_eps,condition_nu
     ax1.tick_params(axis='y', colors=line1.get_color())
     ax2.tick_params(axis='y', colors=line2.get_color())
 
-    plt.savefig("L_curve.png")
-    plt.savefig("L_curve.pdf")
-
+def plot_Lcurve_curvature(nrm_resd,nrm_soln,Lambdas):
+    x = np.log10(nrm_resd)
+    y = np.log10(nrm_soln)
+    y2 = np.log10(Lambdas)
     ## Calculate the second derivative of the L-curve.
-    x = np.log(nrm_resd)
-    y = np.log(nrm_soln)
-    y2 = np.log(Lambdas)
-
     x2 = np.array([ 0.5*(x[i] + x[i+1]) for i in range(len(x)-1)])
     x3 = np.array([ 0.5*(x2[i] + x2[i+1]) for i in range(len(x2)-1)])
 
@@ -174,8 +188,25 @@ def save_solution_data(solutions,Lambdas,nrm_soln,nrm_resd,norm_eps,condition_nu
     ax1.tick_params(axis='y', colors=line1.get_color())
     ax2.tick_params(axis='y', colors=line2.get_color())
 
-    plt.savefig("Lcurve_curvature.png")
-    plt.savefig("Lcurve_curvature.pdf")
+def plot_condition_number(Lambdas,condition_number):
+    y2 = np.log10(Lambdas)
+    ## Plot condition number versus damping/regularization parameter lambda.
+    fig, ax1 =  plt.subplots()
+    ax2 = ax1.twinx()
+    line1, = ax1.plot(y2,condition_number,'b')
+    ax1.xaxis.grid(True)
+    ax1.yaxis.grid(True)
+    line2, = ax2.plot(y2,np.log(condition_number),'r')
+    ax1.set_xlabel("$\\log{\\lambda}$",fontsize=16)
+    ax1.set_ylabel("condition number",fontsize=14)
+    ax2.set_ylabel("$\\kappa = \\log{cond}$",fontsize=16)
+    plt.title("Condition number versus damping parameter")
+
+    ax1.yaxis.label.set_color(line1.get_color())
+    ax2.yaxis.label.set_color(line2.get_color())
+    ax1.tick_params(axis='y', colors=line1.get_color())
+    ax2.tick_params(axis='y', colors=line2.get_color())
+
 
 if __name__ == '__main__':
 

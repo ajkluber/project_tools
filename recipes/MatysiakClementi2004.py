@@ -106,20 +106,20 @@ class MatysiakClementi2004(ProjectManager):
             print "Starting Equil_Tf_analysis..."
             analysis.constant_temp.analyze_temperature_array(model,self.append_log,equil=True)
         elif task == "Equil_Tf_analysis":
-        ## Use the following sub module to plot PMFS of coordinates:
-        ## analysis.plot.pmfs
+            ## Use the following sub module to plot PMFS of coordinates:
+            ## analysis.plot.pmfs
             ## Run heat capacity for equilibrium runs. Cv(T), F(Q)
             analysis.constant_temp.run_wham_heat_capacity(model,self.append_log,Mut=True)
         elif task == "Equil_Tf_wham":
             print "Starting calculating feature vector and Jacobian..."
             parameter_fitting.prepare_newtons_method(model,"ddG_MC2004",self.append_log)
         elif task == "Calculating_Jacobian":
-            pass
-            ## TO DO:
-            ##  - Solve for new parameters.
-            #parameter_fitting.newton.perturbation.calculate_MC2004_perturbation(model,self.append_log)
-        elif task == "Calculating_MC2004":
+            print "Solving for solutions with Levenberg-Marquardt method..."
+            parameter_fitting.solve_newtons_method(model,"ddG_MC2004",self.append_log)
+        elif task == "Solving_Newtons_Method":
+            ## Write new parameter file
             ## Start the next round of simulations with new parameters.
+            parameter_fitting.save_new_parameters(model,"ddG_MC2004",self.append_log)
             simulation.constant_temp.start_next_Tf_loop_iteration(model,self.append_log)
         else:
             print "ERROR!"
