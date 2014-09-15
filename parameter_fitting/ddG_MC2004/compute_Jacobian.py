@@ -48,12 +48,12 @@ def get_state_bounds():
     
     return state_bounds,state_labels
 
-def get_states_Vij(model,bounds,epsilons,deltas,sigmas):
+def get_states_Vij(model,bounds):
     """ Load trajectory, state indicators, and contact energy """
 
     traj = md.load("traj.xtc",top="Native.pdb")     ## Loading from file takes most time.
     rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape))
-    Q = np.loadtxt("Q.dat")
+    Q = np.loadtxt("Q.dat") ## To Do: Generalize to different reaction coordinates
 
     state_indicator = np.zeros(len(Q),int)
     ## Assign every frame a state label. State indicator is integer 1-N for N states.
@@ -72,11 +72,7 @@ def get_states_Vij(model,bounds,epsilons,deltas,sigmas):
     Uframes  = float(sum(U.astype(int)))
     TSframes = float(sum(TS.astype(int)))
 
-    ## Only count values of potential energy function where interaction is
-    ## attractive.
-    x = sigmas/rij
-    x[(x > 1.09)] = 1.09  # <-- 1.09 is where LJ12-10 crosses zero. 
-    Vij = epsilons*(5.*(x**12) - 6.*deltas*(x**10))     ## To Do: Generalize to other contact functions
+    Vij = model.calculate_contact_potential(rij,"all")
 
     return traj,U,TS,N,Uframes,TSframes,Nframes,Vij
 
@@ -126,10 +122,6 @@ def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_p
     temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
     directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
 
-    epsilons = model.contact_epsilons
-    deltas = model.contact_deltas
-    sigmas = model.contact_sigmas
-
     bounds, state_labels = get_state_bounds()
     bounds = [0] + bounds + [model.n_contacts]
 
@@ -145,7 +137,7 @@ def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_p
         beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
         print "  Calculating Jacobian for Mut_%d/%s" % (model.Mut_iteration,dir)
         os.chdir(dir)
-        sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels,epsilons,deltas,sigmas,saveas=saveas)
+        sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels,saveas=saveas)
         sim_feature_all.append(sim_feature)
         Jacobian_all.append(Jacobian)
         os.chdir("..")
@@ -167,10 +159,10 @@ def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_p
 
     return sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err
 
-def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels,epsilons,deltas,sigmas,saveas="Q_phi.dat"):
+def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels,saveas="Q_phi.dat"):
     """ Calculates the feature vector (ddG's) and Jacobian for one directory """
     ## Get trajectory, state indicators, contact energy
-    traj,U,TS,N,Uframes,TSframes,Nframes,Vij = get_states_Vij(model,bounds,epsilons,deltas,sigmas)
+    traj,U,TS,N,Uframes,TSframes,Nframes,Vij = get_states_Vij(model,bounds)
 
     ## Avg. contact energy for each state.
     Vij_U  = sum(Vij[U,:])/Uframes
@@ -252,26 +244,9 @@ def compute_dHk(model,traj,mut,fij,pairs,conts):
 
     ## Use mdtraj to compute the distances between pairs.
     rij = md.compute_distances(traj,pairs)
-    
-    ## Epsilons, deltas, and sigmas for relevant pairs for this mutation.
-    eps = model.contact_epsilons[conts]
-    deltas = model.contact_deltas[conts]
-    sigmas = model.contact_sigmas[conts]
-
-    ## Sometimes the energies calculated here blow up because small
-    ## changes in distance can lead to large energies on the
-    ## repulsive wall. (The actual energies of the simulation do not
-    ## blow up). Since this calculation is meant to estimation of 
-    ## the change in energy upon mutation, dH_k, I just use frames
-    ## where the contact energy LJ12-10 is negative. Without this
-    ## consideration, the results are crazy
-    x = sigmas/rij
-    x[(x > 1.09)] = 1.09  # <-- 1.09 is where LJ12-10 crosses zero.
-
-    ## Calculate dH_k using distances and parameters. Save.
-    Vij = -fij*eps*(5.*(x**12) - 6.*deltas*(x**10))
+    Vij = -fij*model.calculate_contact_potential(rij,conts)
     dH_k = sum(Vij.T)
-    np.savetxt("dH_"+mut+".dat",dH_k)
+    np.savetxt("dH_%s.dat" % mut,dH_k)
 
     return dH_k
 
