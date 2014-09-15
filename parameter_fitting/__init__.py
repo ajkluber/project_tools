@@ -158,7 +158,7 @@ if __name__ == "__main__":
     model.Mut_iteration = 0
 
     #prepare_newtons_method(model,method,dummy)
-    solve_newton_method(model,method,dummy)
+    #solve_newton_method(model,method,dummy)
 
-    #soln_index = 10
-    #ddG_MC2004.save_new_parameters.save(model,soln_index) 
+    soln_index = 154
+    ddG_MC2004.save_new_parameters.save(model,soln_index) 

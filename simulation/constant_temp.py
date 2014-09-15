@@ -312,7 +312,7 @@ def start_next_Tf_loop_iteration(model,append_log):
     deltaT = 4
 
     cwd = os.getcwd()
-    sub = model.path+"/"+ model.subdir+"/Tf_"+str(model.Tf_iteration)
+    sub = "%s/%s/Tf_%d" % (model.path,model.subdir,model.Tf_iteration)
     if os.path.exists(sub):
         print "ERROR!"
         print "  The next Tf iteration directory exists. "
