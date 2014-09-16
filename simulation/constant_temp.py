@@ -38,12 +38,14 @@ def check_completion(model,append_log,equil=False):
     checks the desired number of steps in the .mdp file then 
     checks to see if md.log has recorded that number of steps.
     """
+
+    name = model.subdir
     cwd = os.getcwd()
     if equil == True:
-        sub = model.subdir+"/Mut_"+str(model.Mut_iteration)
+        sub = "%s/Mut_%d" % (name,model.Mut_iteration)
     else:
-        sub = model.subdir+"/Tf_"+str(model.Tf_iteration)
-    os.chdir(cwd+"/"+sub)
+        sub = "%s/Tf_%d" % (name,model.Tf_iteration)
+    os.chdir("%s/%s" % (cwd,sub))
     tempfile = open("T_array_last.txt","r").readlines()
     temperatures = [ temp[:-1] for temp in tempfile  ]
     error = 0
@@ -53,14 +55,14 @@ def check_completion(model,append_log,equil=False):
         if check_error == 1:
             error = 1
         ## Determine the number of steps for completed run.
-        for line in open(tdir+"/nvt.mdp","r"):
+        for line in open("%s/nvt.mdp" % tdir,"r"):
             if line[:6] == "nsteps":
                 nsteps = int(line.split()[2]) + 1
                 break    
-        finish_line = "Statistics over " + str(nsteps)
+        finish_line = "Statistics over %d" % nsteps
         ## Check if md.log has finished the required number of steps.
-        if finish_line in open(tdir+"/md.log","r").read():
-            append_log("  %s finished." % tdir, subdir=True)
+        if finish_line in open("%s/md.log" % tdir,"r").read():
+            append_log(name,"  %s finished." % tdir, subdir=True)
         else:
             print "    Check %s simulation did not finish." % tdir
             #print "    Cannot continue with errors."
@@ -70,10 +72,10 @@ def check_completion(model,append_log,equil=False):
                 qrst = "qsub rst.pbs"
                 sb.call(qrst.split(),stdout=open("rst.out","w"),stderr=open("rst.err","w"))
                 os.chdir(cwd+"/"+sub)
-                append_log("  %s did not finish. restarting" % tdir, subdir=True)
+                append_log(name,"  %s did not finish. restarting" % tdir, subdir=True)
                 print "  %s did not finish. Restarting: submitting rst.pbs. " % tdir
             else:
-                append_log("  %s did not finish. did not find a rst.pbs. skipping." % tdir, subdir=True)
+                append_log(name,"  %s did not finish. did not find a rst.pbs. skipping." % tdir, subdir=True)
             error = 1
 
     if error == 1:
@@ -81,9 +83,9 @@ def check_completion(model,append_log,equil=False):
         pass 
     else:
         if equil == True:
-            append_log(model.subdir,"Finished: Equil_Tf")
+            append_log(name,"Finished: Equil_Tf")
         else:
-            append_log(model.subdir,"Finished: Tf_loop_iteration")
+            append_log(name,"Finished: Tf_loop_iteration")
     model.error = error
     os.chdir(cwd)
 
@@ -165,13 +167,14 @@ def determine_new_T_array():
 def manually_extend_temperatures(model,append_log,method,temps,factor):
     """ To manually extend some temperatures."""
 
+    name = model.subdir
     cwd = os.getcwd()
     ## Determine directory to enter
     if method == "Tf":
-        sub = model.path+"/"+ model.subdir+"/Tf_"+str(model.Tf_iteration)
+        sub = "%s/%s/Tf_%d" % (model.path,name,model.Tf_iteration)
         Tlist = [ str(int(x))+"_0" for x in temps ]
     elif method == "Mut":
-        sub = model.path+"/"+ model.subdir+"/Mut_"+str(model.Mut_iteration)
+        sub = "%s/%s/Mut_%d" % (model.path,name,model.Mut_iteration)
         Tlist = []
         for i in range(len(temps)):
             for j in range(1,10):
@@ -210,9 +213,9 @@ def manually_extend_temperatures(model,append_log,method,temps,factor):
                 os.remove("energyterms.xvg")
         os.chdir(cwd2)
     if method == "Tf":
-        append_log(model.subdir,"Starting: Tf_loop_iteration")
+        append_log(name,"Starting: Tf_loop_iteration")
     elif method == "Mut":
-        append_log(model.subdir,"Starting: Equil_Tf")
+        append_log(name,"Starting: Equil_Tf")
 
     os.chdir(cwd)
 
@@ -342,8 +345,9 @@ def manually_add_temperature_array(model,append_log,T_min,T_max,deltaT):
 
 def manually_add_equilibrium_runs(model,append_log,temps):
     """ To manually set the next temperature array."""
+    name = model.subdir
     cwd = os.getcwd()
-    sub = model.path+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
+    sub = "%s/%s/Mut_%d" % (model.path,name,model.Mut_iteration)
     os.chdir(sub)
     ## Run for longer if the protein is really big.
     walltime, queue, ppn, nsteps = determine_equil_walltime(model)
@@ -358,7 +362,7 @@ def manually_add_equilibrium_runs(model,append_log,temps):
                 T_string += "%s\n" % simpath
                 os.mkdir(simpath)
                 os.chdir(simpath)
-                append_log("  running T=%s" % simpath, subdir=True)
+                append_log(name,"  running T=%s" % simpath, subdir=True)
                 print "    Running temperature ", simpath
                 run_constant_temp(model,T,nsteps=nsteps,walltime=walltime,queue=queue)
                 os.chdir("..")
@@ -368,19 +372,20 @@ def manually_add_equilibrium_runs(model,append_log,temps):
 
     open("T_array.txt","a").write(T_string)
     open("T_array_last.txt","w").write(T_string)
-    append_log(model.subdir,"Starting: Equil_Tf")
+    append_log(name,"Starting: Equil_Tf")
     os.chdir(cwd)
 
 def run_equilibrium_simulations(model,append_log):
     """ Run very long (equilibrium) simulations at the estimated folding 
         temperature."""
 
+    name = model.subdir
     cwd = os.getcwd()
     mutsub = model.path+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
     Tfsub = model.path+"/"+model.subdir+"/Tf_"+str(model.Tf_iteration)
     Tf = open(Tfsub+"/Tf.txt","r").read().split()[0]
 
-    append_log("Starting Equil_Tf", subdir=True)
+    append_log(name,"Starting Equil_Tf", subdir=True)
     walltime, queue, ppn, nsteps = determine_equil_walltime(model)
 
     if not os.path.exists(mutsub):
@@ -396,7 +401,7 @@ def run_equilibrium_simulations(model,append_log):
                 T_string += "%s\n" % simpath
                 os.mkdir(simpath)
                 os.chdir(simpath)
-                append_log("  running T=%s" % simpath, subdir=True)
+                append_log(name,"  running T=%s" % simpath, subdir=True)
                 print "    Running temperature ", simpath
                 run_constant_temp(model,T,nsteps=nsteps,walltime=walltime,queue=queue)
                 os.chdir("..")
@@ -443,7 +448,6 @@ def determine_walltime(model):
 def run_temperature_array(model,T_min,T_max,deltaT):
     """ Simulate range of temperatures to find the folding temperature. """
 
-    #append_log("Starting Tf_loop_iteration %d " % model.Tf_iteration, subdir=True)
     Temperatures = range(T_min,T_max+deltaT,deltaT)
     ## Run for longer if the protein is really big.
     walltime, queue, ppn, nsteps = determine_walltime(model)
@@ -456,7 +460,6 @@ def run_temperature_array(model,T_min,T_max,deltaT):
             T_string += "%d_0\n" % T
             os.mkdir(simpath)
             os.chdir(simpath)
-            #append_log("  running T=%d" % T, subdir=True)
             if not model.dry_run:
                 print "  Running temperature ", T
             run_constant_temp(model,T,nsteps=nsteps,walltime=walltime,queue=queue,ppn=ppn)
