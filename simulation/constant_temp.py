@@ -283,9 +283,13 @@ def folding_temperature_loop_extension(model,append_log,new=False):
             ## Estimate folding temperature
             E = float(sum(model.contact_epsilons[model.contact_deltas == 1]))
             N = float(model.n_residues)
-            Tf_guess = int(round((36.081061*E/N) + 56.218196)) ## calibration circa June 2014
-            T_min = Tf_guess - 20
-            T_max = Tf_guess + 20
+            Tf_guess = int(round((36.081061*E/N) + 56.218196)) ## calibration for LJ1210 contacts circa June 2014
+            if model.contact_type == "Guassian":
+                T_min = Tf_guess - 60
+                T_max = Tf_guess + 10
+            else:
+                T_min = Tf_guess - 20
+                T_max = Tf_guess + 20
             deltaT = 4
     else:
         ## Use previous range to determine new range. 
@@ -309,9 +313,13 @@ def start_next_Tf_loop_iteration(model,append_log):
     model.Mut_iteration += 1
     E = float(sum(model.contact_epsilons[model.contact_deltas == 1]))
     N = float(model.n_residues)
-    Tf_guess = (36.081061*E/N) + 56.218196 ## calibration circa June 2014
-    T_min = int(Tf_guess - 20)
-    T_max = int(Tf_guess + 20)
+    Tf_guess = (36.081061*E/N) + 56.218196 ## calibration for LJ1210 contacts circa June 2014
+    if model.contact_type == "Guassian":
+        T_min = Tf_guess - 60
+        T_max = Tf_guess + 10
+    else:
+        T_min = Tf_guess - 20
+        T_max = Tf_guess + 20
     deltaT = 4
 
     cwd = os.getcwd()
