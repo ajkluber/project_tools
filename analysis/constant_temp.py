@@ -75,7 +75,7 @@ def analyze_temperature_array(model,append_log,equil=False):
             if (not flag) or (not flag):
                 if not flag:
                     print "    Crunching coordinates for ",tdir
-                    crunch_coordinates.crunch_all("%s_%s" % (name,tdir),walltime=cwalltime,ppn=ppn)
+                    crunch_coordinates.crunch_all("%s_%s" % (name,tdir),model.contact_type,walltime=cwalltime,ppn=ppn)
                 if not flagQ:
                     print "    Crunching Q for ",tdir
                     crunch_coordinates.crunch_Q("%s_%s" % (name,tdir),walltime=qwalltime,ppn=ppn,queue=queue)
@@ -124,9 +124,18 @@ def check_completion(model,append_log,equil=False):
             append_log(name,"    analysis done for %s" % tdir,subdir=True)
             done = 1
         else:
-            print "    Crunching not done. Retrying for "+tdir
-            crunch_coordinates.crunch_all("%s_%s" % (model.subdir,tdir),walltime=cwalltime)
-            crunch_coordinates.crunch_Q("%s_%s" % (model.subdir,tdir),walltime=qwalltime)
+            print "    Crunching not done. Retrying for %s" % tdir
+            crunchfiles = ["rmsd.xvg","radius_cropped.xvg","energyterms.xvg","phis.xvg"]
+            crunchQfiles = ["Q.dat","qimap.dat"]
+
+            flag = all([ os.path.exists(file) for file in crunchfiles ])
+            flagQ = all([ os.path.exists(file) for file in crunchQfiles ])
+
+            if not flag:
+                crunch_coordinates.crunch_all("%s_%s" % (model.subdir,tdir),model.contact_type,walltime=cwalltime)
+
+            if not flagQ:
+                crunch_coordinates.crunch_Q("%s_%s" % (model.subdir,tdir),walltime=qwalltime)
             done = 0
         os.chdir(cwd2)
 
