@@ -516,9 +516,11 @@ def get_pbs_string(jobname,queue,ppn,walltime,contact_type=None):
     pbs_string +="#PBS -V \n\n"
     pbs_string +="cd $PBS_O_WORKDIR\n"
     if contact_type == "Gaussian":
-        pbs_string +="mdrun_sbm -nt 1 -s topol_4.5.tpr -table table.xvg -tablep table.xvg"
+        #pbs_string +="mdrun_sbm -nt 1 -s topol_4.5.tpr -table table.xvg -tablep table.xvg"
+        pbs_string +="mdrun_sbm -s topol_4.5.tpr -table table.xvg -tablep table.xvg"
     else:
-        pbs_string +="mdrun -nt 1 -s topol_4.6.tpr -table table.xvg -tablep table.xvg"
+        #pbs_string +="mdrun -nt 1 -s topol_4.6.tpr -table table.xvg -tablep table.xvg"
+        pbs_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg"
     #pbs_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg"
     return pbs_string
 
@@ -533,9 +535,11 @@ def get_rst_pbs_string(jobname,queue,ppn,walltime,contact_type=None):
     rst_string +="#PBS -V \n\n"
     rst_string +="cd $PBS_O_WORKDIR\n"
     if contact_type == "Gaussian":
-        rst_string +="mdrun_sbm -nt 1 -s topol_4.5.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
+        #rst_string +="mdrun_sbm -nt 1 -s topol_4.5.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
+        rst_string +="mdrun_sbm -s topol_4.5.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
     else:
-        rst_string +="mdrun -nt 1 -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
+        #rst_string +="mdrun -nt 1 -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
+        rst_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
     #rst_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
     return rst_string
 
