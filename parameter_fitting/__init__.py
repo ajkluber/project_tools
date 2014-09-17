@@ -99,7 +99,7 @@ def prepare_newtons_method(model,method,append_log):
 
         append_log(name,"Finished: Calculating_Jacobian")
 
-    solve_newton_method(model,method)
+    solve_newton_method(model,method,append_log)
 
 def solve_newton_method(model,method,append_log):
     """ Solve the newton problem """
