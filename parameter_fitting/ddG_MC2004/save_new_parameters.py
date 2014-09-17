@@ -24,6 +24,6 @@ def save(model,soln_index):
 
     model.contact_epsilsons = neweps
     model.generate_topology()
-    open("NewBeadBead.dat","w").write(model.beadbead_string)
+    open("NewBeadBead.dat","w").write(model.beadbead)
 
     model.contact_params = "%s/NewBeadBead.dat" % cwd
