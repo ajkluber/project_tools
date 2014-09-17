@@ -99,9 +99,9 @@ def prepare_newtons_method(model,method,append_log):
 
         append_log(name,"Finished: Calculating_Jacobian")
 
-    solve_newton_method(model,method,append_log)
+    solve_newtons_method(model,method,append_log)
 
-def solve_newton_method(model,method,append_log):
+def solve_newtons_method(model,method,append_log):
     """ Solve the newton problem """
     name = model.subdir
     iteration = model.Mut_iteration
