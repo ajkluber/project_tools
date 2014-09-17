@@ -78,7 +78,7 @@ def analyze_temperature_array(model,append_log,equil=False):
                     crunch_coordinates.crunch_all("%s_%s" % (name,tdir),model.contact_type,walltime=cwalltime,ppn=ppn)
                 if not flagQ:
                     print "    Crunching Q for ",tdir
-                    crunch_coordinates.crunch_Q("%s_%s" % (name,tdir),walltime=qwalltime,ppn=ppn,queue=queue)
+                    crunch_coordinates.crunch_Q("%s_%s" % (name,tdir),model.contact_type,walltime=qwalltime,ppn=ppn,queue=queue)
             else:
                 print "    Skipping directory ",tdir
             os.chdir(cwd2)
@@ -135,7 +135,7 @@ def check_completion(model,append_log,equil=False):
                 crunch_coordinates.crunch_all("%s_%s" % (model.subdir,tdir),model.contact_type,walltime=cwalltime)
 
             if not flagQ:
-                crunch_coordinates.crunch_Q("%s_%s" % (model.subdir,tdir),walltime=qwalltime)
+                crunch_coordinates.crunch_Q("%s_%s" % (model.subdir,tdir),model.contact_type,walltime=qwalltime)
             done = 0
         os.chdir(cwd2)
 

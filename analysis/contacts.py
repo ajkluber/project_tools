@@ -20,6 +20,9 @@ Procedure:
 2. Submit a PBS job that executes the following command:
     mpirun -n 10 python contact_calculator.py  --method prob --refT ### --Ti ### --dT 10 --Tf ###
 
+
+DEPRECATED AUG 2014
+
 """
 
 import matplotlib

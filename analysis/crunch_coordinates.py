@@ -11,7 +11,7 @@ import subprocess as sb
 import numpy as np
 import os 
 
-def crunch_Q(name,walltime="00:01:00",ppn="1",queue="serial"):
+def crunch_Q(name,contact_type,walltime="00:01:00",ppn="1",queue="serial"):
     """ Submit PBS job to calculate sets of residue-residue contacts.
 
     Calculates contacts with structure-based models gromacs function g_kuh_sbm 
@@ -25,8 +25,12 @@ def crunch_Q(name,walltime="00:01:00",ppn="1",queue="serial"):
     contact_pbs +="#PBS -j oe\n"
     contact_pbs +="#PBS -V\n\n"
     contact_pbs +="cd $PBS_O_WORKDIR\n"
-    contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -noshortcut -noabscut -cut 0.2 -qiformat list \n'
-    contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -o Q -noshortcut -noabscut -cut 0.2\n'
+    if contact_type == "Gaussian":
+        contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -noshortcut -abscut -cut 0.1 -qiformat list \n'
+        contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -o Q -noshortcut -abscut -cut 0.1\n'
+    else:
+        contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -noshortcut -noabscut -cut 0.2 -qiformat list \n'
+        contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -o Q -noshortcut -noabscut -cut 0.2\n'
     contact_pbs +='mv qimap.out qimap.dat\n'
     contact_pbs +='mv Q.out Q.dat\n'
     open("contacts.pbs","w").write(contact_pbs)

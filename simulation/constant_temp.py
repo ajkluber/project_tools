@@ -396,6 +396,8 @@ def run_equilibrium_simulations(model,append_log):
     append_log(name,"Starting Equil_Tf", subdir=True)
     walltime, queue, ppn, nsteps = determine_equil_walltime(model)
 
+
+
     if not os.path.exists(mutsub):
         os.mkdir(mutsub)
     os.chdir(mutsub)

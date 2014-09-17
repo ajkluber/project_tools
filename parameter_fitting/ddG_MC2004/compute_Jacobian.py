@@ -357,6 +357,8 @@ def save_phi_values(mutants,coord,state_labels,dG,ddG,phi,saveas="Q_phi.dat"):
     print header_string
     print data_string
 
+    if not os.path.exists("phi"):
+        os.mkdir("phi")
     outputfile = open("phi/%s" % saveas,"w")
     outputfile.write(header_string+"\n"+data_string)
     outputfile.close()

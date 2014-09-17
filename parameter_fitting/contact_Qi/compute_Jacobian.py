@@ -76,9 +76,26 @@ def get_target_feature(model):
     """ Get target features """
     name = model.subdir
     iteration = model.Mut_iteration
+    cwd = os.getcwd()
+    sub = "%s/%s/Mut_%d" % (cwd,name,iteration)
     
     ## To Do:
-    ## - decide on target feature data format
+    ## - Check if a target set of contact probabilities is given
+    ##   else construct target as <Q_i^TS> = Q^TS (uniform TS).
+
+    ## Format for target_Qi.dat
+    ## - three columns:
+    ##  <res_a>  <res_b>  <Q_ab^TS>
+    ## computes contact as within native contact distance.
+
+    if os.path.exists("%s/target_Qi.dat" % name):
+        target =  np.loadtxt("%s/target_Qi.dat" % name)
+    else:
+        ## Compute the average Q of the TS: Average of the endpoints.
+        os.chdir("%s" % sub)
+        bounds, state_labels = get_state_bounds()
+        bounds = [0] + bounds + [model.n_contacts]
+        os.chdir(cwd)
 
 def calculate_average_Jacobian(model):
     """ Calculate the average feature vector (ddG's) and Jacobian """
