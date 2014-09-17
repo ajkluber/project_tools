@@ -113,7 +113,7 @@ def solve_newtons_method(model,method,append_log):
     os.chdir("%s/Mut_%d/newton" % (name,iteration))
     newton.solver.Levenberg_Marquardt_solution(model,method)
     os.chdir(cwd)
-    append_log(name,"Starting: Solving_Newtons_Method")
+    append_log(name,"Finished: Solving_Newtons_Method")
 
 def save_new_parameters(model,method,append_log):
     """ Save new parameters """
