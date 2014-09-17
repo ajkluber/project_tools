@@ -22,7 +22,7 @@ def save(model,soln_index):
 
     neweps = eps0 + alpha*deps
 
-    model.contact_epsilsons = neweps
+    model.contact_epsilons = neweps
     model.generate_topology()
     open("NewBeadBead.dat","w").write(model.beadbead)
 
