@@ -315,7 +315,7 @@ def start_next_Tf_loop_iteration(model,append_log):
     N = float(model.n_residues)
     Tf_guess = (36.081061*E/N) + 56.218196 ## calibration for LJ1210 contacts circa June 2014
     if model.contact_type == "Guassian":
-        T_min = Tf_guess - 60)
+        T_min = Tf_guess - 60
         T_max = Tf_guess + 10
     else:
         T_min = Tf_guess - 20
