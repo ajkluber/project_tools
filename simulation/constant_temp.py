@@ -315,11 +315,13 @@ def start_next_Tf_loop_iteration(model,append_log):
     N = float(model.n_residues)
     Tf_guess = (36.081061*E/N) + 56.218196 ## calibration for LJ1210 contacts circa June 2014
     if model.contact_type == "Guassian":
-        T_min = Tf_guess - 60
+        T_min = Tf_guess - 60)
         T_max = Tf_guess + 10
     else:
         T_min = Tf_guess - 20
         T_max = Tf_guess + 20
+    T_min = int(round(T_min))
+    T_max = int(round(T_max))
     deltaT = 4
 
     cwd = os.getcwd()
@@ -333,9 +335,9 @@ def start_next_Tf_loop_iteration(model,append_log):
         os.makedirs(sub)
     os.chdir(sub)
 
+    run_temperature_array(model,T_min,T_max,deltaT)
     append_log(model.subdir,"Submitting T_array iteration %d" % model.Tf_iteration)
     append_log(model.subdir,"  T_min = %d , T_max = %d , dT = %d" % (T_min, T_max, deltaT))
-    run_temperature_array(model,T_min,T_max,deltaT)
     append_log(model.subdir,"Starting: Tf_loop_iteration")
 
     os.chdir(cwd)
