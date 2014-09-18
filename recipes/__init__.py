@@ -27,3 +27,4 @@ import recipe_manager
 import MatysiakClementi2004
 import Clementi2000
 import FRETFit 
+import DiffuseGo

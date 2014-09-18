@@ -34,18 +34,18 @@ def get_state_bounds():
     state_labels = []
     for line in statefile:
         info = line.split()
+        state_labels.append(info[0])
         state_bounds.append(float(info[1]))
         state_bounds.append(float(info[2]))
-        state_labels.append(info[0])
     
     return state_bounds,state_labels
 
-def get_states_Vij(model,bounds,epsilons,deltas,sigmas):
+def get_states_Vij(model,bounds):
     """ Load trajectory, state indicators, and contact energy """
 
     traj = md.load("traj.xtc",top="Native.pdb")     ## Loading from file takes most time.
     rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape))
-    Q = np.loadtxt("Q.dat")
+    Q = np.loadtxt("Q.dat") ## To Do: Generalize to different reaction coordinates
 
     state_indicator = np.zeros(len(Q),int)
     ## Assign every frame a state label. State indicator is integer 1-N for N states.
@@ -64,11 +64,7 @@ def get_states_Vij(model,bounds,epsilons,deltas,sigmas):
     Uframes  = float(sum(U.astype(int)))
     TSframes = float(sum(TS.astype(int)))
 
-    ## Only count values of potential energy function where interaction is
-    ## attractive.
-    x = sigmas/rij
-    x[(x > 1.09)] = 1.09  # <-- 1.09 is where LJ12-10 crosses zero. 
-    Vij = epsilons*(5.*(x**12) - 6.*deltas*(x**10))     ## To Do: Generalize to other contact functions
+    Vij = model.calculate_contact_potential(rij,"all")
 
     return traj,U,TS,N,Uframes,TSframes,Nframes,Vij
 
@@ -83,19 +79,29 @@ def get_target_feature(model):
     ## - Check if a target set of contact probabilities is given
     ##   else construct target as <Q_i^TS> = Q^TS (uniform TS).
 
+    ## ---- For future
     ## Format for target_Qi.dat
     ## - three columns:
     ##  <res_a>  <res_b>  <Q_ab^TS>
     ## computes contact as within native contact distance.
+    ## ---- 
+    
+    ## ---- For now 
+    ## Just a column with the desired contact probability in the TS
 
     if os.path.exists("%s/target_Qi.dat" % name):
         target =  np.loadtxt("%s/target_Qi.dat" % name)
+        target_err =  np.loadtxt("%s/target_Qi_err.dat" % name)
     else:
         ## Compute the average Q of the TS: Average of the endpoints.
         os.chdir("%s" % sub)
         bounds, state_labels = get_state_bounds()
-        bounds = [0] + bounds + [model.n_contacts]
+        Q_TS = 0.5*(bounds[1][0] + bounds[1][1])/float(model.n_contacts)
+        target = Q_TS*np.ones(model.n_contacts,float)
+        target_err = 0.05*np.ones(model.n_contacts,float)
         os.chdir(cwd)
+
+    return target, target_err
 
 def calculate_average_Jacobian(model):
     """ Calculate the average feature vector (ddG's) and Jacobian """
@@ -109,10 +115,6 @@ def calculate_average_Jacobian(model):
 
     temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
     directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
-
-    epsilons = model.contact_epsilons
-    deltas = model.contact_deltas
-    sigmas = model.contact_sigmas
 
     bounds, state_labels = get_state_bounds()
     bounds = [0] + bounds + [model.n_contacts]
@@ -128,7 +130,7 @@ def calculate_average_Jacobian(model):
         beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
         print "  Calculating Jacobian for Mut_%d/%s" % (model.Mut_iteration,dir)
         os.chdir(dir)
-        sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,bounds,epsilons,deltas,sigmas)
+        sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,bounds)
         sim_feature_all.append(sim_feature)
         Jacobian_all.append(Jacobian)
         os.chdir("..")
@@ -149,11 +151,11 @@ def calculate_average_Jacobian(model):
 
     return sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err
 
-def compute_Jacobian_for_directory(model,beta,bounds,epsilons,deltas,sigmas):
+def compute_Jacobian_for_directory(model,beta,bounds):
     """ Calculates the feature vector (ddG's) and Jacobian for one directory """
 
     ## Get trajectory, state indicators, contact energy
-    traj,U,TS,N,Uframes,TSframes,Nframes,Vij = get_states_Vij(model,bounds,epsilons,deltas,sigmas)
+    traj,U,TS,N,Uframes,TSframes,Nframes,Vij = get_states_Vij(model,bounds)
 
     ## Get Qi
     Qi = np.loadtxt("qimap.dat",dtype=float)
