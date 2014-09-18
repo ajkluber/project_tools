@@ -96,7 +96,7 @@ def get_target_feature(model):
         ## Compute the average Q of the TS: Average of the endpoints.
         os.chdir("%s" % sub)
         bounds, state_labels = get_state_bounds()
-        Q_TS = 0.5*(bounds[1][0] + bounds[1][1])/float(model.n_contacts)
+        Q_TS = 0.5*(bounds[2] + bounds[3])/float(model.n_contacts)
         target = Q_TS*np.ones(model.n_contacts,float)
         target_err = 0.05*np.ones(model.n_contacts,float)
         os.chdir(cwd)
@@ -187,17 +187,19 @@ if __name__ == "__main__":
     name = args.name
     iteration = args.iteration
 
-    #print name, iteration
-    #raise SystemExit
-
-    model = mdb.models.load_model(name) 
+    model = mdb.check_inputs.load_model(name) 
     model.Mut_iteration = iteration
     
+    target_feature, target_feature_err = get_target_feature(model)
     sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = calculate_average_Jacobian(model)
 
     if not os.path.exists("%s/Mut_%d/contact_Qi" % (name,iteration)):
         os.mkdir("%s/Mut_%d/contact_Qi" % (name,iteration))
 
+    np.savetxt("%s/Mut_%d/contact_Qi/target_feature.dat" % (name,iteration), target_feature)
+    np.savetxt("%s/Mut_%d/contact_Qi/target_feature_err.dat" % (name,iteration), target_feature_err)
+    np.savetxt("%s/Mut_%d/contact_Qi/target_feature.dat" % (name,iteration), target_feature)
+    np.savetxt("%s/Mut_%d/contact_Qi/target_feature_err.dat" % (name,iteration), target_feature_err)
     np.savetxt("%s/Mut_%d/contact_Qi/sim_feature.dat" % (name,iteration), sim_feature_avg)
     np.savetxt("%s/Mut_%d/contact_Qi/sim_feature_err.dat" % (name,iteration), sim_feature_err)
     np.savetxt("%s/Mut_%d/contact_Qi/Jacobian.dat" % (name,iteration), Jacobian_avg)
