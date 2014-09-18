@@ -251,7 +251,7 @@ def calculate_contacts_lost_for_mutants():
         log_string += tempstring+"\n"
 
     log_string += "\nAlanine-Glycine Mutations:\n"
-    scanmuts = get_all_scanning_mutations()
+    scanmuts = get_scanning_mutations()
     for k in range(len(scanmuts)): 
         mut = scanmuts[k]
         mutindx = int(mut[1:-1])
