@@ -227,6 +227,7 @@ if __name__ == '__main__':
     
     model = mdb.check_inputs.load_model("%s" % name,dry_run=True)
     model.Mut_iteration = iteration
+    model.contact_epsilons = np.ones(model.n_contacts,float)
     method = "ddG_MC2004"
 
     cwd = os.getcwd()
@@ -234,7 +235,7 @@ if __name__ == '__main__':
         os.mkdir("%s/Mut_%d/test" % (name,iteration))
     os.chdir("%s/Mut_%d/test" % (name,iteration))
 
-    Levenberg_Marquardt_solution(model,method,scaling=False)
+    Levenberg_Marquardt_solution(model,method)
 
     os.chdir(cwd)
 

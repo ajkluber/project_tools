@@ -17,13 +17,14 @@ def save(model,soln_index):
 
     ## Take choice and rescale it so that the smallest new 
     ## parameter is epsmin.
-    Alphas = -(eps0 - epsmin)/deps
-    alpha = min(Alphas[Alphas > 0])
+    #Alphas = -(eps0 - epsmin)/deps
+    #alpha = min(Alphas[Alphas > 0])
+    #if alpha > 1.0:
+    #    neweps = eps0 + deps
+    #else:
+    #    neweps = eps0 + alpha*deps
 
-    if alpha > 1.0:
-        neweps = eps0 + deps
-    else:
-        neweps = eps0 + alpha*deps
+    neweps[(neweps < 0.01)] = 0.01
 
     model.contact_epsilons = neweps
     model.generate_topology()
