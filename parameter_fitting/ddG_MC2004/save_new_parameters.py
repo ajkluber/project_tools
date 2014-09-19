@@ -14,6 +14,7 @@ def save(model,soln_index):
     eps0 = model.contact_epsilons
     deps = np.loadtxt("xp_%d.dat" % soln_index)
     epsmin = 0.01*np.ones(len(eps0),float)
+    neweps = eps0 + deps
 
     ## Take choice and rescale it so that the smallest new 
     ## parameter is epsmin.
