@@ -93,10 +93,10 @@ def get_iteration_data(name,iteration):
         state_labels.append(line.split()[0])
         state_bounds.append([int(line.split()[1]),int(line.split()[2])])
 
-    ddgsim = np.loadtxt("%s/Mut_%d/mut/ddGsim.dat" % (name,iteration))
-    ddgsim_err = np.loadtxt("%s/Mut_%d/mut/ddGsim_err.dat" % (name,iteration))
-    ddgexp = np.loadtxt("%s/Mut_%d/mut/ddGexp.dat" % (name,iteration))
-    ddgexp_err = np.loadtxt("%s/Mut_%d/mut/ddGexp_err.dat" % (name,iteration))
+    ddgsim = np.loadtxt("%s/Mut_%d/newton/sim_feature.dat" % (name,iteration))
+    ddgsim_err = np.loadtxt("%s/Mut_%d/newton/sim_feature_err.dat" % (name,iteration))
+    ddgexp = np.loadtxt("%s/Mut_%d/newton/target_feature.dat" % (name,iteration))
+    ddgexp_err = np.loadtxt("%s/Mut_%d/newton/target_feature_err.dat" % (name,iteration))
 
     ddGsim = np.zeros((len(ddgsim),2),float)
     ddGsim[:,0] = ddgsim

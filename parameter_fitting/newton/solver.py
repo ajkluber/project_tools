@@ -21,7 +21,7 @@ import numpy as np
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
-def Levenberg_Marquardt_solution(model,method):
+def Levenberg_Marquardt_solution(model,method,scaling=False):
     """ Solve for new parameters using the Levenberg-Marquardt algorithm 
 
     Description:
@@ -72,7 +72,11 @@ def Levenberg_Marquardt_solution(model,method):
     ## parameter are 'damped' out by a filter function.
     n_rows = JTJ.shape[0]
     Levenberg = np.identity(n_rows)
-    Levenberg[(np.arange(n_rows),np.arange(n_rows))] = np.diag(JTJ)
+
+    if scaling:
+        ## Scale the diagonal by the curvature. This makes it the Levenberg-Marquardt method
+        Levenberg[(np.arange(n_rows),np.arange(n_rows))] = np.diag(JTJ)
+
     u,s,v = np.linalg.svd(JTJ)
     if np.log10(min(s)) < -10:
         smin = -10
@@ -209,14 +213,30 @@ def plot_condition_number(Lambdas,condition_number):
 
 
 if __name__ == '__main__':
+    import os
+    import argparse
+    import model_builder as mdb
 
-    import model_builder.models as models
-    def dummy_func(sub,string):
-        pass 
+    parser = argparse.ArgumentParser(description='.')
+    parser.add_argument('--name', type=str, required=True, help='Name of protein to plot.')
+    parser.add_argument('--iteration', type=int, required=True, help='Iteration to plot.')
+    args = parser.parse_args()
+
+    name = args.name
+    iteration = args.iteration
     
-    name = "1RIS"
-    model = models.load_models(subdirs,dryrun=True)
-    model.Mut_iteration = 0
+    model = mdb.check_inputs.load_model("%s" % name,dry_run=True)
+    model.Mut_iteration = iteration
     method = "ddG_MC2004"
 
-    Levenberg_Marquardt_solution(model,method)
+    cwd = os.getcwd()
+    if not os.path.exists("%s/Mut_%d/test" % (name,iteration)):
+        os.mkdir("%s/Mut_%d/test" % (name,iteration))
+    os.chdir("%s/Mut_%d/test" % (name,iteration))
+
+    Levenberg_Marquardt_solution(model,method,scaling=False)
+
+    os.chdir(cwd)
+
+
+
