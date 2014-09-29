@@ -134,6 +134,21 @@ def save_solution_data(solutions,Lambdas,nrm_soln,nrm_resd,norm_eps,condition_nu
     plt.savefig("condition_vs_lambda.png")
     plt.savefig("condition_vs_lambda.pdf")
 
+    plot_solutions(Lambdas,solutions)
+    plt.savefig("solutions.png")
+    plt.savefig("solutions.pdf")
+    
+def plot_solutions(Lambdas,solutions):
+
+    solutions = np.array(solutions)
+
+    plt.figure()
+    plt.plot(Lambdas,solutions) 
+    plt.title("solution values")
+    plt.xlabel("$\\lambda$",fontsize=16)
+    plt.ylabel("$\\delta\\epsilon_{\\lambda}$",fontsize=16)
+    plt.ylim(-1,5)
+
 def plot_Lcurve(nrm_resd,nrm_soln,Lambdas,skip=30):
     x = np.log10(nrm_resd)
     y = np.log10(nrm_soln)

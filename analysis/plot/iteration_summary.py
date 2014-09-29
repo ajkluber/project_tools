@@ -51,9 +51,10 @@ def get_iteration_data(name,iteration):
     Tuse = open("%s/Mut_%d/T_array_last.txt" % (name,iteration),"r").readlines()[0].rstrip("\n")
     Tf = float(open("%s/Mut_%d/Tf.txt" % (name,iteration),"r").read().rstrip("\n"))
 
-    beadbead = np.loadtxt("%s/Mut_%d/%s/BeadBead.dat" % (name,iteration,Tuse),usecols=(0,1,6))
-    contacts = beadbead[:,:2]
-    epsilons = beadbead[:,2]
+    beadbead = np.loadtxt("%s/Mut_%d/%s/BeadBead.dat" % (name,iteration,Tuse),dtype=str)
+    notdisulf = beadbead[:,4] != "ss"
+    contacts = beadbead[notdisulf,:2].astype(int)
+    epsilons = beadbead[notdisulf,6].astype(float)
 
     n_residues = len(open("%s/Native.pdb" % name,"r").readlines()) - 1
     epsilon_map = np.zeros((n_residues,n_residues))

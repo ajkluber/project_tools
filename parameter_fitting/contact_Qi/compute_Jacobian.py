@@ -123,7 +123,7 @@ def calculate_average_Jacobian(model):
     ## Jacobian for each directory indpendently then save. 
     sim_feature_all = []
     Jacobian_all = []
-    timestart = time.time()
+    lasttime = time.time()
     for n in range(len(directories)):
         T = temperatures[n]
         dir = directories[n]
@@ -135,8 +135,10 @@ def calculate_average_Jacobian(model):
         Jacobian_all.append(Jacobian)
         os.chdir("..")
 
-        calctime = time.time() - timestart
-        print "  calculation took %.2f seconds = %.2f minutes" % (calctime,calctime/60.)
+        thistime = time.time()
+        timediff = thistime - lasttime
+        lasttime = thistime
+        print "  calculation took %.2f seconds = %.2f minutes" % (timediff,timediff/60.)
 
     sim_feature_all = np.array(sim_feature_all)
     Jacobian_all = np.array(Jacobian_all)
