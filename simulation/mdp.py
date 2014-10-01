@@ -57,7 +57,7 @@ def get_constant_temperature_mdp(model,T,nsteps):
     mdp_string += 'DispCorr                 = no \n'
     mdp_string += '; Extension of the potential lookup tables beyond the cut-off \n'
     mdp_string += 'table-extension          = 1.0 \n\n'
-    mdp_string += '; Seperate tables between energy group pairs \n'
+    mdp_string += '; Separate tables between energy group pairs \n'
     mdp_string += 'energygrp_table          = %s \n\n' % model.energygrp_table
     mdp_string += '; IMPLICIT SOLVENT ALGORITHM \n'
     mdp_string += 'implicit_solvent         = No \n\n'
