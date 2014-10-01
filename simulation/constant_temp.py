@@ -281,7 +281,10 @@ def folding_temperature_loop_extension(model,append_log,new=False):
             deltaT = model.initial_T_array[2]
         else:
             ## Estimate folding temperature
-            E = float(sum(model.contact_epsilons[model.contact_deltas == 1]))
+            if (model.contact_type == "LJ1210") and (model.n_repcontacts != 0):
+                E = float(sum(model.contact_epsilons[LJtype == 1])) - float(sum(model.contact_epsilons[LJtype == -1]))
+            else:
+                E = float(sum(model.contact_epsilons))
             N = float(model.n_residues)
             Tf_guess = int(round((36.081061*E/N) + 56.218196)) ## calibration for LJ1210 contacts circa June 2014
             if model.contact_type == "Guassian":
@@ -504,21 +507,33 @@ def run_constant_temp(model,T,nsteps="100000000",walltime="23:00:00",queue="seri
     open("topol.top","w").write(model.topology)
     open("BeadBead.dat","w").write(model.beadbead)
 
-    np.savetxt("table.xvg",model.table,fmt="%16.15e",delimiter=" ")
+    repstring = None
+    if model.contact_type == "LJ1210":
+        np.savetxt("table.xvg",model.table,fmt="%16.15e",delimiter=" ")
+        if model.n_repcontacts != 0:
+            repstring = ""
+            for i in range(model.n_repcontacts):
+                repstring += "%s " % model.rep_tablenames[i]
+                np.savetxt(model.rep_tablenames[i],model.rep_tables[i],fmt="%16.15e",delimiter=" ")
+        
+
     np.savetxt("Qref_cryst.dat",model.Qref,fmt="%1d",delimiter=" ")
     np.savetxt("contacts.dat",model.contacts,fmt="%4d",delimiter=" ")
 
     ## Start simulation
     jobname = model.subdir+"_"+str(T)
+    if model.contact_type == "Gaussian":
+        prep_run(jobname,walltime=walltime,queue=queue,ppn=ppn,contact_type="Gaussian",repstring=repstring)
+    else:
+        prep_run(jobname,walltime=walltime,queue=queue,ppn=ppn,repstring=repstring)
+
     if model.dry_run == True:
         print "    Dryrun: Successfully saved simulation files for ", T
     else:
-        if model.contact_type == "Gaussian":
-            submit_run(jobname,walltime=walltime,queue=queue,ppn=ppn,contact_type="Gaussian")
-        else:
-            submit_run(jobname,walltime=walltime,queue=queue,ppn=ppn)
+        qsub = "qsub run.pbs"
+        sb.call(qsub.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
     
-def get_pbs_string(jobname,queue,ppn,walltime,contact_type=None):
+def get_pbs_string(jobname,queue,ppn,walltime,contact_type=None,repstring=None):
     """ Return basic PBS job script. """
     pbs_string = "#!/bin/bash \n"
     pbs_string +="#PBS -N %s \n" % jobname
@@ -536,7 +551,7 @@ def get_pbs_string(jobname,queue,ppn,walltime,contact_type=None):
     #pbs_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg"
     return pbs_string
 
-def get_rst_pbs_string(jobname,queue,ppn,walltime,contact_type=None):
+def get_rst_pbs_string(jobname,queue,ppn,walltime,contact_type=None,repstring=None):
     """ Return basic PBS job script for restarting. """
     pbs_string = "#!/bin/bash \n"
     rst_string = "#!/bin/bash \n"
@@ -551,11 +566,14 @@ def get_rst_pbs_string(jobname,queue,ppn,walltime,contact_type=None):
         rst_string +="mdrun_sbm -s topol_4.5.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
     else:
         #rst_string +="mdrun -nt 1 -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
-        rst_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
+        if repstring != None:
+            rst_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg -tableb %s -cpi state.cpt " % repstring
+        else:
+            rst_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
     #rst_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
     return rst_string
 
-def submit_run(jobname,walltime="23:00:00",queue="serial",ppn="1",contact_type=None):
+def prep_run(jobname,walltime="23:00:00",queue="serial",ppn="1",contact_type=None,repstring=None):
     ''' Executes the constant temperature runs.'''
 
     prep_step1 = 'grompp_sbm -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.5.tpr'
@@ -563,12 +581,10 @@ def submit_run(jobname,walltime="23:00:00",queue="serial",ppn="1",contact_type=N
     sb.call(prep_step1.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
     sb.call(prep_step2.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
 
-    pbs_string = get_pbs_string(jobname,queue,ppn,walltime,contact_type=contact_type)
+    pbs_string = get_pbs_string(jobname,queue,ppn,walltime,contact_type=contact_type,repstring=repstring)
     open("run.pbs","w").write(pbs_string)
-    qsub = "qsub run.pbs"
-    sb.call(qsub.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
 
-    rst_string = get_rst_pbs_string(jobname,queue,ppn,walltime,contact_type=contact_type)
+    rst_string = get_rst_pbs_string(jobname,queue,ppn,walltime,contact_type=contact_type,repstring=repstring)
     open("rst.pbs","w").write(rst_string)
 
 if __name__ == '__main__':

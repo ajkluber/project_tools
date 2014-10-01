@@ -369,14 +369,29 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Calculate .')
     parser.add_argument('--name', type=str, required=True, help='name.')
     parser.add_argument('--iteration', type=int, required=True, help='iteration.')
-    parser.add_argument('--scanningfij', type=float, required=True, help='Scanning fij.')
+    parser.add_argument('--savein', type=str, required=True, help='Directory to save in.')
+    parser.add_argument('--scanningfij', type=float, default=0.5, help='Scanning fij.')
     args = parser.parse_args()
     
     name = args.name
     iteration= args.iteration
-    def dummy(this,that):
-        pass
 
-    model = mdb.models.load_model(name)
+    T = open("%s/Mut_%d/T_array_last.txt" % (name,iteration),"r").readlines()[0].rstrip("\n")
+    epsilons = np.loadtxt("%s/Mut_%d/%s/BeadBead.dat" % (name,iteration,T),usecols=(6,),dtype=float)
+
+    model = mdb.check_inputs.load_model(name)
     model.Mut_iteration = iteration
-    calculate_average_Jacobian(model,scanning_only=True,scanfij=args.scanningfij)
+    model.contact_epsilons = epsilons
+    target_feature, target_feature_err = get_target_feature(model)
+    sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = calculate_average_Jacobian(model,scanning_only=True,scanfij=args.scanningfij)
+
+    method = args.savein
+    if not os.path.exists("%s/Mut_%d/%s" % (name,iteration,method)):
+        os.mkdir("%s/Mut_%d/%s" % (name,iteration,method))
+    print "  Saving feature vector and Jacobian in %s/Mut_%d/%s" % (name,iteration,method)
+    np.savetxt("%s/Mut_%d/%s/target_feature.dat" % (name,iteration,method), target_feature)
+    np.savetxt("%s/Mut_%d/%s/target_feature_err.dat" % (name,iteration,method), target_feature_err)
+    np.savetxt("%s/Mut_%d/%s/sim_feature.dat" % (name,iteration,method), sim_feature_avg)
+    np.savetxt("%s/Mut_%d/%s/sim_feature_err.dat" % (name,iteration,method), sim_feature_err)
+    np.savetxt("%s/Mut_%d/%s/Jacobian.dat" % (name,iteration,method), Jacobian_avg)
+    np.savetxt("%s/Mut_%d/%s/Jacobian_err.dat" % (name,iteration,method) ,Jacobian_err)
