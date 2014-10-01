@@ -67,7 +67,7 @@ def plot_ddGs(protein, current_dir, iteration, select_temp):
     err_ddG0_exp = []
     index =[]
     for i in range(len(usable)):
-        if all([usable[i]=='True', location[i]=='core',exclude[i]==0]):
+        if all([usable[i]=='True',exclude[i]==0]):
             ddGdag_exp.append(ddGdag_exp_raw[i])
             err_ddGdag_exp.append(err_ddGdag_exp_raw[i])
             ddG0_exp.append(ddG0_exp_raw[i])
@@ -246,10 +246,9 @@ def main():
     if os.path.isdir(current_dir+'/metrics/ddG_comparison')==False:
         os.mkdir('ddG_comparison')
     
-    temps_file = open(current_dir+'/'+protein+'/Mut_'+iteration+'/Tf_choice.txt').readlines()
-    for temp in temps_file:
-        select_temp = temp.split()[0]
-        plot_ddGs(protein, current_dir, iteration,select_temp)
+    temps_file = open(current_dir+'/'+protein+'/Mut_'+iteration+'/T_array_last.txt').readlines()
+    select_temp = temps_file[0].split("_")[0]
+    plot_ddGs(protein, current_dir, iteration,select_temp)
 
 if __name__=="__main__":
     main()
