@@ -383,7 +383,7 @@ if __name__ == "__main__":
     model.Mut_iteration = iteration
     model.contact_epsilons = epsilons
     target_feature, target_feature_err = get_target_feature(model)
-    sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = calculate_average_Jacobian(model,scanning_only=True,scanfij=args.scanningfij)
+    sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = calculate_average_Jacobian(model)
 
     method = args.savein
     if not os.path.exists("%s/Mut_%d/%s" % (name,iteration,method)):

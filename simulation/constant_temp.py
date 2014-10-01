@@ -314,7 +314,11 @@ def start_next_Tf_loop_iteration(model,append_log):
     ## Update System counters and estimate new Tf
     model.Tf_iteration += 1
     model.Mut_iteration += 1
-    E = float(sum(model.contact_epsilons[model.contact_deltas == 1]))
+    ## Estimate folding temperature
+    if (model.contact_type == "LJ1210") and (model.n_repcontacts != 0):
+        E = float(sum(model.contact_epsilons[LJtype == 1])) - float(sum(model.contact_epsilons[LJtype == -1]))
+    else:
+        E = float(sum(model.contact_epsilons))
     N = float(model.n_residues)
     Tf_guess = (36.081061*E/N) + 56.218196 ## calibration for LJ1210 contacts circa June 2014
     if model.contact_type == "Guassian":
