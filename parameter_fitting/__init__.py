@@ -40,7 +40,7 @@ Optimization and Nonlinear Equations". SIAM. 1996.
 import os 
 import numpy as np
 
-import newton
+import newton_solver
 import ddG_MC2004
 import FRET
 import RMSF
@@ -106,12 +106,21 @@ def solve_newtons_method(model,method,append_log):
     name = model.subdir
     iteration = model.Mut_iteration
 
+    solver_opts = {"Levenberg":newton_solver.Levenberg_Marquardt}
+    if model.fitting_solver not in solver_opts.keys():
+        print "ERROR! requested solver algorithm %s not found!" % model.fitting_solver
+        print " Choose from available solvers: ", solver_opts.keys()
+        print " Exiting."
+        raise SystemExit
+    else:
+        solver = solver_opts[model.fitting_solver]
+
     append_log(name,"Starting: Solving_Newtons_Method")
     ## Find solutions with Levenbeg_Marquardt algorithm
     print "  Solving for solutions with Levenberg-Marquardt method"
     cwd = os.getcwd()
     os.chdir("%s/Mut_%d/newton" % (name,iteration))
-    newton.solver.Levenberg_Marquardt_solution(model,method)
+    solver(model,method)
     os.chdir(cwd)
     append_log(name,"Finished: Solving_Newtons_Method")
 
