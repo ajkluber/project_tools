@@ -38,7 +38,7 @@ def crunch_Q(name,contact_type,walltime="00:01:00",ppn="1",queue="serial"):
     sb.call(qsub.split(),stdout=open("contacts.out","w"),stderr=open("contacts.err","w"))
     
 
-def crunch_all(name,contact_type,walltime="00:02:00",ppn="1"):
+def crunch_all(name,contact_type,walltime="00:02:00",ppn="1",n_rep=0):
     """ Submit PBS job to calculate observables
 
     Calculates rmsd, radius gyration, dihedrals, and potential energy with 
@@ -56,12 +56,18 @@ def crunch_all(name,contact_type,walltime="00:02:00",ppn="1"):
     if contact_type == "Gaussian":
         analysis_pbs +='echo -e "0\n0" | g_rms_sbm -f traj.xtc -s topol_4.5.tpr -o rmsd.xvg -nomw -xvg none -n index.ndx\n'
         analysis_pbs +='echo "1" | g_gyrate_sbm -f traj.xtc -s topol_4.5.tpr -o radius_gyration.xvg -xvg none\n'
+        analysis_pbs +='echo "1 2 3 4 8" | g_energy -f ener.edr -o energyterms -xvg none\n'
+        analysis_pbs +='echo "11" | g_energy -f ener.edr -o temperature -xvg none\n'
     else:
         analysis_pbs +='echo -e "0\n0" | g_rms -f traj.xtc -s topol_4.6.tpr -o rmsd.xvg -nomw -xvg none -n index.ndx\n'
         analysis_pbs +='echo "1" | g_gyrate -f traj.xtc -s topol_4.6.tpr -o radius_gyration.xvg -xvg none\n'
+        if n_rep != 0:
+            analysis_pbs +='echo "1 3 4 5 9" | g_energy -f ener.edr -o energyterms -xvg none\n'
+            analysis_pbs +='echo "12" | g_energy -f ener.edr -o temperature -xvg none\n'
+        else:
+            analysis_pbs +='echo "1 2 3 4 8" | g_energy -f ener.edr -o energyterms -xvg none\n'
+            analysis_pbs +='echo "11" | g_energy -f ener.edr -o temperature -xvg none\n'
     analysis_pbs +='g_angle -n dihedrals.ndx -ov phis.xvg -all -type dihedral -xvg none\n'
-    analysis_pbs +='echo "1 2 3 4 8" | g_energy -f ener.edr -o energyterms -xvg none\n'
-    analysis_pbs +='echo "11" | g_energy -f ener.edr -o temperature -xvg none\n'
 
     open("analysis.pbs","w").write(analysis_pbs)
     qsub = "qsub analysis.pbs"
@@ -91,7 +97,6 @@ def reorganize_qimap():
     np.savetxt("Qnh.dat",Qnh)
     np.savetxt("Qlocal.dat",Qlocal)
     np.savetxt("Qnonlocal.dat",Qnonlocal)
-
 
 def crunch_Nh(tol=40.):
     """ Compute number of helical residues 

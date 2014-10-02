@@ -75,7 +75,7 @@ def analyze_temperature_array(model,append_log,equil=False):
             if (not flag) or (not flag):
                 if not flag:
                     print "    Crunching coordinates for ",tdir
-                    crunch_coordinates.crunch_all("%s_%s" % (name,tdir),model.contact_type,walltime=cwalltime,ppn=ppn)
+                    crunch_coordinates.crunch_all("%s_%s" % (name,tdir),model.contact_type,walltime=cwalltime,ppn=ppn,nrep=model.n_repcontacts)
                 if not flagQ:
                     print "    Crunching Q for ",tdir
                     crunch_coordinates.crunch_Q("%s_%s" % (name,tdir),model.contact_type,walltime=qwalltime,ppn=ppn,queue=queue)
@@ -132,7 +132,7 @@ def check_completion(model,append_log,equil=False):
             flagQ = all([ os.path.exists(file) for file in crunchQfiles ])
 
             if not flag:
-                crunch_coordinates.crunch_all("%s_%s" % (model.subdir,tdir),model.contact_type,walltime=cwalltime)
+                crunch_coordinates.crunch_all("%s_%s" % (model.subdir,tdir),model.contact_type,walltime=cwalltime,nrep=model.n_repcontacts)
 
             if not flagQ:
                 crunch_coordinates.crunch_Q("%s_%s" % (model.subdir,tdir),model.contact_type,walltime=qwalltime)
