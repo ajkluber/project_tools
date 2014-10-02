@@ -7,4 +7,9 @@ Description:
 new parameters by Newton's method. 
 
 
+
+
 """
+
+
+import compute_Jacobian

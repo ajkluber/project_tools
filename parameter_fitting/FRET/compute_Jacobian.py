@@ -40,33 +40,14 @@ def get_state_bounds():
     
     return state_bounds,state_labels
 
-def get_states_Vij(model,bounds):
+def get_rij_Vij(model):
     """ Load trajectory, state indicators, and contact energy """
 
     traj = md.load("traj.xtc",top="Native.pdb")     ## Loading from file takes most time.
     rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape))
-    Q = np.loadtxt("Q.dat") ## To Do: Generalize to different reaction coordinates
-
-    state_indicator = np.zeros(len(Q),int)
-    ## Assign every frame a state label. State indicator is integer 1-N for N states.
-    for state_num in range(len(bounds)-1):
-        instate = (Q > bounds[state_num]).astype(int)*(Q <= bounds[state_num+1]).astype(int)
-        state_indicator[instate == 1] = state_num+1
-    if any(state_indicator == 0):
-        num_not_assign = sum((state_indicator == 0).astype(int))
-        print "  Warning! %d frames were not assigned out of %d total frames!" % (num_not_assign,len(Q))
-    ## Boolean arrays that indicate which state each frame is in.
-    ## States are defined by their boundaries along coordinate Q.
-    U  = ((Q > bounds[1]).astype(int)*(Q < bounds[2]).astype(int)).astype(bool)
-    TS = ((Q > bounds[3]).astype(int)*(Q < bounds[4]).astype(int)).astype(bool)
-    N  = ((Q > bounds[5]).astype(int)*(Q < bounds[6]).astype(int)).astype(bool)
-    Nframes  = float(sum(N.astype(int)))
-    Uframes  = float(sum(U.astype(int)))
-    TSframes = float(sum(TS.astype(int)))
-
     Vij = model.calculate_contact_potential(rij,"all")
 
-    return traj,U,TS,N,Uframes,TSframes,Nframes,Vij
+    return traj,rij,Vij
 
 def get_target_feature(model):
     """ Get target features """
@@ -103,7 +84,7 @@ def get_target_feature(model):
 
     return target, target_err
 
-def calculate_average_Jacobian(model):
+def calculate_average_Jacobian(model,residues):
     """ Calculate the average feature vector (ddG's) and Jacobian """
     
     name = model.subdir
@@ -116,8 +97,8 @@ def calculate_average_Jacobian(model):
     temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
     directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
 
-    bounds, state_labels = get_state_bounds()
-    bounds = [0] + bounds + [model.n_contacts]
+    #bounds, state_labels = get_state_bounds()
+    #bounds = [0] + bounds + [model.n_contacts]
 
     ## Loop over temperatures in Mut subdir. Calculate ddG vector and 
     ## Jacobian for each directory indpendently then save. 
@@ -130,7 +111,7 @@ def calculate_average_Jacobian(model):
         beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
         print "  Calculating Jacobian for Mut_%d/%s" % (model.Mut_iteration,dir)
         os.chdir(dir)
-        sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,bounds)
+        sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,residues)
         sim_feature_all.append(sim_feature)
         Jacobian_all.append(Jacobian)
         os.chdir("..")
@@ -153,20 +134,17 @@ def calculate_average_Jacobian(model):
 
     return sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err
 
-def compute_Jacobian_for_directory(model,beta,bounds):
+def compute_Jacobian_for_directory(model,beta,residues):
     """ Calculates the feature vector (ddG's) and Jacobian for one directory """
 
     ## Get trajectory, state indicators, contact energy
-    traj,U,TS,N,Uframes,TSframes,Nframes,Vij = get_states_Vij(model,bounds)
+    traj,rij,Vij = get_Vij(model)
 
-    ## Get Qi
-    Qi = np.loadtxt("qimap.dat",dtype=float)
-    sim_feature = sum(Qi[TS,:])/TSframes
-
+    ## Get simulation feature
+    FRETr = md.compute_distances(traj,residues)
     ## Initialize Jacobian
     Jacobian = np.zeros((model.n_contacts,model.n_contacts),float)
 
-    avg_Vij = sum(Vij[TS,:])/TSframes
     ## Compute rows of the Jacobian which are correlation functions of 
     ## contact formation with contact energy.
     for i in range(model.n_contacts):
@@ -174,6 +152,7 @@ def compute_Jacobian_for_directory(model,beta,bounds):
             print "    row %d out of %d" % (i+1,model.n_contacts)
 
         avg_Qi = sum(Qi[TS,i])/TSframes 
+        avg_Vij = sum(Vij[TS,:])/TSframes
         avg_QiVij = sum((Qi[TS,i]*Vij[TS,:].T).T)/TSframes
 
         Jacobian[i,:] = -beta*(avg_QiVij - avg_Qi*avg_Vij)
@@ -184,25 +163,83 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Calculate .')
     parser.add_argument('--name', type=str, required=True, help='Directory.')
     parser.add_argument('--iteration', type=int, required=True, help='Iteration.')
+    parser.add_argument('--temp', type=str, required=True, help='Temperature.')
+    parser.add_argument('--savein', type=str, required=True, help='Iteration.')
     args = parser.parse_args()
 
     name = args.name
     iteration = args.iteration
+    temp = args.temp
+    savein = args.savein
 
     model = mdb.check_inputs.load_model(name) 
     model.Mut_iteration = iteration
+    model.Tf_iteration = iteration
+
+    R_KJ_MOL = 0.0083145
+    T = float(temp.split("_")[0])
+    beta = 1./(R_KJ_MOL*T)
+
+    residues = list(np.loadtxt("%s/FRET_residues.dat" % name))
+    residues = [residues]
     
-    target_feature, target_feature_err = get_target_feature(model)
-    sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = calculate_average_Jacobian(model)
+    cwd = os.getcwd()
+    os.chdir("%s/Tf_%d/%s" % (name,iteration,temp))
 
-    if not os.path.exists("%s/Mut_%d/contact_Qi" % (name,iteration)):
-        os.mkdir("%s/Mut_%d/contact_Qi" % (name,iteration))
+    #sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,residues)
 
-    np.savetxt("%s/Mut_%d/contact_Qi/target_feature.dat" % (name,iteration), target_feature)
-    np.savetxt("%s/Mut_%d/contact_Qi/target_feature_err.dat" % (name,iteration), target_feature_err)
-    np.savetxt("%s/Mut_%d/contact_Qi/target_feature.dat" % (name,iteration), target_feature)
-    np.savetxt("%s/Mut_%d/contact_Qi/target_feature_err.dat" % (name,iteration), target_feature_err)
-    np.savetxt("%s/Mut_%d/contact_Qi/sim_feature.dat" % (name,iteration), sim_feature_avg)
-    np.savetxt("%s/Mut_%d/contact_Qi/sim_feature_err.dat" % (name,iteration), sim_feature_err)
-    np.savetxt("%s/Mut_%d/contact_Qi/Jacobian.dat" % (name,iteration), Jacobian_avg)
-    np.savetxt("%s/Mut_%d/contact_Qi/Jacobian_err.dat" % (name,iteration) ,Jacobian_err)
+    n_bins = 30
+
+    ## Get trajectory, state indicators, contact energy
+    traj,rij,Vij = get_rij_Vij(model)
+
+    ## Get simulation feature
+    FRETr = (md.compute_distances(traj,residues))[:,0]
+    P_r, bins = np.histogram(FRETr,bins=n_bins,density=True)
+    
+    ## Indicates what bins fall in what bin
+    indicator = []
+    binframes = []
+    print "computing indicator.." 
+    for i in range(len(bins)-1):
+        temp = ((FRETr > bins[i]).astype(int)*(FRETr <= bins[i+1]).astype(int)).astype(bool)
+        indicator.append(temp)
+        binframes.append(float(sum((temp == True).astype(int))))
+
+    #print sum(binframes), len(FRETr)       # DEBUGGING
+
+    ## Initialize Jacobian
+    Jacobian = np.zeros((n_bins,model.n_contacts),float)
+
+    avg_Vij = sum(Vij[:,:])/float(len(FRETr))
+    ## Compute rows of the Jacobian which are correlation functions of 
+    ## contact formation with contact energy.
+    print "computing Jacobian..."
+    for i in range(n_bins):
+        #if (i % 10) == 0:
+        print "    row %d out of %d" % (i+1,n_bins)
+
+        avg_Vij_r = sum((Vij[indicator[i],:].T).T)/binframes[i]
+        Jacobian[i,:] = -beta*(avg_Vij_r - P_r[i]*avg_Vij)
+
+    #os.chdir(cwd)
+    #raise SystemExit
+
+    os.chdir(cwd)
+
+    #target_feature, target_feature_err = get_target_feature(model)
+    #sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = calculate_average_Jacobian(model,residues)
+
+    method = args.savein
+    if not os.path.exists("%s/Tf_%d/%s" % (name,iteration,method)):
+        os.mkdir("%s/Tf_%d/%s" % (name,iteration,method))
+    np.savetxt("%s/Tf_%d/%s/Jacobian.dat" % (name,iteration,method), Jacobian)
+
+    #np.savetxt("%s/Tf_%d/%s/target_feature.dat" % (name,iteration), target_feature)
+    #np.savetxt("%s/Tf_%d/%s/target_feature_err.dat" % (name,iteration), target_feature_err)
+    #np.savetxt("%s/Tf_%d/%s/target_feature.dat" % (name,iteration), target_feature)
+    #np.savetxt("%s/Tf_%d/%s/target_feature_err.dat" % (name,iteration), target_feature_err)
+    #np.savetxt("%s/Tf_%d/%s/sim_feature.dat" % (name,iteration), sim_feature_avg)
+    #np.savetxt("%s/Tf_%d/%s/sim_feature_err.dat" % (name,iteration), sim_feature_err)
+    #np.savetxt("%s/Tf_%d/%s/Jacobian.dat" % (name,iteration), Jacobian_avg)
+    #np.savetxt("%s/Tf_%d/%s/Jacobian_err.dat" % (name,iteration) ,Jacobian_err)
