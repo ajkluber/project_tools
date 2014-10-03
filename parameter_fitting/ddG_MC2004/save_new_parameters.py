@@ -25,8 +25,18 @@ def save(model,soln_index):
     #else:
     #    neweps = eps0 + alpha*deps
 
-    neweps[(neweps < 0.01)] = 0.01
+    ## Decide on whether to keep new repulsive contacts
+    #if model.fitting_allowswitch == "True":
+    #   pass
+    #   ## Make negative epsilons positive and change the
+    #   ## the interaction to repulsive.
+    #elif model.fitting_allowswitch == "False":
+    #   pass
+    #   neweps[neweps < 0.01] = 0.01
+    #else:
+    #   print "ERROR!"
 
+    neweps[neweps < 0.01] = 0.01
 
     model.contact_epsilons = neweps
     model.generate_topology()
