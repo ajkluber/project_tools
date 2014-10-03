@@ -186,7 +186,7 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
         ## Compute energy perturbation
         tempVij = -np.array(Fij[k])*Vij[:,np.array(Fij_conts[k])]
         dHk = sum(tempVij.T)
-        np.savetxt("dH_%s.dat" % mut,dH_k)
+        np.savetxt("dH_%s.dat" % mut,dHk)
 
         ## Free energy perturbation formula. Equation (4) in reference (1).
         dG_U  = -np.log(np.sum(np.exp(-beta*dHk[U]))/Uframes)
@@ -419,9 +419,9 @@ if __name__ == "__main__":
             mut = mutants[k]
             print "    row %d   mutant %s" % (k,mut)
             tempVij = -np.array(Fij[k])*Vij[:,np.array(Fij_conts[k])]
-            dH_k = sum(tempVij.T)
-            #np.savetxt("dH_%s.dat" % mut,dH_k)
-            np.savetxt("dH_%s_new.dat" % mut,dH_k)
+            dHk = sum(tempVij.T)
+            #np.savetxt("dH_%s.dat" % mut,dHk)
+            np.savetxt("dH_%s_new.dat" % mut,dHk)
         #sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels)
 
         os.chdir("..")
