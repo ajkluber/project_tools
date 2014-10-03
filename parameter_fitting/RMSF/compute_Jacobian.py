@@ -46,7 +46,7 @@ def get_rij_Vij(model):
 
     traj = md.load("traj.xtc",top="Native.pdb")     ## Loading from file takes most time.
     rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape))
-    Vij = model.calculate_contact_potential(rij,"all")
+    Vij = model.calculate_contact_potential(rij)
 
     return traj,rij,Vij
 

@@ -72,7 +72,7 @@ def get_states_Vij(model,bounds):
     Uframes  = float(sum(U.astype(int)))
     TSframes = float(sum(TS.astype(int)))
 
-    Vij = model.calculate_contact_potential(rij,"all")
+    Vij = model.calculate_contact_potential(rij)
 
     return traj,U,TS,N,Uframes,TSframes,Nframes,Vij
 
@@ -184,7 +184,9 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
         mut = mutants[k]
         print "    row %d   mutant %s" % (k,mut)
         ## Compute energy perturbation
-        dHk = compute_dHk(model,traj,mut,Fij[k],Fij_pairs[k],Fij_conts[k])
+        tempVij = -np.array(Fij[k])*Vij[:,np.array(Fij_conts[k])]
+        dH_k = sum(tempVij.T)
+        np.savetxt("dH_%s.dat" % mut,dH_k)
 
         ## Free energy perturbation formula. Equation (4) in reference (1).
         dG_U  = -np.log(np.sum(np.exp(-beta*dHk[U]))/Uframes)
@@ -238,17 +240,6 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
     save_phi_values(mutants,"Q",state_labels,dG,ddG,phi,saveas=saveas)
 
     return sim_feature, Jacobian
-
-def compute_dHk(model,traj,mut,fij,pairs,conts):
-    """ Calculate energetic perturbation to each frame from mutation """
-
-    ## Use mdtraj to compute the distances between pairs.
-    rij = md.compute_distances(traj,pairs)
-    Vij = -fij*model.calculate_contact_potential(rij,conts)
-    dH_k = sum(Vij.T)
-    np.savetxt("dH_%s.dat" % mut,dH_k)
-
-    return dH_k
 
 def get_mutant_fij(model,mutants):
     """ Load in the fraction of contact loss for each mutation.
@@ -364,12 +355,10 @@ def save_phi_values(mutants,coord,state_labels,dG,ddG,phi,saveas="Q_phi.dat"):
     outputfile.close()
 
 if __name__ == "__main__":
-    ## To Do: Make into a command line utility
-
     parser = argparse.ArgumentParser(description='Calculate .')
     parser.add_argument('--name', type=str, required=True, help='name.')
     parser.add_argument('--iteration', type=int, required=True, help='iteration.')
-    parser.add_argument('--savein', type=str, required=True, help='Directory to save in.')
+    #parser.add_argument('--savein', type=str, required=True, help='Directory to save in.')
     parser.add_argument('--scanningfij', type=float, default=0.5, help='Scanning fij.')
     args = parser.parse_args()
     
@@ -382,16 +371,70 @@ if __name__ == "__main__":
     model = mdb.check_inputs.load_model(name)
     model.Mut_iteration = iteration
     model.contact_epsilons = epsilons
-    target_feature, target_feature_err = get_target_feature(model)
-    sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = calculate_average_Jacobian(model)
 
-    method = args.savein
-    if not os.path.exists("%s/Mut_%d/%s" % (name,iteration,method)):
-        os.mkdir("%s/Mut_%d/%s" % (name,iteration,method))
-    print "  Saving feature vector and Jacobian in %s/Mut_%d/%s" % (name,iteration,method)
-    np.savetxt("%s/Mut_%d/%s/target_feature.dat" % (name,iteration,method), target_feature)
-    np.savetxt("%s/Mut_%d/%s/target_feature_err.dat" % (name,iteration,method), target_feature_err)
-    np.savetxt("%s/Mut_%d/%s/sim_feature.dat" % (name,iteration,method), sim_feature_avg)
-    np.savetxt("%s/Mut_%d/%s/sim_feature_err.dat" % (name,iteration,method), sim_feature_err)
-    np.savetxt("%s/Mut_%d/%s/Jacobian.dat" % (name,iteration,method), Jacobian_avg)
-    np.savetxt("%s/Mut_%d/%s/Jacobian_err.dat" % (name,iteration,method) ,Jacobian_err)
+    cwd = os.getcwd()
+    sub = "%s/%s/Mut_%d" % (cwd,name,iteration)
+    os.chdir("%s/mutants" % name)
+    ## Get list of mutations and fraction of native contacts deleted for 
+    ## each mutation.
+    mutants_core = get_core_mutations()
+    Fij_core, Fij_pairs_core, Fij_conts_core = get_mutant_fij(model,mutants_core)
+    mutants_scanning = get_scanning_mutations()
+    Fij_scanning, Fij_pairs_scanning, Fij_conts_scanning = get_mutant_fij_scanning(model,mutants_scanning,fij=0.5)
+
+    scanning_only = False
+    if scanning_only:
+        mutants = mutants_scanning
+        Fij = Fij_scanning
+        Fij_pairs = Fij_pairs_scanning
+        Fij_conts = Fij_conts_scanning
+        saveas = "scan_%.2f.dat" % scanfij
+    else:
+        mutants = mutants_core + mutants_scanning
+        Fij = Fij_core + Fij_scanning
+        Fij_pairs = Fij_pairs_core + Fij_pairs_scanning
+        Fij_conts = Fij_conts_core + Fij_conts_scanning
+
+    os.chdir(sub)
+
+    temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
+    directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
+
+    bounds, state_labels = get_state_bounds()
+    bounds = [0] + bounds + [model.n_contacts]
+
+    sim_feature_all = []
+    Jacobian_all = []
+    lasttime = time.time()
+    for n in [0]:
+        T = temperatures[n]
+        dir = directories[n]
+        beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
+        print "  Testing for Mut_%d/%s" % (model.Mut_iteration,dir)
+        os.chdir(dir)
+
+        traj,U,TS,N,Uframes,TSframes,Nframes,Vij = get_states_Vij(model,bounds)
+
+        for k in range(5):
+            mut = mutants[k]
+            print "    row %d   mutant %s" % (k,mut)
+            tempVij = -np.array(Fij[k])*Vij[:,np.array(Fij_conts[k])]
+            dH_k = sum(tempVij.T)
+            #np.savetxt("dH_%s.dat" % mut,dH_k)
+            np.savetxt("dH_%s_new.dat" % mut,dH_k)
+        #sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels)
+
+        os.chdir("..")
+
+    os.chdir(cwd)
+
+#    method = args.savein
+#    if not os.path.exists("%s/Mut_%d/%s" % (name,iteration,method)):
+#        os.mkdir("%s/Mut_%d/%s" % (name,iteration,method))
+#    print "  Saving feature vector and Jacobian in %s/Mut_%d/%s" % (name,iteration,method)
+#    np.savetxt("%s/Mut_%d/%s/target_feature.dat" % (name,iteration,method), target_feature)
+#    np.savetxt("%s/Mut_%d/%s/target_feature_err.dat" % (name,iteration,method), target_feature_err)
+#    np.savetxt("%s/Mut_%d/%s/sim_feature.dat" % (name,iteration,method), sim_feature_avg)
+#    np.savetxt("%s/Mut_%d/%s/sim_feature_err.dat" % (name,iteration,method), sim_feature_err)
+#    np.savetxt("%s/Mut_%d/%s/Jacobian.dat" % (name,iteration,method), Jacobian_avg)
+#    np.savetxt("%s/Mut_%d/%s/Jacobian_err.dat" % (name,iteration,method) ,Jacobian_err)

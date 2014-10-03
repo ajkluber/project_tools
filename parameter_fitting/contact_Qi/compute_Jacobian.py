@@ -64,7 +64,7 @@ def get_states_Vij(model,bounds):
     Uframes  = float(sum(U.astype(int)))
     TSframes = float(sum(TS.astype(int)))
 
-    Vij = model.calculate_contact_potential(rij,"all")
+    Vij = model.calculate_contact_potential(rij)
 
     return traj,U,TS,N,Uframes,TSframes,Nframes,Vij
 
