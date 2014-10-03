@@ -21,7 +21,7 @@ import numpy as np
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
-def Levenberg_Marquardt_solution(model,method,scaling=False):
+def find_solutions(model,method,scaling=False):
     """ Solve for new parameters using the Levenberg-Marquardt algorithm 
 
     Description:
@@ -250,7 +250,7 @@ if __name__ == '__main__':
         os.mkdir("%s/Mut_%d/test" % (name,iteration))
     os.chdir("%s/Mut_%d/test" % (name,iteration))
 
-    Levenberg_Marquardt_solution(model,method)
+    find_solutions(model,method)
 
     os.chdir(cwd)
 

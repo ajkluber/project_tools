@@ -120,7 +120,7 @@ def solve_newtons_method(model,method,append_log):
     print "  Solving for solutions with Levenberg-Marquardt method"
     cwd = os.getcwd()
     os.chdir("%s/Mut_%d/newton" % (name,iteration))
-    solver(model,method)
+    solver.find_solutions(model,method)
     os.chdir(cwd)
     append_log(name,"Finished: Solving_Newtons_Method")
 
