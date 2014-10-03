@@ -185,7 +185,7 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
         print "    row %d   mutant %s" % (k,mut)
         ## Compute energy perturbation
         tempVij = -np.array(Fij[k])*Vij[:,np.array(Fij_conts[k])]
-        dH_k = sum(tempVij.T)
+        dHk = sum(tempVij.T)
         np.savetxt("dH_%s.dat" % mut,dH_k)
 
         ## Free energy perturbation formula. Equation (4) in reference (1).
