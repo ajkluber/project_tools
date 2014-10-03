@@ -82,7 +82,6 @@ def get_target_feature(model):
     iteration = model.Mut_iteration
 
     cwd = os.getcwd()
-    sub = "%s/%s/Mut_%d" % (cwd,name,iteration)
     os.chdir("%s/mutants" % name)
     target_feature, target_feature_err = get_exp_ddG()
     os.chdir(cwd)
@@ -372,6 +371,8 @@ if __name__ == "__main__":
     model.Mut_iteration = iteration
     model.contact_epsilons = epsilons
 
+    target_feature, target_feature_err = get_target_feature(model)
+
     cwd = os.getcwd()
     sub = "%s/%s/Mut_%d" % (cwd,name,iteration)
     os.chdir("%s/mutants" % name)
@@ -412,29 +413,30 @@ if __name__ == "__main__":
         beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
         print "  Testing for Mut_%d/%s" % (model.Mut_iteration,dir)
         os.chdir(dir)
+        sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels)
 
-        traj,U,TS,N,Uframes,TSframes,Nframes,Vij = get_states_Vij(model,bounds)
-
-        for k in range(5):
-            mut = mutants[k]
-            print "    row %d   mutant %s" % (k,mut)
-            tempVij = -np.array(Fij[k])*Vij[:,np.array(Fij_conts[k])]
-            dHk = sum(tempVij.T)
-            #np.savetxt("dH_%s.dat" % mut,dHk)
-            np.savetxt("dH_%s_new.dat" % mut,dHk)
-        #sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels)
+        #traj,U,TS,N,Uframes,TSframes,Nframes,Vij = get_states_Vij(model,bounds)
+        #for k in range(5):
+        #    mut = mutants[k]
+        #    print "    row %d   mutant %s" % (k,mut)
+        #    tempVij = -np.array(Fij[k])*Vij[:,np.array(Fij_conts[k])]
+        #    dHk = sum(tempVij.T)
+        #    #np.savetxt("dH_%s.dat" % mut,dHk)
+        #    np.savetxt("dH_%s_new.dat" % mut,dHk)
 
         os.chdir("..")
 
     os.chdir(cwd)
 
-#    method = args.savein
-#    if not os.path.exists("%s/Mut_%d/%s" % (name,iteration,method)):
-#        os.mkdir("%s/Mut_%d/%s" % (name,iteration,method))
-#    print "  Saving feature vector and Jacobian in %s/Mut_%d/%s" % (name,iteration,method)
-#    np.savetxt("%s/Mut_%d/%s/target_feature.dat" % (name,iteration,method), target_feature)
-#    np.savetxt("%s/Mut_%d/%s/target_feature_err.dat" % (name,iteration,method), target_feature_err)
-#    np.savetxt("%s/Mut_%d/%s/sim_feature.dat" % (name,iteration,method), sim_feature_avg)
-#    np.savetxt("%s/Mut_%d/%s/sim_feature_err.dat" % (name,iteration,method), sim_feature_err)
-#    np.savetxt("%s/Mut_%d/%s/Jacobian.dat" % (name,iteration,method), Jacobian_avg)
-#    np.savetxt("%s/Mut_%d/%s/Jacobian_err.dat" % (name,iteration,method) ,Jacobian_err)
+    sim_feature_err = np.zeros(len(sim_feature))
+    Jacobian_err = np.zeros(Jacobian.shape)
+    method = "newton_test"
+    if not os.path.exists("%s/Mut_%d/%s" % (name,iteration,method)):
+        os.mkdir("%s/Mut_%d/%s" % (name,iteration,method))
+    print "  Saving feature vector and Jacobian in %s/Mut_%d/%s" % (name,iteration,method)
+    np.savetxt("%s/Mut_%d/%s/target_feature.dat" % (name,iteration,method), target_feature)
+    np.savetxt("%s/Mut_%d/%s/target_feature_err.dat" % (name,iteration,method), target_feature_err)
+    np.savetxt("%s/Mut_%d/%s/sim_feature.dat" % (name,iteration,method), sim_feature)
+    np.savetxt("%s/Mut_%d/%s/sim_feature_err.dat" % (name,iteration,method), sim_feature_err)
+    np.savetxt("%s/Mut_%d/%s/Jacobian.dat" % (name,iteration,method), Jacobian)
+    np.savetxt("%s/Mut_%d/%s/Jacobian_err.dat" % (name,iteration,method) ,Jacobian_err)
