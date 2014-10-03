@@ -282,7 +282,7 @@ def folding_temperature_loop_extension(model,append_log,new=False):
         else:
             ## Estimate folding temperature
             if (model.contact_type == "LJ1210") and (model.n_repcontacts != 0):
-                E = float(sum(model.contact_epsilons[LJtype == 1])) - float(sum(model.contact_epsilons[LJtype == -1]))
+                E = float(sum(model.contact_epsilons[model.LJtype == 1])) - float(sum(model.contact_epsilons[model.LJtype == -1]))
             else:
                 E = float(sum(model.contact_epsilons))
             N = float(model.n_residues)
@@ -316,7 +316,7 @@ def start_next_Tf_loop_iteration(model,append_log):
     model.Mut_iteration += 1
     ## Estimate folding temperature
     if (model.contact_type == "LJ1210") and (model.n_repcontacts != 0):
-        E = float(sum(model.contact_epsilons[LJtype == 1])) - float(sum(model.contact_epsilons[LJtype == -1]))
+        E = float(sum(model.contact_epsilons[model.LJtype == 1])) - float(sum(model.contact_epsilons[model.LJtype == -1]))
     else:
         E = float(sum(model.contact_epsilons))
     N = float(model.n_residues)
