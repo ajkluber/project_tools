@@ -35,9 +35,15 @@ def save(model,soln_index):
     #   neweps[neweps < 0.01] = 0.01
     #else:
     #   print "ERROR!"
-
-    neweps[neweps < 0.01] = 0.01
-
+    if model.fitting_allowswitch ==False:
+        neweps[neweps < 0.01] = 0.01
+    else:
+        index = np.where(neweps<0.)
+        for i in range(len(index)):
+            # If epsilon becomes negative, revert contact type. Keep epsilon positive
+            model.LJtype[index[i]] = -model.LJtype[index[i]] 
+            neweps[index[i]] = abs(neweps[index[i]])
+        
     model.contact_epsilons = neweps
     model.generate_topology()
     open("NewBeadBead.dat","w").write(model.beadbead)
