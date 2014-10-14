@@ -82,7 +82,7 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
             Xps.append(delta_eps_xp)
             ratios_xp.append(ratio_xp)
             
-            ## Apply 
+            ## Apply cplex
             try: 
                 LP_problem, solution, x_particular_cpx, N = apply_constraints_with_cplex(model,dg,M,cutoff)
                 delta_eps = x_particular_cpx + np.dot(N,solution)

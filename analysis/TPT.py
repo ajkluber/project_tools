@@ -112,6 +112,7 @@ def partition_TP(Q,stateA,stateB):
         prevState = currState
 
     indicator = np.array(indicator)
+    n_TPs = len(TPlengths)
 
     return TP,notTP,TPlengths,n_TPs,indicator
         
@@ -122,7 +123,7 @@ def TP_analysis(TP,notTP,TPlengths,indicator):
 
     n_TPs = len(TPlengths)
 
-    hA = flaot((indicator == 0).astype(int))       # Indicator function for state A
+    hA = float((indicator == 0).astype(int))       # Indicator function for state A
     hB = float((indicator == 2).astype(int))       # Indicator function for state B
     
     totalframes = hA + hB
@@ -188,13 +189,41 @@ if __name__ == "__main__":
     ## boundaries along some coordinate Q.
     os.chdir(dir)
     Q = np.loadtxt(coord)
-    TP, notTP, TPlengths, indicator = partition_TP(Q,stateA,stateB)
+    TP, notTP, TPlengths, n_TPs, indicator = partition_TP(Q,stateA,stateB)
 
     ## Do TP analysis and save interesting data.
     if not os.path.exists("TPT"):
         os.mkdir("TPT")
     os.chdir("TPT")
-    TP_analysis(TP,notTP,TPlengths,indicator)
+    #TP_analysis(TP,notTP,TPlengths,indicator)
+    n_TPs = len(TPlengths)
+
+    hA = float(sum((indicator == 0).astype(int)))       # Indicator function for state A
+    hB = float(sum((indicator == 2).astype(int)))       # Indicator function for state B
+    
+    totalframes = hA + hB
+    cA = hA/totalframes                 # Fraction of state A
+    cB = hB/totalframes                 # Fraction of state B
+
+    tau_TP = np.mean(TPlengths)          # Average transition path length
+
+    maxQ = float(max(Q))
+    minQ = float(min(Q))
+    bins = np.linspace(minQ,maxQ,n_bins)
+
+    N = float(len(Q))                           # Num frames total
+    N_TP = float(len(TP))                       # Num frames on TP's
+    Nr,bins = np.histogram(Q,bins=bins)         # Num times reaction coord falls in bin
+    Nr_TP,bins = np.histogram(TP,bins=bins)     # Num times reaction coord falls in bin on TP
+
+    P_TP = N_TP/N                       # Prob of being on TP
+    Pr = Nr.astype(float)/N             # Prob of having reaction coord value
+    Pr_TP = Nr_TP.astype(float)/N_TP    # Prob of having reaction coord value on TP
+    P_TP_r = Pr_TP*P_TP/Pr              # Prob of being on TP given reaction coord value
+
+    k1 = P_TP/(2.*cA*tau_TP)            # Folding rate
+    k2 = P_TP/(2.*cB*tau_TP)            # Unfolding rate
+
     os.chdir("..")
     os.chdir("..")
 

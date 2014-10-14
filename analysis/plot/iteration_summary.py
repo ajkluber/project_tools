@@ -117,15 +117,15 @@ def plot_epsilon_map(name,iteration,epsilons,epsilon_map,contacts,n_residues,ind
         mineps = 0.
         maxeps = 2.
 
-    if os.path.exists("%s/epsilon_range"):
-        temp = np.loadtxt("%s/epsilon_range") 
+    if os.path.exists("%s/epsilon_range" % name):
+        temp = np.loadtxt("%s/epsilon_range" % name) 
         mineps = temp[0]
         maxeps = temp[1]
     else:
         mineps = 0
         maxeps = max(epsilons)
 
-    plt.pcolor(epsilon_map,cmap=new_map2)
+    plt.pcolor(epsilon_map,cmap=new_map2,vmin=mineps,vmax=maxeps)
     cbar = plt.colorbar()
     cbar.set_clim(mineps,maxeps)
     plt.xticks(range(0,n_residues+1,10))

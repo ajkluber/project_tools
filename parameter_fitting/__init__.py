@@ -106,7 +106,7 @@ def solve_newtons_method(model,method,append_log):
     name = model.subdir
     iteration = model.Mut_iteration
 
-    solver_opts = {"Levenberg":newton_solver.Levenberg_Marquardt}
+    solver_opts = {"Levenberg":newton_solver.Levenberg_Marquardt,"TSVD":newton_solver.Truncated_SVD}
     if model.fitting_solver not in solver_opts.keys():
         print "ERROR! requested solver algorithm %s not found!" % model.fitting_solver
         print " Choose from available solvers: ", solver_opts.keys()
