@@ -346,7 +346,6 @@ def start_next_Tf_loop_iteration(model,append_log):
     append_log(model.subdir,"Submitting T_array iteration %d" % model.Tf_iteration)
     append_log(model.subdir,"  T_min = %d , T_max = %d , dT = %d" % (T_min, T_max, deltaT))
     append_log(model.subdir,"Starting: Tf_loop_iteration")
-    append_log(model.subdir,"E = %d" % (E))
     os.chdir(cwd)
 
 def manually_add_temperature_array(model,append_log,T_min,T_max,deltaT):
