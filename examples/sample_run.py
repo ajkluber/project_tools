@@ -27,7 +27,7 @@ deltaT = 5
 
 
 contacts = np.loadtxt("%s.contacts" % name)
-LJtype = np.ones(len(contacts))
+LJtype = np.ones(len(contacts),int)
 
 ## Initialize a C-alpha Go-model with a pdb. All topology files needed for
 ## simulation are automatically generated. 
