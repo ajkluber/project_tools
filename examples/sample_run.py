@@ -18,15 +18,19 @@ import os
 import model_builder as mdb
 import project_tools as pjt
 
-pdb = "1SHG.pdb"
+name = "1FMK"
+pdb = "%s.pdb" % name
 nsteps = "400000"
 T_min = 50
 T_max = 150
 deltaT = 5
 
+
+contacts = np.loadtxt("%s.contacts" % name)
+
 ## Initialize a C-alpha Go-model with a pdb. All topology files needed for
 ## simulation are automatically generated. 
-model = mdb.models.SmogCalpha.SmogCalpha(pdb)
+model = mdb.models.SmogCalpha.SmogCalpha(pdb,contacts=contacts)
 
 ## Start simulations for a range of temperatures.
 cwd = os.getcwd()
