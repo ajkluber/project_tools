@@ -570,7 +570,7 @@ def get_rst_pbs_string(jobname,queue,ppn,walltime,contact_type=None,repstring=No
     else:
         #rst_string +="mdrun -nt 1 -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
         if repstring != None:
-            rst_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg -tableb %s -cpi state.cpt " % repstring
+            rst_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt "
         else:
             rst_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
     #rst_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
