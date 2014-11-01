@@ -15,8 +15,6 @@ https://docs.rice.edu/confluence/display/ITDIY/How+to+use+BLAS+and+LAPACK+librar
 import numpy as np
 import os
 
-from modeller import *
-
 def residue_three_letter_code(rescode):
     """Converting from three letter code to one letter FASTA code."""
     residue_code = {'A': 'ALA', 'R': 'ARG', 'N': 'ASN',
@@ -356,6 +354,7 @@ def modeller_mutate_pdb(modelname,respos,restyp,saveas,chain='A'):
 if __name__ == '__main__':
     """ Creates a mutated pdb for every mutant."""
 
+    from modeller import *
     if not os.path.exists("calculated_ddG.dat"):
         print "ERROR!"
         print "  The file calculated_ddG.dat must exist!"
