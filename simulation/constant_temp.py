@@ -458,7 +458,10 @@ def determine_walltime(model):
         walltime="03:00:00"
     else:
         if N > 100:
-            walltime="5:00:00"
+            if N > 200:
+                walltime="15:00:00"
+            else:
+                walltime="5:00:00"
         else:
             walltime="3:00:00"
     return walltime, queue, ppn,nsteps
