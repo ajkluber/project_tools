@@ -18,6 +18,7 @@ Using these tools
 
    setting_up
    example
+   things_to_do 
 
 
 Indices and tables
