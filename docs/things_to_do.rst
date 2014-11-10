@@ -1,5 +1,8 @@
+Things To Do and Keep in Mind
+=============================
+
 Things To Keep in Mind
-======================
+----------------------
 
 Our overall coding goals:
 
@@ -28,7 +31,7 @@ These are roughly in order of decreasing importance.
 
 
 Things To Do
-============
+------------
 
 Things to be improved, tested, or implemented for the first time.
 
