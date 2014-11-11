@@ -55,6 +55,11 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
         #sca.append_log("Calculating MC2004, see")
         u,s,v = np.linalg.svd(M)
         s_norm = s/max(s)
+        print "Singular values"
+        for i in range(len(s)):
+            print i,s[i]            
+        print "Rank of M"
+        print np.linalg.matrix_rank(M, tol=None)
         cutoffs = np.array(list(0.5*(s_norm[:-1] + s_norm[1:])) + [0.0])
 
         Mnorm = np.linalg.norm(M)
@@ -64,8 +69,10 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
         ratios_xp = []
         ratios_cpx = []
         print "  Solving for new parameters. Parameters will be saved in mut/"
-        print "# Sing. %10s %10s %10s %5d" % ("Cond.Num.","|xp|/|eps|","|xp_cpx|/|eps|", "Status")
-        solution_string = "# Sing. %10s %10s %10s %5d\n" % ("Cond.Num.","|xp|/|eps|","|xp_cpx|/|eps|", "Status")
+        print "# Sing. %10s %10s %10s %5s %10s" % ("Cond.Num.","|xp|/|eps|","|xp_cpx|/|eps|", "Status", "Cutoff")
+        solution_string = "# Sing. %10s %10s %10s %5s %10s\n" % ("Cond.Num.","|xp|/|eps|","|xp_cpx|/|eps|", "Status", "Cutoff")
+        
+        max_solvable_eig = 0
         for i in range(len(cutoffs)):
 
             ## Generical solution uses pseudo-inverse of M.
@@ -75,15 +82,21 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
             cond_num[i] = Mnorm*Mpinvnorm
 
             x_particular = np.dot(Mpinv,dg)
+            print "Min of xp = ", np.min(x_particular)
             np.savetxt("mut/xp%d.dat" % (i+1),x_particular)
             delta_eps_xp = x_particular
             ratio_xp = np.linalg.norm(delta_eps_xp)/np.linalg.norm(eps)
             Xps.append(delta_eps_xp)
             ratios_xp.append(ratio_xp)
-            
+            plot_input_eigenvectors(v,i)
+            plot_output_eigenvectors(u,i)
             ## Apply cplex
             try: 
-                LP_problem, solution, x_particular_cpx, N, status = apply_constraints_with_cplex(model,dg,M,cutoff)
+                LP_problem, solution, x_particular_cpx, N, status, sensitivity = apply_constraints_with_cplex(model,dg,M,cutoff)
+
+                if status ==1:
+                    max_solvable_eig = i
+
                 delta_eps = x_particular_cpx + np.dot(N,solution[:-1])
                 ratio_cpx = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
                 Xp_cpxs.append(delta_eps)
@@ -91,8 +104,9 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
             except cplex.exceptions.CplexSolverError:
                 Xp_cpxs.append(np.zeros(len(x_particular)))
                 ratio_cpx = 0.
-            iteration_string = "%5d %10.5e %10.5f %10.5f %5d" % (i+1,cond_num[i],ratio_xp,ratio_cpx,status)
+            iteration_string = "%5d %10.5e %10.5f %10.5f %5d %10.5f" % (i+1,cond_num[i],ratio_xp,ratio_cpx,status, cutoff)
             print iteration_string
+            print solution[-1]
             ratios_cpx.append(ratio_cpx)
             solution_string += iteration_string + "\n"
         open("mut/solution.log","w").write(solution_string) 
@@ -113,11 +127,13 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
         print "  Saving new beadbead as: ",savebeadbead
         ## Write new beadbead to file
         model.contact_epsilons += delta_eps
-        model.contact_epsilons[model.contact_epsilons < 0.1] = 0.1
+#        model.contact_epsilons[model.contact_epsilons < 0.1] = 0.1
         model.get_pairs_string()
         open(savebeadbead,"w").write(model.beadbead)
         model.contact_energies = savebeadbead
         #sca.append_log("Finished: Calculating_MC2004") 
+
+    plot_cumulative_solution(u,s,v,max_solvable_eig)
     os.chdir(cwd)
 
 def apply_constraints_with_cplex(model,dg,M,cutoff):
@@ -274,31 +290,92 @@ def apply_constraints_with_cplex(model,dg,M,cutoff):
     ## Set upper and lower bounds on the solution. Arbitrary. Hopefully these 
     ## don't matter. These are bounds on vector lambda and the (-EGap)
     ## Since (-EGap) should be negative, the upper boundary for this variable is set to 0.
-    upper_bounds = list(10000.*np.ones(N.shape[1]+1))
-#    upper_bounds.append(float(0))
-    lower_bounds = list(-10000.*np.ones(N.shape[1]+1))
+    upper_bounds = list(100.*np.ones(N.shape[1]+1))
+#    upper_bounds.append(float(100))
+    lower_bounds = list(-100.*np.ones(N.shape[1]+1))
+#    lower_bounds.append(float(0))
 #    print len(objective_coeff), len(upper_bounds), len(lower_bounds), len(column_names)
 #    raise SystemExit
     ## Populate cplex linear (quadratic) programming problem
     LP_problem = cplex.Cplex()
+    LP_problem.set_log_stream(None)
     LP_problem.set_results_stream(None)
+#    LP_problem.set_error_stream('mut/e_'+str(cutoff)+'.log')
     LP_problem.objective.set_sense(LP_problem.objective.sense.maximize)
     LP_problem.variables.add(obj=objective_coeff, ub=upper_bounds, lb=lower_bounds, names=column_names)
     LP_problem.linear_constraints.add(lin_expr=rows, senses=senses, rhs=right_hand_side, names=row_names)
 #    LP_problem.objective.set_quadratic(objective_quadratic_coefficients)
 #    LP_problem.objective.set_linear(objective_linear_coefficients)
 
+#    print LP_problem.variables.get_names()
+#    print LP_problem.variables.get_lower_bounds()
     ## Let cplex do work.
     LP_problem.solve()
     status = LP_problem.solution.get_status()
     solution_lambda = LP_problem.solution.get_values()
-
+    if status == 1:
+        sensitivity = LP_problem.solution.sensitivity.objective("EGap")
+    else:
+        sensitivity = "N/A"
+#    try:
+#        conflict = LP_problem.conflict.get()
+#    except: 
+#        conflict = "No conflicts"
     ## Print cplex summary
     #print "Cplex summary:"
     #print "status: ",status
     #print "solution:",solution_lambda
     
-    return LP_problem, solution_lambda, x_particular, N, status
+    return LP_problem, solution_lambda, x_particular, N, status, sensitivity
+
+def plot_input_eigenvectors(v, num_eigenvalue):
+    i = num_eigenvalue
+    plt.figure()
+    plt.bar(range(len(v[i,:])),v[i,:])
+    plt.title("Eigenvector components for eigenvalue #"+ str(i))
+    plt.xlabel("Epsilon #")
+    plt.savefig("mut/input_eig_"+str(i)+".pdf")
+    plt.close()
+
+def plot_output_eigenvectors(u,num_eigenvalue):
+    i = num_eigenvalue
+    plt.figure()
+    plt.bar(range(len(u[:,i])),u[:,i])
+    plt.title("Eigenvector components for eigenvalue #"+ str(i))
+    plt.xlabel("Equation #")
+    plt.savefig("mut/output_eig_"+str(i)+".pdf")
+    plt.close()
+
+def plot_cumulative_solution(u,s,v,max_solvable_eig):
+    w = np.zeros(v.shape[1])
+    x = np.zeros(v.shape[1])
+    y = np.zeros(u.shape[0])
+    z = np.zeros(u.shape[0])
+    for i in range(max_solvable_eig):
+        w += v[i,:]*s[i]
+        x += abs(v[i,:]*s[i])
+        y += u[:,i]*s[i]
+        z += abs(u[:,i]*s[i])
+
+    max_solvable_eig+=1
+
+    plt.figure()
+    plt.bar(range(len(w)), w, color='r', label="Relative")
+    plt.bar(range(len(x)), x, color='b', label="Absolute")
+    plt.title("Cumulative influence of input for "+str(max_solvable_eig)+" eigenvalues")
+    plt.xlabel("Epsilon #")
+    plt.legend()
+    plt.savefig("mut/cumul_input.pdf")
+    plt.close()
+
+    plt.figure()
+    plt.bar(range(len(y)), y, color='r', label="Relative")
+    plt.bar(range(len(z)), z, color='b', label="Absolute")
+    plt.title("Cumulative influence of output for "+str(max_solvable_eig)+" eigenvalues")
+    plt.xlabel("Epsilon #")
+    plt.legend()
+    plt.savefig("mut/cumul_output.pdf")
+    plt.close()
 
 def plot_solution_info(model,s,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs):
     """ Plot solution condition number and mutual covariance."""
@@ -339,7 +416,7 @@ def plot_solution_info(model,s,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs):
     temp = np.zeros((len(ratios_xp),2),float)
     temp[:,0] = np.array(ratios_xp)
     temp[:,1] = np.array(ratios_cpx)
-    np.savetxt("mut/ratios.dat",temp)
+    np.savetxt("mut/ratios.dat",temp)    
 
     ## Compute correlation matrix for all possible xp's.
     ## Compute correlation matrix for all possible xp's with cplex.
