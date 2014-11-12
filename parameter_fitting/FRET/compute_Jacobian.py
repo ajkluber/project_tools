@@ -45,7 +45,7 @@ def get_rij_Vij(model):
     """ Load trajectory, state indicators, and contact energy """
 
     traj = md.load("traj.xtc",top="Native.pdb")     ## Loading from file takes most time.
-    rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape))
+    rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape),periodic=False)
     Vij = model.calculate_contact_potential(rij)
 
     return traj,rij,Vij

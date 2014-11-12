@@ -44,7 +44,7 @@ def get_states_Vij(model,bounds):
     """ Load trajectory, state indicators, and contact energy """
 
     traj = md.load("traj.xtc",top="Native.pdb")     ## Loading from file takes most time.
-    rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape))
+    rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape),periodic=False)
     Q = np.loadtxt("Q.dat") ## To Do: Generalize to different reaction coordinates
 
     state_indicator = np.zeros(len(Q),int)
