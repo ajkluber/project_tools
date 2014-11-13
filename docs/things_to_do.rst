@@ -52,8 +52,12 @@ Parameter Fitting
 
     1. Storage of entire matrices for fij is not necessary because they are
        very sparse (only ~10 nonzero entries). Instead store just the indices
-       and values of nonzero entries to file reading overhead.
-    2. Is there a way to determine the noise in the f_ij calculation?
+       and values of nonzero entries to file reading overhead. Or see #2.
+    2. Is there a way to determine the noise in the f_ij calculation? For 
+       example, take the average f_ij over all the contacts for the mutated
+       residue and/or for multiple cutoff radii. Possibly also use a fixed
+       constant for all contacts so that users can avoid the MODELLER 
+       dependency.
     3. Is there
 
 2. ``FRET``
@@ -64,7 +68,7 @@ Parameter Fitting
 3. ``RMSF``
 
     1. Write ``compute_Jacobian.py``
-    2. Decide on procedure and format for target data. 
+    2. Decide on procedure and format for target data. e.g. A distance histogram.
     3. Integrate into the procedure for solving for the solutions.
 
 4. ``solver.py``
