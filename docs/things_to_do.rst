@@ -58,7 +58,8 @@ Parameter Fitting
        residue and/or for multiple cutoff radii. Possibly also use a fixed
        constant for all contacts so that users can avoid the MODELLER 
        dependency.
-    3. Is there
+    3. Allow for non-native contacts to pop-in. Keep their strength reduced
+       compared to the native contacts to ensure minimal frustration.
 
 2. ``FRET``
 
