@@ -52,9 +52,16 @@ Parameter Fitting
 
     1. Storage of entire matrices for fij is not necessary because they are
        very sparse (only ~10 nonzero entries). Instead store just the indices
-       and values of nonzero entries to file reading overhead.
-    2. Is there a way to determine the noise in the f_ij calculation?
-    3. Is there
+       and values of nonzero entries to file reading overhead. Or see #2.
+    2. Is there a way to determine the noise in the f_ij calculation? For 
+       example, take the average f_ij over all the contacts for the mutated
+       residue and/or for multiple cutoff radii. Possibly also use a fixed
+       constant for all contacts so that users can avoid the MODELLER 
+       dependency.
+    3. Allow for non-native contacts to pop-in. Keep their strength reduced
+       compared to the native contacts to ensure minimal frustration. 
+    
+    
 
 2. ``FRET``
 
@@ -64,12 +71,14 @@ Parameter Fitting
 3. ``RMSF``
 
     1. Write ``compute_Jacobian.py``
-    2. Decide on procedure and format for target data. 
+    2. Decide on procedure and format for target data. e.g. A distance histogram.
     3. Integrate into the procedure for solving for the solutions.
 
 4. ``solver.py``
 
-    1. Integrate the "TSVD" and "Cplex" options into the procedure.
+    1. Integrate the "TSVD" and "Cplex" options into the procedure. There should
+       be standard inputs and outputs; a uniform set of output files. 
+    2. How can we simply keep track of parameters that can change in general?
 
 Analysis
 ^^^^^^^^
@@ -77,4 +86,3 @@ Analysis
 1. Integrate ``bootstrap.py`` to calculate errors on WHAM free energy curves
    by bootstrapping.
 
-    1. 
