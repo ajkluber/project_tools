@@ -174,7 +174,7 @@ def get_AApdb_coords(pdb):
     atm_coords = np.array(atm_coords)
     return atm_nums,atm_names,atm_coords,res_nums,res_names
 
-def count_heavy_atom_contacts(pdb):
+def count_heavy_atom_contacts(pdb,cutoff=4.5):
     """ Calculate # of residue-residue heavy atom contacts. """
 
     atm_nums,atm_names,atm_coords,res_nums,res_names = get_AApdb_coords(pdb)
@@ -198,7 +198,7 @@ def count_heavy_atom_contacts(pdb):
                 pass
             else:
                 #print np.linalg.norm(atm_coords[i] - atm_coords[j])    ## DEBUGGING
-                if np.linalg.norm(atm_coords[i] - atm_coords[j]) <= 4.5:
+                if np.linalg.norm(atm_coords[i] - atm_coords[j]) <= cutoff:
                     C[res_nums[i]-1,res_nums[j]-1] += 1.0
     ## DEBUGGING
     #indices = np.nonzero(C)
