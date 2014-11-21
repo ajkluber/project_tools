@@ -28,95 +28,129 @@ def residue_three_letter_code(rescode):
 
 def get_all_core_mutations():
     """ Extract mutational data. Only return info for useable mutations """
-    mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
-    core_muts = []
-    for i in range(mutation_data.shape[0]):
-        if (mutation_data[i,0] == "core"):
-            core_muts.append(True)
-        else:
-            core_muts.append(False)
-    core_muts = np.array(core_muts)
+    if os.path.exists("core.ddG"):
+        data = np.loadtxt("core.ddG",skiprows=1,dtype=str)
+        mutants = [ "%s%s%s" % (data[i,1],data[i,0],data[i,2]) for i in range(data.shape[0]) ]
+    else:
+        mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
+        core_muts = []
+        for i in range(mutation_data.shape[0]):
+            if (mutation_data[i,0] == "core"):
+                core_muts.append(True)
+            else:
+                core_muts.append(False)
+        core_muts = np.array(core_muts)
 
-    mut_indx = mutation_data[(core_muts == True),1] 
-    wt_res = mutation_data[(core_muts == True),2] 
-    mut_res = mutation_data[(core_muts == True),3] 
-    mutants = [ wt_res[i]+mut_indx[i]+mut_res[i]  for i in range(len(mut_indx)) ]
+        mut_indx = mutation_data[(core_muts == True),1] 
+        wt_res = mutation_data[(core_muts == True),2] 
+        mut_res = mutation_data[(core_muts == True),3] 
+        mutants = [ wt_res[i]+mut_indx[i]+mut_res[i]  for i in range(len(mut_indx)) ]
     
     return mutants
 
 def get_scanning_mutations():
     """ Return alanine-glycine scanning mutants."""
-    mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
-    scan_muts = []
-    for i in range(mutation_data.shape[0]):
-        if (mutation_data[i,0] == "surf") and (mutation_data[i,8] == "True") and (mutation_data[i,11] == "0"):
-            scan_muts.append(True)
-        else:
-            scan_muts.append(False)
+    if os.path.exists("scanning.ddG"):
+        data = np.loadtxt("scanning.ddG",skiprows=1,dtype=str)
+        use = np.where(data[:,8] == "0")[0]
+        mutants = [ "%s%s%s" % (data[i,1],data[i,0],data[i,2]) for i in use ]
+    elif os.path.exists("calculated_ddG.dat"):
+        mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
+        scan_muts = []
+        for i in range(mutation_data.shape[0]):
+            if (mutation_data[i,0] == "surf") and (mutation_data[i,8] == "True") and (mutation_data[i,11] == "0"):
+                scan_muts.append(True)
+            else:
+                scan_muts.append(False)
 
-    scan_muts = np.array(scan_muts)
+        scan_muts = np.array(scan_muts)
 
-    mut_indx = mutation_data[(scan_muts == True),1] 
-    wt_res = mutation_data[(scan_muts == True),2] 
-    mut_res = mutation_data[(scan_muts == True),3] 
-    mutants = [ wt_res[i]+mut_indx[i]+mut_res[i]  for i in range(len(mut_indx)) ]
+        mut_indx = mutation_data[(scan_muts == True),1] 
+        wt_res = mutation_data[(scan_muts == True),2] 
+        mut_res = mutation_data[(scan_muts == True),3] 
+        mutants = [ wt_res[i]+mut_indx[i]+mut_res[i]  for i in range(len(mut_indx)) ]
+    else:
+        mutants = []
     
     return mutants
 
 def get_core_mutations():
     """ Extract mutational data. Only return info for useable mutations """
-    mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
-    useable_and_core = []
-    for i in range(mutation_data.shape[0]):
-        if (mutation_data[i,0] == "core") and (mutation_data[i,8] == "True") and (mutation_data[i,11] == "0"):
-            useable_and_core.append(True)
-        else:
-            useable_and_core.append(False)
-    useable_and_core = np.array(useable_and_core)
+    if os.path.exists("core.ddG"):
+        data = np.loadtxt("core.ddG",skiprows=1,dtype=str)
+        use = np.where(data[:,8] == "0")[0]
+        mutants = [ "%s%s%s" % (data[i,1],data[i,0],data[i,2]) for i in use ]
+    else:
+        mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
+        useable_and_core = []
+        for i in range(mutation_data.shape[0]):
+            if (mutation_data[i,0] == "core") and (mutation_data[i,8] == "True") and (mutation_data[i,11] == "0"):
+                useable_and_core.append(True)
+            else:
+                useable_and_core.append(False)
+        useable_and_core = np.array(useable_and_core)
 
-    mut_indx = mutation_data[(useable_and_core == True),1] 
-    wt_res = mutation_data[(useable_and_core == True),2] 
-    mut_res = mutation_data[(useable_and_core == True),3] 
-    mutants = [ wt_res[i]+mut_indx[i]+mut_res[i]  for i in range(len(mut_indx)) ]
+        mut_indx = mutation_data[(useable_and_core == True),1] 
+        wt_res = mutation_data[(useable_and_core == True),2] 
+        mut_res = mutation_data[(useable_and_core == True),3] 
+        mutants = [ wt_res[i]+mut_indx[i]+mut_res[i]  for i in range(len(mut_indx)) ]
     
     return mutants
 
 def get_core_mutation_ddG():
     """ Extract mutational data. Only return info for useable mutations """
-    mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
-    useable_and_core = []
-    for i in range(mutation_data.shape[0]):
-        if (mutation_data[i,0] == "core") and (mutation_data[i,8] == "True") and (mutation_data[i,11] == "0"):
-            useable_and_core.append(True)
-        else:
-            useable_and_core.append(False)
-    useable_and_core = np.array(useable_and_core)
-    
-    ddG_N_D = mutation_data[(useable_and_core == True),4].astype(float)
-    ddG_N_D_err = mutation_data[(useable_and_core == True),5].astype(float)
-    ddG_TS_D = mutation_data[(useable_and_core == True),6].astype(float) 
-    ddG_TS_D_err = mutation_data[(useable_and_core == True),7].astype(float) 
+    if os.path.exists("core.ddG"):
+        data = np.loadtxt("core.ddG",skiprows=1,dtype=str)
+        use = np.where(data[:,8] == "0")[0]
+        mutants = [ "%s%s%s" % (data[i,1],data[i,0],data[i,2]) for i in use ]
+        ddG_N_D = data[use,3].astype(float)
+        ddG_N_D_err = data[use,4].astype(float)  
+        ddG_TS_D = data[use,5].astype(float)      
+        ddG_TS_D_err = data[use,6].astype(float)  
+    else:
+        mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
+        useable_and_core = []
+        for i in range(mutation_data.shape[0]):
+            if (mutation_data[i,0] == "core") and (mutation_data[i,8] == "True") and (mutation_data[i,11] == "0"):
+                useable_and_core.append(True)
+            else:
+                useable_and_core.append(False)
+        useable_and_core = np.array(useable_and_core)
+        
+        ddG_N_D = mutation_data[(useable_and_core == True),4].astype(float)
+        ddG_N_D_err = mutation_data[(useable_and_core == True),5].astype(float)
+        ddG_TS_D = mutation_data[(useable_and_core == True),6].astype(float) 
+        ddG_TS_D_err = mutation_data[(useable_and_core == True),7].astype(float) 
     
     return ddG_N_D,ddG_N_D_err,ddG_TS_D,ddG_TS_D_err
 
 def get_exp_ddG():
     """ Return both surface and core ddG_exp that are useable """
     print "  Getting experimental ddG"
-    mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
-    useable = []
-    for i in range(mutation_data.shape[0]):
-        #print "%s %s%s%s" % (mutation_data[i,0],mutation_data[i,2],mutation_data[i,1],mutation_data[i,3])
-        if (mutation_data[i,8] == "True") and (mutation_data[i,11] == "0"):
-            useable.append(True)
-        else:
-            useable.append(False)
-    useable = np.array(useable)
-    
-    ddG_N_D = mutation_data[(useable == True),4].astype(float)
-    ddG_N_D_err = mutation_data[(useable == True),5].astype(float)
-    ddG_TS_D = mutation_data[(useable == True),6].astype(float) 
-    ddG_TS_D_err = mutation_data[(useable == True),7].astype(float) 
-    
+    if os.path.exists("core.ddG"):
+        data = np.loadtxt("core.ddG",skiprows=1,dtype=str)
+        use = np.where(data[:,8] == "0")[0]
+        mutants = [ "%s%s%s" % (data[i,1],data[i,0],data[i,2]) for i in use ]
+        ddG_N_D = data[use,3].astype(float)
+        ddG_N_D_err = data[use,4].astype(float)  
+        ddG_TS_D = data[use,5].astype(float)      
+        ddG_TS_D_err = data[use,6].astype(float)  
+    else:
+        mutation_data = np.loadtxt("calculated_ddG.dat",dtype=str)
+        useable = []
+        for i in range(mutation_data.shape[0]):
+            #print "%s %s%s%s" % (mutation_data[i,0],mutation_data[i,2],mutation_data[i,1],mutation_data[i,3])
+            if (mutation_data[i,8] == "True") and (mutation_data[i,11] == "0"):
+                useable.append(True)
+            else:
+                useable.append(False)
+        useable = np.array(useable)
+        
+        ddG_N_D = mutation_data[(useable == True),4].astype(float)
+        ddG_N_D_err = mutation_data[(useable == True),5].astype(float)
+        ddG_TS_D = mutation_data[(useable == True),6].astype(float) 
+        ddG_TS_D_err = mutation_data[(useable == True),7].astype(float) 
+        
     ddGexp = np.concatenate((ddG_TS_D,ddG_N_D),axis=0) 
     ddGexp_err = np.concatenate((ddG_TS_D_err,ddG_N_D_err),axis=0) 
     
@@ -174,7 +208,7 @@ def get_AApdb_coords(pdb):
     atm_coords = np.array(atm_coords)
     return atm_nums,atm_names,atm_coords,res_nums,res_names
 
-def count_heavy_atom_contacts(pdb):
+def count_heavy_atom_contacts(pdb,cutoff=6.0):
     """ Calculate # of residue-residue heavy atom contacts. """
 
     atm_nums,atm_names,atm_coords,res_nums,res_names = get_AApdb_coords(pdb)
@@ -198,7 +232,7 @@ def count_heavy_atom_contacts(pdb):
                 pass
             else:
                 #print np.linalg.norm(atm_coords[i] - atm_coords[j])    ## DEBUGGING
-                if np.linalg.norm(atm_coords[i] - atm_coords[j]) <= 4.5:
+                if np.linalg.norm(atm_coords[i] - atm_coords[j]) <= cutoff:
                     C[res_nums[i]-1,res_nums[j]-1] += 1.0
     ## DEBUGGING
     #indices = np.nonzero(C)
@@ -215,6 +249,15 @@ def calculate_contacts_lost_for_mutants():
     Cwt, wtresidues, wtcoords = count_heavy_atom_contacts("wt.pdb")
     if not os.path.exists("Cwt.dat"):
         np.savetxt("Cwt.dat",Cwt)
+
+    ## Grab native contact map
+    Cmap = np.zeros(Cwt.shape,int)
+    contacts = np.loadtxt("contacts",dtype=int) 
+    if contacts.shape[1] == 4:
+        contacts = contacts[:,0:3:2]
+    for pair in contacts:
+        Cmap[pair[0]-1,pair[1]-1] = 1
+
     modelname = 'wt'
     mutants = get_all_core_mutations()
     log_string = "Core Mutations:\n"
@@ -232,7 +275,7 @@ def calculate_contacts_lost_for_mutants():
         Cmut, residues, coords = count_heavy_atom_contacts(mut+".pdb")
         tempstring = "Mutation: %s\n" % mut
         tempstring += "%-8s%-10s%-4s%-5s%-7s%-5s\n" % ("Resi","Resj","Cwt","Cmut","diff","fij")
-        Dmut = Cwt - Cmut
+        Dmut = (Cwt - Cmut)*Cmap
         indices = np.nonzero(Dmut)
         Fij = np.zeros(Cwt.shape)
         for m in range(len(indices[0])):
@@ -355,9 +398,9 @@ if __name__ == '__main__':
     """ Creates a mutated pdb for every mutant."""
 
     from modeller import *
-    if not os.path.exists("calculated_ddG.dat"):
+    if (not os.path.exists("calculated_ddG.dat")) and (not os.path.exists("core.ddG")):
         print "ERROR!"
-        print "  The file calculated_ddG.dat must exist!"
+        print "  The file calculated_ddG.dat or core.ddG must exist!"
         print "  exiting..."
         raise SystemExit
 

@@ -31,7 +31,8 @@ LJtype = np.ones(len(contacts),int)
 
 ## Initialize a C-alpha Go-model with a pdb. All topology files needed for
 ## simulation are automatically generated. 
-model = mdb.models.SmogCalpha.SmogCalpha(pdb,contacts=contacts,LJtype=LJtype)
+#model = mdb.models.SmogCalpha.SmogCalpha(pdb,contacts=contacts,LJtype=LJtype)
+model = mdb.models.SmogCalpha.SmogCalpha(pdb=pdb,contacts=contacts,LJtype=LJtype,model_code=None,disulfides=None)
 
 
 ### Start simulations for a range of temperatures.
