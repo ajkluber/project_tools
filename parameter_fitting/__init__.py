@@ -67,8 +67,8 @@ def prepare_newtons_method(model,method,append_log):
     if not os.path.exists("%s/Mut_%d/newton/Jacobian.dat" % (name,iteration)):
         append_log(name,"Starting: Calculating_Jacobian")
 
-        target_feature, target_feature_err = submodule.compute_Jacobian.get_target_feature(model)
         sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = submodule.compute_Jacobian.calculate_average_Jacobian(model)
+        target_feature, target_feature_err = submodule.compute_Jacobian.get_target_feature(model)
 
         if not os.path.exists("%s/Mut_%d/newton" % (name,iteration)):
             os.mkdir("%s/Mut_%d/newton" % (name,iteration))
