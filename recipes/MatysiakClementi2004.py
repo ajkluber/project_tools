@@ -181,7 +181,7 @@ def get_args():
     new_parser.add_argument('--fitting_includes', type=str, nargs='+', default="None", help='Optional, specify directories included in fitting.')
     new_parser.add_argument('--fitting_allowswitch', type=str, default="False", help='Optional, allow contacts to switch between attractive/repulsive in fitting.')
     new_parser.add_argument('--disulfides', type=int, nargs='+', help='Optional pairs of disulfide linked residues.')
-    new_parser.add_argument('--temparray', type=int, nargs='+',help='Optional initial temp array: T_min T_max deltaT. Default: 50 350 50')
+    new_parser.add_argument('--temparray', type=int, nargs='+',help='Optional initial temp array: T_min T_max deltaT. Default: predicts now')
     new_parser.add_argument('--dry_run', action='store_true', help='Add this option for dry run. No simulations started.')
 
     ## Options for continuing from a previously saved simulation project.

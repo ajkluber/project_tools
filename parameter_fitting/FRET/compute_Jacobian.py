@@ -6,6 +6,11 @@ Description:
     This module computes the jacobian of a distance distribution
 such as measured with FRET.
 
+note: as of now, only compute distances for FRET is updated
+
+last updated: Justin Chen, November 21, 2014
+
+
 """
 
 import numpy as np
@@ -45,9 +50,12 @@ def get_rij_Vij(model):
     """ Load trajectory, state indicators, and contact energy """
 
     traj = md.load("traj.xtc",top="Native.pdb")     ## Loading from file takes most time.
+    ## rij is a matrix, where first index represents trajectory step, and the second index represents the different pairs
     rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape),periodic=False)
     Vij = model.calculate_contact_potential(rij)
-
+    
+    print "shape of the rij are: ", np.shape(rij)
+    print "SHape of the Vij are: ", np.shape(Vij)
     return traj,rij,Vij
 
 def get_target_feature(model):
@@ -122,32 +130,89 @@ def calculate_average_Jacobian(model,residues):
 
     return sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err
 
-def compute_Jacobian_for_directory(model,beta,residues):
-    """ Calculates the feature vector (ddG's) and Jacobian for one directory """
+def compute_Jacobian_for_directory(model,beta,residues,spacing):
+    """ Calculates the Jacobian for one directory """
 
     ## Get trajectory, state indicators, contact energy
-    traj,rij,Vij = get_Vij(model)
+    print "Working on calculating model's trajectory and contact info"
+    traj,rij,qij = get_rij_Vij(model)
 
     ## Get simulation feature
-    FRETr = md.compute_distances(traj,residues)
+    print "Now working on calculating the trajectories"
+    FRETr = md.compute_distances(traj,residues, periodic=False)
+   
     ## Initialize Jacobian
-    Jacobian = np.zeros((model.n_contacts,model.n_contacts),float)
-
+    print "Now preparing the Jacobians"
+    
+    ##Find the fret Trajectories largest and smallest value
+    maxvalue = int(np.amax(FRETr)/0.1) + 1
+    minvalue = int(np.amin(FRETr)/0.1)
+    
+    num_bins = maxvalue - minvalue
+    
+    Jacobian = np.zeros((num_bins,model.n_contacts),float)
+    Fr = np.zeros(num_bins, float)  ##Number of counts of f for that r
+    total_traj = 100001
+    Qr = np.zeros((num_bins,model.n_contacts), float)
+    Qcount = np.zeros(num_bins, int)  ##Total value of Qs for that r
+    Qavg = np.zeros(model.n_contacts)   ##Average value of Q over whole trajectory 
+    
+    ## Jacobian 1st cord = F_r, probability-dist at different r
+    ## Jacobian 2nd cord = Derivative wrt native contact epsilon
     ## Compute rows of the Jacobian which are correlation functions of 
     ## contact formation with contact energy.
-    for i in range(model.n_contacts):
-        if (i % 10) == 0:
-            print "    row %d out of %d" % (i+1,model.n_contacts)
+    count = 0
+    print "Warning, starting Jacobian Calculation. ONLY configured for one pair"
+    for i in FRETr:
+        FRETbin = int(i/spacing) - minvalue
+        Qcount[FRETbin] += 1
+        Qr[FRETbin,:] += qij[count,:]
+        Qavg += qij[count,:]
+        Fr[FRETbin] += 1
+        count += 1
+    
+    ##error checking
+    if np.sum(Qcount) > total_traj:
+        print "ERROR: Number of binned frames greater than total number of frames"
+    elif np.sum(Qcount) < total_traj:
+        print "ERROR: Number of binned frames less than total number of frames"
 
-        avg_Qi = sum(Qi[TS,i])/TSframes 
-        avg_Vij = sum(Vij[TS,:])/TSframes
-        avg_QiVij = sum((Qi[TS,i]*Vij[TS,:].T).T)/TSframes
+    print "Beginning Normalization and Averaging, Standby"
+    count = 0
+    for i in Qcount:
+        if not i == 0:
+            Qr[count] /= i
+            count += 1
+    
+    Qavg /= total_traj
+    Fr /= np.sum(Fr)*spacing
+    
+    print "Calculating the Final Jacobian, Please Standby ... "
+    
+    
+    Jacobian = np.zeros((num_bins,model.n_contacts), float)
+    Jacobian += Qr
+    
+    countr = 0
+    for i in Fr:
+        counte = 0
+        for j in Qavg:
+            Jacobian[countr,counte] += i*j
+            counte += 1
+        countr =+ 1
+    Jacobian *= beta
+    print "Finished the Jacobian"
+    
+    xFRET = np.arange((minvalue*spacing)+(spacing/2.0), maxvalue*spacing, spacing)
+    simparams = np.array([xFRET,Fr])
+    simparams = np.transpose(simparams)
+    print simparams
+    print np.shape(simparams)
 
-        Jacobian[i,:] = -beta*(avg_QiVij - avg_Qi*avg_Vij)
-
-    return sim_feature, Jacobian
+    return Jacobian, simparams
 
 if __name__ == "__main__":    
+    print "WARNING: RUNNING AS MAIN NOT OKAY. NOT UPDATED"
     parser = argparse.ArgumentParser(description='Calculate .')
     parser.add_argument('--name', type=str, required=True, help='Directory.')
     parser.add_argument('--iteration', type=int, required=True, help='Iteration.')
