@@ -45,8 +45,17 @@ def get_states_Vij(model,bounds):
 
     traj = md.load("traj.xtc",top="Native.pdb")     ## Loading from file takes most time.
     rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape),periodic=False)
-    Q = np.loadtxt("Q.dat") ## To Do: Generalize to different reaction coordinates
 
+    ## The sum of potential energy terms for each parameter
+    Vp = np.zeros((traj.n_frames,model.n_contacts),float)
+    for i in range(model.n_contacts):       ## loop over number of parameters
+        col_idx = model.pairwise_param_assignment[i]
+        temp = Vp[:,col_idx]
+        Vp[:,col_idx] = temp + model.pairwise_potentials[i](rij[:,i])
+    Vij = Vp
+    #Vij = model.calculate_contact_potential(rij)
+
+    Q = np.loadtxt("Q.dat") ## To Do: Generalize to different reaction coordinates
     state_indicator = np.zeros(len(Q),int)
     ## Assign every frame a state label. State indicator is integer 1-N for N states.
     for state_num in range(len(bounds)-1):
@@ -63,8 +72,6 @@ def get_states_Vij(model,bounds):
     Nframes  = float(sum(N.astype(int)))
     Uframes  = float(sum(U.astype(int)))
     TSframes = float(sum(TS.astype(int)))
-
-    Vij = model.calculate_contact_potential(rij)
 
     return traj,U,TS,N,Uframes,TSframes,Nframes,Vij
 
@@ -164,7 +171,8 @@ def compute_Jacobian_for_directory(model,beta,bounds):
     sim_feature = sum(Qi[TS,:])/TSframes
 
     ## Initialize Jacobian
-    Jacobian = np.zeros((model.n_contacts,model.n_contacts),float)
+    #Jacobian = np.zeros((model.n_contacts,model.n_contacts),float)
+    Jacobian = np.zeros((model.n_contacts,model.n_model_param),float)
 
     avg_Vij = sum(Vij[TS,:])/TSframes
     ## Compute rows of the Jacobian which are correlation functions of 
@@ -172,26 +180,75 @@ def compute_Jacobian_for_directory(model,beta,bounds):
     for i in range(model.n_contacts):
         if (i % 10) == 0:
             print "    row %d out of %d" % (i+1,model.n_contacts)
-
         avg_Qi = sum(Qi[TS,i])/TSframes 
-        avg_QiVij = sum((Qi[TS,i]*Vij[TS,:].T).T)/TSframes
+        for j in range(model.n_model_param):
+            avg_QiVij = sum(Qi[TS,i]*Vij[TS,j])/TSframes
+            Jacobian[i,j] = -beta*(avg_QiVij - avg_Qi*avg_Vij[j])
 
-        Jacobian[i,:] = -beta*(avg_QiVij - avg_Qi*avg_Vij)
+        #avg_QiVij = sum((Qi[TS,i]*Vij[TS,:].T).T)/TSframes
+        #Jacobian[i,:] = -beta*(avg_QiVij - avg_Qi*avg_Vij)
 
     return sim_feature, Jacobian
 
 if __name__ == "__main__":    
+    
+    name = "1FMK"
+    #iteration = 1
+
+    model = mdb.check_inputs.load_model(name)
+    #iteration = model.Mut_iteration
+    iteration = 0
+
+    cwd = os.getcwd()
+    sub = "%s/%s/Mut_%d" % (cwd,name,iteration)
+    os.chdir(sub)
+
+    temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
+    directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
+
+    bounds, state_labels = get_state_bounds()
+    bounds = [0] + bounds + [model.n_contacts]
+
+    ## Loop over temperatures in Mut subdir. Calculate ddG vector and 
+    ## Jacobian for each directory indpendently then save. 
+    #for n in range(len(directories)):
+    lasttime = time.time()
+    for n in [0]:
+        T = temperatures[n]
+        dir = directories[n]
+        beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
+        print "  Calculating Jacobian for Mut_%d/%s" % (model.Mut_iteration,dir)
+        os.chdir(dir)
+        sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,bounds)
+
+        thistime = time.time()
+        timediff = thistime - lasttime
+        lasttime = thistime
+        print "  calculation took %.2f seconds = %.2f minutes" % (timediff,timediff/60.)
+
+    np.savetxt("test_J.dat",Jacobian)
+    os.chdir(cwd)
+
+    #traj = md.load("traj.xtc",top="Native.pdb")     ## Loading from file takes most time.
+    #rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape),periodic=False)
+    #Vp = np.zeros((traj.n_frames,model.n_contacts),float)
+    #for i in range(model.n_contacts):       ## loop over number of parameters
+    #    col_idx = model.pairwise_param_assignment[i]
+    #    temp = Vp[:,col_idx]
+    #    Vp[:,col_idx] = temp + model.pairwise_potentials[i](rij[:,i])
+    #bounds, state_labels = get_state_bounds()
+    #bounds = [0] + bounds + [model.n_contacts]
+
+
+    """
     parser = argparse.ArgumentParser(description='Calculate .')
     parser.add_argument('--name', type=str, required=True, help='Directory.')
     parser.add_argument('--iteration', type=int, required=True, help='Iteration.')
     args = parser.parse_args()
-
     name = args.name
     iteration = args.iteration
-
     model = mdb.check_inputs.load_model(name) 
     model.Mut_iteration = iteration
-    
     target_feature, target_feature_err = get_target_feature(model)
     sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = calculate_average_Jacobian(model)
 
@@ -206,3 +263,4 @@ if __name__ == "__main__":
     np.savetxt("%s/Mut_%d/contact_Qi/sim_feature_err.dat" % (name,iteration), sim_feature_err)
     np.savetxt("%s/Mut_%d/contact_Qi/Jacobian.dat" % (name,iteration), Jacobian_avg)
     np.savetxt("%s/Mut_%d/contact_Qi/Jacobian_err.dat" % (name,iteration) ,Jacobian_err)
+    """
