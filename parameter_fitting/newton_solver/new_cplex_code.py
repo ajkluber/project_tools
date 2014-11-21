@@ -134,6 +134,7 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
         #sca.append_log("Finished: Calculating_MC2004") 
 
     plot_cumulative_solution(u,s,v,max_solvable_eig)
+    plot_cropped_jacobian(M,max_solvable_eig)
     os.chdir(cwd)
 
 def apply_constraints_with_cplex(model,dg,M,cutoff):
@@ -390,6 +391,27 @@ def plot_cumulative_solution(u,s,v,max_solvable_eig):
     plt.xlim((0,len(y)))
     plt.savefig("mut/cumul_output_rel.pdf")
     plt.close()
+
+def plot_cropped_jacobian(M,max_solvable_eig):
+    u, s, vt = np.linalg.svd(M)
+    ut = u.T
+    s_inv = 1/s
+    v = vt.T
+
+    J_cropped = np.zeros((len(v),len(ut)))
+
+    for i in range(max_solvable_eig):
+        outer_v_ut = np.outer(v[:,i],ut[i,:])       
+        J_cropped += (outer_v_ut * s_inv[i]) 
+
+    plt.figure()
+    plt.pcolor(J_cropped, cmap='ocean', edgecolors='k')
+    plt.title("Cropped Jacobian with maximum feasible eigenvalues under Cplex")
+    plt.xlabel("Constraints dimension")
+    plt.ylabel("Epsilons dimension")
+    plt.colorbar()
+    plt.savefig("mut/J_cropped_heatmap.pdf")
+    
 
 def plot_solution_info(model,s,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs):
     """ Plot solution condition number and mutual covariance."""
