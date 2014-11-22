@@ -22,6 +22,8 @@ import mdtraj as md
 
 import model_builder as mdb
 
+from project_tools.parameter_fitting.util.util import *
+
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
@@ -46,18 +48,6 @@ def get_state_bounds():
     
     return state_bounds,state_labels
 
-def get_rij_Vij(model):
-    """ Load trajectory, state indicators, and contact energy """
-
-    traj = md.load("traj.xtc",top="Native.pdb")     ## Loading from file takes most time.
-    ## rij is a matrix, where first index represents trajectory step, and the second index represents the different pairs
-    rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape),periodic=False)
-    Vij = model.calculate_contact_potential(rij)
-    
-    print "shape of the rij are: ", np.shape(rij)
-    print "SHape of the Vij are: ", np.shape(Vij)
-    return traj,rij,Vij
-
 def get_target_feature(model):
     """ Get target features """
     name = model.subdir
@@ -79,7 +69,25 @@ def get_target_feature(model):
         os.chdir(cwd)
 
     return target, target_err
+'''
+def get_rij_Vij(model):
+    """ Load trajectory, state indicators, and contact energy """
+    ##assumes you are in the directory with traj.xtc and Native.pdb
+    traj = md.load("traj.xtc",top="Native.pdb")     ## Loading from file takes most time.
+    ## rij is a matrix, where first index represents trajectory step, and the second index represents the different pairs
+    rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape),periodic=False)
+    
 
+    Vp = np.zeros((traj.n_frames,model.n_contacts),float)
+    for i in range(model.n_contacts):       ## loop over number of parameters
+        param_idx = model.pairwise_param_assignment[i]
+        Vp[:,param_idx] = Vp[:,param_idx] + model.pairwise_potentials[i](rij[:,i])
+    Vij = Vp
+
+    
+    Vij = model.calculate_contact_potential(rij)
+    return traj,rij,Vij
+'''
 def calculate_average_Jacobian(model,residues):
     """ Calculate the average feature vector (ddG's) and Jacobian """
     
