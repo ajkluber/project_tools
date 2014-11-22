@@ -16,64 +16,10 @@ import mdtraj as md
 
 import model_builder as mdb
 
+import project_tools.parameter_fitting.util.util as util
+
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
-
-def get_state_bounds():
-    """ Bounds for each state. Bounds are bin edges along Q. """
-    if os.path.exists("state_bounds.txt"):
-        statefile = open("state_bounds.txt","r").readlines()
-    else:
-        print "ERROR!"
-        print "  Please create state_bounds.txt"
-        print "  With the boundaries of each state along Q"
-        print "  Exiting"
-        raise SystemExit
-    
-    state_bounds = []
-    state_labels = []
-    for line in statefile:
-        info = line.split()
-        state_labels.append(info[0])
-        state_bounds.append(float(info[1]))
-        state_bounds.append(float(info[2]))
-    
-    return state_bounds,state_labels
-
-def get_states_Vij(model,bounds):
-    """ Load trajectory, state indicators, and contact energy """
-
-    traj = md.load("traj.xtc",top="Native.pdb")     ## Loading from file takes most time.
-    rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape),periodic=False)
-
-    ## The sum of potential energy terms for each parameter
-    Vp = np.zeros((traj.n_frames,model.n_contacts),float)
-    for i in range(model.n_contacts):       ## loop over number of parameters
-        col_idx = model.pairwise_param_assignment[i]
-        temp = Vp[:,col_idx]
-        Vp[:,col_idx] = temp + model.pairwise_potentials[i](rij[:,i])
-    Vij = Vp
-    #Vij = model.calculate_contact_potential(rij)
-
-    Q = np.loadtxt("Q.dat") ## To Do: Generalize to different reaction coordinates
-    state_indicator = np.zeros(len(Q),int)
-    ## Assign every frame a state label. State indicator is integer 1-N for N states.
-    for state_num in range(len(bounds)-1):
-        instate = (Q > bounds[state_num]).astype(int)*(Q <= bounds[state_num+1]).astype(int)
-        state_indicator[instate == 1] = state_num+1
-    if any(state_indicator == 0):
-        num_not_assign = sum((state_indicator == 0).astype(int))
-        print "  Warning! %d frames were not assigned out of %d total frames!" % (num_not_assign,len(Q))
-    ## Boolean arrays that indicate which state each frame is in.
-    ## States are defined by their boundaries along coordinate Q.
-    U  = ((Q > bounds[1]).astype(int)*(Q < bounds[2]).astype(int)).astype(bool)
-    TS = ((Q > bounds[3]).astype(int)*(Q < bounds[4]).astype(int)).astype(bool)
-    N  = ((Q > bounds[5]).astype(int)*(Q < bounds[6]).astype(int)).astype(bool)
-    Nframes  = float(sum(N.astype(int)))
-    Uframes  = float(sum(U.astype(int)))
-    TSframes = float(sum(TS.astype(int)))
-
-    return traj,U,TS,N,Uframes,TSframes,Nframes,Vij
 
 def get_target_feature(model):
     """ Get target features """
@@ -102,7 +48,7 @@ def get_target_feature(model):
     else:
         ## Compute the average Q of the TS: Average of the endpoints.
         os.chdir("%s" % sub)
-        bounds, state_labels = get_state_bounds()
+        bounds, state_labels = util.get_state_bounds()
         Q_TS = 0.5*(bounds[2] + bounds[3])/float(model.n_contacts)
         target = Q_TS*np.ones(model.n_contacts,float)
         target_err = 0.05*np.ones(model.n_contacts,float)
@@ -123,7 +69,7 @@ def calculate_average_Jacobian(model):
     temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
     directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
 
-    bounds, state_labels = get_state_bounds()
+    bounds, state_labels = util.get_state_bounds()
     bounds = [0] + bounds + [model.n_contacts]
 
     ## Loop over temperatures in Mut subdir. Calculate ddG vector and 
@@ -164,7 +110,9 @@ def compute_Jacobian_for_directory(model,beta,bounds):
     """ Calculates the feature vector (ddG's) and Jacobian for one directory """
 
     ## Get trajectory, state indicators, contact energy
-    traj,U,TS,N,Uframes,TSframes,Nframes,Vij = get_states_Vij(model,bounds)
+    Q = np.loadtxt("Q.dat")
+    traj,rij,Vp = util.get_rij_Vp(model)
+    U,TS,N,Uframes,TSframes,Nframes = util.get_state_indicators(Q,bounds)
 
     ## Get Qi
     Qi = np.loadtxt("qimap.dat",dtype=float)
@@ -174,7 +122,7 @@ def compute_Jacobian_for_directory(model,beta,bounds):
     #Jacobian = np.zeros((model.n_contacts,model.n_contacts),float)
     Jacobian = np.zeros((model.n_contacts,model.n_model_param),float)
 
-    avg_Vij = sum(Vij[TS,:])/TSframes
+    avg_Vp = sum(Vp[TS,:])/TSframes
     ## Compute rows of the Jacobian which are correlation functions of 
     ## contact formation with contact energy.
     for i in range(model.n_contacts):
@@ -182,11 +130,8 @@ def compute_Jacobian_for_directory(model,beta,bounds):
             print "    row %d out of %d" % (i+1,model.n_contacts)
         avg_Qi = sum(Qi[TS,i])/TSframes 
         for j in range(model.n_model_param):
-            avg_QiVij = sum(Qi[TS,i]*Vij[TS,j])/TSframes
-            Jacobian[i,j] = -beta*(avg_QiVij - avg_Qi*avg_Vij[j])
-
-        #avg_QiVij = sum((Qi[TS,i]*Vij[TS,:].T).T)/TSframes
-        #Jacobian[i,:] = -beta*(avg_QiVij - avg_Qi*avg_Vij)
+            avg_QiVp = sum(Qi[TS,i]*Vp[TS,j])/TSframes
+            Jacobian[i,j] = -beta*(avg_QiVp - avg_Qi*avg_Vp[j])
 
     return sim_feature, Jacobian
 
@@ -206,7 +151,7 @@ if __name__ == "__main__":
     temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
     directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
 
-    bounds, state_labels = get_state_bounds()
+    bounds, state_labels = util.get_state_bounds()
     bounds = [0] + bounds + [model.n_contacts]
 
     ## Loop over temperatures in Mut subdir. Calculate ddG vector and 
@@ -228,16 +173,6 @@ if __name__ == "__main__":
 
     np.savetxt("test_J.dat",Jacobian)
     os.chdir(cwd)
-
-    #traj = md.load("traj.xtc",top="Native.pdb")     ## Loading from file takes most time.
-    #rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape),periodic=False)
-    #Vp = np.zeros((traj.n_frames,model.n_contacts),float)
-    #for i in range(model.n_contacts):       ## loop over number of parameters
-    #    col_idx = model.pairwise_param_assignment[i]
-    #    temp = Vp[:,col_idx]
-    #    Vp[:,col_idx] = temp + model.pairwise_potentials[i](rij[:,i])
-    #bounds, state_labels = get_state_bounds()
-    #bounds = [0] + bounds + [model.n_contacts]
 
 
     """

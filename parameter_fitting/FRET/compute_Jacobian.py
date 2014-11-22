@@ -143,7 +143,7 @@ def compute_Jacobian_for_directory(model,beta,residues,spacing):
 
     ## Get trajectory, state indicators, contact energy
     print "Working on calculating model's trajectory and contact info"
-    traj,rij,qij = get_rij_Vij(model)
+    traj,rij,qij = get_rij_Vp(model)
 
     ## Get simulation feature
     print "Now working on calculating the trajectories"
