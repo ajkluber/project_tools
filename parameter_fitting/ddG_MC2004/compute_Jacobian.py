@@ -38,9 +38,9 @@ def get_dHk(model,rij,Fij_conts,Fij):
         dHk = dHk - Fij[i]*model.pairwise_strengths[cont_idx]*model.pairwise_potentials[cont_idx](rij[:,cont_idx])
     return dHk
 
-def get_Vp_plus_Vpk(model,Vij,rij,Fij_conts,Fij):
+def get_Vp_plus_Vpk(model,Vp,rij,Fij_conts,Fij):
     """ Get perturbed potential energy """
-    Vp_plus_Vpk = np.array(Vij,copy=True)
+    Vp_plus_Vpk = np.array(Vp,copy=True)
     for i in range(len(Fij_conts)):       ## loop over number of parameters
         cont_idx = Fij_conts[i]
         param_idx = model.pairwise_param_assignment[cont_idx]
