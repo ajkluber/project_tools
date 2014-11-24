@@ -16,7 +16,8 @@ import mdtraj as md
 
 import model_builder as mdb
 
-import project_tools.parameter_fitting.util.util as util
+#import project_tools.parameter_fitting.util.util as util
+from project_tools.parameter_fitting.util.util import *
 
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
@@ -48,7 +49,8 @@ def get_target_feature(model):
     else:
         ## Compute the average Q of the TS: Average of the endpoints.
         os.chdir("%s" % sub)
-        bounds, state_labels = util.get_state_bounds()
+        #bounds, state_labels = util.get_state_bounds()
+        bounds, state_labels = get_state_bounds()
         Q_TS = 0.5*(bounds[2] + bounds[3])/float(model.n_contacts)
         target = Q_TS*np.ones(model.n_contacts,float)
         target_err = 0.05*np.ones(model.n_contacts,float)
@@ -69,7 +71,8 @@ def calculate_average_Jacobian(model):
     temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
     directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
 
-    bounds, state_labels = util.get_state_bounds()
+    #bounds, state_labels = util.get_state_bounds()
+    bounds, state_labels = get_state_bounds()
     bounds = [0] + bounds + [model.n_contacts]
 
     ## Loop over temperatures in Mut subdir. Calculate ddG vector and 
@@ -111,8 +114,10 @@ def compute_Jacobian_for_directory(model,beta,bounds):
 
     ## Get trajectory, state indicators, contact energy
     Q = np.loadtxt("Q.dat")
-    traj,rij,Vp = util.get_rij_Vp(model)
-    U,TS,N,Uframes,TSframes,Nframes = util.get_state_indicators(Q,bounds)
+    #traj,rij,Vp = util.get_rij_Vp(model)
+    #U,TS,N,Uframes,TSframes,Nframes = util.get_state_indicators(Q,bounds)
+    traj,rij,Vp = get_rij_Vp(model)
+    U,TS,N,Uframes,TSframes,Nframes = get_state_indicators(Q,bounds)
 
     ## Get Qi
     Qi = np.loadtxt("qimap.dat",dtype=float)
@@ -151,7 +156,8 @@ if __name__ == "__main__":
     temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
     directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
 
-    bounds, state_labels = util.get_state_bounds()
+    #bounds, state_labels = util.get_state_bounds()
+    bounds, state_labels = get_state_bounds()
     bounds = [0] + bounds + [model.n_contacts]
 
     ## Loop over temperatures in Mut subdir. Calculate ddG vector and 

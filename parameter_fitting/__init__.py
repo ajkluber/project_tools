@@ -40,13 +40,11 @@ Optimization and Nonlinear Equations". SIAM. 1996.
 import os 
 import numpy as np
 
-
 import newton_solver
 import ddG_MC2004
 import FRET
 import RMSF
 import contact_Qi
-import util
 
 def prepare_newtons_method(model,method,append_log):
     """ Prepare the files to do newtons method """
