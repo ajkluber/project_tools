@@ -142,7 +142,7 @@ def apply_constraints_with_cplex(model,dg,M,cutoff):
 
     Description:
 
-        Use the IMB ILOG Cplex optimization library to search the nullspace 
+        Use the IBM ILOG Cplex optimization library to search the nullspace 
     dimensions for a solution that satisfies the given constraints and mimimizes
     the given objective function
 
