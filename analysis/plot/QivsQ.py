@@ -161,7 +161,7 @@ def plot_QivsQ(name,iteration,Qbins,Qi_vs_Q,n_bins,epsilons,loops,state_bounds):
     plt.savefig("%s/Mut_%d/plots/dQidQ_loops_%s_%d.png" % (name,iteration,name,iteration))
     plt.savefig("%s/Mut_%d/plots/dQidQ_loops_%s_%d.pdf" % (name,iteration,name,iteration))
 
-def some_old_plot_Qgoups():
+def some_old_plot_Qgroups():
     if not os.path.exists("plots"):
         os.mkdir("plots")
     #plot_thermodynamic_mechanism(5)
