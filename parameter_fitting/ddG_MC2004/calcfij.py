@@ -7,7 +7,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from project_tools.mutations.mutatepdbs import get_all_core_mutations
+from project_tools.parameter_fitting.ddG_MC2004.mutatepdbs import get_all_core_mutations
 
 def get_AApdb_coords(pdb):
     """ Parse atom names, indices, coordinates; residue names, indices from all-atom pdb """
