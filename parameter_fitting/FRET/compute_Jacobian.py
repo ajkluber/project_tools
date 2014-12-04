@@ -27,7 +27,7 @@ from project_tools.parameter_fitting.util.util import *
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 FRET_pairs = [[114,192]]
-def_temp = 135
+def_temp = 160
 defspacing = 0.1 ## in nm
 
 def calc_sim_bins(model,residues=FRET_pairs,fit_temp=def_temp,spacing=defspacing):
