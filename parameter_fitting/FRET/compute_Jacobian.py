@@ -8,7 +8,7 @@ such as measured with FRET.
 
 note: as of now, only compute distances for FRET is updated
 
-last updated: Justin Chen, November 26, 2014
+last updated: Justin Chen, December 03, 2014
 
 
 """
@@ -38,7 +38,7 @@ def calc_sim_bins(model,residues=FRET_pairs,fit_temp=def_temp,spacing=defspacing
     subdir = model.subdir
     iteration = model.Mut_iteration
     
-    sub = "%s/%s/Iter_%d" % (cwd,subdir,iteration)
+    sub = "%s/%s/Mut_%d" % (cwd,subdir,iteration)
     subtemp = "%s/%d_0" % (sub,fit_temp)
     subdirec = "%s/fitting_%d" % (sub,iteration)
     
@@ -72,7 +72,7 @@ def get_sim_params(model,fit_temp=def_temp):
     subdir = model.subdir
     iteration = model.Mut_iteration
     
-    sub = "%s/%s/Iter_%d" % (cwd,subdir,iteration)
+    sub = "%s/%s/Mut_%d" % (cwd,subdir,iteration)
     subdirec = "%s/fitting_%d" % (sub,iteration)
     parmfile = "%s/simf-params%d.dat" % (subdirec,fit_temp)
     
@@ -89,7 +89,7 @@ def get_sim_centers(model,fit_temp=def_temp):
     subdir = model.subdir
     iteration = model.Mut_iteration
     
-    sub = "%s/%s/Iter_%d" % (cwd,subdir,iteration)
+    sub = "%s/%s/Mut_%d" % (cwd,subdir,iteration)
     subdirec = "%s/fitting_%d" % (sub,iteration)
     simfile = "%s/simf_centers%d.dat" % (subdirec,fit_temp)
     if not os.path.isfile(simfile):
@@ -100,7 +100,7 @@ def get_sim_array(model,fit_temp=def_temp):
     cwd = os.getcwd()
     subdir = model.subdir
     iteration = model.Mut_iteration
-    sub = "%s/%s/Iter_%d" % (cwd,subdir,iteration)
+    sub = "%s/%s/Mut_%d" % (cwd,subdir,iteration)
     subdirec = "%s/fitting_%d" % (sub,iteration)
     simfile = "%s/simf_centers%d.dat" % (subdirec,fit_temp)
     simfilef = "%s/simf_valuesT%d.dat" % (subdirec,fit_temp)
@@ -120,7 +120,7 @@ def fret_hist_calc(model, bin_size, ran_size, spacing):
     subdir = model.subdir
     iteration = model.Mut_iteration
     
-    sub = "%s/%s/Iter_%d" % (cwd,subdir,iteration)
+    sub = "%s/%s/Mut_%d" % (cwd,subdir,iteration)
     subdirec = "%s/fitting_%d" % (sub,iteration)
     FRETfile = "%s/FRET_hist.dat" % subdirec
     FRETtracefile = "%s/FRET_trace.dat" % cwd
@@ -147,7 +147,6 @@ def check_exp_data(FRETdata, bin_centers):
         if not FRETdata[i] == bin_centers[i]:
             recalc = True
         i += 1
-        print "for iteration i = %d, the recalc value is = %s" % (i, str(recalc))
     return recalc
 
 def add_error_log(note):
@@ -179,7 +178,7 @@ def get_target_feature(model,fit_temp=def_temp):
     subdir = model.subdir
     iteration = model.Mut_iteration
     
-    sub = "%s/%s/Iter_%d" % (cwd,subdir,iteration)
+    sub = "%s/%s/Mut_%d" % (cwd,subdir,iteration)
     subdirec = "%s/fitting_%d" % (sub,iteration)
     simfile = "%s/simf_centers%d.dat" % (subdirec,fit_temp)
     FRETfile = "%s/FRET_hist.dat" % subdirec
@@ -210,7 +209,7 @@ def calculate_average_Jacobian(model,residues=FRET_pairs):
     cwd = os.getcwd()
     subdir = model.subdir
     iteration = model.Mut_iteration
-    sub = "%s/%s/Iter_%d" % (cwd,subdir,iteration)
+    sub = "%s/%s/Mut_%d" % (cwd,subdir,iteration)
     
     os.chdir(sub)
     os.chdir("%d_0" % def_temp)
