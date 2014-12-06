@@ -29,9 +29,9 @@ def find_solutions(model,method):
     epsilons = model.contact_epsilons
     norm_eps = np.linalg.norm(epsilons)
 
-    ## Normalize the target step. MAYBE NOT NECESSARY
+    ## Normalize the target step. 
     df = target_feature - sim_feature
-    df /= np.linalg.norm(df)
+    #df /= np.linalg.norm(df)   ## Arbitrary scaling
 
     u,s,v = np.linalg.svd(J)
     temp  = list(0.5*(s[:-1] + s[1:])) + [0.0]
@@ -48,7 +48,10 @@ def find_solutions(model,method):
         tau = cutoffs[i] 
         s_use = s[s > tau]
         S[np.arange(len(s_use)),np.arange(len(s_use))] = 1./s_use
-        x_soln = np.dot(v.T,np.dot(S.T,np.dot(u.T,df)))
+        J_pinv = np.dot(v.T,np.dot(S.T,u.T))
+        x_soln = np.dot(J_pinv,df)
+
+        #x_soln = np.dot(v.T,np.dot(S.T,np.dot(u.T,df)))
 
         residual = np.dot(J,x_soln) - df
 
@@ -57,9 +60,8 @@ def find_solutions(model,method):
         solutions.append(x_soln)
         Taus.append(tau)
 
-        J_use = np.dot(v.T,np.dot(S.T,u.T))
-        J_inv_use = np.pinv(J_use)
-        cond_num = np.linalg.norm(J_use)*np.linalg.norm(J_inv_use)
+        J_use = np.dot(v.T,np.dot(S.T,u.T))     ## This isn't right
+        cond_num = np.linalg.norm(J_use)*np.linalg.norm(J_pinv)
         condition_number.append(cond_num)
 
     save_solution_data(solutions,Taus,nrm_soln,nrm_resd,norm_eps,condition_number,s)

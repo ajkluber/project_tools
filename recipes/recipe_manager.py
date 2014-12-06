@@ -179,4 +179,4 @@ class ProjectManager(object):
         ''' Save the model.info strings.'''
         print "Saving model.info ..."
         for i in range(len(Models)):
-            open(Models[i].subdir+"/model.info","w").write(Models[i].__repr__())
+            open(Models[i].subdir+"/model.info","w").write(Models[i].get_model_info_string())

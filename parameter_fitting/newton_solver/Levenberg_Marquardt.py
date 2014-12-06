@@ -58,7 +58,7 @@ def find_solutions(model,method,scaling=False):
 
     ## Normalize the target step.
     df = target_feature - sim_feature
-    df /= np.linalg.norm(df)
+    #df /= np.linalg.norm(df)       ## Arbitrary scaling.
     JTdf = np.dot(J.T,df)
     JTJ = np.dot(J.T,J)
 
@@ -85,15 +85,26 @@ def find_solutions(model,method,scaling=False):
     condition_number = []
     solutions = []
     for i in range(len(Lambdas)):
+        S = np.zeros(J.shape) 
         Lambda = Lambdas[i]
-        lhs = JTJ + Lambda*Levenberg
-        x_soln = np.linalg.solve(lhs,JTdf) 
+        #lhs = JTJ + Lambda*Levenberg
+        #x_soln = np.linalg.solve(lhs,JTdf) 
+        #residual = np.dot(J,x_soln) - df
+
+        S[np.arange(len(s)),np.arange(len(s))] = s/((s**2) + (Lambda**2))
+
+        J_pinv = np.dot(v.T,np.dot(S.T,u.T))
+        x_soln = np.dot(J_pinv,df)
+
         residual = np.dot(J,x_soln) - df
 
         nrm_soln.append(np.linalg.norm(x_soln))
         nrm_resd.append(np.linalg.norm(residual))
         solutions.append(x_soln)
 
+        J_use = np.dot(v.T,np.dot(S.T,u.T))     ## This isn't right
+        cond_num = np.linalg.norm(J_use)*np.linalg.norm(J_pinv)
+        #condition_number.append(np.linalg.norm(lhs)*np.linalg.norm(np.linalg.inv(lhs)))
         condition_number.append(np.linalg.norm(lhs)*np.linalg.norm(np.linalg.inv(lhs)))
 
     save_solution_data(solutions,Lambdas,nrm_soln,nrm_resd,norm_eps,condition_number,s)
