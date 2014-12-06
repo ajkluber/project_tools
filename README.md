@@ -13,7 +13,7 @@ The purpose of this software is to make multiscale, combining coarse-grain and a
 Description:
 ------------
 
-This package currently performs coarse-grain model parameter fitting as developed by Matysiak and Clementi (reference 2). 
+This package currently performs coarse-grain model parameter fitting as developed by Matysiak and Clementi (reference 2). See.
 
 
 How To Use this Module:
