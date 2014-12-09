@@ -33,9 +33,12 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
     Minimalist Model Go? J. Mol. Biol. 2004, 343, 235-248.
 
     """
+    ## Define relative weight of optimization of native contacts vs frustration
     
+    weight = 1.
+
     cwd = os.getcwd()
-    sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
+    sub = cwd+"/"+model.subdir+"/iteration_"+str(model.Mut_iteration)
     os.chdir(model.subdir+"/mutants")
     ddGexp, ddGexp_err = mut.get_exp_ddG()
     os.chdir(sub)
@@ -44,10 +47,10 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
 #    ddGtarget = (ddGexp + (weight-1)*ddGsim)/2.
 #    dg = ddGtarget - ddGsim
     dg = ddGexp - ddGsim
-    np.savetxt("mut/ddGexp.dat",ddGexp)
+    np.savetxt("mut/target_feature.dat",ddGexp)
 #    np.savetxt("mut/ddGtarget.dat",ddGtarget)
     np.savetxt("mut/dg.dat",dg)
-    np.savetxt("mut/ddGexp_err.dat",ddGexp_err)
+    np.savetxt("mut/target_feature_err.dat",ddGexp_err)
 
     eps = model.contact_epsilons
 
@@ -92,7 +95,7 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
             plot_output_eigenvectors(u,i)
             ## Apply cplex
             try: 
-                LP_problem, solution, x_particular_cpx, N, status, sensitivity = apply_constraints_with_cplex(model,dg,M,cutoff)
+                LP_problem, solution, x_particular_cpx, N, status, sensitivity = apply_constraints_with_cplex(model,dg,M,cutoff,weight)
 
                 if status ==1:
                     max_solvable_eig = i
@@ -137,7 +140,7 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
     plot_cropped_jacobian(M,max_solvable_eig)
     os.chdir(cwd)
 
-def apply_constraints_with_cplex(model,dg,M,cutoff):
+def apply_constraints_with_cplex(model,dg,M,cutoff,weight):
     """ Construct and solve a linear/quadratic programming problem for new parameters.
 
     Description:
@@ -147,8 +150,18 @@ def apply_constraints_with_cplex(model,dg,M,cutoff):
     the given objective function
 
     """
-
+    # Find correct wording for the number of native contacts
+    num_native_contacts = model.n_contacts
     eps = model.contact_epsilons
+    eps_native = eps[0:num_native_contacts]
+    
+    if len(eps)>len(eps_native):
+        eps_non_native = eps[num_native_contacts:]
+    else:
+        eps_non_native = False
+
+
+## ADDITION needed: non-native epsilons
 
     ## The general solution is a sum of the particular solution and an
     ## arbitrary vector from the nullspace of M.
@@ -183,8 +196,20 @@ def apply_constraints_with_cplex(model,dg,M,cutoff):
     ## perturbation.
     #objective_coeff = list(2.*np.dot(x_particular.T,N))
 
+    
+    if eps_non_native == False:
     ## Objective 3: Maximize attractiveness of minimal attraction interaction
-    objective_coeff = np.hstack((np.zeros(N.shape[1], float), 1.0))
+        linear_objective_coeff = np.hstack((np.zeros(N.shape[1], float), -1.0))
+
+    else:
+    ## Objective_4: Maximize attractiveness of minimal native interaction (linear objective)
+    ##              Minimize strength of non native interactions (quadratic objective)
+    ## w is relative weith of frustration part with respect to native attractiveness part. We can only use a single
+    ## objective with a cplex LP program. Thus, both objectives are simultaneous and a weight factor is added to 
+    ## assign each of them a relative importance
+    
+        linear_objective_coeff = np.hstack((np.zeros(len(eps_native),float),np.zeros(len(eps_non_native),float), -1.0))
+        quadratic_objective_coeff = np.hstack((np.zeros(len(eps_native),float),weight*np.ones(len(eps_non_native),float),0.0))
 
     ############# CONSTRAINTS ###############
     ## Linear constraints are applied to keep the resulting parameters within
@@ -257,37 +282,92 @@ def apply_constraints_with_cplex(model,dg,M,cutoff):
 
     eps_lower_bound = 0.1
     eps_upper_bound = 10.0
-    right_hand_side = list(-eps -x_particular + eps_lower_bound)
-    right_hand_side_2 = list(-eps -x_particular + eps_upper_bound)
-    right_hand_side.extend(right_hand_side_2)
-    right_hand_side_3 = list(-x_particular)
-    right_hand_side.extend(right_hand_side_3)
+    eps_lower_bound_non_native = -3.
+    eps_upper_bound_non_native = 3.
 
-    column_names = [ "x"+str(i) for i in range(N.shape[1]) ]
-    column_names.append("EGap")
+    if eps_non_native == False: 
+        right_hand_side = list(-eps -x_particular + eps_lower_bound)
+        right_hand_side_2 = list(-eps -x_particular + eps_upper_bound)
+        right_hand_side.extend(right_hand_side_2)
+        right_hand_side_3 = list(-x_particular)
+        right_hand_side.extend(right_hand_side_3)
 
-    row_names = [ "c"+str(i) for i in range(len(right_hand_side)) ]
-    senses = "G"*len(right_hand_side_2) + "L"*len(right_hand_side_2) + "G"*len(right_hand_side_2)
+        column_names = [ "x"+str(i) for i in range(N.shape[1]) ]
+        column_names.append("EGap")
 
-    rows = []
+        row_names = [ "c"+str(i) for i in range(len(right_hand_side)) ]
+        senses = "G"*len(right_hand_side_2) + "L"*len(right_hand_side_2) + "G"*len(right_hand_side_2)
 
-    for i in range(len(N)):
-        temp = list(N[i,:])
-        temp.append(float(0))
-        rows.append([ column_names, temp ])
-    for i in range(len(N)):
-        temp = list(N[i,:])
-        temp.append(float(0))
-        rows.append([ column_names, temp ])
-    for i in range(len(N)):
-        temp = list(N[i,:])
+        rows = []
+
+        for i in range(len(N)):
+            temp = list(N[i,:])
+            temp.append(float(0))
+            rows.append([ column_names, temp ])
+        for i in range(len(N)):
+            temp = list(N[i,:])
+            temp.append(float(0))
+            rows.append([ column_names, temp ])
+        for i in range(len(N)):
+            temp = list(N[i,:])
         # The variable to be minimized is Z = (-EGap)
-        temp.append(float(-1))
-        rows.append([ column_names, temp ])
+            temp.append(float(-1))
+            rows.append([ column_names, temp ])
 
-    ## Set quadratic terms in objective.
-#    objective_quadratic_coefficients = [ 1. for j in range(N.shape[1]) ]
+    else:
+        ## If we are considering the non native contacts, the restriction matrix changes
+        right_hand_side = list(-eps_native -x_particular[0:num_native_contacts] + eps_lower_bound)
+        right_hand_side_2 = list(-eps_native -x_particular[0:num_native_contacts] + eps_upper_bound)
+        right_hand_side.extend(right_hand_side_2)
+        right_hand_side_3 = list(-x_particular[0:num_native_contacts])
+        right_hand_side.extend(right_hand_side_3)
+        right_hand_side_4 = list(-eps_non_native -x_particular[num_native_contacts:] + eps_lower_bound_non_native)
+        right_hand_side.extend(right_hand_side_4)
+        right_hand_side_5 = list(-eps_non_native -x_particular[num_native_contacts:] + eps_upper_bound_non_native)
+        right_hand_side.extend(right_hand_side_5)
 
+        column_names = [ "x"+str(i) for i in range(len(eps)) ]
+        column_names.append("EGap")
+
+        row_names = [ "c"+str(i) for i in range(len(right_hand_side)) ]
+        senses = "G"*len(right_hand_side_2) + "L"*len(right_hand_side_2) + "G"*len(right_hand_side_2)+"G"*len(right_hand_side_4)+"L"*len(right_hand_side_4)
+
+        rows = []
+        zeros_native = list(np.zeros(len(eps_native)))
+        zeros_non_native = list(np.zeros(len(eps_non_native)))
+
+        for i in range(len(N)):
+            temp = list(N[i,:num_native_contacts])
+            temp.extend(zeros_non_native)
+            temp.append(float(0))
+            rows.append([ column_names, temp ])
+        for i in range(len(N)):
+            temp = list(N[i,:num_native_contacts])
+            temp.extend(zeros_non_native)
+            temp.append(float(0))
+            rows.append([ column_names, temp ])
+        for i in range(len(N)):
+            temp = list(N[i,:num_native_contacts])
+            temp.append(zeros_non_native)
+        # The variable to be minimized is Z = (-EGap)                                                                            
+            temp.append(float(-1))
+            rows.append([ column_names, temp ])
+        for i in range(len(N)):
+            temp = []
+            temp.extend(zeros_native)
+            temp2 = list(N[i,num_native_contacts:])
+            temp.extend(temp2)
+            temp.append(float(0))
+            rows.append([ column_names, temp ])
+        for i in range(len(N)):
+            temp = []
+            temp.extend(zeros_native)
+            temp2 = list(N[i,num_native_contacts:])
+            temp.extend(temp2)
+            temp.append(float(0))
+            rows.append([ column_names, temp ])
+    
+    
     ## Set upper and lower bounds on the solution. Arbitrary. Hopefully these 
     ## don't matter. These are bounds on vector lambda and the (-EGap)
     ## Since (-EGap) should be negative, the upper boundary for this variable is set to 0.
@@ -302,10 +382,13 @@ def apply_constraints_with_cplex(model,dg,M,cutoff):
     LP_problem.set_log_stream(None)
     LP_problem.set_results_stream(None)
 #    LP_problem.set_error_stream('mut/e_'+str(cutoff)+'.log')
-    LP_problem.objective.set_sense(LP_problem.objective.sense.maximize)
-    LP_problem.variables.add(obj=objective_coeff, ub=upper_bounds, lb=lower_bounds, names=column_names)
+#    LP_problem.objective.set_sense(LP_problem.objective.sense.maximize)
+    LP_problem.objective.set_sense(LP_problem.objective.sense.minimize)
+#    LP_problem.variables.add(obj=objective_coeff, ub=upper_bounds, lb=lower_bounds, names=column_names)
+    LP_problem.variables.add(ub=upper_bounds, lb=lower_bounds, names=column_names)
     LP_problem.linear_constraints.add(lin_expr=rows, senses=senses, rhs=right_hand_side, names=row_names)
-#    LP_problem.objective.set_quadratic(objective_quadratic_coefficients)
+    LP_problem.objective.set_linear(linear_objective_coeff)
+    LP_problem.objective.set_quadratic(quadratic_objective_coeff)
 #    LP_problem.objective.set_linear(objective_linear_coefficients)
 
 #    print LP_problem.variables.get_names()
@@ -562,10 +645,10 @@ def get_ddG_matrix_M():
     ## Collect ddG & M from Mut_#/<temp>_*/{mut,phi} directories.
     ## Take avg. and std error of mean for error bars. Save in Mut_#/mut
     print "  Getting simulation ddG"
-    files = ["ddGsim.dat","ddGsim_err.dat","Jacobian.dat"] 
+    files = ["sim_feature.dat","sim_feature_err.dat","Jacobian.dat"] 
     flag = np.array([ not os.path.exists("mut/"+file) for file in files ])
     if np.any(flag):
-        print "  One of the following does not exist: Jacobian.dat, ddG.dat. Calculating."
+        print "  One of the following does not exist: Jacobian.dat, sim_feature.dat. Calculating."
         ddGlist = []
         Mlist = []
         for n in range(len(directories)):
@@ -583,14 +666,14 @@ def get_ddG_matrix_M():
         Mlist = np.array(Mlist)
         M = sum(Mlist)/float(n+1)
         Merr = np.std(Mlist,axis=0)
-        np.savetxt("mut/ddGsim.dat",ddGsim)
-        np.savetxt("mut/ddGsim_err.dat",ddGsim_err)
-        np.savetxt("mut/M.dat",M)
-        np.savetxt("mut/Merr.dat",Merr)
+        np.savetxt("mut/sim_feature.dat",ddGsim)
+        np.savetxt("mut/sim_feature_err.dat",ddGsim_err)
+        np.savetxt("mut/Jacobian.dat",M)
+        np.savetxt("mut/Jacobian_err.dat",Merr)
     else:
-        print "  Loading M.dat, ddG.dat, eps.dat"
-        ddGsim= np.loadtxt("mut/ddGsim.dat")
-        ddGsim_err = np.loadtxt("mut/ddGsim_err.dat")
-        M = np.loadtxt("mut/M.dat")
+        print "  Loading Jacobian.dat, sim_feature.dat, eps.dat"
+        ddGsim= np.loadtxt("mut/sim_feature.dat")
+        ddGsim_err = np.loadtxt("mut/sim_feature_err.dat")
+        M = np.loadtxt("mut/Jacobian.dat")
 
     return ddGsim, ddGsim_err, M
