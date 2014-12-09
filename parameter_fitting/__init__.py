@@ -62,26 +62,26 @@ def prepare_newtons_method(model,method,append_log):
     submodule = modules[method]
 
     name = model.subdir
-    iteration = model.Mut_iteration
+    iteration = model.iteration
 
-    if not os.path.exists("%s/Mut_%d/newton/Jacobian.dat" % (name,iteration)):
+    if not os.path.exists("%s/iteration_%d/newton/Jacobian.dat" % (name,iteration)):
         append_log(name,"Starting: Calculating_Jacobian")
 
         sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = submodule.compute_Jacobian.calculate_average_Jacobian(model)
         target_feature, target_feature_err = submodule.compute_Jacobian.get_target_feature(model)
 
-        if not os.path.exists("%s/Mut_%d/newton" % (name,iteration)):
-            os.mkdir("%s/Mut_%d/newton" % (name,iteration))
-        if not os.path.exists("%s/Mut_%d/%s" % (name,iteration,method)):
-            os.mkdir("%s/Mut_%d/%s" % (name,iteration,method))
+        if not os.path.exists("%s/iteration_%d/newton" % (name,iteration)):
+            os.mkdir("%s/iteration_%d/newton" % (name,iteration))
+        if not os.path.exists("%s/iteration_%d/%s" % (name,iteration,method)):
+            os.mkdir("%s/iteration_%d/%s" % (name,iteration,method))
 
-        print "  Saving feature vector and Jacobian in %s/Mut_%d/%s" % (name,iteration,method)
-        np.savetxt("%s/Mut_%d/%s/target_feature.dat" % (name,iteration,method), target_feature)
-        np.savetxt("%s/Mut_%d/%s/target_feature_err.dat" % (name,iteration,method), target_feature_err)
-        np.savetxt("%s/Mut_%d/%s/sim_feature.dat" % (name,iteration,method), sim_feature_avg)
-        np.savetxt("%s/Mut_%d/%s/sim_feature_err.dat" % (name,iteration,method), sim_feature_err)
-        np.savetxt("%s/Mut_%d/%s/Jacobian.dat" % (name,iteration,method), Jacobian_avg)
-        np.savetxt("%s/Mut_%d/%s/Jacobian_err.dat" % (name,iteration,method) ,Jacobian_err)
+        print "  Saving feature vector and Jacobian in %s/iteration_%d/%s" % (name,iteration,method)
+        np.savetxt("%s/iteration_%d/%s/target_feature.dat" % (name,iteration,method), target_feature)
+        np.savetxt("%s/iteration_%d/%s/target_feature_err.dat" % (name,iteration,method), target_feature_err)
+        np.savetxt("%s/iteration_%d/%s/sim_feature.dat" % (name,iteration,method), sim_feature_avg)
+        np.savetxt("%s/iteration_%d/%s/sim_feature_err.dat" % (name,iteration,method), sim_feature_err)
+        np.savetxt("%s/iteration_%d/%s/Jacobian.dat" % (name,iteration,method), Jacobian_avg)
+        np.savetxt("%s/iteration_%d/%s/Jacobian_err.dat" % (name,iteration,method) ,Jacobian_err)
 
         ## To Do:
         ##  - Code Fitting_Includes option
@@ -89,13 +89,13 @@ def prepare_newtons_method(model,method,append_log):
         ##      - Map columns (parameters) to match those of the first directory. Stack the rows.
         ##      - Save in the first fitting directory.
 
-        print "  Saving feature vector and Jacobian in %s/Mut_%d/newton" % (name,iteration)
-        np.savetxt("%s/Mut_%d/newton/target_feature.dat" % (name,iteration), target_feature)
-        np.savetxt("%s/Mut_%d/newton/target_feature_err.dat" % (name,iteration), target_feature_err)
-        np.savetxt("%s/Mut_%d/newton/sim_feature.dat" % (name,iteration), sim_feature_avg)
-        np.savetxt("%s/Mut_%d/newton/sim_feature_err.dat" % (name,iteration), sim_feature_err)
-        np.savetxt("%s/Mut_%d/newton/Jacobian.dat" % (name,iteration), Jacobian_avg)
-        np.savetxt("%s/Mut_%d/newton/Jacobian_err.dat" % (name,iteration) ,Jacobian_err)
+        print "  Saving feature vector and Jacobian in %s/iteration_%d/newton" % (name,iteration)
+        np.savetxt("%s/iteration_%d/newton/target_feature.dat" % (name,iteration), target_feature)
+        np.savetxt("%s/iteration_%d/newton/target_feature_err.dat" % (name,iteration), target_feature_err)
+        np.savetxt("%s/iteration_%d/newton/sim_feature.dat" % (name,iteration), sim_feature_avg)
+        np.savetxt("%s/iteration_%d/newton/sim_feature_err.dat" % (name,iteration), sim_feature_err)
+        np.savetxt("%s/iteration_%d/newton/Jacobian.dat" % (name,iteration), Jacobian_avg)
+        np.savetxt("%s/iteration_%d/newton/Jacobian_err.dat" % (name,iteration) ,Jacobian_err)
 
         append_log(name,"Finished: Calculating_Jacobian")
 
@@ -104,7 +104,7 @@ def prepare_newtons_method(model,method,append_log):
 def solve_newtons_method(model,method,append_log):
     """ Solve the newton problem """
     name = model.subdir
-    iteration = model.Mut_iteration
+    iteration = model.iteration
 
     solver_opts = {"Levenberg":newton_solver.Levenberg_Marquardt,"TSVD":newton_solver.Truncated_SVD}
     if model.fitting_solver not in solver_opts.keys():
@@ -119,7 +119,7 @@ def solve_newtons_method(model,method,append_log):
     ## Find solutions with Levenbeg_Marquardt algorithm
     print "  Solving for solutions with Levenberg-Marquardt method"
     cwd = os.getcwd()
-    os.chdir("%s/Mut_%d/newton" % (name,iteration))
+    os.chdir("%s/iteration_%d/newton" % (name,iteration))
     solver.find_solutions(model,method)
     os.chdir(cwd)
     append_log(name,"Finished: Solving_Newtons_Method")
@@ -138,17 +138,17 @@ def save_new_parameters(model,method,append_log):
     submodule = modules[method]
 
     name = model.subdir
-    iteration = model.Mut_iteration
-    if not os.path.exists("%s/Mut_%d/newton/Lambda_index.txt" % (name,iteration)):
-        print "ERROR! The file: %s/Mut_%d/newton/Lambda_index.txt must exist to continue!" % (name,iteration)
+    iteration = model.iteration
+    if not os.path.exists("%s/iteration_%d/newton/Lambda_index.txt" % (name,iteration)):
+        print "ERROR! The file: %s/iteration_%d/newton/Lambda_index.txt must exist to continue!" % (name,iteration)
         print "  This file should hold the index of the damping parameter, Lambda, to be used."
         print "Exiting."
         raise SystemExit
     else:
-        soln_index = int(open("%s/Mut_%d/newton/Lambda_index.txt" % (name,iteration),"r").read().rstrip("\n"))
+        soln_index = int(open("%s/iteration_%d/newton/Lambda_index.txt" % (name,iteration),"r").read().rstrip("\n"))
 
     cwd = os.getcwd()
-    os.chdir("%s/Mut_%d/newton" % (name,iteration))
+    os.chdir("%s/iteration_%d/newton" % (name,iteration))
 
     submodule.save_new_parameters.save(model,soln_index)
 
@@ -164,7 +164,7 @@ if __name__ == "__main__":
     method = "ddG_MC2004"
 
     model = mdb.check_inputs.load_model(name) 
-    model.Mut_iteration = 0
+    model.iteration = 0
 
     #prepare_newtons_method(model,method,dummy)
     #solve_newton_method(model,method,dummy)
