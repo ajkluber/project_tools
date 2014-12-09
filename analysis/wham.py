@@ -1,4 +1,4 @@
-""" Run Weighted Histogram Analysis Method Smog tool.
+''' Run Weighted Histogram Analysis Method Smog tool.
 
 Description:
 
@@ -17,7 +17,7 @@ biomolecules. I. The Method. J. Comput. Chem. 1992, 13, 1011-1021.
 SMOG@ctbp: Simplified Deployment of Structure-Based Models in GROMACS.
 Nucleic Acids Res. 2010, 38, W657-61.
 
-"""
+'''
 
 
 
@@ -97,11 +97,11 @@ def get_wham_config_melting_curve(startTC,deltaTC,ntempsC):
     return wham_config
 
 def run_wham_expdH_k(mut,Tf,bounds):
-    """ Prepare histogram files for wham.
+    ''' Prepare histogram files for wham.
     
         Concatenates all the data from the same temperature for the histogram
-    files in the whamQ subdirectory.
-    """
+    files in the wham subdirectory.
+    '''
     ## To Do:
     ##  1. Run WHAM to get F(Q) and Cv(T). DONE
     ##      1a. User adjusts T for F(Q) to find Tf --> Save as Mut_0/whamQ/Tf.txt
@@ -181,10 +181,16 @@ def run_wham_expdH_k(mut,Tf,bounds):
             histogram[:,0] = E
             histogram[:,1] = State_indicator
             histogram[:,2] = ExpdH
-            np.savetxt("whamQ/"+histname,histogram,fmt="%15.6f")
+            if long:
+                np.savetxt("long_wham/"+histname,histogram,fmt="%15.6f")
+            else:
+                np.savetxt("short_wham/"+histname,histogram,fmt="%15.6f")
         else:
             print " loading ",histname
-            E,state,ExpdH = np.loadtxt("whamQ/"+histname,unpack=True)
+            if long:
+                E,state,ExpdH = np.loadtxt("long_wham/"+histname,unpack=True)
+            else:
+                E,state,ExpdH = np.loadtxt("short_wham/"+histname,unpack=True)
             if i == 0:
                 maxexpdH = max(ExpdH)
                 minexpdH = min(ExpdH)
@@ -195,12 +201,18 @@ def run_wham_expdH_k(mut,Tf,bounds):
                 minexpdH = min([min(ExpdH),minexpdH])
                 maxE = max([max(E),maxE])
                 minE = min([min(E[1:]),minE])
-        histfiles.append("whamQ/"+histname)
+        if long:
+            histfiles.append("long_wham/"+histname)
+        else:
+            histfiles.append("short_wham/"+histname)
         histfilenames += "name %s temp %.2f\n" % (histname,float(T))
         i += 1
 
     print "  histogram files: ",histfiles
-    os.chdir("whamQ")
+    if long:
+        os.chdir("long_wham")
+    else:
+        os.chdir("short_wham")
     ## Binning settings
     numbinsState = len(bounds)-1
     startState = 0.2
@@ -232,18 +244,25 @@ def run_wham_expdH_k(mut,Tf,bounds):
     os.chdir("..")
     #return wham_basic,temperatures
 
-def prepare_histograms_heat_capacity(Mut=False):
-    """ Prepare histogram files for wham.
+def prepare_histograms_heat_capacity(long=False):
+    ''' Prepare histogram files for wham.
     
         Concatenates all the data from the same temperature for the histogram
-    files in the whamQ subdirectory.
-    """
-    if not os.path.exists("whamQ"):
-        os.mkdir("whamQ")
+    files in the wham subdirectory.
+    '''
+    if long:
+        if not os.path.exists("long_wham"):
+            os.mkdir("long_wham")
+        directories = [ x.rstrip("\n") for x in open("long_temps_last","r").readlines() ]
+        temperatures = [ x.split("_")[0] for x in open("long_temps_last","r").readlines() ]
+        endings = [ int(x.split("_")[1].rstrip("\n")) for x in open("long_temps_last","r").readlines() ]
+    else:
+        if not os.path.exists("short_wham"):
+            os.mkdir("short_wham")
+        directories = [ x.rstrip("\n") for x in open("short_temps_last","r").readlines() ]
+        temperatures = [ x.split("_")[0] for x in open("short_temps_last","r").readlines() ]
+        endings = [ int(x.split("_")[1].rstrip("\n")) for x in open("short_temps_last","r").readlines() ]
 
-    directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ]
-    temperatures = [ x.split("_")[0] for x in open("T_array_last.txt","r").readlines() ]
-    endings = [ int(x.split("_")[1].rstrip("\n")) for x in open("T_array_last.txt","r").readlines() ]
     start_at = min(endings)
 
     unique_temps = []
@@ -259,7 +278,7 @@ def prepare_histograms_heat_capacity(Mut=False):
             pass
 
     ## Concatenate the E and Q data at a particular temperature then
-    ## save in the whamQ subdirectory
+    ## save in the wham subdirectory
     cwd = os.getcwd()
     histfilenames = ""
     i = 0  
@@ -291,11 +310,14 @@ def prepare_histograms_heat_capacity(Mut=False):
         histogram = np.zeros((len(Q),2),float)
         histogram[:,0] = E
         histogram[:,1] = Q
-        np.savetxt("whamQ/hist_%.2f" % float(T),histogram,fmt="%15.6f")
+        if long:
+            np.savetxt("long_wham/hist_%.2f" % float(T),histogram,fmt="%15.6f")
+        else:
+            np.savetxt("short_wham/hist_%.2f" % float(T),histogram,fmt="%15.6f")
         histfilenames += "name hist_%.2f temp %.2f\n" % (float(T),float(T))
         i += 1
 
-    if Mut == True:
+    if long == True:
         stepQ = 2 
         stepE = 2 
     else:
@@ -311,14 +333,14 @@ def prepare_histograms_heat_capacity(Mut=False):
 
     return wham_basic,temperatures
 
-def run_wham_for_heat_capacity(model,Mut=False):
-    """ Prepare wham histograms and run Jeff's WHAM code"""
+def run_wham_for_heat_capacity(model,long=False):
+    ''' Prepare wham histograms and run Jeff's WHAM code'''
 
-    wham_basic,temperatures = prepare_histograms_heat_capacity(Mut=Mut)
+    wham_basic,temperatures = prepare_histograms_heat_capacity(long=long)
 
     temps = [ float(x) for x in temperatures ]
     startT = min(temps)
-    if Mut == True:
+    if long == True:
         startT -= 2.
         stopT = max(temps) + 2.
         deltaTCv = 0.01
@@ -337,7 +359,10 @@ def run_wham_for_heat_capacity(model,Mut=False):
     wham_Melt = get_wham_config_melting_curve(startT,deltaTCv,ntempsCv)
     wham_Free = get_wham_config_free_energy(startT,deltaTF,ntempsF)
     
-    os.chdir("whamQ")
+    if long:
+        os.chdir("long_wham")
+    else:
+        os.chdir("short_wham")
     PROJECTS = os.environ["PROJECTS"]
     shutil.copy(PROJECTS+"/project_tools/analysis/WHAM.1.06.jar",".")
 
@@ -368,11 +393,12 @@ def run_wham_for_heat_capacity(model,Mut=False):
     ax2.set_ylim(0,1)
     ax2.set_ylabel("$\\left< Q \\right>(T)$")
     plt.savefig("cv_and_melt.pdf")
-    if Mut == True:
-        print "  Wham done! Plotted Cv and melting curve: %s/Mut_%d/whamQ/cv_and_melt.pdf" % (model.subdir,model.Mut_iteration)
-    else:
-        print "  Wham done! Plotted Cv and melting curve: %s/Tf_%d/whamQ/cv_and_melt.pdf" % (model.subdir,model.Tf_iteration)
     Tf = Cv[list(Cv[:,1]).index(max(Cv[:,1])),0]
     print "  Folding temperature: ", Tf
     os.chdir("..")
-    open("Tf.txt","w").write("%.2f" % Tf)
+    if long == True:
+        print "  Wham done! Plotted Cv and melting curve: %s/iteration_%d/long_wham/cv_and_melt.pdf" % (model.subdir,model.iteration)
+        open("long_Tf","w").write("%.2f" % Tf)
+    else:
+        print "  Wham done! Plotted Cv and melting curve: %s/iteration_%d/short_wham/cv_and_melt.pdf" % (model.subdir,model.iteration)
+        open("short_Tf","w").write("%.2f" % Tf)

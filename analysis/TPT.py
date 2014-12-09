@@ -172,7 +172,7 @@ if __name__ == "__main__":
 
     cwd = os.getcwd()
 
-    os.chdir("%s/Mut_%d" % (name,iteration))
+    os.chdir("%s/iteration_%d" % (name,iteration))
     state_bounds, state_labels = get_state_bounds()
     stateA = state_bounds[1]
     stateB = state_bounds[4]
