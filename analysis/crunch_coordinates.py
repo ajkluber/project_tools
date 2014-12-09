@@ -1,21 +1,21 @@
-""" Functions for submitted analysis scripts as PBS jobs
+''' Functions for submitted analysis scripts as PBS jobs
 
 Description:
 
     Utility to submit PBS jobs to calculate simulation observables
 such as rmsd, Q, R_g, potential energy, dihedral angles, and number
 of helical residues for Gromacs trajectories.
-"""
+'''
 
 import subprocess as sb
 import numpy as np
 import os 
 
 def crunch_Q(name,contact_type,walltime="00:01:00",ppn="1",queue="serial"):
-    """ Submit PBS job to calculate sets of residue-residue contacts.
+    ''' Submit PBS job to calculate sets of residue-residue contacts.
 
     Calculates contacts with structure-based models gromacs function g_kuh_sbm 
-    """
+    '''
 
     contact_pbs = "#!/bin/bash\n"
     contact_pbs +="#PBS -N Q_"+name+"\n"
@@ -26,12 +26,12 @@ def crunch_Q(name,contact_type,walltime="00:01:00",ppn="1",queue="serial"):
     contact_pbs +="#PBS -V\n\n"
     contact_pbs +="cd $PBS_O_WORKDIR\n"
     if contact_type == "Gaussian":
-        contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -noshortcut -abscut -cut 0.1 -qiformat list \n'
+        #contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -noshortcut -abscut -cut 0.1 -qiformat list \n'
         contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -o Q -noshortcut -abscut -cut 0.1\n'
     else:
-        contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -noshortcut -noabscut -cut 0.2 -qiformat list \n'
+        #contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -noshortcut -noabscut -cut 0.2 -qiformat list \n'
         contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -o Q -noshortcut -noabscut -cut 0.2\n'
-    contact_pbs +='mv qimap.out qimap.dat\n'
+    #contact_pbs +='mv qimap.out qimap.dat\n'
     contact_pbs +='mv Q.out Q.dat\n'
     open("contacts.pbs","w").write(contact_pbs)
     qsub = "qsub contacts.pbs"
@@ -39,11 +39,11 @@ def crunch_Q(name,contact_type,walltime="00:01:00",ppn="1",queue="serial"):
     
 
 def crunch_all(name,contact_type,walltime="00:02:00",ppn="1",n_tab=0):
-    """ Submit PBS job to calculate observables
+    ''' Submit PBS job to calculate observables
 
     Calculates rmsd, radius gyration, dihedrals, and potential energy with 
     Gromacs utilities.
-    """
+    '''
     analysis_pbs = '#!/bin/bash\n'
     analysis_pbs +='#PBS -N crnch_%s\n' % name
     analysis_pbs +='#PBS -q serial\n'
@@ -54,27 +54,27 @@ def crunch_all(name,contact_type,walltime="00:02:00",ppn="1",n_tab=0):
     analysis_pbs +='cd $PBS_O_WORKDIR\n'
 
     if contact_type == "Gaussian":
-        analysis_pbs +='echo -e "0\n0" | g_rms_sbm -f traj.xtc -s topol_4.5.tpr -o rmsd.xvg -nomw -xvg none -n index.ndx\n'
-        analysis_pbs +='echo "1" | g_gyrate_sbm -f traj.xtc -s topol_4.5.tpr -o radius_gyration.xvg -xvg none\n'
+        #analysis_pbs +='echo -e "0\n0" | g_rms_sbm -f traj.xtc -s topol_4.5.tpr -o rmsd.xvg -nomw -xvg none -n index.ndx\n'
+        #analysis_pbs +='echo "1" | g_gyrate_sbm -f traj.xtc -s topol_4.5.tpr -o radius_gyration.xvg -xvg none\n'
         analysis_pbs +='echo "1 2 3 4 8" | g_energy -f ener.edr -o energyterms -xvg none\n'
-        analysis_pbs +='echo "11" | g_energy -f ener.edr -o temperature -xvg none\n'
+        #analysis_pbs +='echo "11" | g_energy -f ener.edr -o temperature -xvg none\n'
     else:
-        analysis_pbs +='echo -e "0\n0" | g_rms -f traj.xtc -s topol_4.6.tpr -o rmsd.xvg -nomw -xvg none -n index.ndx\n'
-        analysis_pbs +='echo "1" | g_gyrate -f traj.xtc -s topol_4.6.tpr -o radius_gyration.xvg -xvg none\n'
+        #analysis_pbs +='echo -e "0\n0" | g_rms -f traj.xtc -s topol_4.6.tpr -o rmsd.xvg -nomw -xvg none -n index.ndx\n'
+        #analysis_pbs +='echo "1" | g_gyrate -f traj.xtc -s topol_4.6.tpr -o radius_gyration.xvg -xvg none\n'
         if n_tab != 0:
             analysis_pbs +='echo "1 3 4 5 9" | g_energy -f ener.edr -o energyterms -xvg none\n'
-            analysis_pbs +='echo "12" | g_energy -f ener.edr -o temperature -xvg none\n'
+            #analysis_pbs +='echo "12" | g_energy -f ener.edr -o temperature -xvg none\n'
         else:
             analysis_pbs +='echo "1 2 3 4 8" | g_energy -f ener.edr -o energyterms -xvg none\n'
-            analysis_pbs +='echo "11" | g_energy -f ener.edr -o temperature -xvg none\n'
-    analysis_pbs +='g_angle -n dihedrals.ndx -ov phis.xvg -all -type dihedral -xvg none\n'
+            #analysis_pbs +='echo "11" | g_energy -f ener.edr -o temperature -xvg none\n'
+    #analysis_pbs +='g_angle -n dihedrals.ndx -ov phis.xvg -all -type dihedral -xvg none\n'
 
     open("analysis.pbs","w").write(analysis_pbs)
     qsub = "qsub analysis.pbs"
     sb.call(qsub.split(),stdout=open("energyterms.out","w"),stderr=open("energyterms.err","w"))
 
 def reorganize_qimap():
-    """ Parse a couple Q coordinates from qimap.dat """
+    ''' Parse a couple Q coordinates from qimap.dat '''
     G = np.loadtxt("radius_gyration.xvg")
     np.savetxt("Rg.xvg",G[:,0:2])
 
@@ -99,12 +99,12 @@ def reorganize_qimap():
     np.savetxt("Qnonlocal.dat",Qnonlocal)
 
 def crunch_Nh(tol=40.):
-    """ Compute number of helical residues 
+    ''' Compute number of helical residues 
 
     A residue is in a helical conformation if it is making an i+4 contact and
     the two dihedral angles between it and its contact are within tol of 50 
     degrees (the 'helical' dihedral).
-    """
+    '''
     Qh = np.loadtxt("Qhres.dat")
     phis = np.loadtxt("phis.xvg")
     phis = phis[:,2:]

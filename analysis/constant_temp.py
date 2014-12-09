@@ -65,18 +65,17 @@ def analyze_temperature_array(model,append_log,long=False):
     for k in range(len(temperatures)):
         tdir = temperatures[k]
         os.chdir("%s/%s/%s" % (cwd,sub,tdir))
-        crunchfiles = ["rmsd.xvg","radius_cropped.xvg","energyterms.xvg","phis.xvg"]
-        crunchQfiles = ["Q.dat","qimap.dat"]
+        #crunchfiles = ["rmsd.xvg","radius_cropped.xvg","energyterms.xvg","phis.xvg"]
+        #crunchQfiles = ["Q.dat","qimap.dat"]
+        crunchfiles = ["energyterms.xvg"]
+        crunchQfiles = ["Q.dat"]
 
         flag = all([ os.path.exists(file) for file in crunchfiles ])
         flagQ = all([ os.path.exists(file) for file in crunchQfiles ])
         if (not flag) or (not flag):
-            if not flag:
-                print "    Crunching coordinates for ",tdir
-                crunch_coordinates.crunch_all("%s_%s" % (name,tdir),model.contact_type,walltime=cwalltime,ppn=ppn,n_tables=model.n_tables)
-            if not flagQ:
-                print "    Crunching Q for ",tdir
-                crunch_coordinates.crunch_Q("%s_%s" % (name,tdir),model.contact_type,walltime=qwalltime,ppn=ppn,queue=queue)
+            print "    Calculating energies and Q for ",tdir
+            crunch_coordinates.crunch_all("%s_%s" % (name,tdir),model.contact_type,walltime=cwalltime,ppn=ppn,n_tables=model.n_tables)
+            crunch_coordinates.crunch_Q("%s_%s" % (name,tdir),model.contact_type,walltime=qwalltime,ppn=ppn,queue=queue)
         else:
             print "    Skipping directory ",tdir
         os.chdir("%s/%s" % (cwd,sub))
@@ -110,12 +109,13 @@ def check_completion(model,append_log,equil=False):
     for k in range(len(temperatures)):
         tdir = temperatures[k]
         os.chdir("%s/%s/%s" % (cwd,sub,tdir))
-        files = ["rmsd.xvg","radius_gyration.xvg","energyterms.xvg","phis.xvg","Q.dat","qimap.dat"] 
+        #files = ["rmsd.xvg","radius_gyration.xvg","energyterms.xvg","phis.xvg","Q.dat","qimap.dat"] 
+        files = ["Q.dat","energyterms.xvg"] 
         check_files = all([ os.path.exists(file) for file in files ])
         if check_files:
-            print "    Saving Qh, Qnh, Qlocal, Qnonlocal for %s" % tdir
-            append_log(name,"    Saving Qh, Qnh, Qlocal, Qnonlocal for %s" % tdir,subdir=True)
-            crunch_coordinates.reorganize_qimap()
+            #print "    Saving Qh, Qnh, Qlocal, Qnonlocal for %s" % tdir
+            #append_log(name,"    Saving Qh, Qnh, Qlocal, Qnonlocal for %s" % tdir,subdir=True)
+            #crunch_coordinates.reorganize_qimap()
             append_log(name,"    analysis done for %s" % tdir,subdir=True)
             done = 1
         else:
