@@ -25,9 +25,9 @@ GAS_CONSTANT_KJ_MOL = 0.0083144621
 def get_target_feature(model):
     """ Get target features """
     name = model.subdir
-    iteration = model.Mut_iteration
+    iteration = model.iteration
     cwd = os.getcwd()
-    sub = "%s/%s/Mut_%d" % (cwd,name,iteration)
+    sub = "%s/%s/iteration_%d" % (cwd,name,iteration)
     
     ## To Do:
     ## - Check if a target set of contact probabilities is given
@@ -62,20 +62,20 @@ def calculate_average_Jacobian(model):
     """ Calculate the average feature vector (ddG's) and Jacobian """
     
     name = model.subdir
-    iteration = model.Mut_iteration
+    iteration = model.iteration
 
     cwd = os.getcwd()
-    sub = "%s/%s/Mut_%d" % (cwd,name,iteration)
+    sub = "%s/%s/iteration_%d" % (cwd,name,iteration)
     os.chdir(sub)
 
-    temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
-    directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
+    temperatures = [ x.split('_')[0] for x in open("long_temps_last","r").readlines() ] 
+    directories = [ x.rstrip("\n") for x in open("long_temps_last","r").readlines() ] 
 
     #bounds, state_labels = util.get_state_bounds()
     bounds, state_labels = get_state_bounds()
     bounds = [0] + bounds + [model.n_contacts]
 
-    ## Loop over temperatures in Mut subdir. Calculate ddG vector and 
+    ## Loop over temperatures in iteration subdir. Calculate ddG vector and 
     ## Jacobian for each directory indpendently then save. 
     sim_feature_all = []
     Jacobian_all = []
@@ -84,7 +84,7 @@ def calculate_average_Jacobian(model):
         T = temperatures[n]
         dir = directories[n]
         beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
-        print "  Calculating Jacobian for Mut_%d/%s" % (model.Mut_iteration,dir)
+        print "  Calculating Jacobian for iteration_%d/%s" % (model.Mut_iteration,dir)
         os.chdir(dir)
         sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,bounds)
         sim_feature_all.append(sim_feature)
@@ -146,21 +146,21 @@ if __name__ == "__main__":
     #iteration = 1
 
     model = mdb.check_inputs.load_model(name)
-    #iteration = model.Mut_iteration
+    #iteration = model.iteration
     iteration = 0
 
     cwd = os.getcwd()
-    sub = "%s/%s/Mut_%d" % (cwd,name,iteration)
+    sub = "%s/%s/iteration_%d" % (cwd,name,iteration)
     os.chdir(sub)
 
-    temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
-    directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
+    temperatures = [ x.split('_')[0] for x in open("long_temps_last","r").readlines() ] 
+    directories = [ x.rstrip("\n") for x in open("long_temps_last","r").readlines() ] 
 
     #bounds, state_labels = util.get_state_bounds()
     bounds, state_labels = get_state_bounds()
     bounds = [0] + bounds + [model.n_contacts]
 
-    ## Loop over temperatures in Mut subdir. Calculate ddG vector and 
+    ## Loop over temperatures in iteration subdir. Calculate ddG vector and 
     ## Jacobian for each directory indpendently then save. 
     #for n in range(len(directories)):
     lasttime = time.time()
@@ -168,7 +168,7 @@ if __name__ == "__main__":
         T = temperatures[n]
         dir = directories[n]
         beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
-        print "  Calculating Jacobian for Mut_%d/%s" % (model.Mut_iteration,dir)
+        print "  Calculating Jacobian for iteration_%d/%s" % (model.iteration,dir)
         os.chdir(dir)
         sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,bounds)
 
@@ -189,19 +189,19 @@ if __name__ == "__main__":
     name = args.name
     iteration = args.iteration
     model = mdb.check_inputs.load_model(name) 
-    model.Mut_iteration = iteration
+    model.iteration = iteration
     target_feature, target_feature_err = get_target_feature(model)
     sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = calculate_average_Jacobian(model)
 
-    if not os.path.exists("%s/Mut_%d/contact_Qi" % (name,iteration)):
-        os.mkdir("%s/Mut_%d/contact_Qi" % (name,iteration))
+    if not os.path.exists("%s/iteration_%d/contact_Qi" % (name,iteration)):
+        os.mkdir("%s/iteration_%d/contact_Qi" % (name,iteration))
 
-    np.savetxt("%s/Mut_%d/contact_Qi/target_feature.dat" % (name,iteration), target_feature)
-    np.savetxt("%s/Mut_%d/contact_Qi/target_feature_err.dat" % (name,iteration), target_feature_err)
-    np.savetxt("%s/Mut_%d/contact_Qi/target_feature.dat" % (name,iteration), target_feature)
-    np.savetxt("%s/Mut_%d/contact_Qi/target_feature_err.dat" % (name,iteration), target_feature_err)
-    np.savetxt("%s/Mut_%d/contact_Qi/sim_feature.dat" % (name,iteration), sim_feature_avg)
-    np.savetxt("%s/Mut_%d/contact_Qi/sim_feature_err.dat" % (name,iteration), sim_feature_err)
-    np.savetxt("%s/Mut_%d/contact_Qi/Jacobian.dat" % (name,iteration), Jacobian_avg)
-    np.savetxt("%s/Mut_%d/contact_Qi/Jacobian_err.dat" % (name,iteration) ,Jacobian_err)
+    np.savetxt("%s/iteration_%d/contact_Qi/target_feature.dat" % (name,iteration), target_feature)
+    np.savetxt("%s/iteration_%d/contact_Qi/target_feature_err.dat" % (name,iteration), target_feature_err)
+    np.savetxt("%s/iteration_%d/contact_Qi/target_feature.dat" % (name,iteration), target_feature)
+    np.savetxt("%s/iteration_%d/contact_Qi/target_feature_err.dat" % (name,iteration), target_feature_err)
+    np.savetxt("%s/iteration_%d/contact_Qi/sim_feature.dat" % (name,iteration), sim_feature_avg)
+    np.savetxt("%s/iteration_%d/contact_Qi/sim_feature_err.dat" % (name,iteration), sim_feature_err)
+    np.savetxt("%s/iteration_%d/contact_Qi/Jacobian.dat" % (name,iteration), Jacobian_avg)
+    np.savetxt("%s/iteration_%d/contact_Qi/Jacobian_err.dat" % (name,iteration) ,Jacobian_err)
     """

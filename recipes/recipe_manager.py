@@ -1,4 +1,4 @@
-""" Top-level class that automates the execution of a recipe
+''' Top-level class that automates the execution of a recipe
 
 Description:
 
@@ -9,7 +9,7 @@ parameter fitting of a structure-based model.
 
 
     
-"""
+'''
 
 import os
 import time
@@ -36,12 +36,12 @@ def print_header():
     print "------------------------------------------------------------------------------"
 
 class ProjectManager(object):
-    """ A shell class to handle the simulations for a project.
+    ''' A shell class to handle the simulations for a project.
 
     Description:
 
         A class that can handle simulation projects.
-    """
+    '''
 
     def __init__(self,args,modeloptions):
         self.path = os.getcwd()

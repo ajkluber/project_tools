@@ -52,7 +52,7 @@ def get_Vp_plus_Vpk(model,Vp,rij,Fij_conts,Fij):
 def get_target_feature(model):
     """ Get target features """
     name = model.subdir
-    iteration = model.Mut_iteration
+    iteration = model.iteration
 
     cwd = os.getcwd()
     os.chdir("%s/mutants" % name)
@@ -65,10 +65,10 @@ def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_p
     """ Calculate the average feature vector (ddG's) and Jacobian """
     
     name = model.subdir
-    iteration = model.Mut_iteration
+    iteration = model.iteration
 
     cwd = os.getcwd()
-    sub = "%s/%s/Mut_%d" % (cwd,name,iteration)
+    sub = "%s/%s/iteration_%d" % (cwd,name,iteration)
     os.chdir("%s/mutants" % name)
     ## Get list of mutations and fraction of native contacts deleted for 
     ## each mutation.
@@ -90,15 +90,15 @@ def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_p
         Fij_conts = Fij_conts_core + Fij_conts_scanning
 
     os.chdir(sub)
-    temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
-    directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
+    temperatures = [ x.split('_')[0] for x in open("long_temps","r").readlines() ] 
+    directories = [ x.rstrip("\n") for x in open("long_temps","r").readlines() ] 
 
     bounds, state_labels = get_state_bounds()
     bounds = [0] + bounds + [model.n_contacts]
 
-    ## Loop over temperatures in Mut subdir. Calculate ddG vector and 
+    ## Loop over temperatures in iteration subdir. Calculate ddG vector and 
     ## Jacobian for each directory indpendently then save. Save the average
-    ## feature vector and Jacobian in the Mut/newton directory.
+    ## feature vector and Jacobian in the iteration/newton directory.
     sim_feature_all = []
     Jacobian_all = []
     lasttime = time.time()
@@ -106,7 +106,7 @@ def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_p
         T = temperatures[n]
         dir = directories[n]
         beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
-        print "  Calculating Jacobian for Mut_%d/%s" % (model.Mut_iteration,dir)
+        print "  Calculating Jacobian for iteration_%d/%s" % (model.iteration,dir)
         os.chdir(dir)
         sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels,saveas=saveas)
         sim_feature_all.append(sim_feature)

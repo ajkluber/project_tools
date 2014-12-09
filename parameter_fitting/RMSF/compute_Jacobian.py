@@ -53,9 +53,9 @@ def get_rij_Vij(model):
 def get_target_feature(model):
     """ Get target features """
     name = model.subdir
-    iteration = model.Mut_iteration
+    iteration = model.iteration
     cwd = os.getcwd()
-    sub = "%s/%s/Mut_%d" % (cwd,name,iteration)
+    sub = "%s/%s/iteration_%d" % (cwd,name,iteration)
     
 
     if os.path.exists("%s/target_Qi.dat" % name):
@@ -76,19 +76,19 @@ def calculate_average_Jacobian(model,residues):
     """ Calculate the average feature vector (ddG's) and Jacobian """
     
     name = model.subdir
-    iteration = model.Mut_iteration
+    iteration = model.iteration
 
     cwd = os.getcwd()
-    sub = "%s/%s/Mut_%d" % (cwd,name,iteration)
+    sub = "%s/%s/iteration_%d" % (cwd,name,iteration)
     os.chdir(sub)
 
-    temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
-    directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
+    temperatures = [ x.split('_')[0] for x in open("long_temps_last","r").readlines() ] 
+    directories = [ x.rstrip("\n") for x in open("long_temps_last","r").readlines() ] 
 
     #bounds, state_labels = get_state_bounds()
     #bounds = [0] + bounds + [model.n_contacts]
 
-    ## Loop over temperatures in Mut subdir. Calculate ddG vector and 
+    ## Loop over temperatures in iteration subdir. Calculate ddG vector and 
     ## Jacobian for each directory indpendently then save. 
     sim_feature_all = []
     Jacobian_all = []
@@ -97,7 +97,7 @@ def calculate_average_Jacobian(model,residues):
         T = temperatures[n]
         dir = directories[n]
         beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
-        print "  Calculating Jacobian for Mut_%d/%s" % (model.Mut_iteration,dir)
+        print "  Calculating Jacobian for iteration_%d/%s" % (model.iteration,dir)
         os.chdir(dir)
         sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,residues)
         sim_feature_all.append(sim_feature)
@@ -161,7 +161,7 @@ if __name__ == "__main__":
     savein = args.savein
 
     model = mdb.check_inputs.load_model(name) 
-    model.Mut_iteration = iteration
+    model.iteration = iteration
     model.Tf_iteration = iteration
 
     R_KJ_MOL = 0.0083145

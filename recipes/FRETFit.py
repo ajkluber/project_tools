@@ -1,4 +1,4 @@
-""" A recipe to apply the FRETFit algorithm
+''' A recipe to apply the FRETFit algorithm
 
 
 Description:
@@ -8,7 +8,7 @@ Go-model in order to reproduce a FRET pairwise distance distribution.
 
 
 Reference:
-"""
+'''
 
 import os
 import argparse
@@ -20,7 +20,7 @@ import model_builder as mdb
 
 class FRETFit(ProjectManager):
     
-    """ A recipe to apply the FRETFit algorithm
+    ''' A recipe to apply the FRETFit algorithm
 
 
     Description:
@@ -31,7 +31,7 @@ class FRETFit(ProjectManager):
 
 
     Reference:
-    """
+    '''
 
 
     def logical_flowchart_starting(self,model,task):
@@ -102,7 +102,7 @@ class FRETFit(ProjectManager):
             raise SystemExit
 
     def new_project(self,args,modeloptions):
-        """ Start a new simulation project"""
+        ''' Start a new simulation project'''
 
         subdirs = [ x[:-4] for x in args.pdbs ]
         for sub in subdirs:
@@ -129,7 +129,7 @@ class FRETFit(ProjectManager):
 
 
 def get_args():
-    """ Get command line arguments """
+    ''' Get command line arguments '''
 
     parser = argparse.ArgumentParser(description='Run .')
     sp = parser.add_subparsers(dest='action')

@@ -7,6 +7,9 @@ To Do:
   new naming convention (mut -> newton) for backwards 
   compatibility.
 
+- Update to new directory organization scheme.
+  Instead of name/Mut_# -> name/iteration_#
+
 """
 
 import argparse

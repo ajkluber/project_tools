@@ -1,4 +1,4 @@
-""" A recipe to run the Clementi 2000 C-alpha Go-model
+''' A recipe to run the Clementi 2000 C-alpha Go-model
 
 
 Description:
@@ -12,7 +12,7 @@ References:
 Factors: What Determines the Structural Details of the Transition State
 Ensemble and "En-Route" Intermediates for Protein Folding? An Investigation for
 Small Globular Proteins. J. Mol. Biol. 2000, 298, 937-953
-"""
+'''
 
 import os
 import argparse
@@ -24,7 +24,7 @@ import model_builder as mdb
 
 class Clementi2000(ProjectManager):
     
-    """ A project manager to reproduce Matysiak Clementi 2004 algorithm. 
+    ''' A project manager to reproduce Matysiak Clementi 2004 algorithm. 
 
 
     Description:
@@ -39,7 +39,7 @@ class Clementi2000(ProjectManager):
     Factors: What Determines the Structural Details of the Transition State
     Ensemble and "En-Route" Intermediates for Protein Folding? An Investigation for
     Small Globular Proteins. J. Mol. Biol. 2000, 298, 937-953
-    """
+    '''
 
 
     def logical_flowchart_starting(self,model,task):
@@ -114,7 +114,7 @@ class Clementi2000(ProjectManager):
             raise SystemExit
 
     def new_project(self,args,modeloptions):
-        """ Start a new simulation project"""
+        ''' Start a new simulation project'''
 
         subdirs = [ x[:-4] for x in args.pdbs ]
         for sub in subdirs:
@@ -141,7 +141,7 @@ class Clementi2000(ProjectManager):
 
 
 def get_args():
-    """ Get command line arguments """
+    ''' Get command line arguments '''
 
     parser = argparse.ArgumentParser(description='Run .')
     sp = parser.add_subparsers(dest='action')
