@@ -1,4 +1,4 @@
-""" A recipe to parameter fit to match a set of contact probabilities.
+''' A recipe to parameter fit to match a set of contact probabilities.
 
 
 Description:
@@ -12,7 +12,7 @@ Reference:
 (1) Matysiak, S.; Clementi, C. Optimal Combination of Theory and Experiment for
 the Characterization of the Protein Folding Landscape of S6: How Far Can a
 Minimalist model Go? J. Mol. Biol. 2004, 343, 235-248.
-"""
+'''
 
 import os
 import argparse
@@ -25,7 +25,7 @@ import model_builder as mdb
 
 class MatysiakClementi2004(ProjectManager):
     
-    """ A project manager to reproduce Matysiak Clementi 2004 algorithm. 
+    ''' A project manager to reproduce Matysiak Clementi 2004 algorithm. 
 
 
     Description:
@@ -48,7 +48,7 @@ class MatysiakClementi2004(ProjectManager):
     (1) Matysiak, S.; Clementi, C. Optimal Combination of Theory and Experiment for
     the Characterization of the Protein Folding Landscape of S6: How Far Can a
     Minimalist model Go? J. Mol. Biol. 2004, 343, 235-248.
-    """
+    '''
 
 
     def logical_flowchart_starting(self,model,task):
@@ -126,7 +126,7 @@ class MatysiakClementi2004(ProjectManager):
             raise SystemExit
 
     def new_project(self,args,modeloptions):
-        """ Start a new simulation project"""
+        ''' Start a new simulation project'''
 
         subdirs = [ x[:-4] for x in args.pdbs ]
         for sub in subdirs:
@@ -162,7 +162,7 @@ class MatysiakClementi2004(ProjectManager):
 
 
 def get_args():
-    """ Get command line arguments """
+    ''' Get command line arguments '''
 
     parser = argparse.ArgumentParser(description='Options for MatysiakClementi2004 recipe.')
     sp = parser.add_subparsers(dest='action')
@@ -197,8 +197,8 @@ def get_args():
     ext_parser = sp.add_parser('extend')
     ext_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
     ext_parser.add_argument('--factor', type=float, help='Factor by which you want to extend simulations. e.g. --factor 2 doubles length',required=True)
-    ext_parser.add_argument('--Tf_temps', type=float, nargs='+', help='Temperatures that you want extended')
-    ext_parser.add_argument('--Mut_temps', type=float, nargs='+', help='T_initial T_final dT for new mutational sims array')
+    ext_parser.add_argument('--short_temps', type=float, nargs='+', help='Temperatures that you want extended')
+    ext_parser.add_argument('--long_temps', type=float, nargs='+', help='T_initial T_final dT for new mutational sims array')
     ext_parser.add_argument('--dry_run', action='store_true', help='Dry run. No simulations started.')
 
     args = parser.parse_args()

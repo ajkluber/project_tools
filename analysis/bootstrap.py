@@ -34,7 +34,7 @@ import resample_histo     ## Cython extension
 def get_state_bounds(name,iteration):
     state_labels = []
     state_bounds = []
-    for line in open("%s/Mut_%d/state_bounds.txt" % (name,iteration),"r"):
+    for line in open("%s/iteration_%d/state_bounds.txt" % (name,iteration),"r"):
         state_labels.append(line.split()[0])
         state_bounds.append([int(line.split()[1]),int(line.split()[2])])
     return state_labels, state_bounds
@@ -94,16 +94,18 @@ if __name__ == "__main__":
     n_boots = args.num_boots
 
     ## Temp used for parameter fitting
-    Tuse = float(open("%s/Mut_%d/T_array_last.txt" % (name,iteration),"r").readlines()[0].split("_")[0])
+    Tuse = float(open("%s/iteration_%d/long_temps_last" % (name,iteration),"r").readlines()[0].split("_")[0])
     ## Folding temp
-    Tf = open("%s/Mut_%d/Tf.txt" % (name,iteration),"r").read().rstrip("\n")                       
+    #Tf = open("%s/Mut_%d/Tf.txt" % (name,iteration),"r").read().rstrip("\n")                       
+    Tf = open("%s/iteration_%d/long_Tf" % (name,iteration),"r").read().rstrip("\n")                       
     startTF = Tuse
     deltaTF = 0.1
     ntempsF = 1
     state_labels, state_bounds = get_state_bounds(name,iteration)
 
     cwd = os.getcwd()
-    os.chdir("%s/Mut_%d/whamQ" % (name,iteration))
+    #os.chdir("%s/Mut_%d/whamQ" % (name,iteration))
+    os.chdir("%s/iteration_%d/long_wham" % (name,iteration))
 
     print "Getting free.config options..."
     histos, temps, numBins, start, step, n_temps, n_samples = get_iteration_data()

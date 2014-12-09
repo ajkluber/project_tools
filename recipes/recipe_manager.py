@@ -1,4 +1,4 @@
-""" Top-level class that automates the execution of a recipe
+''' Top-level class that automates the execution of a recipe
 
 Description:
 
@@ -9,7 +9,7 @@ parameter fitting of a structure-based model.
 
 
     
-"""
+'''
 
 import os
 import time
@@ -36,12 +36,12 @@ def print_header():
     print "------------------------------------------------------------------------------"
 
 class ProjectManager(object):
-    """ A shell class to handle the simulations for a project.
+    ''' A shell class to handle the simulations for a project.
 
     Description:
 
         A class that can handle simulation projects.
-    """
+    '''
 
     def __init__(self,args,modeloptions):
         self.path = os.getcwd()
@@ -72,7 +72,7 @@ class ProjectManager(object):
             sub = Models[i].subdirs
             if os.path.exists(sub) != True:
                 os.mkdir(sub)
-                os.mkdir(sub+"/Tf_"+Models[i].Tf_iteration)
+                os.mkdir("%s/iteration_%d" % (sub,Models[i].iteration))
                 self.append_log(sub,"Creating new subdirectory: %s" % sub)
 
     def add_temperature_array(self,args):
@@ -85,10 +85,10 @@ class ProjectManager(object):
             T_min = args.temparray[0] 
             T_max = args.temparray[1] 
             deltaT = args.temparray[2] 
-            Mut = False
+            long = False
         elif args.mutarray != None:
             temps = args.mutarray
-            Mut = True
+            long = True
         else:
             print "ERROR! Must use --temparray or --mutarray with this option"
             print " Exiting."
@@ -97,11 +97,11 @@ class ProjectManager(object):
         for i in range(len(Models)):
             model = Models[i]
             sub = model.subdir
-            if Mut == False:
+            if long == False:
                 print "Manually adding temperature array Ti=%d Tf=%d dT=%d" % (T_min,T_max,deltaT)
                 print "Starting constant_temp_iteration..."
                 simulation.constant_temp.manually_add_temperature_array(model,self.append_log,T_min,T_max,deltaT)
-            elif Mut == True:
+            elif long == True:
                 print "Manually adding equilibrium sims ", temps
                 simulation.constant_temp.manually_add_equilibrium_runs(model,self.append_log,temps)
             
@@ -128,11 +128,11 @@ class ProjectManager(object):
             raise SystemExit
         if (args.Tf_temps != None):
             temps = args.Tf_temps
-            method = "Tf"
+            method = "short"
             print "Extending Tf temps",temps
         if (args.Mut_temps != None):
             temps = args.Mut_temps
-            method = "Mut"
+            method = "long"
             print "Extending Mutational temps",temps
 
         for i in range(len(subdirs)):

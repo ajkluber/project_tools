@@ -40,7 +40,7 @@ def determine_walltime(model,long=False):
             cwalltime = "00:10:00"
     return qwalltime, cwalltime, ppn, queue
 
-def analyze_temperature_array(model,append_log,equil=False):
+def analyze_temperature_array(model,append_log,long=False):
     ''' Analyze the previously simulated temperatures of a Tf_loop iteration.
         Goes into the active Tf_loop directory and crunches all coordinates.
         Exits after submitting a couple PBS scripts to compute Q and 
@@ -48,50 +48,45 @@ def analyze_temperature_array(model,append_log,equil=False):
     '''
     name = model.subdir
     cwd = os.getcwd()
-    if model.error == 0:
-        if equil == True:
-            sub = "%s/Mut_%d" % (name,model.Mut_iteration)
-            qwalltime = "00:10:00"
-            cwalltime = "00:07:00"
-        else:
-            sub = "%s/Tf_%d" % (name,model.Tf_iteration)
-            qwalltime = "00:05:00"
-            cwalltime = "00:03:00"
-        ppn = "1"
-        queue = "serial"
-        print "  Analyzing temperatures in", sub
-        os.chdir(cwd+"/"+sub)
-        temperatures = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ]
-
-        cwd2 = os.getcwd()
-        for k in range(len(temperatures)):
-            tdir = temperatures[k]
-            os.chdir(cwd2+"/"+tdir)
-            crunchfiles = ["rmsd.xvg","radius_cropped.xvg","energyterms.xvg","phis.xvg"]
-            crunchQfiles = ["Q.dat","qimap.dat"]
-
-            flag = all([ os.path.exists(file) for file in crunchfiles ])
-            flagQ = all([ os.path.exists(file) for file in crunchQfiles ])
-            if (not flag) or (not flag):
-                if not flag:
-                    print "    Crunching coordinates for ",tdir
-                    crunch_coordinates.crunch_all("%s_%s" % (name,tdir),model.contact_type,walltime=cwalltime,ppn=ppn,n_tables=model.n_tables)
-                if not flagQ:
-                    print "    Crunching Q for ",tdir
-                    crunch_coordinates.crunch_Q("%s_%s" % (name,tdir),model.contact_type,walltime=qwalltime,ppn=ppn,queue=queue)
-            else:
-                print "    Skipping directory ",tdir
-            os.chdir(cwd2)
-
-        os.chdir(cwd)
-        if equil == True:
-            append_log(name,"Starting: Equil_Tf_analysis")
-            append_log(name,"Starting: Equil_Tf_analysis",subdir=True)
-        else:
-            append_log(name,"Starting: Tf_loop_analysis")
-            append_log(name,"Starting: Tf_loop_analysis",subdir=True)
+    sub = "%s/iteration_%d" % (name,model.iteration)
+    if long:
+        temperatures = [ x.rstrip("\n") for x in open("long_temps","r").readlines() ]
+        qwalltime = "00:10:00"
+        cwalltime = "00:07:00"
     else:
-        pass
+        temperatures = [ x.rstrip("\n") for x in open("short_temps","r").readlines() ]
+        qwalltime = "00:05:00"
+        cwalltime = "00:03:00"
+    ppn = "1"
+    queue = "serial"
+    print "  Analyzing temperatures in", sub
+    os.chdir("%s/%s" % (cwd,sub))
+
+    for k in range(len(temperatures)):
+        tdir = temperatures[k]
+        os.chdir("%s/%s/%s" % (cwd,sub,tdir))
+        #crunchfiles = ["rmsd.xvg","radius_cropped.xvg","energyterms.xvg","phis.xvg"]
+        #crunchQfiles = ["Q.dat","qimap.dat"]
+        crunchfiles = ["energyterms.xvg"]
+        crunchQfiles = ["Q.dat"]
+
+        flag = all([ os.path.exists(file) for file in crunchfiles ])
+        flagQ = all([ os.path.exists(file) for file in crunchQfiles ])
+        if (not flag) or (not flag):
+            print "    Calculating energies and Q for ",tdir
+            crunch_coordinates.crunch_all("%s_%s" % (name,tdir),model.contact_type,walltime=cwalltime,ppn=ppn,n_tables=model.n_tables)
+            crunch_coordinates.crunch_Q("%s_%s" % (name,tdir),model.contact_type,walltime=qwalltime,ppn=ppn,queue=queue)
+        else:
+            print "    Skipping directory ",tdir
+        os.chdir("%s/%s" % (cwd,sub))
+
+    os.chdir(cwd)
+    if long == True:
+        append_log(name,"Starting: Equil_Tf_analysis")
+        append_log(name,"Starting: Equil_Tf_analysis",subdir=True)
+    else:
+        append_log(name,"Starting: Tf_loop_analysis")
+        append_log(name,"Starting: Tf_loop_analysis",subdir=True)
 
 def check_completion(model,append_log,equil=False):
     ''' Check if the Tf_loop_analysis finished by seeing if all needed files
@@ -100,27 +95,27 @@ def check_completion(model,append_log,equil=False):
     name = model.subdir
     done = 0
     cwd = os.getcwd()
+    sub = "%s/iteration_%d" % (name,model.iteration)
+    os.chdir("%s/%s" % (cwd,sub))
     if equil == True:
-        sub = "%s/Mut_%d" % (name,model.Mut_iteration)
+        temperatures = [ x.rstrip("\n") for x in open("long_temps","r").readlines() ]
         qwalltime = "00:10:00"
         cwalltime = "00:06:00"
     else:
-        sub = "%s/Tf_%d" % (name,model.Tf_iteration)
+        temperatures = [ x.rstrip("\n") for x in open("short_temps","r").readlines() ]
         qwalltime = "00:05:00"
         cwalltime = "00:03:00"
-    os.chdir(cwd+"/"+sub)
-    cwd2 = os.getcwd()
-    print "  Checking analysis in directory "+sub
-    temperatures = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ]
+    print "  Checking analysis in directory %s" % sub
     for k in range(len(temperatures)):
         tdir = temperatures[k]
-        os.chdir(cwd2+"/"+tdir)
-        files = ["rmsd.xvg","radius_gyration.xvg","energyterms.xvg","phis.xvg","Q.dat","qimap.dat"] 
+        os.chdir("%s/%s/%s" % (cwd,sub,tdir))
+        #files = ["rmsd.xvg","radius_gyration.xvg","energyterms.xvg","phis.xvg","Q.dat","qimap.dat"] 
+        files = ["Q.dat","energyterms.xvg"] 
         check_files = all([ os.path.exists(file) for file in files ])
         if check_files:
-            print "    Saving Qh, Qnh, Qlocal, Qnonlocal for %s" % tdir
-            append_log(name,"    Saving Qh, Qnh, Qlocal, Qnonlocal for %s" % tdir,subdir=True)
-            crunch_coordinates.reorganize_qimap()
+            #print "    Saving Qh, Qnh, Qlocal, Qnonlocal for %s" % tdir
+            #append_log(name,"    Saving Qh, Qnh, Qlocal, Qnonlocal for %s" % tdir,subdir=True)
+            #crunch_coordinates.reorganize_qimap()
             append_log(name,"    analysis done for %s" % tdir,subdir=True)
             done = 1
         else:
@@ -137,7 +132,7 @@ def check_completion(model,append_log,equil=False):
             if not flagQ:
                 crunch_coordinates.crunch_Q("%s_%s" % (model.subdir,tdir),model.contact_type,walltime=qwalltime)
             done = 0
-        os.chdir(cwd2)
+        os.chdir("%s/%s" % (cwd,sub))
 
     os.chdir(cwd)
     if done == 1:
@@ -151,37 +146,33 @@ def check_completion(model,append_log,equil=False):
     else:
         print "  Analysis has not finished."
 
-def run_wham_heat_capacity(model,append_log,Mut=False):
+def run_wham_heat_capacity(model,append_log,long=False):
     ''' Check if the last temperature step, dT=1. If it was start 
         prepping and running WHAM calculation for the Heat Capacity.'''
 
     name = model.subdir
     cwd = os.getcwd()
+    sub = "%s/iteration_%d" % (name,model.iteration)
+    os.chdir("%s/%s" % (cwd,sub))
     print "*** NOTE: module load jdk required for WHAM ***"
-    if Mut == True:
-        sub = "%s/Mut_%d" % (name,model.Mut_iteration)
-        os.chdir("%s/%s" %(cwd,sub))
-        cwd2 = os.getcwd()
+    if long:
         print "Running wham for heat capacity, free energy curves, and melting curve"
-        if not os.path.exists("whamQ"):
-            os.mkdir("whamQ")
+        if not os.path.exists("long_wham"):
+            os.mkdir("long_wham")
         append_log(name,"  running wham for heat capacity, free energy, and melting curve",subdir=True)
         append_log(name,"Starting: Equil_Tf_wham")
-        wham.run_wham_for_heat_capacity(model,Mut=True)
+        wham.run_wham_for_heat_capacity(model,long=True)
         append_log(name,"Finished: Equil_Tf_wham")
         flag = 1
     else:
-        sub = model.subdir+"/Tf_"+str(model.Tf_iteration)
-        os.chdir(cwd+"/"+sub)
-        cwd2 = os.getcwd()
         Tinfo = open("Ti_Tf_dT.txt","r").read().split()
         T_min,T_max,deltaT = int(Tinfo[0]), int(Tinfo[1]), int(Tinfo[2])
         if deltaT <= 5:
             ## Its time for WHAM
             print "Since deltaT <=5 --> Time for WHAM."
             print "Running wham for heat capacity, free energy curves, and melting curve"
-            if not os.path.exists("whamQ"):
-                os.mkdir("whamQ")
+            if not os.path.exists("short_wham"):
+                os.mkdir("short_wham")
             append_log(name,"  running wham for heat capacity, free energy, and melting curve",subdir=True)
             append_log(name,"Starting: Tf_wham")
             wham.run_wham_for_heat_capacity(model)

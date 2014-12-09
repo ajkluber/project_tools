@@ -248,14 +248,14 @@ if __name__ == '__main__':
     iteration = args.iteration
     
     model = mdb.check_inputs.load_model("%s" % name,dry_run=True)
-    model.Mut_iteration = iteration
+    model.iteration = iteration
     model.contact_epsilons = np.ones(model.n_contacts,float)
     method = "ddG_MC2004"
 
     cwd = os.getcwd()
-    if not os.path.exists("%s/Mut_%d/test" % (name,iteration)):
-        os.mkdir("%s/Mut_%d/test" % (name,iteration))
-    os.chdir("%s/Mut_%d/test" % (name,iteration))
+    if not os.path.exists("%s/iteration_%d/test" % (name,iteration)):
+        os.mkdir("%s/iteration_%d/test" % (name,iteration))
+    os.chdir("%s/iteration_%d/test" % (name,iteration))
 
     find_solutions(model,method)
 

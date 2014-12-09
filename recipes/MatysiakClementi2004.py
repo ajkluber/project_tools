@@ -1,4 +1,4 @@
-""" A recipe to apply the Matysiak Clementi 2004 algorithm
+''' A recipe to apply the Matysiak Clementi 2004 algorithm
 
 
 Description:
@@ -12,7 +12,7 @@ Reference:
 (1) Matysiak, S.; Clementi, C. Optimal Combination of Theory and Experiment for
 the Characterization of the Protein Folding Landscape of S6: How Far Can a
 Minimalist model Go? J. Mol. Biol. 2004, 343, 235-248.
-"""
+'''
 
 import os
 import argparse
@@ -25,7 +25,7 @@ import model_builder as mdb
 
 class MatysiakClementi2004(ProjectManager):
     
-    """ A project manager to reproduce Matysiak Clementi 2004 algorithm. 
+    ''' A project manager to reproduce Matysiak Clementi 2004 algorithm. 
 
 
     Description:
@@ -51,7 +51,7 @@ class MatysiakClementi2004(ProjectManager):
     (1) Matysiak, S.; Clementi, C. Optimal Combination of Theory and Experiment for
     the Characterization of the Protein Folding Landscape of S6: How Far Can a
     Minimalist model Go? J. Mol. Biol. 2004, 343, 235-248.
-    """
+    '''
 
 
     def logical_flowchart_starting(self,model,task):
@@ -129,7 +129,7 @@ class MatysiakClementi2004(ProjectManager):
             raise SystemExit
 
     def new_project(self,args,modeloptions):
-        """ Start a new simulation project"""
+        ''' Start a new simulation project'''
 
         subdirs = [ x[:-4] for x in args.pdbs ]
         for sub in subdirs:
@@ -165,7 +165,7 @@ class MatysiakClementi2004(ProjectManager):
 
 
 def get_args():
-    """ Get command line arguments """
+    ''' Get command line arguments '''
 
     parser = argparse.ArgumentParser(description='Options for MatysiakClementi2004 recipe.')
     sp = parser.add_subparsers(dest='action')
@@ -174,9 +174,9 @@ def get_args():
     new_parser = sp.add_parser('new')
     new_parser.add_argument('--pdbs', type=str, required=True, nargs='+',help='PDBs to start simulations.')
     new_parser.add_argument('--contacts', type=str, default="None", help='Specify contacts.')
-    new_parser.add_argument('--contact_params', type=str, default="None", help='Optional, specify contact epsilons, deltas.')
+    new_parser.add_argument('--pairwise_params_file', type=str, default="None", help='Optional, specify pairwise interactions.')
+    new_parser.add_argument('--model_params_file', type=str, default="None", help='Optional, specify model parameters.')
     new_parser.add_argument('--epsilon_bar', type=float,help='Optional, average strength of contacts. epsilon bar.')
-    new_parser.add_argument('--contact_type', type=str, default="None", help='Optional, specify contact type.')
     new_parser.add_argument('--fitting_solver', type=str, default="Levenberg", help='Optional, specify solution algorithm for fitting.')
     new_parser.add_argument('--fitting_includes', type=str, nargs='+', default="None", help='Optional, specify directories included in fitting.')
     new_parser.add_argument('--fitting_allowswitch', type=str, default="False", help='Optional, allow contacts to switch between attractive/repulsive in fitting.')
@@ -200,8 +200,8 @@ def get_args():
     ext_parser = sp.add_parser('extend')
     ext_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
     ext_parser.add_argument('--factor', type=float, help='Factor by which you want to extend simulations. e.g. --factor 2 doubles length',required=True)
-    ext_parser.add_argument('--Tf_temps', type=float, nargs='+', help='Temperatures that you want extended')
-    ext_parser.add_argument('--Mut_temps', type=float, nargs='+', help='T_initial T_final dT for new mutational sims array')
+    ext_parser.add_argument('--short_temps', type=float, nargs='+', help='Temperatures that you want extended')
+    ext_parser.add_argument('--long_temps', type=float, nargs='+', help='T_initial T_final dT for new mutational sims array')
     ext_parser.add_argument('--dry_run', action='store_true', help='Dry run. No simulations started.')
 
     args = parser.parse_args()
