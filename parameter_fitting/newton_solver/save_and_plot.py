@@ -20,7 +20,7 @@ def save_solution_data(solutions,Lambdas,nrm_soln,nrm_resd,norm_eps,condition_nu
     np.savetxt("residual_norms.dat",nrm_resd)
     np.savetxt("perturbation_norms.dat",np.array(nrm_soln)/norm_eps)
     np.savetxt("singular_values.dat",s)
-    np.savetxt("condition_num.dat",condition_number)
+    #np.savetxt("condition_num.dat",condition_number)
 
     plot_Lcurve(nrm_resd,nrm_soln,Lambdas)
     plt.savefig("Lcurve.png")

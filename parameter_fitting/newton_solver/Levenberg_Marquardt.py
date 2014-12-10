@@ -56,18 +56,18 @@ def find_solutions(model,method,scaling=False):
     J = Jacobian
 
     df = target_feature - sim_feature
-    JTdf = np.dot(J.T,df)
-    JTJ = np.dot(J.T,J)
+    #JTdf = np.dot(J.T,df)
+    #JTJ = np.dot(J.T,J)
 
-    norm_eps = model.model_param_values
-    n_rows = JTJ.shape[0]
+    #n_rows = JTJ.shape[0]
 
     #if scaling:
     #    ## Scale the diagonal by the curvature. This makes it the Levenberg-Marquardt method
     #    Levenberg = np.identity(n_rows)
     #    Levenberg[(np.arange(n_rows),np.arange(n_rows))] = np.diag(JTJ)
 
-    u,s,v = np.linalg.svd(JTJ)
+    #u,s,v = np.linalg.svd(JTJ)
+    u,s,v = np.linalg.svd(J)
     if np.log10(min(s)) < -10:
         smin = -10
     else:
@@ -78,6 +78,7 @@ def find_solutions(model,method,scaling=False):
     ## parameter are 'damped' out by a filter function.
     Lambdas = np.logspace(smin,np.log10(max(s)),num=200)
 
+    norm_eps = np.linalg.norm(model.model_param_values)
     nrm_soln = []
     nrm_resd = []
     condition_number = []
@@ -86,7 +87,8 @@ def find_solutions(model,method,scaling=False):
         S = np.zeros(J.shape) 
         Lambda = Lambdas[i]
 
-        S[np.arange(len(s)),np.arange(len(s))] = s/((s**2) + (Lambda**2))
+        #S[np.arange(len(s)),np.arange(len(s))] = s/((s**2) + (Lambda**2))
+        S[np.diag_indices(len(s))] = s/((s**2) + (Lambda**2))
 
         J_pinv = np.dot(v.T,np.dot(S.T,u.T))
         x_soln = np.dot(J_pinv,df)
@@ -97,13 +99,13 @@ def find_solutions(model,method,scaling=False):
         nrm_resd.append(np.linalg.norm(residual))
         solutions.append(x_soln)
 
-        J_use = np.dot(v.T,np.dot(S.T,u.T))     ## This isn't right
-        cond_num = np.linalg.norm(J_use)*np.linalg.norm(J_pinv)
+        #J_use = np.dot(v.T,np.dot(S.T,u.T))     ## This isn't right
+        #cond_num = np.linalg.norm(J_use)*np.linalg.norm(J_pinv)
         #condition_number.append(np.linalg.norm(lhs)*np.linalg.norm(np.linalg.inv(lhs)))
-        condition_number.append(np.linalg.norm(lhs)*np.linalg.norm(np.linalg.inv(lhs)))
+        #condition_number.append(np.linalg.norm(lhs)*np.linalg.norm(np.linalg.inv(lhs)))
 
+    condition_number = []
     save_and_plot.save_solution_data(solutions,Lambdas,nrm_soln,nrm_resd,norm_eps,condition_number,s)
-
 
 if __name__ == '__main__':
     import os
