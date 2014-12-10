@@ -1,4 +1,4 @@
-""" Submodule to calculate the simulation phi values
+''' Submodule to calculate the simulation phi values
 
 Description:
 
@@ -11,7 +11,7 @@ References:
 (1) Matysiak, S.; Clementi, C. Optimal Combination of Theory and Experiment for
 the Characterization of the Protein Folding Landscape of S6: How Far Can a
 Minimalist model Go? J. Mol. Biol. 2004, 343, 235-248.
-"""
+'''
 
 import os
 import argparse
@@ -32,7 +32,7 @@ global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
 def get_dHk(model,rij,Fij_conts,Fij):
-    """ Get perturbed potential energy """
+    ''' Get perturbed potential energy '''
     dHk = np.zeros(rij.shape[0],float)
     for i in range(len(Fij_conts)):       ## loop over number of parameters
         cont_idx = Fij_conts[i]
@@ -40,7 +40,7 @@ def get_dHk(model,rij,Fij_conts,Fij):
     return dHk
 
 def get_Vp_plus_Vpk(model,Vp,rij,Fij_conts,Fij):
-    """ Get perturbed potential energy """
+    ''' Get perturbed potential energy '''
     Vp_plus_Vpk = np.array(Vp,copy=True)
     for i in range(len(Fij_conts)):       ## loop over number of parameters
         cont_idx = Fij_conts[i]
@@ -50,7 +50,7 @@ def get_Vp_plus_Vpk(model,Vp,rij,Fij_conts,Fij):
     return Vp_plus_Vpk
 
 def get_target_feature(model):
-    """ Get target features """
+    ''' Get target features '''
     name = model.subdir
     iteration = model.iteration
 
@@ -62,7 +62,7 @@ def get_target_feature(model):
     return target_feature, target_feature_err
 
 def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_phi.dat"):
-    """ Calculate the average feature vector (ddG's) and Jacobian """
+    ''' Calculate the average feature vector (ddG's) and Jacobian '''
     
     name = model.subdir
     iteration = model.iteration
@@ -131,7 +131,7 @@ def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_p
     return sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err
 
 def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels,saveas="Q_phi.dat"):
-    """ Calculates the feature vector (ddG's) and Jacobian for one directory """
+    ''' Calculates the feature vector (ddG's) and Jacobian for one directory '''
     ## Get trajectory, state indicators, contact energy
     #traj,rij,Vp = util.get_states_Vp(model)
     traj,rij,Vp = get_states_Vp(model)
@@ -214,14 +214,14 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
     return sim_feature, Jacobian
 
 def get_mutant_fij(model,mutants):
-    """ Load in the fraction of contact loss for each mutation.
+    ''' Load in the fraction of contact loss for each mutation.
 
     Description:
 
         Since the fraction of contacts lost matrix f^k_ij is sparse only load
     in the of nonzero elements and their indices. Determine the contact indices
     for nonzero entries. Let only allow fij's for contacts. 
-    """
+    '''
     Fij_pairs = []
     Fij_conts = []
     Fij = []
@@ -250,7 +250,7 @@ def get_mutant_fij(model,mutants):
     return Fij, Fij_pairs, Fij_conts
 
 def get_mutant_fij_scanning(model, mutants, fij=0.5):
-    """Estimate the local contact fraction loss for scanning mutations.
+    '''Estimate the local contact fraction loss for scanning mutations.
     
     The ddGs for scanning mutations could be affected by a multiplicity of factors that exceed the mere contacts lost (e.g. effect 
     of solvent, interaction with helix dipole, interaction with charged residues, loss of hydrogen bonds, among others). As a result,
@@ -260,7 +260,7 @@ def get_mutant_fij_scanning(model, mutants, fij=0.5):
 
     Also, on a first approach only the [i, i+4] contacts will be affected by the said value of fij.
 
-    """
+    '''
     
     Fij_pairs = []
     Fij_conts = []
@@ -292,7 +292,7 @@ def get_mutant_fij_scanning(model, mutants, fij=0.5):
     return Fij, Fij_pairs, Fij_conts
 
 def save_phi_values(mutants,coord,state_labels,dG,ddG,phi,saveas="Q_phi.dat"):
-    """ Save the calculated dG, ddG, and phi values for states"""
+    ''' Save the calculated dG, ddG, and phi values for states'''
 
     header_string = "# mut" 
     for i in range(len(state_labels)):
