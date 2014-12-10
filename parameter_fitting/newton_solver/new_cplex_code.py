@@ -11,7 +11,7 @@ import cplex
 from project_tools.parameter_fitting.ddG_MC2004 import mutatepdbs as mut
 from model_builder.models.SmogCalpha import SmogCalpha as sca
 
-def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBeadBead.dat"):
+def calculate_MC2004_perturbation(model,append_log,newbeadbead="NewBeadBead.dat"):
     """ Calculate the new contact parameters with Matysiak Clementi 2004 method
 
     Description:
@@ -112,7 +112,7 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
             print solution[-1]
             ratios_cpx.append(ratio_cpx)
             solution_string += iteration_string + "\n"
-        open("mut/solution.log","w").write(solution_string) 
+        open("solution.log","w").write(solution_string) 
         plot_solution_info(model,s,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs)
     else:
         temp = open("num_singular_values_include.txt").read().rstrip("\n")
