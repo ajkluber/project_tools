@@ -236,7 +236,7 @@ def extend_temperature(T,factor):
     shutil.move("topol_4.6.tpr","old_topol_4.6.tpr")
 
     ## Write new .mdp with more steps and recreate .tpr
-    mdpfile = mdp.get_constant_temperature_mdp_smog(T,new_nsteps)
+    mdpfile = mdp.constant_temperature(T,new_nsteps)
     open("nvt.mdp","w").write(mdpfile)
 
     print "  Extending temp ", T, " to nsteps ",new_nsteps
@@ -508,7 +508,7 @@ def run_constant_temp(model,T,nsteps="100000000",walltime="23:00:00",queue="seri
 
     '''
     ## Loading and writing grompp.
-    mdpfile = mdp.get_constant_temperature_mdp_smog(str(T),nsteps)
+    mdpfile = mdp.constant_temperature(str(T),nsteps)
     open("nvt.mdp","w").write(mdpfile)
 
     ## Write all needed simulation files.
