@@ -1,17 +1,14 @@
-""" Save the new parameters from the Newton solution
+''' Save the new parameters from the Newton solution
 
 
-"""
+'''
 
 import numpy as np
 import os
 
 
 def save(model,soln_index):
-    """ Save new parameters """
-    ## See model_builder/models/pairwise_potentials for codes
-    potential_type_switch = {1:2,2:3,3:2}
-
+    ''' Save new parameters '''
     ## Use new method of model_parameters
     eps_p_0 = model.model_param_values
     deps_p = np.loadtxt("xp_%d.dat" % soln_index)
@@ -24,25 +21,15 @@ def save(model,soln_index):
     alpha = 0.1/ratio
     neweps_p = eps_p_0 + alpha*deps_p       
     
-    ## NEED TO DO:
-    ##  - Determine which contacts switched from attractive to repulsive.
-    ##    and change the function type in model accordingly
+    ## For the non-native interactions set the neweps_p to be
+    ## equal to the delta.
+    for i in range(model.n_contacts):
 
     ## Update parameters
-    model.model_param_values = neweps
-    model.generate_topology()   
-    model.contact_params = "%s/NewBeadBead.dat" % cwd
+    model.update_model_param_values(neweps_p)
 
-    ## vvvv DEPRECATED vvvv
-    #if model.fitting_allowswitch ==False:
-    #    neweps[neweps < 0.01] = 0.01
-    #else:
-    #    index = np.where(neweps<0.)
-    #    for i in range(len(index)):
-    #        # If epsilon becomes negative, change interaction type. Keep epsilon positive
-    #        model.LJtype[index[i]] = -model.LJtype[index[i]] 
-    #        neweps[index[i]] = abs(neweps[index[i]])
-    #model.contact_epsilons = neweps
-    #model.generate_topology()
-    #open("NewBeadBead.dat","w").write(model.beadbead)
-    #model.contact_params = "%s/NewBeadBead.dat" % cwd
+    open("%s/pairwise_params" % cwd,"w").write(self.pairwise_param_file)
+    open("%s/model_params" % cwd,"w").write(self.model_param_file)
+    model.pairwise_param_file = "%s/pairwise_params" % cwd
+    model.model_param_file = "%s/model_params" % cwd
+
