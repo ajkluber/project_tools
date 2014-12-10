@@ -24,6 +24,8 @@ def save(model,soln_index):
     ## For the non-native interactions set the neweps_p to be
     ## equal to the delta.
     for i in range(model.n_contacts):
+        ##
+        pass 
 
     ## Update parameters
     model.update_model_param_values(neweps_p)
