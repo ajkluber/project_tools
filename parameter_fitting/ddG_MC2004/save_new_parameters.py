@@ -30,8 +30,8 @@ def save(model,soln_index):
     ## Update parameters
     model.update_model_param_values(neweps_p)
 
-    open("%s/pairwise_params" % cwd,"w").write(self.pairwise_param_file)
-    open("%s/model_params" % cwd,"w").write(self.model_param_file)
-    model.pairwise_param_file = "%s/pairwise_params" % cwd
-    model.model_param_file = "%s/model_params" % cwd
+    open("%s/pairwise_params" % cwd,"w").write(self.pairwise_param_file_string)
+    open("%s/model_params" % cwd,"w").write(self.model_param_file_string)
+    model.pairwise_param_file_location = "%s/pairwise_params" % cwd
+    model.model_param_file_location = "%s/model_params" % cwd
 
