@@ -25,14 +25,12 @@ T_min = 50
 T_max = 150
 deltaT = 5
 
-
 contacts = np.loadtxt("%s.contacts" % name,dtype=int)
-LJtype = np.ones(len(contacts),int)
 
 ## Initialize a C-alpha Go-model with a pdb. All topology files needed for
 ## simulation are automatically generated. 
 #model = mdb.models.SmogCalpha.SmogCalpha(pdb,contacts=contacts,LJtype=LJtype)
-model = mdb.models.SmogCalpha.SmogCalpha(pdb=pdb,contacts=contacts,LJtype=LJtype,model_code=None,disulfides=None)
+model = mdb.models.SmogCalpha.SmogCalpha(pdb=pdb,contacts=contacts,defaults=True)
 
 
 ### Start simulations for a range of temperatures.
