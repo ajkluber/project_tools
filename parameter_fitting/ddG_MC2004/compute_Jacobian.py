@@ -133,8 +133,7 @@ def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_p
 def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels,saveas="Q_phi.dat"):
     ''' Calculates the feature vector (ddG's) and Jacobian for one directory '''
     ## Get trajectory, state indicators, contact energy
-    #traj,rij,Vp = util.get_states_Vp(model)
-    traj,rij,Vp = get_states_Vp(model)
+    traj,rij,Vp = get_rij_Vp(model)
 
     Q = np.loadtxt("Q.dat")
     #U,TS,N,Uframes,TSframes,Nframes = util.get_state_indicators(Q,bounds)
