@@ -11,7 +11,7 @@ import cplex
 from project_tools.parameter_fitting.ddG_MC2004 import mutatepdbs as mut
 from model_builder.models.SmogCalpha import SmogCalpha as sca
 
-def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBeadBead.dat"):
+def calculate_MC2004_perturbation(model,append_log,newbeadbead="NewBeadBead.dat"):
     """ Calculate the new contact parameters with Matysiak Clementi 2004 method
 
     Description:
@@ -34,27 +34,27 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
 
     """
     ## Define relative weight of optimization of native contacts vs frustration
-    
     weight = 1.
 
     cwd = os.getcwd()
-    sub = cwd+"/"+model.subdir+"/iteration_"+str(model.Mut_iteration)
-    os.chdir(model.subdir+"/mutants")
+    sub = cwd+"/"+model.subdir+"/iteration_"+str(model.Mut_iteration)+"/newton"
+    os.chdir(cwd+"/"+model.subdir+"/mutants")
     ddGexp, ddGexp_err = mut.get_exp_ddG()
     os.chdir(sub)
     ddGsim, ddGsim_err, M = get_ddG_matrix_M()
-#    weight = 2.
-#    ddGtarget = (ddGexp + (weight-1)*ddGsim)/2.
-#    dg = ddGtarget - ddGsim
+
+#    Modify norm of correction vector
+#    dg_weight = 2.
+#    ddGtarget = (ddGexp + (dg_weight-1)*ddGsim)/2.
+
     dg = ddGexp - ddGsim
-    np.savetxt("mut/target_feature.dat",ddGexp)
-#    np.savetxt("mut/ddGtarget.dat",ddGtarget)
-    np.savetxt("mut/dg.dat",dg)
-    np.savetxt("mut/target_feature_err.dat",ddGexp_err)
+    np.savetxt("target_feature.dat",ddGexp)
+    np.savetxt("dg.dat",dg)
+    np.savetxt("target_feature_err.dat",ddGexp_err)
 
     eps = model.contact_epsilons
 
-    if not os.path.exists("mut/num_singular_values_include.txt"):
+    if not os.path.exists("num_singular_values_include.txt"):
         #sca.append_log("Calculating MC2004, see")
         u,s,v = np.linalg.svd(M)
         s_norm = s/max(s)
@@ -71,7 +71,7 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
         Xp_cpxs = [] 
         ratios_xp = []
         ratios_cpx = []
-        print "  Solving for new parameters. Parameters will be saved in mut/"
+        print "  Solving for new parameters. Parameters will be saved in newton/"
         print "# Sing. %10s %10s %10s %5s %10s" % ("Cond.Num.","|xp|/|eps|","|xp_cpx|/|eps|", "Status", "Cutoff")
         solution_string = "# Sing. %10s %10s %10s %5s %10s\n" % ("Cond.Num.","|xp|/|eps|","|xp_cpx|/|eps|", "Status", "Cutoff")
         
@@ -86,7 +86,7 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
 
             x_particular = np.dot(Mpinv,dg)
             print "Min of xp = ", np.min(x_particular)
-            np.savetxt("mut/xp%d.dat" % (i+1),x_particular)
+            np.savetxt("xp%d.dat" % (i+1),x_particular)
             delta_eps_xp = x_particular
             ratio_xp = np.linalg.norm(delta_eps_xp)/np.linalg.norm(eps)
             Xps.append(delta_eps_xp)
@@ -103,7 +103,7 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
                 delta_eps = x_particular_cpx + np.dot(N,solution[:-1])
                 ratio_cpx = np.linalg.norm(delta_eps)/np.linalg.norm(eps)
                 Xp_cpxs.append(delta_eps)
-                np.savetxt("mut/xp_cplex%d.dat" % (i+1),delta_eps)
+                np.savetxt("xp_cplex%d.dat" % (i+1),delta_eps)
             except cplex.exceptions.CplexSolverError:
                 Xp_cpxs.append(np.zeros(len(x_particular)))
                 ratio_cpx = 0.
@@ -112,20 +112,20 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
             print solution[-1]
             ratios_cpx.append(ratio_cpx)
             solution_string += iteration_string + "\n"
-        open("mut/solution.log","w").write(solution_string) 
+        open("solution.log","w").write(solution_string) 
         plot_solution_info(model,s,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs)
     else:
-        temp = open("mut/num_singular_values_include.txt").read().rstrip("\n")
+        temp = open("num_singular_values_include.txt").read().rstrip("\n")
         num_singular_values = temp.split()[0]
         print "  Using delta eps with %s singular values." % num_singular_values
         if temp.endswith("xp"):
-            savebeadbeadxp = sub+"/mut/"+newbeadbead.split(".dat")[0]+"_xp.dat"
+            savebeadbeadxp = newbeadbead.split(".dat")[0]+"_xp.dat"
             savebeadbead = savebeadbeadxp
-            delta_eps = np.loadtxt(sub+"/mut/xp"+num_singular_values+".dat")
+            delta_eps = np.loadtxt("num_singular_values.dat")
         else:
-            savebeadbeadxp = sub+"/mut/"+newbeadbead.split(".dat")[0]+"_xp.dat"
-            savebeadbead = sub+"/mut/"+newbeadbead
-            delta_eps = np.loadtxt(sub+"/mut/xp_cplex"+num_singular_values+".dat")
+            savebeadbeadxp = newbeadbead.split(".dat")[0]+"_xp.dat"
+            savebeadbead = newbeadbead
+            delta_eps = np.loadtxt("xp_cplex"+num_singular_values+".dat")
 
         print "  Saving new beadbead as: ",savebeadbead
         ## Write new beadbead to file
@@ -418,7 +418,7 @@ def plot_input_eigenvectors(v, num_eigenvalue):
     plt.bar(range(len(v[i,:])),v[i,:])
     plt.title("Eigenvector components for eigenvalue #"+ str(i))
     plt.xlabel("Epsilon #")
-    plt.savefig("mut/input_eig_"+str(i)+".pdf")
+    plt.savefig("input_eig_"+str(i)+".pdf")
     plt.close()
 
 def plot_output_eigenvectors(u,num_eigenvalue):
@@ -427,7 +427,7 @@ def plot_output_eigenvectors(u,num_eigenvalue):
     plt.bar(range(len(u[:,i])),u[:,i])
     plt.title("Eigenvector components for eigenvalue #"+ str(i))
     plt.xlabel("Equation #")
-    plt.savefig("mut/output_eig_"+str(i)+".pdf")
+    plt.savefig("output_eig_"+str(i)+".pdf")
     plt.close()
 
 def plot_cumulative_solution(u,s,v,max_solvable_eig):
@@ -448,7 +448,7 @@ def plot_cumulative_solution(u,s,v,max_solvable_eig):
     plt.title("Cumulative influence of input for "+str(max_solvable_eig)+" eigenvalues")
     plt.xlabel("Epsilon #")
     plt.xlim((0,len(x)))
-    plt.savefig("mut/cumul_input_abs.pdf")
+    plt.savefig("cumul_input_abs.pdf")
     plt.close()
     
     plt.figure()
@@ -456,7 +456,7 @@ def plot_cumulative_solution(u,s,v,max_solvable_eig):
     plt.title("Cumulative influence of input for "+str(max_solvable_eig)+" eigenvalues")
     plt.xlabel("Epsilon #")
     plt.xlim((0,len(w)))
-    plt.savefig("mut/cumul_input_rel.pdf")
+    plt.savefig("cumul_input_rel.pdf")
     plt.close()
 
     plt.figure()
@@ -464,7 +464,7 @@ def plot_cumulative_solution(u,s,v,max_solvable_eig):
     plt.title("Cumulative influence of output for "+str(max_solvable_eig)+" eigenvalues")
     plt.xlabel("Constraint #")
     plt.xlim((0,len(z)))
-    plt.savefig("mut/cumul_output_abs.pdf")
+    plt.savefig("cumul_output_abs.pdf")
     plt.close()
 
     plt.figure()
@@ -472,7 +472,7 @@ def plot_cumulative_solution(u,s,v,max_solvable_eig):
     plt.title("Cumulative influence of output for "+str(max_solvable_eig)+" eigenvalues")
     plt.xlabel("Constraint #")
     plt.xlim((0,len(y)))
-    plt.savefig("mut/cumul_output_rel.pdf")
+    plt.savefig("cumul_output_rel.pdf")
     plt.close()
 
 def plot_cropped_jacobian(M,max_solvable_eig):
@@ -493,7 +493,7 @@ def plot_cropped_jacobian(M,max_solvable_eig):
     plt.xlabel("Constraints dimension")
     plt.ylabel("Epsilons dimension")
     plt.colorbar()
-    plt.savefig("mut/J_cropped_heatmap.pdf")
+    plt.savefig("J_cropped_heatmap.pdf")
     
 
 def plot_solution_info(model,s,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs):
@@ -502,9 +502,9 @@ def plot_solution_info(model,s,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs):
     plt.figure()
     plt.plot(s/max(s),'ro')
     plt.title(model.subdir+" Singular value spectrum for M")
-    plt.savefig("mut/spectrum.pdf")
-    np.savetxt("mut/singular_vals.dat",s)
-    np.savetxt("mut/singular_vals_norm.dat",s/max(s))
+    plt.savefig("spectrum.pdf")
+    np.savetxt("singular_vals.dat",s)
+    np.savetxt("singular_vals_norm.dat",s/max(s))
 
     ## Plot condition number versus number of included singular values
     ## The condition number quantifies the intrinsic instability in inverting
@@ -521,8 +521,8 @@ def plot_solution_info(model,s,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs):
     ax1.set_title(model.subdir+" Condition number $cond(M) = ||M||\\cdot||M^+||$")
     ax2.plot(range(1,len(cond_num)+1),np.log10(cond_num),'r',label="$log(cond(M))$")
     ax2.set_ylabel("$log_{10}(cond(M))$")
-    plt.savefig("mut/condition_number.pdf")
-    np.savetxt("mut/cond_num.dat",cond_num)
+    plt.savefig("condition_number.pdf")
+    np.savetxt("cond_num.dat",cond_num)
 
     plt.figure()
     plt.plot(range(1,len(cond_num)+1),ratios_xp,color='r',marker='o',label="$|x_p|$/$|\\epsilon|$")
@@ -531,11 +531,11 @@ def plot_solution_info(model,s,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs):
     plt.title("Perturbation size $|\\delta\\epsilon|$/$|\\epsilon|$ w/ & w/o cplex")
     plt.xlabel("# sing values")
     plt.ylabel("Size of perturbation")
-    plt.savefig("mut/perturb_size.pdf")
+    plt.savefig("perturb_size.pdf")
     temp = np.zeros((len(ratios_xp),2),float)
     temp[:,0] = np.array(ratios_xp)
     temp[:,1] = np.array(ratios_cpx)
-    np.savetxt("mut/ratios.dat",temp)    
+    np.savetxt("ratios.dat",temp)    
 
     ## Compute correlation matrix for all possible xp's.
     ## Compute correlation matrix for all possible xp's with cplex.
@@ -573,17 +573,17 @@ def plot_solution_info(model,s,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs):
     plt.pcolor(Covar_xp)
     plt.title("Covariance of $x_p$ and $x_p$")
     plt.colorbar()
-    plt.savefig("mut/Covar_xp.pdf")
+    plt.savefig("Covar_xp.pdf")
     plt.figure()
     plt.pcolor(Covar_cpx)
     plt.title("Covariance of $x_{cplex}$ and $x_{cplex}$")
     plt.colorbar()
-    plt.savefig("mut/Covar_cpx.pdf")
+    plt.savefig("Covar_cpx.pdf")
     plt.figure()
     plt.pcolor(Covar_xp_cpx)
     plt.title("Covariance of $x_p$ and $x_{cplex}$")
     plt.colorbar()
-    plt.savefig("mut/Covar_xp_cpx.pdf")
+    plt.savefig("Covar_xp_cpx.pdf")
 
     plt.close()
 
@@ -636,44 +636,17 @@ def save_new_parameters(sub,eps,delta_eps,delta_eps_xp,savebeadbead,savebeadbead
 
 
 def get_ddG_matrix_M():
-    ## T_array_last.txt should hold names of directories 145.00_# where #=1,2,3
-    temperatures = [ x.split('_')[0] for x in open("T_array_last.txt","r").readlines() ] 
-    directories = [ x.rstrip("\n") for x in open("T_array_last.txt","r").readlines() ] 
-    if not os.path.exists("mut"):
-        os.mkdir("mut")
 
-    ## Collect ddG & M from Mut_#/<temp>_*/{mut,phi} directories.
-    ## Take avg. and std error of mean for error bars. Save in Mut_#/mut
     print "  Getting simulation ddG"
     files = ["sim_feature.dat","sim_feature_err.dat","Jacobian.dat"] 
-    flag = np.array([ not os.path.exists("mut/"+file) for file in files ])
+    flag = np.array([ not os.path.exists(file) for file in files ])
     if np.any(flag):
-        print "  One of the following does not exist: Jacobian.dat, sim_feature.dat. Calculating."
-        ddGlist = []
-        Mlist = []
-        for n in range(len(directories)):
-            dir = directories[n]
-            ddG_temp = np.loadtxt(dir+"/phi/Q_phi.dat",usecols=(4,5),dtype=float)
-            ddG = np.concatenate((ddG_temp[:,0],ddG_temp[:,1]),axis=0)
-            ddGlist.append(ddG)
-            M = np.loadtxt(dir+"/mut/Jacobian.dat",dtype=float)
-            Mlist.append(M)
-        #print "  IMPORTANT: Look at the singular value spectrum and choose a number of singular values to use."
-        #print "  IMPORTANT: Make sure Mut_#/mut/num_singular_values_include.txt  exists."
-        ddGlist = np.array(ddGlist)
-        ddGsim = sum(ddGlist)/float(n+1)
-        ddGsim_err = np.std(ddGlist,axis=0)
-        Mlist = np.array(Mlist)
-        M = sum(Mlist)/float(n+1)
-        Merr = np.std(Mlist,axis=0)
-        np.savetxt("mut/sim_feature.dat",ddGsim)
-        np.savetxt("mut/sim_feature_err.dat",ddGsim_err)
-        np.savetxt("mut/Jacobian.dat",M)
-        np.savetxt("mut/Jacobian_err.dat",Merr)
+        print "  One of the following does not exist: Jacobian.dat, sim_feature.dat, sim_feature_err.dat. Please verify. Exiting."
+        raise SystemExit
     else:
-        print "  Loading Jacobian.dat, sim_feature.dat, eps.dat"
-        ddGsim= np.loadtxt("mut/sim_feature.dat")
-        ddGsim_err = np.loadtxt("mut/sim_feature_err.dat")
-        M = np.loadtxt("mut/Jacobian.dat")
+        print "  Loading Jacobian.dat, sim_feature.dat, sim_feature_err.dat"
+        ddGsim= np.loadtxt("sim_feature.dat")
+        ddGsim_err = np.loadtxt("sim_feature_err.dat")
+        M = np.loadtxt("Jacobian.dat")
 
     return ddGsim, ddGsim_err, M
