@@ -3,7 +3,6 @@
 '''
 import mdtraj as md
 import numpy as np
-import os
 
 def get_rij_Vp(model):
     ''' Load trajectory, state indicators, and contact energy '''
@@ -21,6 +20,7 @@ def get_rij_Vp(model):
 
 def get_state_bounds():
     ''' Bounds for each state. Bounds are bin edges along Q. '''
+    import os
     if os.path.exists("state_bounds.txt"):
         statefile = open("state_bounds.txt","r").readlines()
     else:

@@ -95,7 +95,7 @@ def calculate_MC2004_perturbation(model,append_log,newbeadbead="NewBeadBead.dat"
             plot_output_eigenvectors(u,i)
             ## Apply cplex
             try: 
-                LP_problem, solution, x_particular_cpx, N, status, sensitivity = apply_constraints_with_cplex(model,dg,M,cutoff,weight)
+                LP_problem, solution, x_particular_cpx, N, status, sensitivity = apply_constraints_with_cplex(model,dg,M,cutoff,weight=weight)
 
                 if status ==1:
                     max_solvable_eig = i
@@ -140,7 +140,7 @@ def calculate_MC2004_perturbation(model,append_log,newbeadbead="NewBeadBead.dat"
     plot_cropped_jacobian(M,max_solvable_eig)
     os.chdir(cwd)
 
-def apply_constraints_with_cplex(model,dg,M,cutoff,weight):
+def apply_constraints_with_cplex(model,dg,M,cutoff,weight=1.):
     """ Construct and solve a linear/quadratic programming problem for new parameters.
 
     Description:
