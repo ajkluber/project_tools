@@ -1,4 +1,4 @@
-""" Solve for new parameters
+''' Solve for new parameters
 
 Description:
 
@@ -11,7 +11,7 @@ References:
 (1) Matysiak, S.; Clementi, C. Optimal Combination of Theory and Experiment for
 the Characterization of the Protein Folding Landscape of S6: How Far Can a
 Minimalist Model Go? J. Mol. Biol. 2004, 343, 235-248.
-"""
+'''
 
 import matplotlib.pyplot as plt
 import numpy as np

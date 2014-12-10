@@ -90,8 +90,8 @@ def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_p
         Fij_conts = Fij_conts_core + Fij_conts_scanning
 
     os.chdir(sub)
-    temperatures = [ x.split('_')[0] for x in open("long_temps","r").readlines() ] 
-    directories = [ x.rstrip("\n") for x in open("long_temps","r").readlines() ] 
+    temperatures = [ x.split('_')[0] for x in open("long_temps_last","r").readlines() ] 
+    directories = [ x.rstrip("\n") for x in open("long_temps_last","r").readlines() ] 
 
     bounds, state_labels = get_state_bounds()
     bounds = [0] + bounds + [model.n_contacts]
