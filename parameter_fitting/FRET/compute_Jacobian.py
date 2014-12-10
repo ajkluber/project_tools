@@ -38,7 +38,7 @@ def calc_sim_bins(model,residues=FRET_pairs,fit_temp=def_temp,spacing=defspacing
     subdir = model.subdir
     iteration = model.Mut_iteration
     
-    sub = "%s/%s/Mut_%d" % (cwd,subdir,iteration)
+    sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
     subtemp = "%s/%d_0" % (sub,fit_temp)
     subdirec = "%s/fitting_%d" % (sub,iteration)
     
@@ -70,9 +70,9 @@ def get_sim_params(model,fit_temp=def_temp):
     ##assumes you are in the folder containing the model subdir
     cwd = os.getcwd()
     subdir = model.subdir
-    iteration = model.Mut_iteration
+    iteration = model.iteration
     
-    sub = "%s/%s/Mut_%d" % (cwd,subdir,iteration)
+    sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
     subdirec = "%s/fitting_%d" % (sub,iteration)
     parmfile = "%s/simf-params%d.dat" % (subdirec,fit_temp)
     
@@ -87,9 +87,9 @@ def get_sim_params(model,fit_temp=def_temp):
 def get_sim_centers(model,fit_temp=def_temp): 
     cwd = os.getcwd()
     subdir = model.subdir
-    iteration = model.Mut_iteration
+    iteration = model.iteration
     
-    sub = "%s/%s/Mut_%d" % (cwd,subdir,iteration)
+    sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
     subdirec = "%s/fitting_%d" % (sub,iteration)
     simfile = "%s/simf_centers%d.dat" % (subdirec,fit_temp)
     if not os.path.isfile(simfile):
@@ -99,8 +99,8 @@ def get_sim_centers(model,fit_temp=def_temp):
 def get_sim_array(model,fit_temp=def_temp):
     cwd = os.getcwd()
     subdir = model.subdir
-    iteration = model.Mut_iteration
-    sub = "%s/%s/Mut_%d" % (cwd,subdir,iteration)
+    iteration = model.iteration
+    sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
     subdirec = "%s/fitting_%d" % (sub,iteration)
     simfile = "%s/simf_centers%d.dat" % (subdirec,fit_temp)
     simfilef = "%s/simf_valuesT%d.dat" % (subdirec,fit_temp)
@@ -118,9 +118,9 @@ def fret_hist_calc(model, bin_size, ran_size, spacing):
     ##read trace file from 
     cwd = os.getcwd()
     subdir = model.subdir
-    iteration = model.Mut_iteration
+    iteration = model.iteration
     
-    sub = "%s/%s/Mut_%d" % (cwd,subdir,iteration)
+    sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
     subdirec = "%s/fitting_%d" % (sub,iteration)
     FRETfile = "%s/FRET_hist.dat" % subdirec
     FRETtracefile = "%s/FRET_trace.dat" % cwd
@@ -176,9 +176,9 @@ def get_target_feature(model,fit_temp=def_temp):
     """ Get target features """
     cwd = os.getcwd()
     subdir = model.subdir
-    iteration = model.Mut_iteration
+    iteration = model.iteration
     
-    sub = "%s/%s/Mut_%d" % (cwd,subdir,iteration)
+    sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
     subdirec = "%s/fitting_%d" % (sub,iteration)
     simfile = "%s/simf_centers%d.dat" % (subdirec,fit_temp)
     FRETfile = "%s/FRET_hist.dat" % subdirec
@@ -208,12 +208,17 @@ def calculate_average_Jacobian(model,residues=FRET_pairs):
     """ Calculate the average feature vector (ddG's) and Jacobian """
     cwd = os.getcwd()
     subdir = model.subdir
-    iteration = model.Mut_iteration
-    sub = "%s/%s/Mut_%d" % (cwd,subdir,iteration)
+    iteration = model.iteration
+    sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
     
     os.chdir(sub)
     os.chdir("%d_0" % def_temp)
     beta = 1.0 * (GAS_CONSTANT_KJ_MOL*float(def_temp))
+    
+    #save the temperature this was done in
+    if not os.pathexists("%s/newton"%sub):
+        os.makedir("%s/newton"%sub)
+    np.savetxt("%s/newton/temp-used-here.txt"%sub, def_temp)
     
     print "Computing Jacobian and Simparams for the temperature %d, with spacing %d" % (def_temp, defspacing)
     Jacobian, simparams = compute_Jacobian_for_directory(model,beta,FRET_pairs,defspacing)
@@ -322,7 +327,7 @@ if __name__ == "__main__":
     savein = args.savein
 
     model = mdb.check_inputs.load_model(name) 
-    model.Mut_iteration = iteration
+    model.iteration = iteration
     model.Tf_iteration = iteration
 
     R_KJ_MOL = 0.0083145

@@ -258,7 +258,7 @@ def folding_temperature_loop(model,append_log,new=False):
         narrows in on the folding temperature.'''
 
     cwd = os.getcwd()
-    sub = model.path+"/"+model.subdir+"/Tf_"+str(model.iteration)
+    sub = model.path+"/"+model.subdir+"/iteration_"+str(model.iteration)
     #print sub  ## DEBUGGING
     if (not os.path.exists(sub)):
         os.mkdir(sub)
@@ -335,7 +335,7 @@ def start_next_Tf_loop_iteration(model,append_log):
     deltaT = 4
 
     cwd = os.getcwd()
-    sub = "%s/%s/Tf_%d" % (model.path,model.subdir,model.iteration)
+    sub = "%s/%s/iteration_%d" % (model.path,model.subdir,model.iteration)
     if os.path.exists(sub):
         print "ERROR!"
         print "  The next Tf iteration directory exists. "
@@ -354,7 +354,7 @@ def start_next_Tf_loop_iteration(model,append_log):
 def manually_add_temperature_array(model,append_log,T_min,T_max,deltaT):
     ''' To manually set the next temperature array.'''
     cwd = os.getcwd()
-    sub = model.path+"/"+model.subdir+"/Tf_"+str(model.iteration)
+    sub = model.path+"/"+model.subdir+"/iteration_"+str(model.iteration)
     os.chdir(sub)
     append_log(model.subdir,"Submitting T_array iteration %d " % model.iteration)
     append_log(model.subdir,"  T_min = %d , T_max = %d , dT = %d" % (T_min, T_max, deltaT))
