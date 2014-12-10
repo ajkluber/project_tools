@@ -1,4 +1,4 @@
-""" Copy only necessary sub tree to proceed with mutation 
+''' Copy only necessary sub tree to proceed with mutation 
 
 Use if you want to continue simulation
 
@@ -10,7 +10,7 @@ To Do:
 - Update to new directory organization scheme.
   Instead of name/Mut_# -> name/iteration_#
 
-"""
+'''
 
 import argparse
 import os

@@ -1,6 +1,6 @@
-""" Calculate fraction of heavy atom contacts lost for mutation
+''' Calculate fraction of heavy atom contacts lost for mutation
 
-"""
+'''
 
 import os
 
@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from project_tools.parameter_fitting.ddG_MC2004.mutatepdbs import get_all_core_mutations
 
 def get_AApdb_coords(pdb):
-    """ Parse atom names, indices, coordinates; residue names, indices from all-atom pdb """
+    ''' Parse atom names, indices, coordinates; residue names, indices from all-atom pdb '''
 
     ## Only interested in ATOM lines.
     atmlines = [ line.rstrip('\n') for line in open(pdb,'r').readlines() if line.startswith("ATOM") ] 
@@ -39,7 +39,7 @@ def get_AApdb_coords(pdb):
     return atm_nums,atm_names,atm_coords,res_nums,res_names
 
 def count_heavy_atom_contacts(pdb):
-    """ Calculate # of residue-residue heavy atom contacts. """
+    ''' Calculate # of residue-residue heavy atom contacts. '''
 
     atm_nums,atm_names,atm_coords,res_nums,res_names = get_AApdb_coords(pdb)
     n_atoms = len(res_nums)

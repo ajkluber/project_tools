@@ -1,4 +1,4 @@
-""" Calculate feature vector and Jacobian for matching experimental ddG's
+''' Calculate feature vector and Jacobian for matching experimental ddG's
 
 Description:
 
@@ -7,7 +7,7 @@ designed) Delta Delta G's from phi-value analysis.
 
     
 
-"""
+'''
 
 
 import mutatepdbs
