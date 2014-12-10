@@ -1,11 +1,12 @@
-"""Module containing all the shared function from the subdirectories of parameter_fitting
+'''Module containing all the shared function from the subdirectories of parameter_fitting
 
-"""
+'''
 import mdtraj as md
 import numpy as np
+import os
 
 def get_rij_Vp(model):
-    """ Load trajectory, state indicators, and contact energy """
+    ''' Load trajectory, state indicators, and contact energy '''
     ##assumes you are in the directory with traj.xtc and Native.pdb
     traj = md.load("traj.xtc",top="Native.pdb")     ## Loading from file takes most time.
     ## rij is a matrix, where first index represents trajectory step, and the second index represents the different pairs
@@ -19,7 +20,7 @@ def get_rij_Vp(model):
     return traj,rij,Vp
 
 def get_state_bounds():
-    """ Bounds for each state. Bounds are bin edges along Q. """
+    ''' Bounds for each state. Bounds are bin edges along Q. '''
     if os.path.exists("state_bounds.txt"):
         statefile = open("state_bounds.txt","r").readlines()
     else:
