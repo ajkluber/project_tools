@@ -285,7 +285,7 @@ def apply_constraints_with_cplex(model,dg,M,cutoff,weight):
     eps_lower_bound_non_native = -3.
     eps_upper_bound_non_native = 3.
 
-    if eps_non_native == False: 
+    if eps_non_native is False: 
         right_hand_side = list(-eps -x_particular + eps_lower_bound)
         right_hand_side_2 = list(-eps -x_particular + eps_upper_bound)
         right_hand_side.extend(right_hand_side_2)
@@ -388,11 +388,12 @@ def apply_constraints_with_cplex(model,dg,M,cutoff,weight):
     LP_problem.variables.add(ub=upper_bounds, lb=lower_bounds, names=column_names)
     LP_problem.linear_constraints.add(lin_expr=rows, senses=senses, rhs=right_hand_side, names=row_names)
     LP_problem.objective.set_linear(linear_objective_coeff)
-    LP_problem.objective.set_quadratic(quadratic_objective_coeff)
-#    LP_problem.objective.set_linear(objective_linear_coefficients)
+    if eps_non_native is not False:
+        LP_problem.objective.set_quadratic(quadratic_objective_coeff)
 
 #    print LP_problem.variables.get_names()
 #    print LP_problem.variables.get_lower_bounds()
+
     ## Let cplex do work.
     LP_problem.solve()
     status = LP_problem.solution.get_status()
@@ -405,6 +406,7 @@ def apply_constraints_with_cplex(model,dg,M,cutoff,weight):
 #        conflict = LP_problem.conflict.get()
 #    except: 
 #        conflict = "No conflicts"
+
     ## Print cplex summary
     #print "Cplex summary:"
     #print "status: ",status
