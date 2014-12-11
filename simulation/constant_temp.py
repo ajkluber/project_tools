@@ -318,10 +318,7 @@ def start_next_Tf_loop_iteration(model,append_log):
     ## Update System counters and estimate new Tf
     model.iteration += 1
     ## Estimate folding temperature
-    if (model.contact_type == "LJ1210") and (model.n_tables != 0):
-        E = float(sum(model.contact_epsilons[model.LJtype == 1])) - float(sum(model.contact_epsilons[model.LJtype == -1]))
-    else:
-        E = float(sum(model.contact_epsilons))
+    E = sum(model.model_param_values)
     N = float(model.n_residues)
     Tf_guess = (36.081061*E/N) + 56.218196 ## calibration for LJ1210 contacts circa June 2014
     if model.contact_type == "Gaussian":
@@ -335,16 +332,15 @@ def start_next_Tf_loop_iteration(model,append_log):
     deltaT = 4
 
     cwd = os.getcwd()
-    sub = "%s/%s/iteration_%d" % (model.path,model.subdir,model.iteration)
+    sub = "%s/iteration_%d" % (model.name,model.iteration)
     if os.path.exists(sub):
         print "ERROR!"
-        print "  The next Tf iteration directory exists. "
+        print "  The next iteration directory exists. "
         print "  exiting"
         raise SystemExit
     else:
         os.makedirs(sub)
     os.chdir(sub)
-
     run_temperature_array(model,T_min,T_max,deltaT)
     append_log(model.subdir,"Submitting T_array iteration %d" % model.iteration)
     append_log(model.subdir,"  T_min = %d , T_max = %d , dT = %d" % (T_min, T_max, deltaT))
@@ -390,8 +386,6 @@ def manually_add_equilibrium_runs(model,append_log,temps):
                 ## Directory exists for this temperature: continue.
                 continue
 
-    #open("T_array.txt","a").write(T_string)
-    #open("T_array_last.txt","w").write(T_string)
     open("long_temps","a").write(T_string)
     open("long_temps_last","w").write(T_string)
     append_log(name,"Starting: Equil_Tf")
@@ -430,8 +424,6 @@ def run_equilibrium_simulations(model,append_log):
                 ## Directory exists for this temperature: continue.
                 continue
 
-    #open("T_array.txt","a").write(T_string)
-    #open("T_array_last.txt","w").write(T_string)
     open("long_temps","a").write(T_string)
     open("long_temps_last","w").write(T_string)
     append_log(model.subdir,"Starting: Equil_Tf")
@@ -492,11 +484,9 @@ def run_temperature_array(model,T_min,T_max,deltaT):
             os.chdir("..")
         else:
             continue
-    #open("T_array.txt","a").write(T_string)
-    #open("T_array_last.txt","w").write(T_string)
     open("short_temps","a").write(T_string)
     open("short_temps_last","w").write(T_string)
-    open("Ti_Tf_dT.txt","w").write("%d %d %d" % (T_min, T_max, deltaT))
+    open("short_Ti_Tf_dT.txt","w").write("%d %d %d" % (T_min, T_max, deltaT))
 
 def run_constant_temp(model,T,nsteps="100000000",walltime="23:00:00",queue="serial",ppn="1"):
     ''' Start a constant temperature simulation with Gromacs. 
@@ -537,12 +527,9 @@ def get_pbs_string(jobname,queue,ppn,walltime,contact_type=None):
     pbs_string +="#PBS -V \n\n"
     pbs_string +="cd $PBS_O_WORKDIR\n"
     if contact_type == "Gaussian":
-        #pbs_string +="mdrun_sbm -nt 1 -s topol_4.5.tpr -table table.xvg -tablep table.xvg"
-        pbs_string +="mdrun_sbm -s topol_4.5.tpr -table table.xvg -tablep table.xvg"
+        pbs_string +="mdrun_sbm -s topol_4.5.tpr"
     else:
-        #pbs_string +="mdrun -nt 1 -s topol_4.6.tpr -table table.xvg -tablep table.xvg"
-        pbs_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg"
-    #pbs_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg"
+        pbs_string +="mdrun -s topol_4.6.tpr"
     return pbs_string
 
 def get_rst_pbs_string(jobname,queue,ppn,walltime,contact_type=None):
@@ -556,12 +543,9 @@ def get_rst_pbs_string(jobname,queue,ppn,walltime,contact_type=None):
     rst_string +="#PBS -V \n\n"
     rst_string +="cd $PBS_O_WORKDIR\n"
     if contact_type == "Gaussian":
-        #rst_string +="mdrun_sbm -nt 1 -s topol_4.5.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
         rst_string +="mdrun_sbm -s topol_4.5.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
     else:
-        #rst_string +="mdrun -nt 1 -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
-        rst_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
-    #rst_string +="mdrun -s topol_4.6.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
+        rst_string +="mdrun -s topol_4.6.tpr -cpi state.cpt"
     return rst_string
 
 def prep_run(jobname,walltime="23:00:00",queue="serial",ppn="1",contact_type=None):

@@ -6,7 +6,6 @@
 import numpy as np
 import os
 
-
 def save(model,soln_index):
     ''' Save new parameters '''
     ## Use new method of model_parameters
@@ -23,15 +22,16 @@ def save(model,soln_index):
     
     ## For the non-native interactions set the neweps_p to be
     ## equal to the delta.
-    for i in range(model.n_contacts):
-        ##
-        pass 
+    #for i in range(model.n_contacts):
+    #    ##
+    #    pass 
 
     ## Update parameters
     model.update_model_param_values(neweps_p)
 
-    open("%s/pairwise_params" % cwd,"w").write(self.pairwise_param_file_string)
-    open("%s/model_params" % cwd,"w").write(self.model_param_file_string)
+    cwd = os.getcwd()
+    open("%s/pairwise_params" % cwd,"w").write(model.pairwise_param_file_string)
+    open("%s/model_params" % cwd,"w").write(model.model_param_file_string)
     model.pairwise_param_file_location = "%s/pairwise_params" % cwd
     model.model_param_file_location = "%s/model_params" % cwd
 
