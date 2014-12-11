@@ -64,6 +64,8 @@ def prepare_newtons_method(model,method,append_log):
     name = model.subdir
     iteration = model.iteration
 
+    print "%s/iteration_%d/newton/Jacobian.dat" % (name,iteration)
+    print os.path.exists("%s/iteration_%d/newton/Jacobian.dat" % (name,iteration))
     if not os.path.exists("%s/iteration_%d/newton/Jacobian.dat" % (name,iteration)):
         append_log(name,"Starting: Calculating_Jacobian")
 
