@@ -42,13 +42,11 @@ def check_completion(model,append_log,equil=False):
     name = model.subdir
     cwd = os.getcwd()
     sub = "%s/iteration_%d" % (name,model.iteration)
+    os.chdir("%s/%s" % (cwd,sub))
     if equil == True:
-        #sub = "%s/Mut_%d" % (name,model.iteration)
         tempfile = open("long_temps_last","r").readlines()
     else:
-        #sub = "%s/Tf_%d" % (name,model.iteration)
         tempfile = open("short_temps_last","r").readlines()
-    os.chdir("%s/%s" % (cwd,sub))
     #tempfile = open("T_array_last.txt","r").readlines()
     temperatures = [ temp[:-1] for temp in tempfile  ]
     error = 0

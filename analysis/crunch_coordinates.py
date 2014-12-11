@@ -38,7 +38,7 @@ def crunch_Q(name,contact_type,walltime="00:01:00",ppn="1",queue="serial"):
     sb.call(qsub.split(),stdout=open("contacts.out","w"),stderr=open("contacts.err","w"))
     
 
-def crunch_all(name,contact_type,walltime="00:02:00",ppn="1",n_tab=0):
+def crunch_all(name,contact_type,walltime="00:02:00",ppn="1",n_tables=0):
     ''' Submit PBS job to calculate observables
 
     Calculates rmsd, radius gyration, dihedrals, and potential energy with 
@@ -61,7 +61,7 @@ def crunch_all(name,contact_type,walltime="00:02:00",ppn="1",n_tab=0):
     else:
         #analysis_pbs +='echo -e "0\n0" | g_rms -f traj.xtc -s topol_4.6.tpr -o rmsd.xvg -nomw -xvg none -n index.ndx\n'
         #analysis_pbs +='echo "1" | g_gyrate -f traj.xtc -s topol_4.6.tpr -o radius_gyration.xvg -xvg none\n'
-        if n_tab != 0:
+        if n_tables != 0:
             analysis_pbs +='echo "1 3 4 5 9" | g_energy -f ener.edr -o energyterms -xvg none\n'
             #analysis_pbs +='echo "12" | g_energy -f ener.edr -o temperature -xvg none\n'
         else:
