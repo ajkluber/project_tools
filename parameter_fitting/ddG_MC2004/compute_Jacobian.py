@@ -135,6 +135,9 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
     ## Get trajectory, state indicators, contact energy
     traj,rij,Vp = get_rij_Vp(model)
 
+    print " n_model_params: ", model.n_model_param
+    print " pairwise_potentials:", len(model.pairwise_potentials)
+
     Q = np.loadtxt("Q.dat")
     #U,TS,N,Uframes,TSframes,Nframes = util.get_state_indicators(Q,bounds)
     U,TS,N,Uframes,TSframes,Nframes = get_state_indicators(Q,bounds)
@@ -156,9 +159,11 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
     Jacobian = np.zeros((2*len(mutants),model.n_model_param),float)
     sim_feature = np.zeros(2*len(mutants),float)
 
-    for k in range(len(mutants)):
+    #for k in range(len(mutants)):
+    lasttime = time.time()
+    for k in [0]:
         mut = mutants[k]
-        print "    row %d   mutant %s" % (k,mut)
+        print "    mutant %d %s" % (k,mut)
         ## Compute energy perturbation
         dHk = get_dHk(model,rij,Fij_conts[k],Fij[k])
         np.savetxt("dH_%s.dat" % mut,dHk)
@@ -204,6 +209,8 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
 
             Jacobian[k + len(mutants),p] = beta*(((Vp_Vpk_expdHk_N/expdHk_N) - Vp_N[p]) - ((Vp_Vpk_expdHk_U/expdHk_U) - Vp_U[p]))
 
+        thistime = time.time()
+        print "     time:  %.2f seconds = %.2f min" % (thistime - lasttime,(thistime - lasttime)/60.)
     if not os.path.exists("mut"):
         os.mkdir("mut")
     np.savetxt("mut/Jacobian.dat",Jacobian)
