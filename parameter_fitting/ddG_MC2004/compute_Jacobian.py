@@ -194,7 +194,7 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
         expdHk_TS = sum(np.exp(-beta*dHk[TS]))/TSframes
         expdHk_N  = sum(np.exp(-beta*dHk[N]))/Nframes
 
-        ## Loop over number of model parameters. Could be done vectorized.
+        ## Loop over number of model parameters. Could be done vectorized but idk if thats faster
         for p in range(model.n_model_param):
             Vp_Vpk_expdHk_U  = sum(Vp_plus_Vpk[U,p]*np.exp(-beta*dHk[U]))/Uframes
             Vp_Vpk_expdHk_TS = sum(Vp_plus_Vpk[TS,p]*np.exp(-beta*dHk[TS]))/TSframes
