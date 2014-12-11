@@ -1,6 +1,5 @@
 
 def find_solutions(model,method):
-
     target_feature = np.loadtxt("target_feature.dat")
     target_feature_err = np.loadtxt("target_feature_err.dat")
     sim_feature = np.loadtxt("sim_feature.dat")
@@ -37,20 +36,15 @@ def find_solutions(model,method):
         #x_soln = np.dot(v.T,np.dot(S.T,np.dot(u.T,df)))
         try:
             LP_problem, solution, x_soln_cpx, status, sensitivity = apply_constraints_with_cplex(model,x_soln,N)
-            
             if status == 1:
-
                 max_solvable_eig = i
-
                 residual = np.dot(J,x_soln) - df
-
                 nrm_soln.append(np.linalg.norm(x_soln))
                 nrm_resd.append(np.linalg.norm(residual))
                 solutions.append(x_soln)
                 Taus.append(tau)
-    
-                
-                
+        except:
+            pass
     save_and_plot.save_solution_data(solutions,Taus,nrm_soln,nrm_resd,norm_eps,condition_number,s)
 
 def apply_constraints_with_cplex(model,x_soln,N,weight=1.):
