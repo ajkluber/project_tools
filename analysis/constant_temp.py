@@ -165,7 +165,7 @@ def run_wham_heat_capacity(model,append_log,long=False):
         append_log(name,"Finished: Equil_Tf_wham")
         flag = 1
     else:
-        Tinfo = open("Ti_Tf_dT.txt","r").read().split()
+        Tinfo = open("short_Ti_Tf_dT.txt","r").read().split()
         T_min,T_max,deltaT = int(Tinfo[0]), int(Tinfo[1]), int(Tinfo[2])
         if deltaT <= 5:
             ## Its time for WHAM
