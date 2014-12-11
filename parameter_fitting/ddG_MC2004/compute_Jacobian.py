@@ -73,6 +73,7 @@ def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_p
     ## Get list of mutations and fraction of native contacts deleted for 
     ## each mutation.
     mutants_core = get_core_mutations()
+    mutants_core = [mutants_core[0]]
     Fij_core, Fij_pairs_core, Fij_conts_core = get_mutant_fij(model,mutants_core)
     mutants_scanning = get_scanning_mutations()
     Fij_scanning, Fij_pairs_scanning, Fij_conts_scanning = get_mutant_fij_scanning(model,mutants_scanning,fij=scanfij)
@@ -159,9 +160,8 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
     Jacobian = np.zeros((2*len(mutants),model.n_model_param),float)
     sim_feature = np.zeros(2*len(mutants),float)
 
-    #for k in range(len(mutants)):
     lasttime = time.time()
-    for k in [0]:
+    for k in range(len(mutants)):
         mut = mutants[k]
         print "    mutant %d %s" % (k,mut)
         ## Compute energy perturbation
