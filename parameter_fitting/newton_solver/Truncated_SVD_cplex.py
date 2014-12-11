@@ -9,13 +9,13 @@ def find_solutions(model,method):
     Jacobian_err = np.loadtxt("Jacobian_err.dat")
     J = Jacobian
 
-    epsilons = model.contact_epsilons
-    norm_eps = np.linalg.norm(epsilons)
+    norm_eps = np.linalg.norm(model.model_param_values)
 
     ## Normalize the target step. 
     df = target_feature - sim_feature
 
     u,s,v = np.linalg.svd(J)
+    N = v.T[:,J.shape[0]:]
     temp  = list(0.5*(s[:-1] + s[1:])) + [0.0]
     temp.reverse()
     cutoffs = np.array(temp)
@@ -25,32 +25,35 @@ def find_solutions(model,method):
     condition_number = []
     solutions = []
     Taus = []
+    
     for i in range(len(cutoffs)):
         S = np.zeros(J.shape) 
         tau = cutoffs[i] 
         s_use = s[s > tau]
-        S[np.arange(len(s_use)),np.arange(len(s_use))] = 1./s_use
+        S[np.diag_indices(len(s_use))] = 1./s_use
         J_pinv = np.dot(v.T,np.dot(S.T,u.T))
         x_soln = np.dot(J_pinv,df)  ## particular
-
+        
         #x_soln = np.dot(v.T,np.dot(S.T,np.dot(u.T,df)))
-        if cplex:
-            solution_cplex = func(J,cutoff,weight)
+        try:
+            LP_problem, solution, x_soln_cpx, status, sensitivity = apply_constraints_with_cplex(model,x_soln,N)
+            
+            if status == 1:
 
-        residual = np.dot(J,x_soln) - df
+                max_solvable_eig = i
 
-        nrm_soln.append(np.linalg.norm(x_soln))
-        nrm_resd.append(np.linalg.norm(residual))
-        solutions.append(x_soln)
-        Taus.append(tau)
+                residual = np.dot(J,x_soln) - df
 
-        J_use = np.dot(v.T,np.dot(S.T,u.T))     ## This isn't right
-        cond_num = np.linalg.norm(J_use)*np.linalg.norm(J_pinv)
-        condition_number.append(cond_num)
-
+                nrm_soln.append(np.linalg.norm(x_soln))
+                nrm_resd.append(np.linalg.norm(residual))
+                solutions.append(x_soln)
+                Taus.append(tau)
+    
+                
+                
     save_and_plot.save_solution_data(solutions,Taus,nrm_soln,nrm_resd,norm_eps,condition_number,s)
 
-def apply_constraints_with_cplex(model,dg,M,cutoff,weight=1.):
+def apply_constraints_with_cplex(model,x_soln,N,weight=1.):
     """ Construct and solve a linear/quadratic programming problem for new parameters.
 
     Description:
@@ -61,8 +64,8 @@ def apply_constraints_with_cplex(model,dg,M,cutoff,weight=1.):
 
     """
     # Find correct wording for the number of native contacts
-    num_native_contacts = model.n_contacts
-    eps = model.contact_epsilons
+    num_native_contacts = model.n_native_contacts
+    eps = model.model_param_values
     eps_native = eps[0:num_native_contacts]
     
     if len(eps)>len(eps_native):
@@ -75,16 +78,16 @@ def apply_constraints_with_cplex(model,dg,M,cutoff,weight=1.):
 
     ## The general solution is a sum of the particular solution and an
     ## arbitrary vector from the nullspace of M.
-    Mpinv = np.linalg.pinv(M,rcond=cutoff)
-    x_particular = np.dot(Mpinv,dg)
+#    Mpinv = np.linalg.pinv(M,rcond=cutoff)
+    x_particular = x_soln
 
     ## Singular value decomposition. As a test you can recover M by,
     ## S = np.zeros(M.shape)
     ## for i in range(len(s)):
     ##    S[i,i] = s[i]
     ## np.allclose(M,np.dot(u,np.dot(S,v))) --> should be True
-    u,s,v = np.linalg.svd(M)
-    rank = len(s)
+#    u,s,v = np.linalg.svd(M)
+#    rank = len(s)
     #print "  Matrix M singular values saved as: mut/singular_values.dat (and as ..._norm.dat)"
     #print "  Normed singular value spectrum:"
     #print s/max(s)
@@ -92,7 +95,7 @@ def apply_constraints_with_cplex(model,dg,M,cutoff,weight=1.):
     ## Nullspace basis vectors are the last n-r columns of the matrix v.T. As a check
     ## all entries of the matrix np.dot(M,N) should be extremely small ~0. Because 
     ## they've been sent to the nullspace.
-    N = v.T[:,M.shape[0]:]
+#    N = v.T[:,M.shape[0]:]
 
     ############# OBJECTIVE FUNCTION ###############
     ## Objective coefficients are sum of nullspace vectors. This comes from
@@ -322,4 +325,4 @@ def apply_constraints_with_cplex(model,dg,M,cutoff,weight=1.):
     #print "status: ",status
     #print "solution:",solution_lambda
     
-    return LP_problem, solution_lambda, x_particular, N, status, sensitivity
+    return LP_problem, solution_lambda, x_particular, status, sensitivity
