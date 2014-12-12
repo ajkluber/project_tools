@@ -20,8 +20,6 @@ import numpy as np
 
 import mdtraj as md
 
-import model_builder as mdb
-
 from mutatepdbs import get_core_mutations, get_scanning_mutations, get_exp_ddG
 
 #import project_tools.parameter_fitting.util.util as util
@@ -61,7 +59,7 @@ def get_target_feature(model):
 
     return target_feature, target_feature_err
 
-def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_phi.dat"):
+def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_phi.dat",test=False):
     ''' Calculate the average feature vector (ddG's) and Jacobian '''
     
     name = model.subdir
@@ -73,7 +71,6 @@ def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_p
     ## Get list of mutations and fraction of native contacts deleted for 
     ## each mutation.
     mutants_core = get_core_mutations()
-    mutants_core = [mutants_core[0]]
     Fij_core, Fij_pairs_core, Fij_conts_core = get_mutant_fij(model,mutants_core)
     mutants_scanning = get_scanning_mutations()
     Fij_scanning, Fij_pairs_scanning, Fij_conts_scanning = get_mutant_fij_scanning(model,mutants_scanning,fij=scanfij)
@@ -109,7 +106,7 @@ def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_p
         beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
         print "  Calculating Jacobian for iteration_%d/%s" % (model.iteration,dir)
         os.chdir(dir)
-        sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels,saveas=saveas)
+        sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels,saveas=saveas,test=test)
         sim_feature_all.append(sim_feature)
         Jacobian_all.append(Jacobian)
         os.chdir("..")
@@ -131,13 +128,10 @@ def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_p
 
     return sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err
 
-def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels,saveas="Q_phi.dat"):
+def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels,saveas="Q_phi.dat",test=False):
     ''' Calculates the feature vector (ddG's) and Jacobian for one directory '''
     ## Get trajectory, state indicators, contact energy
     traj,rij,Vp = get_rij_Vp(model)
-
-    print " n_model_params: ", model.n_model_param
-    print " pairwise_potentials:", len(model.pairwise_potentials)
 
     Q = np.loadtxt("Q.dat")
     #U,TS,N,Uframes,TSframes,Nframes = util.get_state_indicators(Q,bounds)
@@ -160,10 +154,10 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
     Jacobian = np.zeros((2*len(mutants),model.n_model_param),float)
     sim_feature = np.zeros(2*len(mutants),float)
 
+    avg_rowtime = []
     lasttime = time.time()
     for k in range(len(mutants)):
         mut = mutants[k]
-        print "    mutant %d %s" % (k,mut)
         ## Compute energy perturbation
         dHk = get_dHk(model,rij,Fij_conts[k],Fij[k])
         np.savetxt("dH_%s.dat" % mut,dHk)
@@ -210,12 +204,26 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
             Jacobian[k + len(mutants),p] = beta*(((Vp_Vpk_expdHk_N/expdHk_N) - Vp_N[p]) - ((Vp_Vpk_expdHk_U/expdHk_U) - Vp_U[p]))
 
         thistime = time.time()
-        print "     time:  %.2f seconds = %.2f min" % (thistime - lasttime,(thistime - lasttime)/60.)
-    if not os.path.exists("mut"):
-        os.mkdir("mut")
-    np.savetxt("mut/Jacobian.dat",Jacobian)
-    np.savetxt("mut/sim_feature.dat",sim_feature)
-    save_phi_values(mutants,"Q",state_labels,dG,ddG,phi,saveas=saveas)
+        dt = thistime - lasttime
+        avg_rowtime.append(dt)
+        lasttime = thistime
+        print "    mutant %d  %5s    %.2f seconds = %.2f min" % (k,mut,dt,dt/60.)
+
+    print "  Avg rowtime: %.2f sec" % np.mean(avg_rowtime)
+    if test:
+        if not os.path.exists("test"):
+            os.mkdir("test")
+        np.savetxt("test/Jacobian.dat",Jacobian)
+        np.savetxt("test/sim_feature.dat",sim_feature)
+        phi_string = save_phi_values(mutants,state_labels,dG,ddG,phi)
+        open("test/%s" % saveas,"w").write(phi_string)
+    else:
+        if not os.path.exists("mut"):
+            os.mkdir("mut")
+        np.savetxt("mut/Jacobian.dat",Jacobian)
+        np.savetxt("mut/sim_feature.dat",sim_feature)
+        phi_string = save_phi_values(mutants,state_labels,dG,ddG,phi)
+        open("mut/%s" % saveas,"w").write(phi_string)
 
     return sim_feature, Jacobian
 
@@ -297,7 +305,7 @@ def get_mutant_fij_scanning(model, mutants, fij=0.5):
             Fij_pairs.append(temppairs)
     return Fij, Fij_pairs, Fij_conts
 
-def save_phi_values(mutants,coord,state_labels,dG,ddG,phi,saveas="Q_phi.dat"):
+def save_phi_values(mutants,state_labels,dG,ddG,phi):
     ''' Save the calculated dG, ddG, and phi values for states'''
 
     header_string = "# mut" 
@@ -321,14 +329,11 @@ def save_phi_values(mutants,coord,state_labels,dG,ddG,phi,saveas="Q_phi.dat"):
     print "ddG and Phi values:"
     print header_string
     print data_string
-
-    if not os.path.exists("phi"):
-        os.mkdir("phi")
-    outputfile = open("phi/%s" % saveas,"w")
-    outputfile.write(header_string+"\n"+data_string)
-    outputfile.close()
+    return header_string+"\n"+data_string
 
 if __name__ == "__main__":
+    import model_builder as mdb
+
     parser = argparse.ArgumentParser(description='Calculate .')
     parser.add_argument('--name', type=str, required=True, help='name.')
     parser.add_argument('--iteration', type=int, required=True, help='iteration.')
@@ -337,6 +342,8 @@ if __name__ == "__main__":
     name = args.name
     iteration= args.iteration
 
-    ## Testing the effect of perturbing non-native interactions.
-    ##  - Load trajectory.
-
+    contacts = np.loadtxt("%s/contacts.dat" % name)
+    pdb = "%s.pdb" % name
+    defaults = True
+    model = mdb.models.SmogCalpha.SmogCalpha(pdb=pdb,contacts=contacts,defaults=defaults,iteration=iteration)
+    sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = calculate_average_Jacobian(model,test=True)
