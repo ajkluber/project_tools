@@ -134,7 +134,6 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
     traj,rij,Vp = get_rij_Vp(model)
 
     Q = np.loadtxt("Q.dat")
-    #U,TS,N,Uframes,TSframes,Nframes = util.get_state_indicators(Q,bounds)
     U,TS,N,Uframes,TSframes,Nframes = get_state_indicators(Q,bounds)
 
     ## Average dimensionless potential energy for each state.
@@ -160,7 +159,7 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
         mut = mutants[k]
         ## Compute energy perturbation
         dHk = get_dHk(model,rij,Fij_conts[k],Fij[k])
-        np.savetxt("dH_%s.dat" % mut,dHk)
+        #np.savetxt("dH_%s.dat" % mut,dHk)      ## Takes ~2sec
 
         ## Get perturbed dimensionless potential energy.
         Vp_plus_Vpk = get_Vp_plus_Vpk(model,Vp,rij,Fij_conts[k],Fij[k])
@@ -193,15 +192,13 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
         expdHk_TS = sum(np.exp(-beta*dHk[TS]))/TSframes
         expdHk_N  = sum(np.exp(-beta*dHk[N]))/Nframes
 
-        ## Loop over number of model parameters. Could be done vectorized but idk if thats faster
-        for p in range(model.n_model_param):
-            Vp_Vpk_expdHk_U  = sum(Vp_plus_Vpk[U,p]*np.exp(-beta*dHk[U]))/Uframes
-            Vp_Vpk_expdHk_TS = sum(Vp_plus_Vpk[TS,p]*np.exp(-beta*dHk[TS]))/TSframes
-            Vp_Vpk_expdHk_N  = sum(Vp_plus_Vpk[N,p]*np.exp(-beta*dHk[N]))/Nframes
+        ## Vectorized computation of Jacobian. 5x faster than a for loop.
+        Vp_Vpk_expdHk_U  = sum((Vp_plus_Vpk[U,:].T*np.exp(-beta*dHk[U])).T)/Uframes
+        Vp_Vpk_expdHk_TS = sum((Vp_plus_Vpk[TS,:].T*np.exp(-beta*dHk[TS])).T)/TSframes
+        Vp_Vpk_expdHk_N  = sum((Vp_plus_Vpk[N,:].T*np.exp(-beta*dHk[N])).T)/Nframes
 
-            Jacobian[k,p] = beta*(((Vp_Vpk_expdHk_TS/expdHk_TS) - Vp_TS[p]) - ((Vp_Vpk_expdHk_U/expdHk_U) - Vp_U[p]))
-
-            Jacobian[k + len(mutants),p] = beta*(((Vp_Vpk_expdHk_N/expdHk_N) - Vp_N[p]) - ((Vp_Vpk_expdHk_U/expdHk_U) - Vp_U[p]))
+        Jacobian[k,:] = beta*(((Vp_Vpk_expdHk_TS/expdHk_TS) - Vp_TS[:]) - ((Vp_Vpk_expdHk_U/expdHk_U) - Vp_U[:]))
+        Jacobian[k + len(mutants),:] = beta*(((Vp_Vpk_expdHk_N/expdHk_N) - Vp_N[:]) - ((Vp_Vpk_expdHk_U/expdHk_U) - Vp_U[:]))
 
         thistime = time.time()
         dt = thistime - lasttime

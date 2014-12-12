@@ -14,10 +14,10 @@ def save(model,soln_index):
 
     ## Scale model parameters by a constant such that the ratio 
     ## of the norm of the perturbation to the norm of the parameters
-    ## is 0.1.
+    ## is 0.2.
     nrm_model_params = np.linalg.norm(eps_p_0)
     ratio = np.linalg.norm(deps_p)/nrm_model_params
-    alpha = 0.1/ratio
+    alpha = 0.2/ratio
     neweps_p = eps_p_0 + alpha*deps_p       
     
     ## For the non-native interactions set the neweps_p to be
