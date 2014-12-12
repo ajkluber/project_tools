@@ -69,15 +69,15 @@ class MatysiakClementi2004(ProjectManager):
             analysis.constant_temp.check_completion(model,self.append_log)
         elif task == "Equil_Tf":
             print "Starting to check if Equil_Tf completed..."
-            simulation.constant_temp.check_completion(model,self.append_log,equil=True)
+            simulation.constant_temp.check_completion(model,self.append_log,long=True)
             lasttime2,action2,task2 = self.check_modelbuilder_log(sub)
             if action2 == "Finished:":
                 print "Finished Equil_Tf_iteration..."
                 print "Starting Equil_Tf_analysis..."
-                analysis.constant_temp.analyze_temperature_array(model,self.append_log,equil=True)
+                analysis.constant_temp.analyze_temperature_array(model,self.append_log,long=True)
         elif task == "Equil_Tf_analysis":
             print "Starting to check if Equil_Tf_analysis completed..."
-            analysis.constant_temp.check_completion(model,self.append_log,equil=True)
+            analysis.constant_temp.check_completion(model,self.append_log,long=True)
         else:
             print "ERROR!"
             print "  Couldn't find next option for task:",task
@@ -104,12 +104,12 @@ class MatysiakClementi2004(ProjectManager):
             simulation.constant_temp.run_equilibrium_simulations(model,self.append_log)
         elif task == "Equil_Tf":
             print "Starting Equil_Tf_analysis..."
-            analysis.constant_temp.analyze_temperature_array(model,self.append_log,equil=True)
+            analysis.constant_temp.analyze_temperature_array(model,self.append_log,long=True)
         elif task == "Equil_Tf_analysis":
             ## Use the following sub module to plot PMFS of coordinates:
             ## analysis.plot.pmfs
             ## Run heat capacity for equilibrium runs. Cv(T), F(Q)
-            analysis.constant_temp.run_wham_heat_capacity(model,self.append_log,Mut=True)
+            analysis.constant_temp.run_wham_heat_capacity(model,self.append_log,long=True)
         elif task == "Equil_Tf_wham":
             print "Starting calculating feature vector and Jacobian..."
             parameter_fitting.prepare_newtons_method(model,"ddG_MC2004",self.append_log)

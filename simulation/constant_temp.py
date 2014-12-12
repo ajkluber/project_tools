@@ -29,7 +29,7 @@ def main():
     else:
         pass
 
-def check_completion(model,append_log,equil=False):
+def check_completion(model,append_log,long=False):
     ''' Checks to see if the previous Tf_loop simulation completed. 
 
     Description:
@@ -43,7 +43,7 @@ def check_completion(model,append_log,equil=False):
     cwd = os.getcwd()
     sub = "%s/iteration_%d" % (name,model.iteration)
     os.chdir("%s/%s" % (cwd,sub))
-    if equil == True:
+    if long == True:
         tempfile = open("long_temps_last","r").readlines()
     else:
         tempfile = open("short_temps_last","r").readlines()
@@ -83,7 +83,7 @@ def check_completion(model,append_log,equil=False):
         print "  Cannot continue until simulations complete. Check if all unfinished runs were restarted properly."
         pass 
     else:
-        if equil == True:
+        if long == True:
             append_log(name,"Finished: Equil_Tf")
         else:
             append_log(name,"Finished: Tf_loop_iteration")

@@ -88,7 +88,7 @@ def analyze_temperature_array(model,append_log,long=False):
         append_log(name,"Starting: Tf_loop_analysis")
         append_log(name,"Starting: Tf_loop_analysis",subdir=True)
 
-def check_completion(model,append_log,equil=False):
+def check_completion(model,append_log,long=False):
     ''' Check if the Tf_loop_analysis finished by seeing if all needed files
         were generated.
     '''
@@ -97,7 +97,7 @@ def check_completion(model,append_log,equil=False):
     cwd = os.getcwd()
     sub = "%s/iteration_%d" % (name,model.iteration)
     os.chdir("%s/%s" % (cwd,sub))
-    if equil == True:
+    if long == True:
         temperatures = [ x.rstrip("\n") for x in open("long_temps","r").readlines() ]
         qwalltime = "00:10:00"
         cwalltime = "00:06:00"
@@ -137,7 +137,7 @@ def check_completion(model,append_log,equil=False):
     os.chdir(cwd)
     if done == 1:
         print "  Analysis completed."
-        if equil == True:
+        if long == True:
             append_log(name,"Finished: Equil_Tf_analysis")
             append_log(name,"Finished: Equil_Tf_analysis",subdir=True)
         else:
