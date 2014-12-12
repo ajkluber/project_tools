@@ -363,8 +363,9 @@ def run_wham_for_heat_capacity(model,long=False):
         os.chdir("long_wham")
     else:
         os.chdir("short_wham")
-    PROJECTS = os.environ["PROJECTS"]
-    shutil.copy(PROJECTS+"/project_tools/analysis/WHAM.1.06.jar",".")
+    #PROJECTS = os.environ["PROJECTS"]
+    PROJECT_TOOLS = os.environ["PROJECT_TOOLS"]
+    shutil.copy("%s/project_tools/analysis/WHAM.1.06.jar" % PROJECT_TOOLS,".")
 
     open("cv.config","w").write(wham_basic + wham_Cv)
     open("free.config","w").write(wham_basic + wham_Free)

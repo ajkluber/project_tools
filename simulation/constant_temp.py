@@ -42,13 +42,11 @@ def check_completion(model,append_log,equil=False):
     name = model.subdir
     cwd = os.getcwd()
     sub = "%s/iteration_%d" % (name,model.iteration)
+    os.chdir("%s/%s" % (cwd,sub))
     if equil == True:
-        #sub = "%s/Mut_%d" % (name,model.iteration)
         tempfile = open("long_temps_last","r").readlines()
     else:
-        #sub = "%s/Tf_%d" % (name,model.iteration)
         tempfile = open("short_temps_last","r").readlines()
-    os.chdir("%s/%s" % (cwd,sub))
     #tempfile = open("T_array_last.txt","r").readlines()
     temperatures = [ temp[:-1] for temp in tempfile  ]
     error = 0
@@ -403,9 +401,7 @@ def run_equilibrium_simulations(model,append_log):
     append_log(name,"Starting Equil_Tf", subdir=True)
     walltime, queue, ppn, nsteps = determine_equil_walltime(model)
 
-    if not os.path.exists(mutsub):
-        os.mkdir(mutsub)
-    os.chdir(mutsub)
+    os.chdir(sub)
     T_string = ''
     for n in range(3):
         T = "%.2f" % (float(Tf)+1.*(n-1))
@@ -543,7 +539,7 @@ def get_rst_pbs_string(jobname,queue,ppn,walltime,contact_type=None):
     rst_string +="#PBS -V \n\n"
     rst_string +="cd $PBS_O_WORKDIR\n"
     if contact_type == "Gaussian":
-        rst_string +="mdrun_sbm -s topol_4.5.tpr -table table.xvg -tablep table.xvg -cpi state.cpt"
+        rst_string +="mdrun_sbm -s topol_4.5.tpr -cpi state.cpt"
     else:
         rst_string +="mdrun -s topol_4.6.tpr -cpi state.cpt"
     return rst_string

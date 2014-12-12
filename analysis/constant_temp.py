@@ -49,6 +49,7 @@ def analyze_temperature_array(model,append_log,long=False):
     name = model.subdir
     cwd = os.getcwd()
     sub = "%s/iteration_%d" % (name,model.iteration)
+    os.chdir("%s/%s" % (cwd,sub))
     if long:
         temperatures = [ x.rstrip("\n") for x in open("long_temps","r").readlines() ]
         qwalltime = "00:10:00"
@@ -60,7 +61,6 @@ def analyze_temperature_array(model,append_log,long=False):
     ppn = "1"
     queue = "serial"
     print "  Analyzing temperatures in", sub
-    os.chdir("%s/%s" % (cwd,sub))
 
     for k in range(len(temperatures)):
         tdir = temperatures[k]
@@ -165,7 +165,7 @@ def run_wham_heat_capacity(model,append_log,long=False):
         append_log(name,"Finished: Equil_Tf_wham")
         flag = 1
     else:
-        Tinfo = open("Ti_Tf_dT.txt","r").read().split()
+        Tinfo = open("short_Ti_Tf_dT.txt","r").read().split()
         T_min,T_max,deltaT = int(Tinfo[0]), int(Tinfo[1]), int(Tinfo[2])
         if deltaT <= 5:
             ## Its time for WHAM
