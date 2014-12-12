@@ -16,7 +16,9 @@ def save(model,soln_index):
     neweps = eps0 + deps
     neweps[neweps < 0.01] = 0.01
     
-    model.pairwise_strengths = neweps
-    model.generate_topology()
-    open("NewBeadBead.dat","w").write(model.beadbead)
-    model.contact_params = "%s/NewBeadBead.dat" % cwd
+    model.update_model_param_value(neweps_p)
+    
+    open("%s/pairwise_params" % cwd,"w").write(model.pairwise_param_file_string)
+    open("%s/model_params" % cwd,"w").write(model.model_param_file_string)
+    model.contact_params_file_location = "%s/pairwise_params" % cwd
+    model.model_params_file_location = "%s/model_params" % cwd
