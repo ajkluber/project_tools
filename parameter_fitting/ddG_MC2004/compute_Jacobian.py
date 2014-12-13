@@ -47,6 +47,24 @@ def get_Vp_plus_Vpk(model,Vp,rij,Fij_conts,Fij):
                     Fij[i]*model.pairwise_potentials[cont_idx](rij[:,cont_idx])
     return Vp_plus_Vpk
 
+def get_dHk_for_state(model,rij,Fij_conts,Fij,state,n_frames):
+    ''' Get perturbed potential energy '''
+    dHk_state = np.zeros(n_frames,float)
+    for i in range(len(Fij_conts)):       ## loop over number of parameters
+        cont_idx = Fij_conts[i]
+        dHk_state = dHk_state - Fij[i]*model.pairwise_strengths[cont_idx]*model.pairwise_potentials[cont_idx](rij[state,cont_idx])
+    return dHk_state
+
+def get_Vp_plus_Vpk_for_state(model,Vp,rij,Fij_conts,Fij,state):
+    ''' Get perturbed potential energy '''
+    Vp_plus_Vpk_state = np.array(Vp,copy=True)
+    for i in range(len(Fij_conts)):       ## loop over number of parameters
+        cont_idx = Fij_conts[i]
+        param_idx = model.pairwise_param_assignment[cont_idx]
+        Vp_plus_Vpk_state[:,param_idx] = Vp_plus_Vpk_state[:,param_idx] - \
+                    Fij[i]*model.pairwise_potentials[cont_idx](rij[state,cont_idx])
+    return Vp_plus_Vpk_state
+
 def get_target_feature(model):
     ''' Get target features '''
     name = model.subdir
@@ -131,43 +149,63 @@ def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_p
 def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels,saveas="Q_phi.dat",test=False):
     ''' Calculates the feature vector (ddG's) and Jacobian for one directory '''
     ## Get trajectory, state indicators, contact energy
-    traj,rij,Vp = get_rij_Vp(model)
+    #traj,rij,Vp = get_rij_Vp(model)
+    traj,rij = get_traj_rij(model)
 
     Q = np.loadtxt("Q.dat")
     U,TS,N,Uframes,TSframes,Nframes = get_state_indicators(Q,bounds)
 
+    Vp_U   = get_Vp_for_state(model,rij,U,Uframes)
+    Vp_TS  = get_Vp_for_state(model,rij,TS,TSframes)
+    Vp_N   = get_Vp_for_state(model,rij,N,Nframes)
+
     ## Average dimensionless potential energy for each state.
-    Vp_U  = sum(Vp[U,:])/Uframes
-    Vp_TS = sum(Vp[TS,:])/TSframes
-    Vp_N  = sum(Vp[N,:])/Nframes
+    #Vp_U  = sum(Vp[U,:])/Uframes
+    #Vp_TS = sum(Vp[TS,:])/TSframes
+    #Vp_N  = sum(Vp[N,:])/Nframes
+    sumVp_U   = np.mean(Vp_U,axis=0) 
+    sumVp_TS  = np.mean(Vp_TS,axis=0) 
+    sumVp_N   = np.mean(Vp_N,axis=0) 
 
     ## Compute deltaG for each state. Then DeltaDelta G with respect to the
     ## first state (assumed to be the unfolded/denatured state).
     ## Units of kT.
-    dG = [[],[],[]]
-    ddG = [[],[]]
-    phi = []
+    dG = np.zeros((3,len(mutants)),float)
+    ddG = np.zeros((2,len(mutants)),float)
+    phi = np.zeros(len(mutants),float) 
 
     ## Initialize Jacobian
     #Jacobian = np.zeros((2*len(mutants),model.n_contacts),float)
     Jacobian = np.zeros((2*len(mutants),model.n_model_param),float)
     sim_feature = np.zeros(2*len(mutants),float)
 
-    avg_rowtime = []
+    avg_rowtime = np.zeros(len(mutants),float)
     lasttime = time.time()
     for k in range(len(mutants)):
         mut = mutants[k]
         ## Compute energy perturbation
-        dHk = get_dHk(model,rij,Fij_conts[k],Fij[k])
+        #dHk = get_dHk(model,rij,Fij_conts[k],Fij[k])
+        dHk_U  = get_dHk_for_state(model,rij,Fij_conts[k],Fij[k],U,Uframes)
+        dHk_TS = get_dHk_for_state(model,rij,Fij_conts[k],Fij[k],TS,TSframes)
+        dHk_N  = get_dHk_for_state(model,rij,Fij_conts[k],Fij[k],N,Nframes)
         #np.savetxt("dH_%s.dat" % mut,dHk)      ## Takes ~2sec
 
         ## Get perturbed dimensionless potential energy.
-        Vp_plus_Vpk = get_Vp_plus_Vpk(model,Vp,rij,Fij_conts[k],Fij[k])
+        #Vp_plus_Vpk = get_Vp_plus_Vpk(model,Vp,rij,Fij_conts[k],Fij[k])
+        Vp_plus_Vpk_U  = get_Vp_plus_Vpk_for_state(model,Vp_U,rij,Fij_conts[k],Fij[k],U)
+        Vp_plus_Vpk_TS = get_Vp_plus_Vpk_for_state(model,Vp_TS,rij,Fij_conts[k],Fij[k],TS)
+        Vp_plus_Vpk_N  = get_Vp_plus_Vpk_for_state(model,Vp_N,rij,Fij_conts[k],Fij[k],N)
 
         ## Free energy perturbation formula. Equation (4) in reference (1).
-        dG_U  = -np.log(np.sum(np.exp(-beta*dHk[U]))/Uframes)
-        dG_TS = -np.log(np.sum(np.exp(-beta*dHk[TS]))/TSframes)
-        dG_N  = -np.log(np.sum(np.exp(-beta*dHk[N]))/Nframes)
+        #dG_U  = -np.log(np.sum(np.exp(-beta*dHk[U]))/Uframes)
+        #dG_TS = -np.log(np.sum(np.exp(-beta*dHk[TS]))/TSframes)
+        #dG_N  = -np.log(np.sum(np.exp(-beta*dHk[N]))/Nframes)
+        expdHk_U  = np.mean(np.exp(-beta*dHk_U))
+        expdHk_TS = np.mean(np.exp(-beta*dHk_TS))
+        expdHk_N  = np.mean(np.exp(-beta*dHk_N))
+        dG_U  = -np.log(expdHk_U)
+        dG_TS = -np.log(expdHk_TS)
+        dG_N  = -np.log(expdHk_N)
 
         ## DeltaDeltaG's. Equations (5) in reference (1).
         ddG_stab = (dG_N - dG_U)
@@ -176,33 +214,40 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
         ## Phi-value
         phi_value = ddG_dagg/ddG_stab
 
-        dG[0].append(dG_U)
-        dG[1].append(dG_TS)
-        dG[2].append(dG_N)
-        ddG[0].append(ddG_dagg)
-        ddG[1].append(ddG_stab)
-        phi.append(phi_value)
+        dG[0,k] = dG_U
+        dG[1,k] = dG_TS
+        dG[2,k] = dG_N
+        ddG[0,k] = ddG_dagg
+        ddG[1,k] = ddG_stab
+        phi[k] = phi_value
 
         ## simulation feature 
         sim_feature[k] = ddG_dagg
         sim_feature[k + len(mutants)] = ddG_stab
 
         ## Thermal averages for matrix equation (9).
-        expdHk_U  = sum(np.exp(-beta*dHk[U]))/Uframes
-        expdHk_TS = sum(np.exp(-beta*dHk[TS]))/TSframes
-        expdHk_N  = sum(np.exp(-beta*dHk[N]))/Nframes
+        #expdHk_U  = sum(np.exp(-beta*dHk[U]))/Uframes
+        #expdHk_TS = sum(np.exp(-beta*dHk[TS]))/TSframes
+        #expdHk_N  = sum(np.exp(-beta*dHk[N]))/Nframes
 
         ## Vectorized computation of Jacobian. 5x faster than a for loop.
-        Vp_Vpk_expdHk_U  = sum((Vp_plus_Vpk[U,:].T*np.exp(-beta*dHk[U])).T)/Uframes
-        Vp_Vpk_expdHk_TS = sum((Vp_plus_Vpk[TS,:].T*np.exp(-beta*dHk[TS])).T)/TSframes
-        Vp_Vpk_expdHk_N  = sum((Vp_plus_Vpk[N,:].T*np.exp(-beta*dHk[N])).T)/Nframes
+        #Vp_Vpk_expdHk_U  = sum((Vp_plus_Vpk[U,:].T*np.exp(-beta*dHk[U])).T)/Uframes
+        #Vp_Vpk_expdHk_TS = sum((Vp_plus_Vpk[TS,:].T*np.exp(-beta*dHk[TS])).T)/TSframes
+        #Vp_Vpk_expdHk_N  = sum((Vp_plus_Vpk[N,:].T*np.exp(-beta*dHk[N])).T)/Nframes
 
-        Jacobian[k,:] = beta*(((Vp_Vpk_expdHk_TS/expdHk_TS) - Vp_TS[:]) - ((Vp_Vpk_expdHk_U/expdHk_U) - Vp_U[:]))
-        Jacobian[k + len(mutants),:] = beta*(((Vp_Vpk_expdHk_N/expdHk_N) - Vp_N[:]) - ((Vp_Vpk_expdHk_U/expdHk_U) - Vp_U[:]))
+        Vp_Vpk_expdHk_U  = sum((Vp_plus_Vpk_U.T*np.exp(-beta*dHk_U)).T)/Uframes
+        Vp_Vpk_expdHk_TS = sum((Vp_plus_Vpk_TS.T*np.exp(-beta*dHk_TS)).T)/TSframes
+        Vp_Vpk_expdHk_N  = sum((Vp_plus_Vpk_N.T*np.exp(-beta*dHk_N)).T)/Nframes
+
+        #Jacobian[k,:] = beta*(((Vp_Vpk_expdHk_TS/expdHk_TS) - Vp_TS[:]) - ((Vp_Vpk_expdHk_U/expdHk_U) - Vp_U[:]))
+        #Jacobian[k + len(mutants),:] = beta*(((Vp_Vpk_expdHk_N/expdHk_N) - Vp_N[:]) - ((Vp_Vpk_expdHk_U/expdHk_U) - Vp_U[:]))
+
+        Jacobian[k,:] = beta*(((Vp_Vpk_expdHk_TS/expdHk_TS) - sumVp_TS) - ((Vp_Vpk_expdHk_U/expdHk_U) - sumVp_U))
+        Jacobian[k + len(mutants),:] = beta*(((Vp_Vpk_expdHk_N/expdHk_N) - sumVp_N) - ((Vp_Vpk_expdHk_U/expdHk_U) - sumVp_U))
 
         thistime = time.time()
         dt = thistime - lasttime
-        avg_rowtime.append(dt)
+        avg_rowtime[k] = dt
         lasttime = thistime
         print "    mutant %d  %5s    %.2f seconds = %.2f min" % (k,mut,dt,dt/60.)
 
