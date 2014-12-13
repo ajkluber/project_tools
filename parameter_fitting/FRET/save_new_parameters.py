@@ -16,7 +16,7 @@ def save(model,soln_index):
     neweps = eps0 + deps
     neweps[neweps < 0.01] = 0.01
     
-    model.update_model_param_value(neweps_p)
+    model.update_model_param_values(neweps)
     
     open("%s/pairwise_params" % cwd,"w").write(model.pairwise_param_file_string)
     open("%s/model_params" % cwd,"w").write(model.model_param_file_string)
