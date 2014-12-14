@@ -29,6 +29,35 @@ def get_rij_Vp(model):
     
     return traj,rij,Vp
 
+def get_traj_rij(model):
+    ''' Load trajectory, state indicators, and contact energy '''
+    ##assumes you are in the directory with traj.xtc and Native.pdb
+    time1 = time.time()
+    traj = md.load("traj.xtc",top="Native.pdb")     ## Loading from file takes most time.
+    time2 = time.time()
+    print " Loading traj took: %.2f sec = %.2f min" % (time2-time1,(time2-time1)/60.)
+
+    ## rij is a matrix, where first index represents trajectory step, and the second index represents the different pairs
+    time1 = time.time()
+    rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape),periodic=False)
+    time2 = time.time()
+    print " Calculating rij took: %.2f sec = %.2f min" % (time2-time1,(time2-time1)/60.)
+    
+    return traj,rij
+
+def get_Vp_for_state(model,rij,state,n_frames):
+    ''' Load trajectory, state indicators, and contact energy '''
+    
+    time1 = time.time()
+    Vp_state = np.zeros((n_frames,model.n_model_param),float)
+    for i in range(model.n_contacts):       ## loop over number of pairwise interactions
+        param_idx = model.pairwise_param_assignment[i]
+        Vp_state[:,param_idx] = Vp_state[:,param_idx] + model.pairwise_potentials[i](rij[state,i])
+    time2 = time.time()
+    print " Calculating Vp took: %.2f sec = %.2f min" % (time2-time1,(time2-time1)/60.)
+    
+    return Vp_state
+
 def get_state_bounds():
     ''' Bounds for each state. Bounds are bin edges along Q. '''
     import os
