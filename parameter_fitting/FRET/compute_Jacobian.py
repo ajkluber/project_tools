@@ -317,95 +317,26 @@ def compute_Jacobian_for_directory(model,beta,residues,spacing):
             counte += 1
         countr =+ 1
     Jacobian *= -1 * beta
-
     
     xFRET = np.arange((minvalue*spacing)+(spacing/2.0), maxvalue*spacing, spacing)
     simparams = np.array([xFRET,Fr])
     simparams = np.transpose(simparams)
-    
     print "Finished computing the Jacobian and Simparams"
     return Jacobian, simparams
 
 if __name__ == "__main__":    
-    print "WARNING: RUNNING AS MAIN NOT OKAY. NOT UPDATED"
+    import model_builder as mdb
+
     parser = argparse.ArgumentParser(description='Calculate .')
-    parser.add_argument('--name', type=str, required=True, help='Directory.')
-    parser.add_argument('--iteration', type=int, required=True, help='Iteration.')
-    parser.add_argument('--temp', type=str, required=True, help='Temperature.')
-    parser.add_argument('--savein', type=str, required=True, help='Iteration.')
+    parser.add_argument('--name', type=str, required=True, help='name.')
+    parser.add_argument('--iteration', type=int, required=True, help='iteration.')
     args = parser.parse_args()
-
+    
     name = args.name
-    iteration = args.iteration
-    temp = args.temp
-    savein = args.savein
+    iteration= args.iteration
 
-    model = mdb.check_inputs.load_model(name) 
-    model.iteration = iteration
-    model.Tf_iteration = iteration
-
-    R_KJ_MOL = 0.0083145
-    T = float(temp.split("_")[0])
-    beta = 1./(R_KJ_MOL*T)
-
-    residues = list(np.loadtxt("%s/FRET_residues.dat" % name))
-    residues = [residues]
-    
-    cwd = os.getcwd()
-    os.chdir("%s/Tf_%d/%s" % (name,iteration,temp))
-
-    #sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,residues)
-
-    n_bins = 30
-
-    ## Get trajectory, state indicators, contact energy
-    traj,rij,Vij = get_rij_Vij(model)
-
-    ## Get simulation feature
-    FRETr = (md.compute_distances(traj,residues))[:,0]
-    P_r, bins = np.histogram(FRETr,bins=n_bins,density=True)
-    
-    ## Indicates what bins fall in what bin
-    indicator = []
-    binframes = []
-    print "computing indicator.." 
-    for i in range(len(bins)-1):
-        temp = ((FRETr > bins[i]).astype(int)*(FRETr <= bins[i+1]).astype(int)).astype(bool)
-        indicator.append(temp)
-        binframes.append(float(sum((temp == True).astype(int))))
-
-    #print sum(binframes), len(FRETr)       # DEBUGGING
-
-    ## Initialize Jacobian
-    Jacobian = np.zeros((n_bins,model.n_contacts),float)
-
-    avg_Vij = sum(Vij[:,:])/float(len(FRETr))
-    ## Compute rows of the Jacobian which are correlation functions of 
-    ## contact formation with contact energy.
-    print "computing Jacobian..."
-    for i in range(n_bins):
-        #if (i % 10) == 0:
-        print "    row %d out of %d" % (i+1,n_bins)
-        avg_Vij_r = sum((Vij[indicator[i],:].T).T)/binframes[i]
-        Jacobian[i,:] = -beta*(avg_Vij_r - P_r[i]*avg_Vij)
-
-    os.chdir(cwd)
-
-    #target_feature, target_feature_err = get_target_feature(model)
-    #sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = calculate_average_Jacobian(model,residues)
-
-    method = args.savein
-    if not os.path.exists("%s/Tf_%d/%s" % (name,iteration,method)):
-        os.mkdir("%s/Tf_%d/%s" % (name,iteration,method))
-    np.savetxt("%s/Tf_%d/%s/Jacobian.dat" % (name,iteration,method), Jacobian)
-    np.savetxt("%s/Tf_%d/%s/sim_feature.dat" % (name,iteration,method), P_r)
-    np.savetxt("%s/Tf_%d/%s/bins.dat" % (name,iteration,method), bins)
-
-    #np.savetxt("%s/Tf_%d/%s/target_feature.dat" % (name,iteration), target_feature)
-    #np.savetxt("%s/Tf_%d/%s/target_feature_err.dat" % (name,iteration), target_feature_err)
-    #np.savetxt("%s/Tf_%d/%s/target_feature.dat" % (name,iteration), target_feature)
-    #np.savetxt("%s/Tf_%d/%s/target_feature_err.dat" % (name,iteration), target_feature_err)
-    #np.savetxt("%s/Tf_%d/%s/sim_feature.dat" % (name,iteration), sim_feature_avg)
-    #np.savetxt("%s/Tf_%d/%s/sim_feature_err.dat" % (name,iteration), sim_feature_err)
-    #np.savetxt("%s/Tf_%d/%s/Jacobian.dat" % (name,iteration), Jacobian_avg)
-    #np.savetxt("%s/Tf_%d/%s/Jacobian_err.dat" % (name,iteration) ,Jacobian_err)
+    contacts = np.loadtxt("%s/contacts.dat" % name,dtype=int)
+    pdb = "%s.pdb" % name
+    defaults = True
+    model = mdb.models.SmogCalpha.SmogCalpha(pdb=pdb,contacts=contacts,defaults=defaults,iteration=iteration)
+    sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = calculate_average_Jacobian(model)
