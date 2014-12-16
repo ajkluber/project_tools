@@ -1,4 +1,4 @@
-""" Build script for cython resample extension
+''' Build script for cython resample extension
 
 Run following on command line to build the cython extension used
 in the bootstrapping script.
@@ -10,7 +10,7 @@ that can be imported into python:
 
 >>> import resample_histo
 
-"""
+'''
 from distutils.core import setup
 from Cython.Build import cythonize
 
