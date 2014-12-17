@@ -1,4 +1,4 @@
-""" Calcuate and plot contact probability (Qi) vs foldedness (Q) 
+''' Calcuate and plot contact probability (Qi) vs foldedness (Q) 
 
 Description:
     Contact probabilities are the elementary descriptors of the folding
@@ -46,7 +46,7 @@ References:
 (1) Chavez, L.; Onuchic, J.; Clementi, C. Quantifying the roughness on the
 free energy landscape: Entropic bottlenecks and protein folding rates. J.
 Am. Chem. Soc. 2004, 126, 8426-8432.
-"""
+'''
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -90,7 +90,7 @@ def plot_kinetic_mechanism():
                 folding = 1
 
 def plot_QivsQ(name,iteration,Qbins,Qi_vs_Q,n_bins,epsilons,loops,state_bounds):
-    """ Plot contact ordering versus folding progress.
+    ''' Plot contact ordering versus folding progress.
 
     Description:
 
@@ -119,7 +119,7 @@ def plot_QivsQ(name,iteration,Qbins,Qi_vs_Q,n_bins,epsilons,loops,state_bounds):
 
     (2) Plotkin, S.; Onuchic, J. Structural and energetic heterogeneity 
     in protein folding. I. Theory. J. Chem. Phys. 2002, 116, 5263.
-    """
+    '''
 
     ## Contact probability colored by loop length
     sortedindx = loops.argsort()
@@ -138,8 +138,8 @@ def plot_QivsQ(name,iteration,Qbins,Qi_vs_Q,n_bins,epsilons,loops,state_bounds):
     axes[1].set_title("$l_i < \\overline{l}$")
     fig.text(0.5,0.04,"Foldedness $Q$",ha='center',va='center')
     fig.text(0.5,0.96,"Longer loops = longer wavelengths. %s iteration %d" % (name,iteration),ha='center',va='center')
-    plt.savefig("%s/Mut_%d/plots/QivsQ_loops_%s_%d.png" % (name,iteration,name,iteration))
-    plt.savefig("%s/Mut_%d/plots/QivsQ_loops_%s_%d.pdf" % (name,iteration,name,iteration))
+    plt.savefig("%s/iteration_%d/plots/QivsQ_loops_%s_%d.png" % (name,iteration,name,iteration))
+    plt.savefig("%s/iteration_%d/plots/QivsQ_loops_%s_%d.pdf" % (name,iteration,name,iteration))
 
     ## Contact probability growth colored by loop length
     dQi_dQ = (np.gradient(Qi_vs_Q,Qbins[1]-Qbins[0],Qbins[1]-Qbins[0]))[0]
@@ -158,8 +158,8 @@ def plot_QivsQ(name,iteration,Qbins,Qi_vs_Q,n_bins,epsilons,loops,state_bounds):
     axes[1].set_title("$l_i < \\overline{l}$")
     fig.text(0.5,0.04,"Foldedness $Q$",ha='center',va='center')
     fig.text(0.5,0.96,"Longer loops = longer wavelengths. %s iteration %d" % (name,iteration),ha='center',va='center')
-    plt.savefig("%s/Mut_%d/plots/dQidQ_loops_%s_%d.png" % (name,iteration,name,iteration))
-    plt.savefig("%s/Mut_%d/plots/dQidQ_loops_%s_%d.pdf" % (name,iteration,name,iteration))
+    plt.savefig("%s/iteration_%d/plots/dQidQ_loops_%s_%d.png" % (name,iteration,name,iteration))
+    plt.savefig("%s/iteration_%d/plots/dQidQ_loops_%s_%d.pdf" % (name,iteration,name,iteration))
 
 def some_old_plot_Qgroups():
     if not os.path.exists("plots"):
@@ -239,20 +239,20 @@ def some_old_plot_Qgroups():
     plt.show()
 
 def get_some_iteration_data(name,iteration,n_bins):
-    """ Get summary data for iteration """
-    Tuse = open("%s/Mut_%d/T_array_last.txt" % (name,iteration),"r").readlines()[0].rstrip("\n")
-    Tf = float(open("%s/Mut_%d/Tf.txt" % (name,iteration),"r").read().rstrip("\n"))
+    ''' Get summary data for iteration '''
+    Tuse = open("%s/iteration_%d/long_temps_last" % (name,iteration),"r").readlines()[0].rstrip("\n")
+    Tf = float(open("%s/iteration_%d/long_Tf" % (name,iteration),"r").read().rstrip("\n"))
 
-    beadbead = np.loadtxt("%s/Mut_%d/%s/BeadBead.dat" % (name,iteration,Tuse),usecols=(0,1,6))
-    contacts = beadbead[:,:2]
-    epsilons = beadbead[:,2]
+    params = np.loadtxt("%s/pairwise_params" % Tuse,dtype=float)
+    contacts = params[:,:2].astype(int)
+    epsilons = np.loadtxt("%s/model_params" % Tuse,dtype=float)
 
     loops = contacts[:,1] - contacts[:,0]
     n_residues = len(open("%s/Native.pdb" % name,"r").readlines()) - 1
 
     state_labels = []
     state_bounds = []
-    for line in open("%s/Mut_%d/state_bounds.txt" % (name,iteration),"r"):
+    for line in open("%s/iteration_%d/state_bounds.txt" % (name,iteration),"r"):
         state_labels.append(line.split()[0])
         state_bounds.append([int(line.split()[1]),int(line.split()[2])])
 
@@ -264,23 +264,23 @@ def get_some_iteration_data(name,iteration,n_bins):
     return epsilons, loops, n_residues, contacts, n_contacts, Tf, state_labels, state_bounds, Qbins, Qi_vs_Q
 
 def get_contact_probability_versus_Q(name,iteration,n_bins):
-    """ Get the contact probabilities versus Q
+    ''' Get the contact probabilities versus Q
 
     Description:
         
         If the contact probabilities have not been calculated for this
     name and iteration, QivsQ.dat, then calculate them and save them.
     
-    """
+    '''
     print "Plotting mechanism info for %s iteration %d..." % (name,iteration)
-    if not os.path.exists("%s/Mut_%d/QivsQ.dat" % (name,iteration)):
+    if not os.path.exists("%s/iteration_%d/QivsQ.dat" % (name,iteration)):
         print "  calculating Qi vs Q"
         n_frames = 0.
-        temps = [ x.rstrip("\n") for x in open("%s/Mut_%d/T_array_last.txt" % (name,iteration), "r").readlines() ]
+        temps = [ x.rstrip("\n") for x in open("%s/iteration_%d/long_temps_last" % (name,iteration), "r").readlines() ]
         for i in range(len(temps)):
             T = temps[i]
-            Q_temp = np.loadtxt("%s/Mut_%d/%s/Q.dat" % (name,iteration,T))
-            Qi_temp = np.loadtxt("%s/Mut_%d/%s/qimap.dat" % (name,iteration,T))
+            Q_temp = np.loadtxt("%s/iteration_%d/%s/Q.dat" % (name,iteration,T))
+            Qi_temp = np.loadtxt("%s/iteration_%d/%s/qimap.dat" % (name,iteration,T))
             if i == 0:
                 Qi = Qi_temp
                 Q = Q_temp
@@ -303,17 +303,17 @@ def get_contact_probability_versus_Q(name,iteration,n_bins):
 
         Qi_vs_Q = (Qi_vs_bins.T/counts).T
         Qbins = np.linspace(minQ,maxQ,n_bins)
-        np.savetxt("%s/Mut_%d/QivsQ.dat" % (name,iteration),Qi_vs_Q)
-        np.savetxt("%s/Mut_%d/Qbins.dat" % (name,iteration),Qbins)
+        np.savetxt("%s/iteration_%d/QivsQ.dat" % (name,iteration),Qi_vs_Q)
+        np.savetxt("%s/iteration_%d/Qbins.dat" % (name,iteration),Qbins)
 
     else:
         print "  loading Qi vs Q"
-        Qi_vs_Q = np.loadtxt("%s/Mut_%d/QivsQ.dat" % (name,iteration))
-        Qbins = np.loadtxt("%s/Mut_%d/Qbins.dat" % (name,iteration))
+        Qi_vs_Q = np.loadtxt("%s/iteration_%d/QivsQ.dat" % (name,iteration))
+        Qbins = np.loadtxt("%s/iteration_%d/Qbins.dat" % (name,iteration))
     return Qbins, Qi_vs_Q
 
 def plot_route_measure(name,iteration,Qbins,Qi_vs_Q,n_bins):
-    """ Plot route measure as defined in ref (1)
+    ''' Plot route measure as defined in ref (1)
 
     Description:
 
@@ -337,7 +337,7 @@ def plot_route_measure(name,iteration,Qbins,Qi_vs_Q,n_bins):
     (2) Plotkin, S.; Onuchic, J.; Structural and energetic heterogeneity in 
     protein folding. I, Theory. Jour. Chem. Phys. 2002, 116, 12. 5263-5283
 
-    """
+    '''
 
     Q = Qbins/float(max(Qbins))
     route = np.zeros(n_bins)
@@ -347,14 +347,14 @@ def plot_route_measure(name,iteration,Qbins,Qi_vs_Q,n_bins):
         else:
             route[i] = (1./(Q[i]*(1. - Q[i])))*(np.std(Qi_vs_Q[i,:])**2)
 
-    np.savetxt("%s/Mut_%d/route.dat" % (name,iteration),route)
+    np.savetxt("%s/iteration_%d/route.dat" % (name,iteration),route)
     plt.figure()
     plt.plot(Q,route,lw=2,color='r')
     plt.xlabel("Q")
     plt.ylabel("R(Q)")
     plt.title("Route measure %s iteration %d"  % (name,iteration))
-    plt.savefig("%s/Mut_%d/plots/route_%s_%d.pdf" % (name,iteration,name,iteration))
-    plt.savefig("%s/Mut_%d/plots/route_%s_%d.png" % (name,iteration,name,iteration))
+    plt.savefig("%s/iteration_%d/plots/route_%s_%d.pdf" % (name,iteration,name,iteration))
+    plt.savefig("%s/iteration_%d/plots/route_%s_%d.png" % (name,iteration,name,iteration))
 
 def plot_Qi_histogram_vs_Q(name,iteration,Qbins,Qi_vs_Q,n_bins):
 
@@ -383,8 +383,8 @@ def plot_Qi_histogram_vs_Q(name,iteration,Qbins,Qi_vs_Q,n_bins):
     plt.xlabel("Folding Reaction $Q$")
     plt.ylabel("$\\left< Q_i \\right>$ Distribution")
     plt.title("Contact formation %s iteration %s"  % (name,iteration))
-    plt.savefig("%s/Mut_%d/plots/QihistvsQ_%s_%d.pdf" % (name,iteration,name,iteration))
-    plt.savefig("%s/Mut_%d/plots/QihistvsQ_%s_%d.png" % (name,iteration,name,iteration))
+    plt.savefig("%s/iteration_%d/plots/QihistvsQ_%s_%d.pdf" % (name,iteration,name,iteration))
+    plt.savefig("%s/iteration_%d/plots/QihistvsQ_%s_%d.png" % (name,iteration,name,iteration))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='.')
@@ -397,20 +397,20 @@ if __name__ == "__main__":
     iteration = args.iteration
     n_bins = args.n_bins
 
-    if not os.path.exists("%s/Mut_%d/plots" % (name,iteration)):
-        os.mkdir("%s/Mut_%d/plots" % (name,iteration))
+    if not os.path.exists("%s/iteration_%d/plots" % (name,iteration)):
+        os.mkdir("%s/iteration_%d/plots" % (name,iteration))
 
     ## Get some iteration data
     epsilons, loops, n_residues, contacts, n_contacts, Tf, state_labels, state_bounds, Qbins, Qi_vs_Q = get_some_iteration_data(name,iteration,n_bins)
 
-    print "  plotting route measure.     saving %s/Mut_%d/plots/route_%s_%d.png" % (name,iteration,name,iteration)
+    print "  plotting route measure.     saving %s/iteration_%d/plots/route_%s_%d.png" % (name,iteration,name,iteration)
     plot_route_measure(name,iteration,Qbins,Qi_vs_Q,n_bins)
 
-    print "  plotting Qi histogram vs Q. saving %s/Mut_%d/plots/QihistvsQ_%s_%d.png" % (name,iteration,name,iteration)
+    print "  plotting Qi histogram vs Q. saving %s/iteration_%d/plots/QihistvsQ_%s_%d.png" % (name,iteration,name,iteration)
     plot_Qi_histogram_vs_Q(name,iteration,Qbins,Qi_vs_Q,n_bins)
 
-    print "  plotting Qi vs Q            saving %s/Mut_%d/plots/QivsQ_loops_%s_%d.png" % (name,iteration,name,iteration)
-    print "  plotting dQi/dQ vs Q        saving %s/Mut_%d/plots/dQidQ_loops_%s_%d.png" % (name,iteration,name,iteration)
+    print "  plotting Qi vs Q            saving %s/iteration_%d/plots/QivsQ_loops_%s_%d.png" % (name,iteration,name,iteration)
+    print "  plotting dQi/dQ vs Q        saving %s/iteration_%d/plots/dQidQ_loops_%s_%d.png" % (name,iteration,name,iteration)
     plot_QivsQ(name,iteration,Qbins,Qi_vs_Q,n_bins,epsilons,loops,state_bounds)
 
     plt.show()

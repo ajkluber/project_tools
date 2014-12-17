@@ -1,10 +1,10 @@
-""" Plot a summary of MC2004 iteration
+''' Plot a summary of MC2004 iteration
 
 
 Description:
 
 
-"""
+'''
 
 
 import os
@@ -27,41 +27,50 @@ new_map2 = matplotlib.colors.LinearSegmentedColormap.from_list('new_map2', color
 
 def get_contact_probability(name,iteration,n_residues,contacts,state_label,state_bound):
 
-    if not os.path.exists("%s/Mut_%d/cont_prob_%s.dat" % (name,iteration,state_label)):
+    cwd = os.getcwd()
+    sub =  "%s/iteration_%d" % (name,iteration)
+    os.chdir(sub)
+    
+    if not os.path.exists("cont_prob_%s.dat" % state_label):
         contact_probability = np.zeros(len(contacts),float) 
         n_frames = 0.
-        temps = [ x.rstrip("\n") for x in open("%s/Mut_%d/T_array_last.txt" % (name,iteration), "r").readlines() ]
+        temps = [ x.rstrip("\n") for x in open("long_temps_last", "r").readlines() ]
         for i in range(len(temps)):
             T = temps[i]
-            Q = np.loadtxt("%s/Mut_%d/%s/Q.dat" % (name,iteration,T))
-            qimap = np.loadtxt("%s/Mut_%d/%s/qimap.dat" % (name,iteration,T))
+            Q = np.loadtxt("%s/Q.dat" % T)
+            qimap = np.loadtxt("%s/qimap.dat" % T)
 
             state_indicator = ((Q > state_bound[0]).astype(int)*(Q < state_bound[1]).astype(int)).astype(bool)
             n_frames += float(sum(state_indicator.astype(int)))
             contact_probability += sum(qimap[(state_indicator == True),:])
         contact_probability /= n_frames
-        np.savetxt("%s/Mut_%d/cont_prob_%s.dat" % (name,iteration,state_label),contact_probability)
+        np.savetxt("cont_prob_%s.dat" % state_label,contact_probability)
     else:
-        contact_probability = np.loadtxt("%s/Mut_%d/cont_prob_%s.dat" % (name,iteration,state_label))
+        contact_probability = np.loadtxt("cont_prob_%s.dat" % state_label)
 
+    os.chdir(cwd)
     return contact_probability
 
 def get_iteration_data(name,iteration):
-    """ Get summary data for iteration """
-    Tuse = open("%s/Mut_%d/T_array_last.txt" % (name,iteration),"r").readlines()[0].rstrip("\n")
-    Tf = float(open("%s/Mut_%d/Tf.txt" % (name,iteration),"r").read().rstrip("\n"))
-
-    beadbead = np.loadtxt("%s/Mut_%d/%s/BeadBead.dat" % (name,iteration,Tuse),dtype=str)
-    notdisulf = beadbead[:,4] != "ss"
-    contacts = beadbead[notdisulf,:2].astype(int)
-    epsilons = beadbead[notdisulf,6].astype(float)
-
+    ''' Get summary data for iteration '''
     n_residues = len(open("%s/Native.pdb" % name,"r").readlines()) - 1
+
+    cwd = os.getcwd()
+    sub =  "%s/iteration_%d" % (name,iteration)
+    os.chdir(sub)
+
+    Tuse = open("long_temps_last","r").readlines()[0].rstrip("\n")
+    Tf = float(open("long_Tf","r").read().rstrip("\n"))
+
+    params = np.loadtxt("%s/pairwise_params" % Tuse,dtype=float)
+    contacts = params[:,:2].astype(int)
+    epsilons = np.loadtxt("%s/model_params" % Tuse,dtype=float)
+
     epsilon_map = np.zeros((n_residues,n_residues))
     for i in range(len(contacts)):
         epsilon_map[contacts[i,1]-1,contacts[i,0]-1] = epsilons[i] 
 
-    for line in open("%s/Mut_%d/whamQ/free.config" % (name,iteration),"r"):
+    for line in open("short_wham/free.config","r"):
         if line.startswith("startTF"):
             startTF = float(line.split()[1])
         if line.startswith("deltaTF"):
@@ -74,30 +83,30 @@ def get_iteration_data(name,iteration):
         if (Tf - tempsF[j]) <= 0:
             temp = "%.1f" % tempsF[j]
             whamT = "free" + temp.split(".")[0] + temp.split(".")[1]
-            if os.path.exists("%s/Mut_%d/whamQ/%s" % (name,iteration,whamT)):
-                whamFree = np.loadtxt("%s/Mut_%d/whamQ/%s" % (name,iteration,whamT))
+            if os.path.exists("short_wham/%s" % whamT):
+                whamFree = np.loadtxt("short_wham/%s" % whamT)
                 break
             temp = "%.1f" % (tempsF[j] - 0.1)
             whamT = "free" + temp.split(".")[0] + temp.split(".")[1]
-            if os.path.exists("%s/Mut_%d/whamQ/%s" % (name,iteration,whamT)):
-                whamFree = np.loadtxt("%s/Mut_%d/whamQ/%s" % (name,iteration,whamT))
+            if os.path.exists("short_wham/%s" % whamT):
+                whamFree = np.loadtxt("short_wham/%s" % whamT)
                 break
             temp = "%.1f" % (tempsF[j] + 0.1)
             whamT = "free" + temp.split(".")[0] + temp.split(".")[1]
-            if os.path.exists("%s/Mut_%d/whamQ/%s" % (name,iteration,whamT)):
-                whamFree = np.loadtxt("%s/Mut_%d/whamQ/%s" % (name,iteration,whamT))
+            if os.path.exists("short_wham/%s" % whamT):
+                whamFree = np.loadtxt("short_wham/%s" % whamT)
                 break
 
     state_labels = []
     state_bounds = []
-    for line in open("%s/Mut_%d/state_bounds.txt" % (name,iteration),"r"):
+    for line in open("state_bounds.txt","r"):
         state_labels.append(line.split()[0])
         state_bounds.append([int(line.split()[1]),int(line.split()[2])])
 
-    ddgsim = np.loadtxt("%s/Mut_%d/newton/sim_feature.dat" % (name,iteration))
-    ddgsim_err = np.loadtxt("%s/Mut_%d/newton/sim_feature_err.dat" % (name,iteration))
-    ddgexp = np.loadtxt("%s/Mut_%d/newton/target_feature.dat" % (name,iteration))
-    ddgexp_err = np.loadtxt("%s/Mut_%d/newton/target_feature_err.dat" % (name,iteration))
+    ddgsim = np.loadtxt("newton/sim_feature.dat")
+    ddgsim_err = np.loadtxt("newton/sim_feature_err.dat")
+    ddgexp = np.loadtxt("newton/target_feature.dat")
+    ddgexp_err = np.loadtxt("newton/target_feature_err.dat")
 
     ddGsim = np.zeros((len(ddgsim),2),float)
     ddGsim[:,0] = ddgsim
@@ -108,10 +117,12 @@ def get_iteration_data(name,iteration):
 
     n_contacts = len(contacts)
 
+    os.chdir(cwd)
+
     return epsilons, epsilon_map, n_residues, contacts, n_contacts, Tf, whamFree, state_labels, state_bounds, ddGsim, ddGexp
 
 def plot_epsilon_map(name,iteration,epsilons,epsilon_map,contacts,n_residues,individual=False):
-    """ Get  """
+    ''' Get  '''
 
     if iteration == 0:
         mineps = 0.
@@ -183,7 +194,7 @@ def plot_ddG_comparison(name,iteration,ddGsim,ddGexp,individual=False):
     lg.draw_frame(False)
 
 def plot_contact_probability(name,iteration,n_residues,contacts,state_label,state_bound,contact_probability,individual=False):
-    """ """
+    ''' '''
 
     C = np.zeros((n_residues,n_residues),float)
     for j in range(len(contacts)):
@@ -233,8 +244,8 @@ def plot_contact_probability_subplot(name,iteration,n_residues,contacts,state_la
     cbar.set_clim(0,1)
 
     plt.suptitle("%s iteration %d" % (name,iteration))
-    plt.savefig("%s/Mut_%d/summary/contact_prob_all.pdf" % (name,iteration))
-    plt.savefig("%s/Mut_%d/summary/contact_prob_all.png" % (name,iteration))
+    plt.savefig("%s/iteration_%d/summary/contact_prob_all.pdf" % (name,iteration))
+    plt.savefig("%s/iteration_%d/summary/contact_prob_all.png" % (name,iteration))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='.')
@@ -249,52 +260,52 @@ if __name__ == "__main__":
     
     print "Plotting summary for %s iteration %d..." % (name,iteration)
 
-    if not os.path.exists("%s/Mut_%d/summary" % (name,iteration)):
-        os.mkdir("%s/Mut_%d/summary" % (name,iteration))
+    if not os.path.exists("%s/iteration_%d/summary" % (name,iteration)):
+        os.mkdir("%s/iteration_%d/summary" % (name,iteration))
 
     Contact_maps = []
     for X in range(len(state_labels)):
-        print " Saving: %s/Mut_%d/contact_prob_%s.pdf          - %s contact probabilities" % (name,iteration,state_labels[X],state_labels[X])
+        print " Saving: %s/iteration_%d/contact_prob_%s.pdf          - %s contact probabilities" % (name,iteration,state_labels[X],state_labels[X])
         plt.figure()
         contact_probability = get_contact_probability(name,iteration,n_residues,contacts,state_labels[X],state_bounds[X])
         plot_contact_probability(name,iteration,n_residues,contacts,state_labels[X],state_bounds[X],contact_probability,individual=True)
         Contact_maps.append(contact_probability)
-        plt.savefig("%s/Mut_%d/summary/contact_prob_%s.pdf" % (name,iteration,state_labels[X]))
-        plt.savefig("%s/Mut_%d/summary/contact_prob_%s.png" % (name,iteration,state_labels[X]))
+        plt.savefig("%s/iteration_%d/summary/contact_prob_%s.pdf" % (name,iteration,state_labels[X]))
+        plt.savefig("%s/iteration_%d/summary/contact_prob_%s.png" % (name,iteration,state_labels[X]))
         plt.close()
 
-    print " Saving subplot: %s/Mut_%d/summary/contact_prob_all.pdf       - contact probabilities" % (name,iteration)
+    print " Saving subplot: %s/iteration_%d/summary/contact_prob_all.pdf       - contact probabilities" % (name,iteration)
     plot_contact_probability_subplot(name,iteration,n_residues,contacts,state_labels,Contact_maps)
     
-    print "  Saving: %s/Mut_%d/summary/current_epsilon_map.pdf    - epsilon map" % (name,iteration)
+    print "  Saving: %s/iteration_%d/summary/current_epsilon_map.pdf    - epsilon map" % (name,iteration)
     plt.figure()
     plot_epsilon_map(name,iteration,epsilons,epsilon_map,contacts,n_residues,individual=True)
-    plt.savefig("%s/Mut_%d/summary/current_epsilon_map.pdf" % (name,iteration))
-    plt.savefig("%s/Mut_%d/summary/current_epsilon_map.png" % (name,iteration))
+    plt.savefig("%s/iteration_%d/summary/current_epsilon_map.pdf" % (name,iteration))
+    plt.savefig("%s/iteration_%d/summary/current_epsilon_map.png" % (name,iteration))
     plt.close()
 
-    print "  Saving: %s/Mut_%d/summary/current_epsilon_hist.pdf   - epsilon histogram" % (name,iteration)
+    print "  Saving: %s/iteration_%d/summary/current_epsilon_hist.pdf   - epsilon histogram" % (name,iteration)
     plt.figure()
     plot_epsilon_histogram(name,iteration,epsilons,individual=True)
-    plt.savefig("%s/Mut_%d/summary/current_epsilon_hist.pdf" % (name,iteration))
-    plt.savefig("%s/Mut_%d/summary/current_epsilon_hist.png" % (name,iteration))
+    plt.savefig("%s/iteration_%d/summary/current_epsilon_hist.pdf" % (name,iteration))
+    plt.savefig("%s/iteration_%d/summary/current_epsilon_hist.png" % (name,iteration))
     plt.close()
 
-    print "  Saving: %s/Mut_%d/summary/FreeEnergy_Q.pdf            - free energy" % (name,iteration)
+    print "  Saving: %s/iteration_%d/summary/FreeEnergy_Q.pdf            - free energy" % (name,iteration)
     plt.figure()
     plot_free_energy(name,iteration,n_contacts,Tf,whamFree,state_labels,state_bounds,individual=True)
-    plt.savefig("%s/Mut_%d/summary/FreeEnergy_Q.pdf" % (name,iteration))
-    plt.savefig("%s/Mut_%d/summary/FreeEnergy_Q.png" % (name,iteration))
+    plt.savefig("%s/iteration_%d/summary/FreeEnergy_Q.pdf" % (name,iteration))
+    plt.savefig("%s/iteration_%d/summary/FreeEnergy_Q.png" % (name,iteration))
     plt.close()
 
-    print "  Saving: %s/Mut_%d/compareddG.pdf              - ddG comparison" % (name,iteration)
+    print "  Saving: %s/iteration_%d/compareddG.pdf              - ddG comparison" % (name,iteration)
     plt.figure()
     plot_ddG_comparison(name,iteration,ddGsim,ddGexp,individual=True)
-    plt.savefig("%s/Mut_%d/summary/compareddG.pdf" % (name,iteration))
-    plt.savefig("%s/Mut_%d/summary/summary_%s_%d.png" % (name,iteration,name,iteration))
+    plt.savefig("%s/iteration_%d/summary/compareddG.pdf" % (name,iteration))
+    plt.savefig("%s/iteration_%d/summary/summary_%s_%d.png" % (name,iteration,name,iteration))
     plt.close()
 
-    print " Summary figure: %s/Mut_%d/summary_%s_%d.pdf" % (name,iteration,name,iteration)
+    print " Summary figure: %s/iteration_%d/summary_%s_%d.pdf" % (name,iteration,name,iteration)
     plt.figure(figsize=(12,10))
     plt.subplot(2,2,1)
     plot_epsilon_map(name,iteration,epsilons,epsilon_map,contacts,n_residues)
@@ -305,6 +316,6 @@ if __name__ == "__main__":
     plt.subplot(2,2,4)
     plot_ddG_comparison(name,iteration,ddGsim,ddGexp)
     plt.suptitle("%s iteration %d" % (name,iteration))
-    plt.savefig("%s/Mut_%d/summary/summary_%s_%d.pdf" % (name,iteration,name,iteration))
-    plt.savefig("%s/Mut_%d/summary/summary_%s_%d.png" % (name,iteration,name,iteration))
+    plt.savefig("%s/iteration_%d/summary/summary_%s_%d.pdf" % (name,iteration,name,iteration))
+    plt.savefig("%s/iteration_%d/summary/summary_%s_%d.png" % (name,iteration,name,iteration))
     plt.show()
