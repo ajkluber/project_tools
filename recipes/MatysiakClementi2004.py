@@ -191,8 +191,8 @@ def get_args():
     ## Options for manually adding a temperature array.
     add_parser = sp.add_parser('add')
     add_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
-    add_parser.add_argument('--temparray', type=int, nargs='+', help='T_initial T_final dT for new temps')
-    add_parser.add_argument('--mutarray', type=float, nargs='+', help='List of temps for new equilibrium simulations')
+    add_parser.add_argument('--short_temps', type=int, nargs='+', help='T_initial T_final dT for new temps')
+    add_parser.add_argument('--long_temps', type=float, nargs='+', help='List of temps for new equilibrium simulations')
     add_parser.add_argument('--dry_run', action='store_true', help='Dry run. No simulations started.')
 
     ## Options for manually extending some temperatures.

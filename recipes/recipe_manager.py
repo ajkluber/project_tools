@@ -81,22 +81,21 @@ class ProjectManager(object):
         subdirs = args.subdirs
         Models = mdb.check_inputs.load_models(subdirs,dry_run=args.dry_run)
     
-        if args.temparray != None:
-            T_min = args.temparray[0] 
-            T_max = args.temparray[1] 
-            deltaT = args.temparray[2] 
+        if args.short_temps != None:
+            T_min = args.short_temps[0] 
+            T_max = args.short_temps[1] 
+            deltaT = args.short_temps[2] 
             long = False
-        elif args.mutarray != None:
-            temps = args.mutarray
+        elif args.long_temps != None:
+            temps = args.long_temps
             long = True
         else:
-            print "ERROR! Must use --temparray or --mutarray with this option"
+            print "ERROR! Must use --short_temps or --long_temps with this option"
             print " Exiting."
             raise SystemExit
 
         for i in range(len(Models)):
             model = Models[i]
-            sub = model.subdir
             if long == False:
                 print "Manually adding temperature array Ti=%d Tf=%d dT=%d" % (T_min,T_max,deltaT)
                 print "Starting constant_temp_iteration..."

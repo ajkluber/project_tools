@@ -283,11 +283,9 @@ def folding_temperature_loop_extension(model,append_log,new=False):
             deltaT = model.initial_T_array[2]
         else:
             ## Estimate folding temperature
-            if (model.contact_type == "LJ1210") and (model.n_tables != 0):
-                E = float(sum(model.contact_epsilons[model.LJtype == 1])) - float(sum(model.contact_epsilons[model.LJtype == -1]))
-            else:
-                E = float(sum(model.contact_epsilons))
             N = float(model.n_residues)
+            sign = ((model.pairwise_type == 3).astype(int) + (model.pairwise_type == 5).astype(int)).astype(bool)
+            E = sum(model.model_param_values[sign == False]) - sum(model.model_param_values[sign == True])
             Tf_guess = int(round((36.081061*E/N) + 56.218196)) ## calibration for LJ1210 contacts circa June 2014
             if model.contact_type == "Guassian":
                 T_min = Tf_guess - 60
@@ -316,7 +314,8 @@ def start_next_Tf_loop_iteration(model,append_log):
     ## Update System counters and estimate new Tf
     model.iteration += 1
     ## Estimate folding temperature
-    E = sum(model.model_param_values)
+    sign = ((model.pairwise_type == 3).astype(int) + (model.pairwise_type == 5).astype(int)).astype(bool)
+    E = sum(model.model_param_values[sign == False]) - sum(model.model_param_values[sign == True])
     N = float(model.n_residues)
     Tf_guess = (36.081061*E/N) + 56.218196 ## calibration for LJ1210 contacts circa June 2014
     if model.contact_type == "Gaussian":
