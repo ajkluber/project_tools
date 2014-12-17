@@ -245,7 +245,9 @@ def get_some_iteration_data(name,iteration,n_bins):
 
     params = np.loadtxt("%s/pairwise_params" % Tuse,dtype=float)
     contacts = params[:,:2].astype(int)
+    sign = params[:,4].astype(int)
     epsilons = np.loadtxt("%s/model_params" % Tuse,dtype=float)
+    epsilons[sign == 3] = -1.*epsilons[sign == 3]
 
     loops = contacts[:,1] - contacts[:,0]
     n_residues = len(open("%s/Native.pdb" % name,"r").readlines()) - 1

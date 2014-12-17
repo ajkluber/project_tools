@@ -22,6 +22,14 @@ def save_solution_data(solutions,Lambdas,nrm_soln,nrm_resd,norm_eps,condition_nu
     np.savetxt("singular_values.dat",s)
     #np.savetxt("condition_num.dat",condition_number)
 
+    plot_singular_values(s)
+    plt.savefig("singular_values.png")
+    plt.savefig("singular_values.pdf")
+
+    plot_log_singular_values(s)
+    plt.savefig("log_singular_values.png")
+    plt.savefig("log_singular_values.pdf")
+
     plot_Lcurve(nrm_resd,nrm_soln,Lambdas)
     plt.savefig("Lcurve.png")
     plt.savefig("Lcurve.pdf")
@@ -37,6 +45,22 @@ def save_solution_data(solutions,Lambdas,nrm_soln,nrm_resd,norm_eps,condition_nu
     plot_solutions(Lambdas,solutions)
     plt.savefig("solutions.png")
     plt.savefig("solutions.pdf")
+
+def plot_singular_values(s):
+
+    plt.figure()
+    plt.plot(s/max(s),'ro') 
+    plt.title("singular values")
+    plt.xlabel("i",fontsize=16)
+    plt.ylabel("singular value",fontsize=16)
+
+def plot_log_singular_values(s):
+
+    plt.figure()
+    plt.plot(np.log10(s/max(s)),'ro') 
+    plt.title("singular values")
+    plt.xlabel("i",fontsize=16)
+    plt.ylabel("log(singular value)",fontsize=16)
     
 def plot_solutions(Lambdas,solutions):
 

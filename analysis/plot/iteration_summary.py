@@ -64,7 +64,9 @@ def get_iteration_data(name,iteration):
 
     params = np.loadtxt("%s/pairwise_params" % Tuse,dtype=float)
     contacts = params[:,:2].astype(int)
+    sign = params[:,4].astype(int)
     epsilons = np.loadtxt("%s/model_params" % Tuse,dtype=float)
+    epsilons[sign == 3] = -1.*epsilons[sign == 3]
 
     epsilon_map = np.zeros((n_residues,n_residues))
     for i in range(len(contacts)):
@@ -318,4 +320,4 @@ if __name__ == "__main__":
     plt.suptitle("%s iteration %d" % (name,iteration))
     plt.savefig("%s/iteration_%d/summary/summary_%s_%d.pdf" % (name,iteration,name,iteration))
     plt.savefig("%s/iteration_%d/summary/summary_%s_%d.png" % (name,iteration,name,iteration))
-    plt.show()
+    #plt.show()
