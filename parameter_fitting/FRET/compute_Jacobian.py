@@ -34,22 +34,30 @@ def return_temp_file_value():
         return np.loadtxt("fitting_temperature.txt")
     else:
         print "No fitting_temperature specified, using default T=0"
-        return 0
-        
+        return -1000
+
+def check_temp(fit_temp):
+    if fit_temp == -1000:
+        if def_temp == -1000:
+            add_error_log("ERROR, never changed default temperature")           
+        else:
+            fit_temp = def_temp
+    return fit_temp
+            
 def_temp = return_temp_file_value()
 defspacing = 0.1 ## in nm
-
 
 def calc_sim_bins(model,residues=FRET_pairs,fit_temp=def_temp,spacing=defspacing):
     """calc_sim_bins calculates and writes the simulation files """
     ##assumes you are in the folder containing the model subdir
     print "Calculating Simulation FRET bins"
+    fit_temp = check_temp(fit_temp)
     cwd = os.getcwd()
     subdir = model.subdir
     iteration = model.iteration
     
     sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
-    subtemp = "%s/%d_%d" % (sub,fit_temp,iteration)
+    subtemp = "%s/%d_0" % (sub,fit_temp)
     subdirec = "%s/fitting_%d" % (sub,iteration)
     
     if not os.path.isdir(subdirec):
@@ -78,6 +86,7 @@ def calc_sim_bins(model,residues=FRET_pairs,fit_temp=def_temp,spacing=defspacing
 
 def get_sim_params(model,fit_temp=def_temp):
     ##assumes you are in the folder containing the model subdir
+    fit_temp = check_temp(fit_temp)
     cwd = os.getcwd()
     subdir = model.subdir
     iteration = model.iteration
@@ -95,6 +104,7 @@ def get_sim_params(model,fit_temp=def_temp):
     return num_bins, ran_size, spacing
 
 def get_sim_centers(model,fit_temp=def_temp): 
+    fit_temp = check_temp(fit_temp)
     cwd = os.getcwd()
     subdir = model.subdir
     iteration = model.iteration
@@ -107,6 +117,7 @@ def get_sim_centers(model,fit_temp=def_temp):
     return np.loadtxt(simfile)
 
 def get_sim_array(model,fit_temp=def_temp):
+    fit_temp = check_temp(fit_temp)
     cwd = os.getcwd()
     subdir = model.subdir
     iteration = model.iteration
@@ -180,11 +191,12 @@ def add_error_log(note):
         f.write(note)
         f.write("\n")
         f.close()
-    print "ERROR: CHECK LOG \n"
+    print "ERROR: CHECK LOG \n %s" % note
 
         
 def get_target_feature(model,fit_temp=def_temp):
     """ Get target features """
+    fit_temp = check_temp(fit_temp)
     cwd = os.getcwd()
     subdir = model.subdir
     iteration = model.iteration
@@ -218,12 +230,13 @@ def get_target_feature(model,fit_temp=def_temp):
 
 def calculate_average_Jacobian(model,residues=FRET_pairs,fit_temp=def_temp):
     """ Calculate the average feature vector (ddG's) and Jacobian """
+    fit_temp = check_temp(fit_temp)
     cwd = os.getcwd()
     subdir = model.subdir
     iteration = model.iteration
     sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
     os.chdir(sub)
-    os.chdir("%d_%d" % (fit_temp,iteration))
+    os.chdir("%d_0" % (fit_temp))
     beta = 1.0 * (GAS_CONSTANT_KJ_MOL*float(fit_temp))
     
     
