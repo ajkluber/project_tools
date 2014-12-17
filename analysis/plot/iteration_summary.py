@@ -25,6 +25,10 @@ colors2 = [('gray')] + [(cm.Blues(i)) for i in xrange(1,256)]
 global new_map2
 new_map2 = matplotlib.colors.LinearSegmentedColormap.from_list('new_map2', colors2, N=256)
 
+#colors3 = [('gray')] + [(cm.Jet(i)) for i in xrange(1,256)]
+#global new_map3
+#new_map3 = matplotlib.colors.LinearSegmentedColormap.from_list('new_map3', colors3, N=256)
+
 def get_contact_probability(name,iteration,n_residues,contacts,state_label,state_bound):
 
     cwd = os.getcwd()
@@ -64,7 +68,7 @@ def get_iteration_data(name,iteration):
 
     params = np.loadtxt("%s/pairwise_params" % Tuse,dtype=float)
     contacts = params[:,:2].astype(int)
-    sign = params[:,4].astype(int)
+    sign = params[:,3].astype(int)
     epsilons = np.loadtxt("%s/model_params" % Tuse,dtype=float)
     epsilons[sign == 3] = -1.*epsilons[sign == 3]
 
@@ -135,10 +139,11 @@ def plot_epsilon_map(name,iteration,epsilons,epsilon_map,contacts,n_residues,ind
         mineps = temp[0]
         maxeps = temp[1]
     else:
-        mineps = 0
+        mineps = min(epsilons)
         maxeps = max(epsilons)
 
-    plt.pcolor(epsilon_map,cmap=new_map2,vmin=mineps,vmax=maxeps)
+    #plt.pcolor(epsilon_map,cmap=new_map2,vmin=mineps,vmax=maxeps)      ## Blues cmap
+    plt.pcolor(epsilon_map,cmap="jet",vmin=mineps,vmax=maxeps)
     cbar = plt.colorbar()
     cbar.set_clim(mineps,maxeps)
     plt.xticks(range(0,n_residues+1,10))

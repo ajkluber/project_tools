@@ -243,10 +243,10 @@ def get_some_iteration_data(name,iteration,n_bins):
     Tuse = open("%s/iteration_%d/long_temps_last" % (name,iteration),"r").readlines()[0].rstrip("\n")
     Tf = float(open("%s/iteration_%d/long_Tf" % (name,iteration),"r").read().rstrip("\n"))
 
-    params = np.loadtxt("%s/pairwise_params" % Tuse,dtype=float)
+    params = np.loadtxt("%s/iteration_%d/%s/pairwise_params" % (name,iteration,Tuse),dtype=float)
     contacts = params[:,:2].astype(int)
     sign = params[:,4].astype(int)
-    epsilons = np.loadtxt("%s/model_params" % Tuse,dtype=float)
+    epsilons = np.loadtxt("%s/iteration_%d/%s/model_params" % (name,iteration,Tuse),dtype=float)
     epsilons[sign == 3] = -1.*epsilons[sign == 3]
 
     loops = contacts[:,1] - contacts[:,0]
@@ -415,6 +415,6 @@ if __name__ == "__main__":
     print "  plotting dQi/dQ vs Q        saving %s/iteration_%d/plots/dQidQ_loops_%s_%d.png" % (name,iteration,name,iteration)
     plot_QivsQ(name,iteration,Qbins,Qi_vs_Q,n_bins,epsilons,loops,state_bounds)
 
-    plt.show()
+    #plt.show()
 
 

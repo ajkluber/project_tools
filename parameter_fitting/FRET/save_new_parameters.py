@@ -5,10 +5,10 @@
 
 import numpy as np
 import os
-import analysis_scripts.plot_depsilon_native as eplot
 
 def save(model,soln_index):
     """ Save new parameters """
+    import analysis_scripts.plot_depsilon_native as eplot
     
     cwd = os.getcwd()
     eps0 = model.pairwise_strengths
