@@ -174,6 +174,7 @@ def get_args():
     new_parser = sp.add_parser('new')
     new_parser.add_argument('--pdbs', type=str, required=True, nargs='+',help='PDBs to start simulations.')
     new_parser.add_argument('--pairwise_params_file', type=str, default="None", help='Optional, specify pairwise interactions.')
+    new_parser.add_argument('--contacts', type=str, default="None", help='Specify contacts.')
     new_parser.add_argument('--model_params_file', type=str, default="None", help='Optional, specify model parameters.')
     new_parser.add_argument('--epsilon_bar', type=float,help='Optional, average strength of contacts. epsilon bar.')
     new_parser.add_argument('--fitting_solver', type=str, default="Levenberg", help='Optional, specify solution algorithm for fitting.')

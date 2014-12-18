@@ -14,6 +14,11 @@ def save(model,soln_index):
     cwd = os.getcwd()
     eps0 = model.pairwise_strengths
     deps = np.loadtxt("xp_%d.dat" % soln_index)
+    factor = np.max(np.abs(deps/eps0))
+    
+    if factor > 0.2:
+        deps = (deps*0.2) / factor
+        print "Scaling down to 0.2 by norm"
     
     eplot.plot_epsilons_bin(deps,"d-epsilon",model)
     eplot.plot_epsilons(deps,"d-epsilon",model)
