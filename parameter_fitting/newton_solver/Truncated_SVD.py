@@ -19,7 +19,7 @@ import numpy as np
 import save_and_plot
 
 def find_solutions(model,method):
-
+    cplex = False
     target_feature = np.loadtxt("target_feature.dat")
     target_feature_err = np.loadtxt("target_feature_err.dat")
     sim_feature = np.loadtxt("sim_feature.dat")
@@ -28,7 +28,7 @@ def find_solutions(model,method):
     Jacobian_err = np.loadtxt("Jacobian_err.dat")
     J = Jacobian
 
-    epsilons = model.contact_epsilons
+    epsilons = model.model_param_values
     norm_eps = np.linalg.norm(epsilons)
 
     ## Normalize the target step. 
