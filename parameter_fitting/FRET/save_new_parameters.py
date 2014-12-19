@@ -16,8 +16,8 @@ def save(model,soln_index):
     deps = np.loadtxt("xp_%d.dat" % soln_index)
     factor = np.max(np.abs(deps/eps0))
     
-    if factor > 0.2:
-        deps = (deps*0.2) / factor
+    if factor > 0.25:
+        deps = (deps*0.25) / factor
         print "Scaling down to 0.2 by norm"
     
     eplot.plot_epsilons_bin(deps,"d-epsilon",model)
@@ -35,8 +35,32 @@ def save(model,soln_index):
     plt.title("spared of epsilons", fontsize=20)
     plt.savefig("eps_spread.png")
     
+    estimate_lambda()
     open("%s/pairwise_params" % cwd,"w").write(model.pairwise_param_file_string)
     open("%s/model_params" % cwd,"w").write(model.model_param_file_string)
     model.contact_params_file_location = "%s/pairwise_params" % cwd
     model.model_params_file_location = "%s/model_params" % cwd
+
+def estimate_lambda():
+    svs = np.loadtxt("singular_values.dat")
+    index = 0
+    num = np.shape(svs)[0]
+    cwd = os.getcwd()
+    for i in range(num-1):
+        if svs[i]/svs[i+1] > 10000:
+            index = num - i - 1
+    open("%s/Lambda_index.txt"%cwd, "w").write("%d"%index)
+    print "biggest difference is for a value of %f and %f" % (svs[num-1-index], svs[num-index]) 
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+    
 
