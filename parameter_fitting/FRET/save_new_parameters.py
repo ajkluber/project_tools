@@ -14,11 +14,13 @@ def save(model,soln_index):
     cwd = os.getcwd()
     eps0 = model.pairwise_strengths
     deps = np.loadtxt("xp_%d.dat" % soln_index)
-    factor = np.max(np.abs(deps/eps0))
+    factor = np.linalg.norm(deps)/np.linalg.norm(eps0)
     
-    if factor > 0.25:
-        deps = (deps*0.25) / factor
-        print "Scaling down to 0.2 by norm"
+    if factor > 0.15:
+        max_step = np.max(np.abs(deps/eps0))
+        max_step_factor = 0.2
+        deps = (deps*max_step_factor) / max_step
+        print "Scaling down to 0.2 by maximum step"
     
     eplot.plot_epsilons_bin(deps,"d-epsilon",model)
     eplot.plot_epsilons(deps,"d-epsilon",model)
@@ -35,7 +37,7 @@ def save(model,soln_index):
     plt.title("spared of epsilons", fontsize=20)
     plt.savefig("eps_spread.png")
     
-    estimate_lambda()
+    #estimate_lambda()
     open("%s/pairwise_params" % cwd,"w").write(model.pairwise_param_file_string)
     open("%s/model_params" % cwd,"w").write(model.model_param_file_string)
     model.contact_params_file_location = "%s/pairwise_params" % cwd
