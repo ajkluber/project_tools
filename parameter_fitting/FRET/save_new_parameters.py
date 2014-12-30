@@ -16,7 +16,7 @@ def save(model,soln_index):
     deps = np.loadtxt("xp_%d.dat" % soln_index)
     factor = np.linalg.norm(deps)/np.linalg.norm(eps0)
     
-    if factor > 0.15:
+    if factor > 0.2:
         max_step = np.max(np.abs(deps/eps0))
         max_step_factor = 0.2
         deps = (deps*max_step_factor) / max_step
