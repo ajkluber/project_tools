@@ -14,13 +14,20 @@ def save(model,soln_index):
     cwd = os.getcwd()
     eps0 = model.pairwise_strengths
     deps = np.loadtxt("xp_%d.dat" % soln_index)
-    factor = np.linalg.norm(deps)/np.linalg.norm(eps0)
     
-    if factor > 0.2:
+    ##calculate the scaling based upon what would actually happen: if it's already at 0.01, and goes more negative, now it effectively shows a deps there of 0, and not some arbitrarily large number
+    neweps_effective = eps0 + deps
+    neweps_effective[neweps_effective < 0.01] = 0.01
+    deps_effective = neweps_effective - eps0
+    
+    
+    factor = np.linalg.norm(deps_effective)/np.linalg.norm(eps0)
+        
+    if factor > 0.3:
         max_step = np.max(np.abs(deps/eps0))
-        max_step_factor = 0.2
+        max_step_factor = 0.3
         deps = (deps*max_step_factor) / max_step
-        print "Scaling down to 0.2 by maximum step"
+        print "Scaling down to 0.3 by maximum step"
     
     eplot.plot_epsilons_bin(deps,"d-epsilon",model)
     eplot.plot_epsilons(deps,"d-epsilon",model)
