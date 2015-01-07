@@ -71,7 +71,7 @@ def find_solutions(model,method,scaling=False):
     if np.log10(min(s)) < -10:
         smin = -10
     else:
-        smin = np.log10(min(s))
+        smin = np.log10(min(s)) - 2
     ## The damping parameter, lambda, is scanned from below the smallest
     ## singular value to above the largest singular value.
     ## The contributions from singular values less than the damping 
