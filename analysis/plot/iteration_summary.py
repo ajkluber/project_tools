@@ -76,6 +76,10 @@ def get_iteration_data(name,iteration):
     for i in range(len(contacts)):
         epsilon_map[contacts[i,1]-1,contacts[i,0]-1] = epsilons[i] 
 
+    ## TODO:
+    ##  - Should use pmf from data actually used in calculation not wham pmf.
+
+
     for line in open("short_wham/free.config","r"):
         if line.startswith("startTF"):
             startTF = float(line.split()[1])
@@ -272,11 +276,11 @@ if __name__ == "__main__":
 
     Contact_maps = []
     for X in range(len(state_labels)):
-        print " Saving: %s/iteration_%d/contact_prob_%s.pdf          - %s contact probabilities" % (name,iteration,state_labels[X],state_labels[X])
         plt.figure()
         contact_probability = get_contact_probability(name,iteration,n_residues,contacts,state_labels[X],state_bounds[X])
         plot_contact_probability(name,iteration,n_residues,contacts,state_labels[X],state_bounds[X],contact_probability,individual=True)
         Contact_maps.append(contact_probability)
+        print " Saving: %s/iteration_%d/contact_prob_%s.pdf          - %s contact probabilities" % (name,iteration,state_labels[X],state_labels[X])
         plt.savefig("%s/iteration_%d/summary/contact_prob_%s.pdf" % (name,iteration,state_labels[X]))
         plt.savefig("%s/iteration_%d/summary/contact_prob_%s.png" % (name,iteration,state_labels[X]))
         plt.close()

@@ -17,7 +17,10 @@ def save(model,soln_index):
     ## is 0.2.
     nrm_model_params = np.linalg.norm(eps_p_0)
     ratio = np.linalg.norm(deps_p)/nrm_model_params
-    alpha = 0.2/ratio
+    if ratio > 0.2:
+        alpha = 0.2/ratio
+    else:
+        alpha = 1.
     neweps_p = eps_p_0 + alpha*deps_p       
     
     ## For the non-native interactions set the neweps_p to be

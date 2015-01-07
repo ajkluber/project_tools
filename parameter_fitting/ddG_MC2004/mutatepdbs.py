@@ -254,7 +254,7 @@ def calculate_contacts_lost_for_mutants():
     Cmap = np.zeros(Cwt.shape,int)
     contacts = np.loadtxt("contacts",dtype=int) 
     if contacts.shape[1] == 4:
-        contacts = contacts[:,0:3:2]
+        contacts = contacts[:,0:3:2] ## Is that right?
     for pair in contacts:
         Cmap[pair[0]-1,pair[1]-1] = 1
 
