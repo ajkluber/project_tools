@@ -451,7 +451,7 @@ def determine_walltime(model):
     else:
         if N > 100:
             if N > 200:
-                walltime="15:00:00"
+                walltime="16:00:00"
             else:
                 walltime="5:00:00"
         else:
