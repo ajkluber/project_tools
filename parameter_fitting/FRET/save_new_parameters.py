@@ -22,10 +22,10 @@ def save(model,soln_index):
     
     
     factor = np.linalg.norm(deps_effective)/np.linalg.norm(eps0)
+    max_step = np.max(np.abs(deps_effective/eps0))
+    max_step_factor = 0.3
         
     if factor > 0.3:
-        max_step = np.max(np.abs(deps/eps0))
-        max_step_factor = 0.3
         deps = (deps*max_step_factor) / max_step
         print "Scaling down to 0.3 by maximum step"
     
