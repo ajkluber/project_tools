@@ -88,8 +88,8 @@ def plot_Qgroups_vs_Q(name,iteration,groupset,Qgrp_indxs,n_grps,grp_labels,color
     plt.ylabel("$Q_{group}$",fontsize=20)
     lg = plt.legend(loc=2)
     lg.draw_frame(False)
-    plt.savefig("%s/Mut_%d/Qgroups_%d/QgroupvsQ_%s_%d.pdf" % (name,iteration,groupset,name,iteration))
-    plt.savefig("%s/Mut_%d/Qgroups_%d/QgroupvsQ_%s_%d.png" % (name,iteration,groupset,name,iteration))
+    plt.savefig("%s/iteration_%d/Qgroups_%d/QgroupvsQ_%s_%d.pdf" % (name,iteration,groupset,name,iteration))
+    plt.savefig("%s/iteration_%d/Qgroups_%d/QgroupvsQ_%s_%d.png" % (name,iteration,groupset,name,iteration))
 
     plt.figure(2)
     plt.xlim(0,max(Qbins))
@@ -99,8 +99,8 @@ def plot_Qgroups_vs_Q(name,iteration,groupset,Qgrp_indxs,n_grps,grp_labels,color
     plt.ylabel("$Q_{group}$",fontsize=20)
     lg = plt.legend(loc=2)
     lg.draw_frame(False)
-    plt.savefig("%s/Mut_%d/Qgroups_%d/QgroupvsQ_nrm_%s_%d.pdf" % (name,iteration,groupset,name,iteration))
-    plt.savefig("%s/Mut_%d/Qgroups_%d/QgroupvsQ_nrm_%s_%d.png" % (name,iteration,groupset,name,iteration))
+    plt.savefig("%s/iteration_%d/Qgroups_%d/QgroupvsQ_nrm_%s_%d.pdf" % (name,iteration,groupset,name,iteration))
+    plt.savefig("%s/iteration_%d/Qgroups_%d/QgroupvsQ_nrm_%s_%d.png" % (name,iteration,groupset,name,iteration))
     plt.show()
 
     return Qgrp_vs_Q,Qgrp_vs_Q_nrm
@@ -183,15 +183,15 @@ if __name__ == '__main__':
     for n in range(len(iterations)):
         iteration = iterations[n]
         savestring += "_%d" % iteration
-        if not os.path.exists("%s/Mut_%d/Qgroups_%d" % (name,iteration,groupset)):
-            os.mkdir("%s/Mut_%d/Qgroups_%d" % (name,iteration,groupset))
+        if not os.path.exists("%s/iteration_%d/Qgroups_%d" % (name,iteration,groupset)):
+            os.mkdir("%s/iteration_%d/Qgroups_%d" % (name,iteration,groupset))
 
         ## Get some iteration data
         epsilons, loops, n_residues, contacts, n_contacts, Tf, state_labels, state_bounds, Qbins, Qi_vs_Q = get_some_iteration_data(name,iteration,n_bins)
 
         ## Plot Qgroups vs Q
         print "  plotting Qgroups vs Q for groupset %d" % groupset
-        print "    saving as: %s/Mut_%d/Qgroups_%d/QgroupvsQ_nrm_%s_%d.pdf" % (name,iteration,groupset,name,iteration)
+        print "    saving as: %s/iteration_%d/Qgroups_%d/QgroupvsQ_nrm_%s_%d.pdf" % (name,iteration,groupset,name,iteration)
         Qgrp_vs_Q, Qgrp_vs_Q_nrm = plot_Qgroups_vs_Q(name,iteration,groupset,Qgrp_indxs,n_grps,grp_labels,colors,Qbins,Qi_vs_Q)
         All_QgrpsvsQ.append(Qgrp_vs_Q)
         All_QgrpsvsQ_nrm.append(Qgrp_vs_Q_nrm)

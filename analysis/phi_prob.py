@@ -34,7 +34,7 @@ def calculate_phi_values(name,iteration):
         phi_contact = (TS - U)/(N - U)
         for i in range(n_residues):
             ## Average over contact formation for all contacts that residue i participates in.
-            contacts_for_residue = ((conts[:,0] == (i+1)).astype(int) + (conts[:,1] == (i+1)).astype(int)).astype(bool)
+            contacts_for_residue = ((contacts[:,0] == (i+1)).astype(int) + (contacts[:,1] == (i+1)).astype(int)).astype(bool)
 
             if np.any(contacts_for_residue):
                 phi_res[i] = np.mean(phi_contact[contacts_for_residue])

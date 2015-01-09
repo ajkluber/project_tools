@@ -27,15 +27,18 @@ if __name__ == "__main__":
     name = args.name
     iteration = args.iteration
 
-
     phi = phi_prob.calculate_phi_values(name,iteration)
 
     element, bounds = get_sec_structure(name)
 
     phi_ss = []
     print "Element     Seq. Bounds  Phi"
+    output = "Element     Seq. Bounds  Phi\n"
     for i in range(len(element)):
         temp = np.mean(phi[bounds[i,0]:bounds[i,1]])
         phi_ss.append(temp)
         print "%-9s   %4d %4d   %.4f " % (element[i],bounds[i,0],bounds[i,1],temp)
+        output += "%-9s   %4d %4d   %.4f \n" % (element[i],bounds[i,0],bounds[i,1],temp)
+
+    open("%s/iteration_%d/phi_ss" % (name,iteration),"w").write(output)
 
