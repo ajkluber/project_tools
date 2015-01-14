@@ -283,17 +283,12 @@ def folding_temperature_loop_extension(model,append_log,new=False):
             deltaT = model.initial_T_array[2]
         else:
             ## Estimate folding temperature
+            E = -model.native_stability
             N = float(model.n_residues)
-            sign = ((model.pairwise_type == 3).astype(int) + (model.pairwise_type == 5).astype(int)).astype(bool)
-            E = sum(model.model_param_values[sign == False]) - sum(model.model_param_values[sign == True])
             Tf_guess = int(round((36.081061*E/N) + 56.218196)) ## calibration for LJ1210 contacts circa June 2014
-            if model.contact_type == "Guassian":
-                T_min = Tf_guess - 60
-                T_max = Tf_guess + 10
-            else:
-                T_min = Tf_guess - 20
-                T_max = Tf_guess + 20
-            deltaT = 4
+            T_min = Tf_guess - 16
+            T_max = Tf_guess + 16
+            deltaT = 2
     else:
         ## Use previous range to determine new range. 
         T_min, T_max, deltaT = determine_new_T_array()
@@ -314,19 +309,14 @@ def start_next_Tf_loop_iteration(model,append_log):
     ## Update System counters and estimate new Tf
     model.iteration += 1
     ## Estimate folding temperature
-    sign = ((model.pairwise_type == 3).astype(int) + (model.pairwise_type == 5).astype(int)).astype(bool)
-    E = sum(model.model_param_values[sign == False]) - sum(model.model_param_values[sign == True])
+    E = -model.native_stability
     N = float(model.n_residues)
     Tf_guess = (36.081061*E/N) + 56.218196 ## calibration for LJ1210 contacts circa June 2014
-    if model.contact_type == "Gaussian":
-        T_min = Tf_guess - 60
-        T_max = Tf_guess + 10
-    else:
-        T_min = Tf_guess - 20
-        T_max = Tf_guess + 20
+    T_min = Tf_guess - 16
+    T_max = Tf_guess + 16
     T_min = int(round(T_min))
     T_max = int(round(T_max))
-    deltaT = 4
+    deltaT = 2
 
     cwd = os.getcwd()
     sub = "%s/iteration_%d" % (model.name,model.iteration)
