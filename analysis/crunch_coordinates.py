@@ -27,10 +27,10 @@ def crunch_Q(name,contact_type,walltime="00:01:00",ppn="1",queue="serial"):
     contact_pbs +="cd $PBS_O_WORKDIR\n"
     if contact_type == "Gaussian":
         #contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -noshortcut -abscut -cut 0.1 -qiformat list \n'
-        contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -o Q -noshortcut -abscut -cut 0.1\n'
+        contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n native_contacts.ndx -o Q -noshortcut -abscut -cut 0.1\n'
     else:
         #contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -noshortcut -noabscut -cut 0.2 -qiformat list \n'
-        contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -o Q -noshortcut -noabscut -cut 0.2\n'
+        contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n native_contacts.ndx -o Q -noshortcut -noabscut -cut 0.2\n'
     #contact_pbs +='mv qimap.out qimap.dat\n'
     contact_pbs +='mv Q.out Q.dat\n'
     open("contacts.pbs","w").write(contact_pbs)
@@ -38,7 +38,7 @@ def crunch_Q(name,contact_type,walltime="00:01:00",ppn="1",queue="serial"):
     sb.call(qsub.split(),stdout=open("contacts.out","w"),stderr=open("contacts.err","w"))
     
 
-def crunch_all(name,contact_type,walltime="00:02:00",ppn="1",n_tables=0):
+def crunch_all(name,contact_type,walltime="00:01:00",ppn="1",n_tables=0):
     ''' Submit PBS job to calculate observables
 
     Calculates rmsd, radius gyration, dihedrals, and potential energy with 
@@ -62,7 +62,7 @@ def crunch_all(name,contact_type,walltime="00:02:00",ppn="1",n_tables=0):
         #analysis_pbs +='echo -e "0\n0" | g_rms -f traj.xtc -s topol_4.6.tpr -o rmsd.xvg -nomw -xvg none -n index.ndx\n'
         #analysis_pbs +='echo "1" | g_gyrate -f traj.xtc -s topol_4.6.tpr -o radius_gyration.xvg -xvg none\n'
         if n_tables != 0:
-            analysis_pbs +='echo "1 3 4 5 9" | g_energy -f ener.edr -o energyterms -xvg none\n'
+            analysis_pbs +='echo "1 3 4 5 7" | g_energy -f ener.edr -o energyterms -xvg none\n'
             #analysis_pbs +='echo "12" | g_energy -f ener.edr -o temperature -xvg none\n'
         else:
             analysis_pbs +='echo "1 2 3 4 8" | g_energy -f ener.edr -o energyterms -xvg none\n'

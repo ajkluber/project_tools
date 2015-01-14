@@ -25,8 +25,6 @@ DEPRECATED AUG 2014
 
 """
 
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import os
 import numpy as np

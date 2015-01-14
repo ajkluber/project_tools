@@ -153,7 +153,8 @@ class MatysiakClementi2004(ProjectManager):
             open("%s/clean_noH.pdb" % model.subdir,"w").write(model.cleanpdb_full_noH)
             open("%s/%s.pdb" % (model.subdir,model.subdir),"w").write(model.cleanpdb_full_noH)
             np.savetxt("%s/contact_map.dat" % (model.subdir),model.Qref,delimiter=" ",fmt="%1d")
-            np.savetxt("%s/contacts.dat" % (model.subdir),model.contacts,delimiter=" ",fmt="%4d")
+            np.savetxt("%s/contacts.dat" % (model.subdir),model.pairs,delimiter=" ",fmt="%4d")
+            np.savetxt("%s/pairs.dat" % (model.subdir),model.pairs,delimiter=" ",fmt="%4d")
 
         for k in range(len(Models)):
             model = Models[k]
@@ -174,12 +175,14 @@ def get_args():
     new_parser = sp.add_parser('new')
     new_parser.add_argument('--pdbs', type=str, required=True, nargs='+',help='PDBs to start simulations.')
     new_parser.add_argument('--pairwise_params_file', type=str, default="None", help='Optional, specify pairwise interactions.')
-    new_parser.add_argument('--contacts', type=str, default="None", help='Specify contacts.')
+    new_parser.add_argument('--pairs', type=str, default="None", help='Specify pairs.')
+    new_parser.add_argument('--n_native_pairs', type=str, default="None", help='Number of native pairs.')
     new_parser.add_argument('--model_params_file', type=str, default="None", help='Optional, specify model parameters.')
-    new_parser.add_argument('--epsilon_bar', type=float,help='Optional, average strength of contacts. epsilon bar.')
+    new_parser.add_argument('--epsilon_bar', type=float,help='Optional, average strength of pairs. epsilon bar.')
     new_parser.add_argument('--fitting_solver', type=str, default="Levenberg", help='Optional, specify solution algorithm for fitting.')
     new_parser.add_argument('--fitting_includes', type=str, nargs='+', default="None", help='Optional, specify directories included in fitting.')
-    new_parser.add_argument('--fitting_allowswitch', type=str, default="False", help='Optional, allow contacts to switch between attractive/repulsive in fitting.')
+    new_parser.add_argument('--fitting_allowswitch', type=str, default="False", help='Optional, allow pair to switch between attractive/repulsive in fitting.')
+    new_parser.add_argument('--fitting_params_file', type=str, default="False", help='Optional, specify which model parameters to alter in fitting.')
     new_parser.add_argument('--disulfides', type=int, nargs='+', help='Optional pairs of disulfide linked residues.')
     new_parser.add_argument('--temparray', type=int, nargs='+',help='Optional initial temp array: T_min T_max deltaT. Default: predicts now')
     new_parser.add_argument('--dry_run', action='store_true', help='Add this option for dry run. No simulations started.')

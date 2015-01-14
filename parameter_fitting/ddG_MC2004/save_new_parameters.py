@@ -8,17 +8,26 @@ import os
 
 def save(model,soln_index):
     ''' Save new parameters '''
+
+    ## Only the fitting_params (a subset of model_params) are
+    ## being updated.
+
     ## Use new method of model_parameters
-    eps_p_0 = model.model_param_values
+    eps_p_0 = model.model_param_values[model.fitting_params]
     deps_p = np.loadtxt("xp_%d.dat" % soln_index)
 
     ## Scale model parameters by a constant such that the ratio 
     ## of the norm of the perturbation to the norm of the parameters
     ## is 0.2.
+    if os.path.exists("desired_ratio"):
+        desired_ratio = np.loadtxt("desired_ratio")
+    else:
+        desired_ratio = 0.2
+
     nrm_model_params = np.linalg.norm(eps_p_0)
     ratio = np.linalg.norm(deps_p)/nrm_model_params
-    if ratio > 0.2:
-        alpha = 0.2/ratio
+    if ratio > desired_ratio:
+        alpha = desired_ratio/ratio
     else:
         alpha = 1.
     neweps_p = eps_p_0 + alpha*deps_p       

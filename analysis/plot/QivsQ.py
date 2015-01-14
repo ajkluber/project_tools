@@ -54,6 +54,12 @@ import matplotlib.cm as cm
 import os
 import argparse
 
+import extract_params 
+
+global SKIP_INTERACTIONS
+SKIP_INTERACTIONS = [1,8,9]
+
+
 def plot_kinetic_mechanism():
     ''' The kinetic mechanism is defined as the mechanism of only successful or
         "reactive" trajectories (i.e. those that traverse from unfolded to
@@ -241,13 +247,12 @@ def some_old_plot_Qgroups():
 def get_some_iteration_data(name,iteration,n_bins):
     ''' Get summary data for iteration '''
     Tuse = open("%s/iteration_%d/long_temps_last" % (name,iteration),"r").readlines()[0].rstrip("\n")
-    Tf = float(open("%s/iteration_%d/long_Tf" % (name,iteration),"r").read().rstrip("\n"))
 
-    params = np.loadtxt("%s/iteration_%d/%s/pairwise_params" % (name,iteration,Tuse),dtype=float)
-    contacts = params[:,:2].astype(int)
-    sign = params[:,4].astype(int)
-    epsilons = np.loadtxt("%s/iteration_%d/%s/model_params" % (name,iteration,Tuse),dtype=float)
-    epsilons[sign == 3] = -1.*epsilons[sign == 3]
+
+    pair_file = "%s/iteration_%d/%s/pairwise_params" % (name,iteration,Tuse)
+    param_file = "%s/iteration_%d/%s/model_params" % (name,iteration,Tuse)
+
+    contacts, epsilons = extract_params.get_contacts_epsilons(pair_file,param_file)
 
     loops = contacts[:,1] - contacts[:,0]
     n_residues = len(open("%s/Native.pdb" % name,"r").readlines()) - 1
@@ -263,7 +268,7 @@ def get_some_iteration_data(name,iteration,n_bins):
     ## Calculate or load cont. prob. Qi versus reaction coordinate, Q.
     Qbins, Qi_vs_Q = get_contact_probability_versus_Q(name,iteration,n_bins)
 
-    return epsilons, loops, n_residues, contacts, n_contacts, Tf, state_labels, state_bounds, Qbins, Qi_vs_Q
+    return epsilons, loops, n_residues, contacts, n_contacts, state_labels, state_bounds, Qbins, Qi_vs_Q
 
 def get_contact_probability_versus_Q(name,iteration,n_bins):
     ''' Get the contact probabilities versus Q
@@ -403,7 +408,7 @@ if __name__ == "__main__":
         os.mkdir("%s/iteration_%d/plots" % (name,iteration))
 
     ## Get some iteration data
-    epsilons, loops, n_residues, contacts, n_contacts, Tf, state_labels, state_bounds, Qbins, Qi_vs_Q = get_some_iteration_data(name,iteration,n_bins)
+    epsilons, loops, n_residues, contacts, n_contacts, state_labels, state_bounds, Qbins, Qi_vs_Q = get_some_iteration_data(name,iteration,n_bins)
 
     print "  plotting route measure.     saving %s/iteration_%d/plots/route_%s_%d.png" % (name,iteration,name,iteration)
     plot_route_measure(name,iteration,Qbins,Qi_vs_Q,n_bins)

@@ -25,42 +25,41 @@ def add_secondary_struct_icons(ax,elements,seqbounds):
         element = elements[i]
         bounds = seqbounds[i]
 
-        struct = element.split("_")[0]
-        number = element.split("_")[1]
-        
-        if struct == "beta":
-            xpos = bounds[0]
-            #ypos = -7
-            ypos = -3
-            xdim = bounds[1] - bounds[0]
-            ydim = 2
+        if element.startswith("beta") or element.startswith("alpha"):
+            struct = element.split("_")[0]
+            number = element.split("_")[1]
+            
+            if struct == "beta":
+                xpos = bounds[0]
+                #ypos = -7
+                ypos = -3
+                xdim = bounds[1] - bounds[0]
+                ydim = 2
 
-            ## Add to x-axis
-            patch1 = mpatches.Rectangle((xpos,ypos), xdim, ydim, facecolor="blue",alpha=0.7,ec='k')
-            #ax.text(float(xpos)+0.3*float(xdim), ypos-4,"$\\beta %s$" % number, size=18)
-            ax.text(float(xpos)+0.3*float(xdim), ypos-3,"$\\beta %s$" % number, size=18)
+                ## Add to x-axis
+                patch1 = mpatches.Rectangle((xpos,ypos), xdim, ydim, facecolor="blue",alpha=0.7,ec='k')
+                #ax.text(float(xpos)+0.3*float(xdim), ypos-4,"$\\beta %s$" % number, size=18)
+                ax.text(float(xpos)+0.3*float(xdim), ypos-3,"$\\beta %s$" % number, size=18)
 
-            ## Add to y-axis
-            patch2 = mpatches.Rectangle((ypos,xpos), ydim, xdim, facecolor="blue",alpha=0.7,ec='k')
-            #ax.text(ypos-7, float(xpos)+0.2*float(xdim),"$\\beta %s$" % number, size=18)
-            ax.text(ypos-3, float(xpos)+0.2*float(xdim),"$\\beta %s$" % number, size=18)
-        elif struct == "alpha":
-            xpos = bounds[0]
-            #ypos = -6
-            ypos = -3
-            xdim = bounds[1] - bounds[0]
+                ## Add to y-axis
+                patch2 = mpatches.Rectangle((ypos,xpos), ydim, xdim, facecolor="blue",alpha=0.7,ec='k')
+                #ax.text(ypos-7, float(xpos)+0.2*float(xdim),"$\\beta %s$" % number, size=18)
+                ax.text(ypos-3, float(xpos)+0.2*float(xdim),"$\\beta %s$" % number, size=18)
+            elif struct == "alpha":
+                xpos = bounds[0]
+                #ypos = -6
+                ypos = -3
+                xdim = bounds[1] - bounds[0]
 
-            ## Add to x-axis
-            patch1 = mpatches.Arrow(xpos, ypos, xdim,0, width=8.2,color='red',alpha=0.7,ec='k')
-            #ax.text(float(xpos)+0.3*float(xdim), ypos-5,"$\\alpha %s$" % number, size=18)
-            ax.text(float(xpos)+0.3*float(xdim), ypos-5,"$\\alpha %s$" % number, size=18)
+                ## Add to x-axis
+                patch1 = mpatches.Arrow(xpos, ypos, xdim,0, width=8.2,color='red',alpha=0.7,ec='k')
+                #ax.text(float(xpos)+0.3*float(xdim), ypos-5,"$\\alpha %s$" % number, size=18)
+                ax.text(float(xpos)+0.3*float(xdim), ypos-5,"$\\alpha %s$" % number, size=18)
 
-            ## Add to y-axis
-            patch2 = mpatches.Arrow(ypos, xpos, 0,xdim, width=8.2,color='red',alpha=0.7,ec='k')
-            #ax.text(ypos-8, float(xpos)+0.2*float(xdim),"$\\alpha %s$" % number, size=18)
-            ax.text(ypos-8, float(xpos)+0.2*float(xdim),"$\\alpha %s$" % number, size=18)
-        else:
-            pass
+                ## Add to y-axis
+                patch2 = mpatches.Arrow(ypos, xpos, 0,xdim, width=8.2,color='red',alpha=0.7,ec='k')
+                #ax.text(ypos-8, float(xpos)+0.2*float(xdim),"$\\alpha %s$" % number, size=18)
+                ax.text(ypos-8, float(xpos)+0.2*float(xdim),"$\\alpha %s$" % number, size=18)
 
         ## plot patches to the axis
         ## prevent it being covered by figure background.

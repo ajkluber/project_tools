@@ -115,24 +115,24 @@ class ProjectManager(object):
         subdirs = args.subdirs
         Models = mdb.check_inputs.load_models(subdirs,dry_run=args.dry_run)
 
-        if (args.Tf_temps != None) and (args.Mut_temps != None):
+        if (args.short_temps != None) and (args.long_temps != None):
             print "ERROR!"
-            print "  Specify either --Tf_temps or --Mut_temps. Not both!"
+            print "  Specify either --short_temps or --long_temps. Not both!"
             print "  Exiting"
             raise SystemExit
-        if (args.Tf_temps == None) and (args.Mut_temps == None):
+        if (args.short_temps == None) and (args.long_temps == None):
             print "ERROR!"
-            print "  Specify either --Tf_temps or --Mut_temps."
+            print "  Specify either --short_temps or --long_temps."
             print "  Exiting"
             raise SystemExit
-        if (args.Tf_temps != None):
-            temps = args.Tf_temps
+        if (args.short_temps != None):
+            temps = args.short_temps
             method = "short"
-            print "Extending Tf temps",temps
-        if (args.Mut_temps != None):
-            temps = args.Mut_temps
+            print "Extending short temps",temps
+        if (args.long_temps != None):
+            temps = args.long_temps
             method = "long"
-            print "Extending Mutational temps",temps
+            print "Extending longational temps",temps
 
         for i in range(len(subdirs)):
             model = Models[i]

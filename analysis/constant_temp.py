@@ -52,12 +52,12 @@ def analyze_temperature_array(model,append_log,long=False):
     os.chdir("%s/%s" % (cwd,sub))
     if long:
         temperatures = [ x.rstrip("\n") for x in open("long_temps","r").readlines() ]
-        qwalltime = "00:10:00"
-        cwalltime = "00:07:00"
+        qwalltime = "00:01:00"
+        cwalltime = "00:01:00"
     else:
         temperatures = [ x.rstrip("\n") for x in open("short_temps","r").readlines() ]
-        qwalltime = "00:05:00"
-        cwalltime = "00:03:00"
+        qwalltime = "00:01:00"
+        cwalltime = "00:01:00"
     ppn = "1"
     queue = "serial"
     print "  Analyzing temperatures in", sub
@@ -99,12 +99,12 @@ def check_completion(model,append_log,long=False):
     os.chdir("%s/%s" % (cwd,sub))
     if long == True:
         temperatures = [ x.rstrip("\n") for x in open("long_temps","r").readlines() ]
-        qwalltime = "00:10:00"
-        cwalltime = "00:06:00"
+        qwalltime = "00:01:00"
+        cwalltime = "00:01:00"
     else:
         temperatures = [ x.rstrip("\n") for x in open("short_temps","r").readlines() ]
-        qwalltime = "00:05:00"
-        cwalltime = "00:03:00"
+        qwalltime = "00:01:00"
+        cwalltime = "00:01:00"
     print "  Checking analysis in directory %s" % sub
     for k in range(len(temperatures)):
         tdir = temperatures[k]

@@ -1,3 +1,4 @@
+import os
 import argparse
 import numpy as np
 
@@ -17,16 +18,7 @@ def get_sec_structure(name):
 
     return element, bounds
 
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='.')
-    parser.add_argument('--name', type=str, required=True, help='Name of protein to plot.')
-    parser.add_argument('--iteration', type=int, required=True, help='Iteration to plot.')
-    args = parser.parse_args()
-
-    name = args.name
-    iteration = args.iteration
-
+def calculate_average_phi_ss(name,iteration):
     phi = phi_prob.calculate_phi_values(name,iteration)
 
     element, bounds = get_sec_structure(name)
@@ -40,5 +32,20 @@ if __name__ == "__main__":
         print "%-9s   %4d %4d   %.4f " % (element[i],bounds[i,0],bounds[i,1],temp)
         output += "%-9s   %4d %4d   %.4f \n" % (element[i],bounds[i,0],bounds[i,1],temp)
 
-    open("%s/iteration_%d/phi_ss" % (name,iteration),"w").write(output)
+    outfile = "%s/iteration_%d/phi_ss" % (name,iteration)
+    if not os.path.exists(outfile):
+        open(outfile,"w").write(output)
+
+    return phi_ss
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='.')
+    parser.add_argument('--name', type=str, required=True, help='Name of protein to plot.')
+    parser.add_argument('--iteration', type=int, required=True, help='Iteration to plot.')
+    args = parser.parse_args()
+
+    name = args.name
+    iteration = args.iteration
+
+    calculate_average_phi_ss(name,iteration)
 

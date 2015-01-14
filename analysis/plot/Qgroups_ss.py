@@ -8,11 +8,15 @@ import argparse
 from project_tools.analysis.plot.QivsQ import get_some_iteration_data
 from project_tools.analysis.plot.drawss import add_secondary_struct_icons
 
-def get_secondary_structure_Qgroups(name,iteration,Qbins,Qi_vs_Q,n_bins,contacts,n_contacts,state_labels,state_bounds):
+def get_secondary_structure_Qgroups(name,contacts,n_contacts):
     """ Get Qgroups based on secondary structural elements """ 
 
     if not os.path.exists("%s/Qgroups_ss" % name):
         os.mkdir("%s/Qgroups_ss" % name)
+    if os.path.exists("%s/Qgroups_ss/colors.txt" % name):
+        colors = [ x.rstrip("\n") for x in open("%s/Qgroups_ss/colors.txt" % name,"r").readlines() ] 
+    else: 
+        colors = []
 
     ## Read in secondary structure assignment.
     ss_labels = []
@@ -47,8 +51,7 @@ def get_secondary_structure_Qgroups(name,iteration,Qbins,Qi_vs_Q,n_bins,contacts
                 else:
                     continue
 
-        Qgrp_indxs, colors = plot_Qgroups_ss_map(name,iteration,Qgrp_conts,Qgrp_indxs,n_ss_elements,ss_labels,ss_bounds)
-        temp = []
+        Qgrp_indxs, colors = plot_Qgroups_ss_map(name,Qgrp_conts,Qgrp_indxs,n_ss_elements,ss_labels,ss_bounds,colors)
     else:
         n_groups = len(open("%s/Qgroups_ss/labels.txt" % name, "r").readlines())
         Qgrp_indxs = [ np.loadtxt("%s/Qgroups_ss/group%d.dat" % (name,x),dtype=int) for x in range(n_groups) ]
@@ -56,8 +59,13 @@ def get_secondary_structure_Qgroups(name,iteration,Qbins,Qi_vs_Q,n_bins,contacts
     
     return Qgrp_indxs, colors, ss_labels, ss_bounds
 
-def plot_Qgroups_ss_map(name,iteration,Qgrp_conts,Qgrp_indxs,n_ss_elements,ss_labels,ss_bounds):
+def plot_Qgroups_ss_map(name,Qgrp_conts,Qgrp_indxs,n_ss_elements,ss_labels,ss_bounds,colors):
     """ Plot the ss Qgroups on a contact map and save Qgroups"""
+
+    if colors == []:
+        needcolors = True
+    else:
+        needcolors = False
 
     colornames = matplotlib.colors.cnames.keys()
     fig = plt.figure()
@@ -66,8 +74,8 @@ def plot_Qgroups_ss_map(name,iteration,Qgrp_conts,Qgrp_indxs,n_ss_elements,ss_la
     group_name = ""
     colorstring = ""
     labelstring = ""
-    colors = []
     temp_Qgroups = []
+    color_indx = 0
     for n in range(n_ss_elements):
         for m in range(len(Qgrp_conts[n])):
             if not len(Qgrp_conts[n][m]) == 0:
@@ -75,11 +83,15 @@ def plot_Qgroups_ss_map(name,iteration,Qgrp_conts,Qgrp_indxs,n_ss_elements,ss_la
                 
                 temp_Qgroups.append(np.array(Qgrp_indxs[n][m]).astype(int))
                 labelstring += "%d %d\n" % (n,m)
-                somecolor = colornames[np.random.randint(len(colornames))]
-                while (somecolor in colors):
+                if needcolors:
                     somecolor = colornames[np.random.randint(len(colornames))]
-                colorstring += somecolor + "\n"
-                colors.append(somecolor)
+                    while (somecolor in colors):
+                        somecolor = colornames[np.random.randint(len(colornames))]
+                    colorstring += somecolor + "\n"
+                    colors.append(somecolor)
+                else:
+                    somecolor = colors[color_indx]
+                color_indx += 1
                 
                 for p in range(len(Qgrp_conts[n][m])):
                     if p == 0:
@@ -92,12 +104,9 @@ def plot_Qgroups_ss_map(name,iteration,Qgrp_conts,Qgrp_indxs,n_ss_elements,ss_la
             else:
                 pass
 
-    if not os.path.exists("%s/Qgroups_ss/colors.txt" % name):
+    if needcolors:
         open("%s/Qgroups_ss/colors.txt" % name, "w").write(colorstring)
-    else:
-        colors = [ x.rstrip("\n") for x in open("%s/Qgroup_ss/colors.txt" % name,"r").readlines() ] 
         
-
     open("%s/Qgroups_ss/labels.txt" % name, "w").write(labelstring)
     ticks = []
     for a,b in ss_bounds:
@@ -143,18 +152,18 @@ def plot_secondary_structure_Qgroups(name,iteration,Qbins,Qi_vs_Q,n_bins,contact
     plt.figure(1)
     plt.xlim(0,max(Qbins))
     #plt.ylim(0,1)
-    plt.title("$Q_{group}$ by sec struct %s iteration %d" % (name, iteration),fontsize=18)
+    plt.title("$Q_{ss}$ unnormalized %s iteration %d" % (name, iteration),fontsize=20)
     plt.xlabel("$Q$",fontsize=20)
-    plt.ylabel("$Q_{group}$",fontsize=20)
+    plt.ylabel("$Q_{ss}$",fontsize=20)
     plt.savefig("%s/iteration_%d/plots/QssvsQ_%s_%d.pdf" % (name,iteration,name,iteration))
     plt.savefig("%s/iteration_%d/plots/QssvsQ_%s_%d.png" % (name,iteration,name,iteration))
 
     plt.figure(2)
     plt.xlim(0,max(Qbins))
     plt.ylim(0,1)
-    plt.title("$Q_{group}$ by sec struct %s iteration %d" % (name, iteration),fontsize=18)
+    plt.title("$Q_{ss}$ %s iteration %d" % (name, iteration),fontsize=20)
     plt.xlabel("$Q$",fontsize=20)
-    plt.ylabel("$Q_{group}$",fontsize=20)
+    plt.ylabel("$Q_{ss}$",fontsize=20)
     plt.savefig("%s/iteration_%d/plots/QssvsQ_nrm_%s_%d.pdf" % (name,iteration,name,iteration))
     plt.savefig("%s/iteration_%d/plots/QssvsQ_nrm_%s_%d.png" % (name,iteration,name,iteration))
     plt.show()
@@ -175,10 +184,10 @@ if __name__ == '__main__':
         os.mkdir("%s/iteration_%d/plots" % (name,iteration))
 
     ## Get some iteration data
-    epsilons, loops, n_residues, contacts, n_contacts, Tf, state_labels, state_bounds, Qbins, Qi_vs_Q = get_some_iteration_data(name,iteration,n_bins)
+    epsilons, loops, n_residues, contacts, n_contacts, state_labels, state_bounds, Qbins, Qi_vs_Q = get_some_iteration_data(name,iteration,n_bins)
 
     print "  getting Qgroups:"
-    Qgrp_indxs, colors, ss_labels, ss_bounds = get_secondary_structure_Qgroups(name,iteration,Qbins,Qi_vs_Q,n_bins,contacts.astype(int),n_contacts,state_labels,state_bounds)
+    Qgrp_indxs, colors, ss_labels, ss_bounds = get_secondary_structure_Qgroups(name,contacts.astype(int),n_contacts)
 
     print "  plotting Qgroup_ss vs Q:"
     #print Qgrp_indxs, colors

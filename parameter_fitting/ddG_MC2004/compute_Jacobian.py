@@ -29,10 +29,13 @@ from project_tools.parameter_fitting.util.util import *
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
+global SKIP_INTERACTIONS
+SKIP_INTERACTIONS = [1,8,9]
+
 def get_dHk(model,rij,Fij_conts,Fij):
     ''' Get perturbed potential energy '''
     dHk = np.zeros(rij.shape[0],float)
-    for i in range(len(Fij_conts)):       ## loop over number of parameters
+    for i in range(len(Fij_conts)): 
         cont_idx = Fij_conts[i]
         dHk = dHk - Fij[i]*model.pairwise_strengths[cont_idx]*model.pairwise_potentials[cont_idx](rij[:,cont_idx])
     return dHk
@@ -40,29 +43,53 @@ def get_dHk(model,rij,Fij_conts,Fij):
 def get_Vp_plus_Vpk(model,Vp,rij,Fij_conts,Fij):
     ''' Get perturbed potential energy '''
     Vp_plus_Vpk = np.array(Vp,copy=True)
-    for i in range(len(Fij_conts)):       ## loop over number of parameters
+    for i in range(len(Fij_conts)):
         cont_idx = Fij_conts[i]
         param_idx = model.pairwise_param_assignment[cont_idx]
         Vp_plus_Vpk[:,param_idx] = Vp_plus_Vpk[:,param_idx] - \
                     Fij[i]*model.pairwise_potentials[cont_idx](rij[:,cont_idx])
     return Vp_plus_Vpk
 
-def get_dHk_for_state(model,rij,Fij_conts,Fij,state,n_frames):
+def get_dHk_for_state(model,rij,Fij_pairs,Fij,state,n_frames):
     ''' Get perturbed potential energy '''
     dHk_state = np.zeros(n_frames,float)
-    for i in range(len(Fij_conts)):       ## loop over number of parameters
-        cont_idx = Fij_conts[i]
-        dHk_state = dHk_state - Fij[i]*model.pairwise_strengths[cont_idx]*model.pairwise_potentials[cont_idx](rij[state,cont_idx])
+    for i in range(len(Fij_pairs)):
+        pair = Fij_pairs[i]
+        
+        ## Loop over interactions that a given pair have.
+        flag = (model.contacts[:,0] == pair[0]).astype(int)*(model.contacts[:,1] == pair[1]).astype(int)
+        pair_interaction_indices = np.where(flag == 1)[0]
+        for j in range(len(pair_interaction_indices)):
+            inter_idx = pair_interaction_indices[j]
+            param_idx = model.pairwise_param_assignment[inter_idx]
+            ## If that interaction corresponds to a fitting parameter 
+            ## and is not an excluded volume interaction (e.g. LJ12)
+            ## then add the perturbed interaction energy.
+            if (not (model.pairwise_type[inter_idx] in SKIP_INTERACTIONS)) and (param_idx in model.fitting_params):
+                dHk_state = dHk_state - Fij[i]*model.pairwise_strengths[inter_idx]*model.pairwise_potentials[inter_idx](rij[state,inter_idx])
     return dHk_state
 
-def get_Vp_plus_Vpk_for_state(model,Vp,rij,Fij_conts,Fij,state):
+def get_Vp_plus_Vpk_for_state(model,Vp,rij,Fij_pairs,Fij,state):
     ''' Get perturbed potential energy '''
     Vp_plus_Vpk_state = np.array(Vp,copy=True)
-    for i in range(len(Fij_conts)):       ## loop over number of parameters
-        cont_idx = Fij_conts[i]
-        param_idx = model.pairwise_param_assignment[cont_idx]
-        Vp_plus_Vpk_state[:,param_idx] = Vp_plus_Vpk_state[:,param_idx] - \
-                    Fij[i]*model.pairwise_potentials[cont_idx](rij[state,cont_idx])
+    for i in range(len(Fij_pairs)):     
+        pair = Fij_pairs[i]
+
+        ## Loop over interactions that a given pair have.
+        flag = (model.contacts[:,0] == pair[0]).astype(int)*(model.contacts[:,1] == pair[1]).astype(int)
+        pair_interaction_indices = np.where(flag == 1)[0]
+        for j in range(len(pair_interaction_indices)):
+            inter_idx = pair_interaction_indices[j]
+            param_idx = model.pairwise_param_assignment[inter_idx]
+            ## If that interaction corresponds to a fitting parameter 
+            ## and is not an excluded volume interaction (e.g. LJ12)
+            ## then add the perturbed interaction energy.
+            if (not (model.pairwise_type[inter_idx] in SKIP_INTERACTIONS)) and (param_idx in model.fitting_params):
+                ## If that interaction is associated with one of the parameters being fit.
+                fitting_param_idx = np.where(model.fitting_params == param_idx)[0][0]
+                change = Fij[i]*model.pairwise_potentials[inter_idx](rij[state,inter_idx])
+                Vp_plus_Vpk_state[:,fitting_param_idx] = Vp_plus_Vpk_state[:,fitting_param_idx] - change
+
     return Vp_plus_Vpk_state
 
 def get_target_feature(model):
@@ -88,22 +115,8 @@ def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_p
     os.chdir("%s/mutants" % name)
     ## Get list of mutations and fraction of native contacts deleted for 
     ## each mutation.
-    mutants_core = get_core_mutations()
-    Fij_core, Fij_pairs_core, Fij_conts_core = get_mutant_fij(model,mutants_core)
-    mutants_scanning = get_scanning_mutations()
-    Fij_scanning, Fij_pairs_scanning, Fij_conts_scanning = get_mutant_fij_scanning(model,mutants_scanning,fij=scanfij)
-
-    if scanning_only:
-        mutants = mutants_scanning
-        Fij = Fij_scanning
-        Fij_pairs = Fij_pairs_scanning
-        Fij_conts = Fij_conts_scanning
-        saveas = "scan_%.2f.dat" % scanfij
-    else:
-        mutants = mutants_core + mutants_scanning
-        Fij = Fij_core + Fij_scanning
-        Fij_pairs = Fij_pairs_core + Fij_pairs_scanning
-        Fij_conts = Fij_conts_core + Fij_conts_scanning
+    mutants = get_core_mutations()
+    Fij, Fij_pairs = get_mutant_fij(model,mutants)
 
     os.chdir(sub)
     temperatures = [ x.split('_')[0] for x in open("long_temps_last","r").readlines() ] 
@@ -124,7 +137,7 @@ def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_p
         beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
         print "  Calculating Jacobian for iteration_%d/%s" % (model.iteration,dir)
         os.chdir(dir)
-        sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels,saveas=saveas,test=test)
+        sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,bounds,state_labels,saveas=saveas,test=test)
         sim_feature_all.append(sim_feature)
         Jacobian_all.append(Jacobian)
         os.chdir("..")
@@ -146,10 +159,9 @@ def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_p
 
     return sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err
 
-def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bounds,state_labels,saveas="Q_phi.dat",test=False):
+def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,bounds,state_labels,saveas="Q_phi.dat",test=False):
     ''' Calculates the feature vector (ddG's) and Jacobian for one directory '''
     ## Get trajectory, state indicators, contact energy
-    #traj,rij,Vp = get_rij_Vp(model)
     traj,rij = get_traj_rij(model)
 
     Q = np.loadtxt("Q.dat")
@@ -160,9 +172,6 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
     Vp_N   = get_Vp_for_state(model,rij,N,Nframes)
 
     ## Average dimensionless potential energy for each state.
-    #Vp_U  = sum(Vp[U,:])/Uframes
-    #Vp_TS = sum(Vp[TS,:])/TSframes
-    #Vp_N  = sum(Vp[N,:])/Nframes
     sumVp_U   = np.mean(Vp_U,axis=0) 
     sumVp_TS  = np.mean(Vp_TS,axis=0) 
     sumVp_N   = np.mean(Vp_N,axis=0) 
@@ -175,8 +184,8 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
     phi = np.zeros(len(mutants),float) 
 
     ## Initialize Jacobian
-    #Jacobian = np.zeros((2*len(mutants),model.n_contacts),float)
-    Jacobian = np.zeros((2*len(mutants),model.n_model_param),float)
+    #Jacobian = np.zeros((2*len(mutants),model.n_model_param),float)
+    Jacobian = np.zeros((2*len(mutants),model.n_fitting_params),float)
     sim_feature = np.zeros(2*len(mutants),float)
 
     avg_rowtime = np.zeros(len(mutants),float)
@@ -184,22 +193,11 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
     for k in range(len(mutants)):
         mut = mutants[k]
         ## Compute energy perturbation
-        #dHk = get_dHk(model,rij,Fij_conts[k],Fij[k])
-        dHk_U  = get_dHk_for_state(model,rij,Fij_conts[k],Fij[k],U,Uframes)
-        dHk_TS = get_dHk_for_state(model,rij,Fij_conts[k],Fij[k],TS,TSframes)
-        dHk_N  = get_dHk_for_state(model,rij,Fij_conts[k],Fij[k],N,Nframes)
-        #np.savetxt("dH_%s.dat" % mut,dHk)      ## Takes ~2sec
-
-        ## Get perturbed dimensionless potential energy.
-        #Vp_plus_Vpk = get_Vp_plus_Vpk(model,Vp,rij,Fij_conts[k],Fij[k])
-        Vp_plus_Vpk_U  = get_Vp_plus_Vpk_for_state(model,Vp_U,rij,Fij_conts[k],Fij[k],U)
-        Vp_plus_Vpk_TS = get_Vp_plus_Vpk_for_state(model,Vp_TS,rij,Fij_conts[k],Fij[k],TS)
-        Vp_plus_Vpk_N  = get_Vp_plus_Vpk_for_state(model,Vp_N,rij,Fij_conts[k],Fij[k],N)
+        dHk_U  = get_dHk_for_state(model,rij,Fij_pairs[k],Fij[k],U,Uframes)
+        dHk_TS = get_dHk_for_state(model,rij,Fij_pairs[k],Fij[k],TS,TSframes)
+        dHk_N  = get_dHk_for_state(model,rij,Fij_pairs[k],Fij[k],N,Nframes)
 
         ## Free energy perturbation formula. Equation (4) in reference (1).
-        #dG_U  = -np.log(np.sum(np.exp(-beta*dHk[U]))/Uframes)
-        #dG_TS = -np.log(np.sum(np.exp(-beta*dHk[TS]))/TSframes)
-        #dG_N  = -np.log(np.sum(np.exp(-beta*dHk[N]))/Nframes)
         expdHk_U  = np.mean(np.exp(-beta*dHk_U))
         expdHk_TS = np.mean(np.exp(-beta*dHk_TS))
         expdHk_N  = np.mean(np.exp(-beta*dHk_N))
@@ -211,8 +209,13 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
         ddG_stab = (dG_N - dG_U)
         ddG_dagg = (dG_TS - dG_U)
 
+        #print dG_U, dG_TS, dG_N, ddG_stab, ddG_dagg     ## DEBUGGING
+
         ## Phi-value
-        phi_value = ddG_dagg/ddG_stab
+        if ddG_stab != 0:
+            phi_value = ddG_dagg/ddG_stab
+        else:
+            phi_value = 0
 
         dG[0,k] = dG_U
         dG[1,k] = dG_TS
@@ -225,22 +228,16 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,Fij_conts,bo
         sim_feature[k] = ddG_dagg
         sim_feature[k + len(mutants)] = ddG_stab
 
+        ## Get perturbed dimensionless potential energy.
+        Vp_plus_Vpk_U  = get_Vp_plus_Vpk_for_state(model,Vp_U,rij,Fij_pairs[k],Fij[k],U)
+        Vp_plus_Vpk_TS = get_Vp_plus_Vpk_for_state(model,Vp_TS,rij,Fij_pairs[k],Fij[k],TS)
+        Vp_plus_Vpk_N  = get_Vp_plus_Vpk_for_state(model,Vp_N,rij,Fij_pairs[k],Fij[k],N)
+
         ## Thermal averages for matrix equation (9).
-        #expdHk_U  = sum(np.exp(-beta*dHk[U]))/Uframes
-        #expdHk_TS = sum(np.exp(-beta*dHk[TS]))/TSframes
-        #expdHk_N  = sum(np.exp(-beta*dHk[N]))/Nframes
-
         ## Vectorized computation of Jacobian. 5x faster than a for loop.
-        #Vp_Vpk_expdHk_U  = sum((Vp_plus_Vpk[U,:].T*np.exp(-beta*dHk[U])).T)/Uframes
-        #Vp_Vpk_expdHk_TS = sum((Vp_plus_Vpk[TS,:].T*np.exp(-beta*dHk[TS])).T)/TSframes
-        #Vp_Vpk_expdHk_N  = sum((Vp_plus_Vpk[N,:].T*np.exp(-beta*dHk[N])).T)/Nframes
-
         Vp_Vpk_expdHk_U  = sum((Vp_plus_Vpk_U.T*np.exp(-beta*dHk_U)).T)/Uframes
         Vp_Vpk_expdHk_TS = sum((Vp_plus_Vpk_TS.T*np.exp(-beta*dHk_TS)).T)/TSframes
         Vp_Vpk_expdHk_N  = sum((Vp_plus_Vpk_N.T*np.exp(-beta*dHk_N)).T)/Nframes
-
-        #Jacobian[k,:] = beta*(((Vp_Vpk_expdHk_TS/expdHk_TS) - Vp_TS[:]) - ((Vp_Vpk_expdHk_U/expdHk_U) - Vp_U[:]))
-        #Jacobian[k + len(mutants),:] = beta*(((Vp_Vpk_expdHk_N/expdHk_N) - Vp_N[:]) - ((Vp_Vpk_expdHk_U/expdHk_U) - Vp_U[:]))
 
         Jacobian[k,:] = beta*(((Vp_Vpk_expdHk_TS/expdHk_TS) - sumVp_TS) - ((Vp_Vpk_expdHk_U/expdHk_U) - sumVp_U))
         Jacobian[k + len(mutants),:] = beta*(((Vp_Vpk_expdHk_N/expdHk_N) - sumVp_N) - ((Vp_Vpk_expdHk_U/expdHk_U) - sumVp_U))
@@ -279,7 +276,6 @@ def get_mutant_fij(model,mutants):
     for nonzero entries. Let only allow fij's for contacts. 
     '''
     Fij_pairs = []
-    Fij_conts = []
     Fij = []
     for mut in mutants:
         if model.nonnative:
@@ -288,33 +284,27 @@ def get_mutant_fij(model,mutants):
             fij_temp = model.Qref*np.loadtxt("fij_%s.dat" % mut)
         indices = np.nonzero(fij_temp)
         Fij.append(fij_temp[indices])
-        temppairs = []
-        tempconts = []
-        tempfij = []
-        for i in range(len(indices[0])):
-            for j in range(model.n_contacts):
-                if (model.contacts[j,0] == (indices[0][i]+1)) and (model.contacts[j,1] == (indices[1][i]+1)):
-                    contact_num = j
-                    temppairs.append([indices[0][i],indices[1][i]])
-                    tempconts.append(contact_num)
-                    tempfij.append(fij_temp[indices[0][i],indices[1][i]])
-                    break
-                else:
-                    continue
-        Fij_conts.append(np.array(tempconts))
-        Fij_pairs.append(temppairs)
-    return Fij, Fij_pairs, Fij_conts
+        #mean_fij = np.mean(fij_temp[indices])
+        #Fij.append(mean_fij*np.ones(len(fij_temp[indices])))        ## DEBUGGING
+        Fij_pairs.append(np.array(zip(indices[0]+1,indices[1]+1)))
+        
+    return Fij, Fij_pairs
 
 def get_mutant_fij_scanning(model, mutants, fij=0.5):
     '''Estimate the local contact fraction loss for scanning mutations.
     
-    The ddGs for scanning mutations could be affected by a multiplicity of factors that exceed the mere contacts lost (e.g. effect 
-    of solvent, interaction with helix dipole, interaction with charged residues, loss of hydrogen bonds, among others). As a result,
-    the exact determination varies according to which factor(s) weigh the most. Given that this is a coarse-grained model, as a 
-    first approach we will estimate an average value of fij = 0.5. This is as said before arbitrary, but should give us an estimate
-    of how the local epsilons vary according to the value of the ddGs involved.
+        The ddGs for scanning mutations could be affected by a multiplicity of
+    factors that exceed the mere contacts lost (e.g. effect of solvent,
+    interaction with helix dipole, interaction with charged residues, loss of
+    hydrogen bonds, among others). As a result, the exact determination varies
+    according to which factor(s) weigh the most. Given that this is a
+    coarse-grained model, as a first approach we will estimate an average value
+    of fij = 0.5. This is as said before arbitrary, but should give us an
+    estimate of how the local epsilons vary according to the value of the ddGs
+    involved.
 
-    Also, on a first approach only the [i, i+4] contacts will be affected by the said value of fij.
+    Also, on a first approach only the [i, i+4] contacts will be affected by
+    the said value of fij.
 
     '''
     

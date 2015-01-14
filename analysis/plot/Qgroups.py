@@ -187,7 +187,7 @@ if __name__ == '__main__':
             os.mkdir("%s/iteration_%d/Qgroups_%d" % (name,iteration,groupset))
 
         ## Get some iteration data
-        epsilons, loops, n_residues, contacts, n_contacts, Tf, state_labels, state_bounds, Qbins, Qi_vs_Q = get_some_iteration_data(name,iteration,n_bins)
+        epsilons, loops, n_residues, contacts, n_contacts, state_labels, state_bounds, Qbins, Qi_vs_Q = get_some_iteration_data(name,iteration,n_bins)
 
         ## Plot Qgroups vs Q
         print "  plotting Qgroups vs Q for groupset %d" % groupset

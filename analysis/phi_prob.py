@@ -2,7 +2,7 @@ import os
 import argparse
 import numpy as np
 
-
+import extract_params
 
 def calculate_phi_values(name,iteration):
     ''' Calculate the percentage of native structure for each residue.'''
@@ -15,15 +15,11 @@ def calculate_phi_values(name,iteration):
     sub =  "%s/iteration_%d" % (name,iteration)
     os.chdir(sub)
 
-    if not os.path.exists("phi_%s_%d.dat" % (name,iteration)):
+    if not os.path.exists("contact_phi_%s_%d.dat" % (name,iteration)):
         Tuse = open("long_temps_last","r").readlines()[0].rstrip("\n")
         Tf = float(open("long_Tf","r").read().rstrip("\n"))
 
-        params = np.loadtxt("%s/pairwise_params" % Tuse,dtype=float)
-        contacts = params[:,:2].astype(int)
-        sign = params[:,3].astype(int)
-        epsilons = np.loadtxt("%s/model_params" % Tuse,dtype=float)
-        epsilons[sign == 3] = -1.*epsilons[sign == 3]
+        contacts, epsilons = extract_params.get_contacts_epsilons("%s/pairwise_params" % Tuse,"%s/model_params" % Tuse)
 
         #C = np.zeros((n_residues,n_residues),float)
         U  = np.loadtxt("cont_prob_%s.dat" % "U")
@@ -39,11 +35,11 @@ def calculate_phi_values(name,iteration):
             if np.any(contacts_for_residue):
                 phi_res[i] = np.mean(phi_contact[contacts_for_residue])
 
-        np.savetxt("phi_%s_%d.dat" % (name,iteration), phi_res)
+        np.savetxt("contact_phi_%s_%d.dat" % (name,iteration), phi_res)
     else:
-        phi_res = np.loadtxt("phi_%s_%d.dat" % (name,iteration))
+        phi_res = np.loadtxt("contact_phi_%s_%d.dat" % (name,iteration))
 
-    if not os.path.exists("%s_phi.pdb" % name):
+    if not os.path.exists("%s_contact_phi.pdb" % name):
         newpdb = ""
         for line in pdb:
             if line.startswith("END"):
@@ -53,7 +49,7 @@ def calculate_phi_values(name,iteration):
                 resnum = int(line[22:26]) - 1
                 newpdb += "%s     %5f\n" % (line[:55],phi_res[resnum])
 
-        open("%s_phi.pdb" % name,"w").write(newpdb)
+        open("%s_contact_phi.pdb" % name,"w").write(newpdb)
     os.chdir(cwd)
 
     return phi_res

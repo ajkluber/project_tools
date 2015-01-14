@@ -390,7 +390,7 @@ def run_wham_for_heat_capacity(model,long=False):
     ax1.set_ylabel("Heat Capacity (kJ/mol K)")
     ax1.set_title("$C_v(T)$ and $\\left< Q \\right>(T)$ for %s" % model.name)
 
-    ax2.plot(QvsT[:,0],QvsT[:,1]/model.n_contacts,'b')
+    ax2.plot(QvsT[:,0],QvsT[:,1]/model.n_pairs,'b')
     ax2.set_ylim(0,1)
     ax2.set_ylabel("$\\left< Q \\right>(T)$")
     plt.savefig("cv_and_melt.pdf")
