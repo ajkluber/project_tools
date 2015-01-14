@@ -30,10 +30,10 @@ FRET_pairs = [[114,192]]
 
 def return_temp_file_value():
     if os.path.isfile("fitting_temperature.txt"):
-        print "Setting new temperature based on fitting_temperature.txt"
+        #print "Setting new temperature based on fitting_temperature.txt"
         return np.loadtxt("fitting_temperature.txt")
     else:
-        print "No fitting_temperature specified, using default T=0"
+        #print "No fitting_temperature specified, using default T=0"
         return -1000
 
 def check_temp(fit_temp):
@@ -163,7 +163,7 @@ def fret_hist_calc(model, bin_size, ran_size, spacing):
 def check_exp_data(FRETdata, bin_centers):
     terms = np.shape(FRETdata)[0]
     i = 0
-    recalc = False
+    recalc = not np.shape(FRETdata)[0] == np.shape(bin_centers)[0]
     ##Verify that the bins line up 
     while (not recalc) and i<terms:
         if not FRETdata[i] == bin_centers[i]:
