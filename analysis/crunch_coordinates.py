@@ -52,7 +52,7 @@ def crunch_all(name,contact_type,walltime="00:01:00",ppn="1",n_tables=0):
     analysis_pbs +='#PBS -j oe\n'
     analysis_pbs +='#PBS -V\n\n'
     analysis_pbs +='cd $PBS_O_WORKDIR\n'
-    analysis_pbs +='g_energy -f ener.edr -o energyterms -xvg none << EOF\nBond\nAngle\nCoulomb-14\nProper-Dih.\nPotential\nEOF'
+    analysis_pbs +='g_energy -f ener.edr -o energyterms -xvg none << EOF\nBond\nAngle\nCoulomb-(SR)\nProper-Dih.\nPotential\nEOF'
 
     open("analysis.pbs","w").write(analysis_pbs)
     qsub = "qsub analysis.pbs"

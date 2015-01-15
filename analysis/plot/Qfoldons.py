@@ -133,6 +133,7 @@ if __name__ == '__main__':
     else:
         multiplot = True
 
+
     ## Get  group set. 
     print "  getting Qfoldons for "
     Qgrp_indxs, n_grps, colors, labels = get_foldon_groups(name)
@@ -143,6 +144,8 @@ if __name__ == '__main__':
     for n in range(len(iterations)):
         iteration = iterations[n]
         savestring += "_%d" % iteration
+        if not os.path.exists("%s/iteration_%d/plots" % (name,iteration)):
+            os.mkdir("%s/iteration_%d/plots" % (name,iteration))
 
         ## Get Qi_vsQ
         Qbins, Qi_vs_Q = get_contact_probability_versus_Q(name,iteration,n_bins)
@@ -155,8 +158,6 @@ if __name__ == '__main__':
         All_QgrpsvsQ_nrm.append(Qgrp_vs_Q_nrm)
 
     if multiplot:
-        if not os.path.exists("%s/iteration_%d/plots" % (name,iteration)):
-            os.mkdir("%s/iteration_%d/plots" % (name,iteration))
         print "  plotting multiplot for all iterations"
         print "    saving as: %s/plots/QgrpvsQ_nrm%s.png(pdf)" % (name,savestring)
         multiplot_Qfoldons_vs_Q(name,iterations,n_grps,colors,Qbins,All_QgrpsvsQ,All_QgrpsvsQ_nrm,labels)
