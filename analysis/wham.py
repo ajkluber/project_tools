@@ -288,8 +288,8 @@ def prepare_histograms_heat_capacity(long=False):
 
         print "    temperature: ",T
         for n in range(start_at,counts[k]+1):
-            q = np.loadtxt(T+"_"+str(n)+"/Q.dat")
-            eng = np.loadtxt(T+"_"+str(n)+"/energyterms.xvg",usecols=(4,5))[:,1]
+            q = np.loadtxt("%s_%d/Q.dat" % (T,n))
+            eng = np.loadtxt("%s_%d/energyterms.xvg" % (T,n),usecols=(5,))
             if n == start_at:
                 Q = q
                 E = eng

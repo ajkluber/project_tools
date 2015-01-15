@@ -15,14 +15,14 @@ def get_rij_Vp(model):
 
     ## rij is a matrix, where first index represents trajectory step, and the second index represents the different pairs
     time1 = time.time()
-    rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape),periodic=False)
+    rij = md.compute_distances(traj,model.pairs-np.ones(model.pairs.shape),periodic=False)
     time2 = time.time()
     print " Calculating rij took: %.2f sec = %.2f min" % (time2-time1,(time2-time1)/60.)
     
     ## NOT GENERALIZED FOR FITTING SUBSET OF MODEL PARAMETERS
     time1 = time.time()
     Vp = np.zeros((traj.n_frames,model.n_model_param),float)
-    for i in range(model.n_contacts):   
+    for i in range(model.n_pairs):   
         param_idx = model.pairwise_param_assignment[i]
         Vp[:,param_idx] = Vp[:,param_idx] + model.pairwise_potentials[i](rij[:,i])
     time2 = time.time()
@@ -40,7 +40,7 @@ def get_traj_rij(model):
 
     ## rij is a matrix, where first index represents trajectory step, and the second index represents the different pairs
     time1 = time.time()
-    rij = md.compute_distances(traj,model.contacts-np.ones(model.contacts.shape),periodic=False)
+    rij = md.compute_distances(traj,model.pairs-np.ones(model.pairs.shape),periodic=False)
     time2 = time.time()
     print " Calculating rij took: %.2f sec = %.2f min" % (time2-time1,(time2-time1)/60.)
     
@@ -53,11 +53,8 @@ def get_Vp_for_state(model,rij,state,n_frames):
     ##  - Only parameters listed in model.fitting_parameters should 
     ##    be calculated
     time1 = time.time()
-    #Vp_state = np.zeros((n_frames,model.n_model_param),float)
     Vp_state = np.zeros((n_frames,model.n_fitting_params),float)
-    #for i in range(model.n_contacts):   
     for i in range(model.n_fitting_params):   
-        #param_idx = model.pairwise_param_assignment[i]
         param_idx = model.fitting_params[i]
 
         ## Loop over interactions that use this parameter

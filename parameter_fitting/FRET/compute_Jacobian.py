@@ -280,11 +280,11 @@ def compute_Jacobian_for_directory(model,beta,residues,spacing):
     total_traj = np.shape(rij)[0]
     num_bins = maxvalue - minvalue
     
-    Jacobian = np.zeros((num_bins,model.n_contacts),float)
+    Jacobian = np.zeros((num_bins,model.n_pairs),float)
     Fr = np.zeros(num_bins, float)  ##Number of counts of f for that r
-    Qr = np.zeros((num_bins,model.n_contacts), float)
+    Qr = np.zeros((num_bins,model.n_pairs), float)
     Qcount = np.zeros(num_bins, int)  ##Total value of Qs for that r
-    Qavg = np.zeros(model.n_contacts)   ##Average value of Q over whole trajectory 
+    Qavg = np.zeros(model.n_pairs)   ##Average value of Q over whole trajectory 
     
     ## Jacobian 1st cord = F_r, probability-dist at different r
     ## Jacobian 2nd cord = Derivative wrt native contact epsilon
@@ -319,7 +319,7 @@ def compute_Jacobian_for_directory(model,beta,residues,spacing):
     print "Calculating the Final Jacobian, Please Standby ... "
     
     
-    Jacobian = np.zeros((num_bins,model.n_contacts), float)
+    Jacobian = np.zeros((num_bins,model.n_pairs), float)
     Jacobian += Qr
     
     countr = 0
@@ -348,8 +348,8 @@ if __name__ == "__main__":
     name = args.name
     iteration= args.iteration
 
-    contacts = np.loadtxt("%s/contacts.dat" % name,dtype=int)
+    pairs = np.loadtxt("%s/pairs.dat" % name,dtype=int)
     pdb = "%s.pdb" % name
     defaults = True
-    model = mdb.models.SmogCalpha.SmogCalpha(pdb=pdb,contacts=contacts,defaults=defaults,iteration=iteration)
+    model = mdb.models.SmogCalpha.SmogCalpha(pdb=pdb,pairs=pairs,defaults=defaults,iteration=iteration)
     sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = calculate_average_Jacobian(model)

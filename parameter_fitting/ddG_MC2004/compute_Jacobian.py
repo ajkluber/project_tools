@@ -57,7 +57,7 @@ def get_dHk_for_state(model,rij,Fij_pairs,Fij,state,n_frames):
         pair = Fij_pairs[i]
         
         ## Loop over interactions that a given pair have.
-        flag = (model.contacts[:,0] == pair[0]).astype(int)*(model.contacts[:,1] == pair[1]).astype(int)
+        flag = (model.pairs[:,0] == pair[0]).astype(int)*(model.pairs[:,1] == pair[1]).astype(int)
         pair_interaction_indices = np.where(flag == 1)[0]
         for j in range(len(pair_interaction_indices)):
             inter_idx = pair_interaction_indices[j]
@@ -76,7 +76,7 @@ def get_Vp_plus_Vpk_for_state(model,Vp,rij,Fij_pairs,Fij,state):
         pair = Fij_pairs[i]
 
         ## Loop over interactions that a given pair have.
-        flag = (model.contacts[:,0] == pair[0]).astype(int)*(model.contacts[:,1] == pair[1]).astype(int)
+        flag = (model.pairs[:,0] == pair[0]).astype(int)*(model.pairs[:,1] == pair[1]).astype(int)
         pair_interaction_indices = np.where(flag == 1)[0]
         for j in range(len(pair_interaction_indices)):
             inter_idx = pair_interaction_indices[j]
@@ -113,7 +113,7 @@ def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_p
     cwd = os.getcwd()
     sub = "%s/%s/iteration_%d" % (cwd,name,iteration)
     os.chdir("%s/mutants" % name)
-    ## Get list of mutations and fraction of native contacts deleted for 
+    ## Get list of mutations and fraction of native pairs deleted for 
     ## each mutation.
     mutants = get_core_mutations()
     Fij, Fij_pairs = get_mutant_fij(model,mutants)
@@ -123,7 +123,7 @@ def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_p
     directories = [ x.rstrip("\n") for x in open("long_temps_last","r").readlines() ] 
 
     bounds, state_labels = get_state_bounds()
-    bounds = [0] + bounds + [model.n_contacts]
+    bounds = [0] + bounds + [model.n_pairs]
 
     ## Loop over temperatures in iteration subdir. Calculate ddG vector and 
     ## Jacobian for each directory indpendently then save. Save the average
@@ -323,8 +323,8 @@ def get_mutant_fij_scanning(model, mutants, fij=0.5):
             tempconts = []
             tempfij = []
 
-            for j in range(model.n_contacts):
-                if (model.contacts[j,0] == mut_res_number) and (model.contacts[j,1] == (mut_res_number+4)):
+            for j in range(model.n_pairs):
+                if (model.pairs[j,0] == mut_res_number) and (model.pairs[j,1] == (mut_res_number+4)):
                     contact_num = j
                     temppairs.append([mut_res_number-1,mut_res_number+3])  #i, i+4
                     tempconts.append(contact_num)
@@ -374,8 +374,8 @@ if __name__ == "__main__":
     name = args.name
     iteration= args.iteration
 
-    contacts = np.loadtxt("%s/contacts.dat" % name)
+    pairs = np.loadtxt("%s/pairs.dat" % name)
     pdb = "%s.pdb" % name
     defaults = True
-    model = mdb.models.SmogCalpha.SmogCalpha(pdb=pdb,contacts=contacts,defaults=defaults,iteration=iteration)
+    model = mdb.models.SmogCalpha.SmogCalpha(pdb=pdb,pairs=pairs,defaults=defaults,iteration=iteration)
     sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = calculate_average_Jacobian(model,test=True)
