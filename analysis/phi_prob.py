@@ -2,9 +2,7 @@ import os
 import argparse
 import numpy as np
 
-import extract_params
-
-def calculate_phi_values(name,iteration):
+def calculate_contact_phi_values(name,iteration):
     ''' Calculate the percentage of native structure for each residue.'''
 
     pdb = open("%s/clean.pdb" % name,"r").readlines()
@@ -15,11 +13,9 @@ def calculate_phi_values(name,iteration):
     sub =  "%s/iteration_%d" % (name,iteration)
     os.chdir(sub)
 
-    if not os.path.exists("contact_phi_%s_%d.dat" % (name,iteration)):
+    if not os.path.exists("contact_phi_res"):
         Tuse = open("long_temps_last","r").readlines()[0].rstrip("\n")
-        Tf = float(open("long_Tf","r").read().rstrip("\n"))
-
-        contacts, epsilons = extract_params.get_contacts_epsilons("%s/pairwise_params" % Tuse,"%s/model_params" % Tuse)
+        contacts = np.loadtxt("%s/contacts.ndx" % Tuse,skiprows=1,dtype=int)
 
         #C = np.zeros((n_residues,n_residues),float)
         U  = np.loadtxt("cont_prob_%s.dat" % "U")
@@ -31,13 +27,12 @@ def calculate_phi_values(name,iteration):
         for i in range(n_residues):
             ## Average over contact formation for all contacts that residue i participates in.
             contacts_for_residue = ((contacts[:,0] == (i+1)).astype(int) + (contacts[:,1] == (i+1)).astype(int)).astype(bool)
-
             if np.any(contacts_for_residue):
                 phi_res[i] = np.mean(phi_contact[contacts_for_residue])
 
-        np.savetxt("contact_phi_%s_%d.dat" % (name,iteration), phi_res)
+        np.savetxt("contact_phi_res", phi_res)
     else:
-        phi_res = np.loadtxt("contact_phi_%s_%d.dat" % (name,iteration))
+        phi_res = np.loadtxt("contact_phi_res")
 
     if not os.path.exists("%s_contact_phi.pdb" % name):
         newpdb = ""
@@ -63,8 +58,7 @@ if __name__ == "__main__":
     name = args.name
     iteration = args.iteration
 
-
-    phi = calculate_phi_values(name,iteration)
+    phi = calculate_contact_phi_values(name,iteration)
 
 
 

@@ -23,6 +23,7 @@ def save(model,soln_index):
         desired_ratio = np.loadtxt("desired_ratio")
     else:
         desired_ratio = 0.2
+    print " scaling step size to %.3f" % desired_ratio
 
     nrm_model_params = np.linalg.norm(eps_p_0)
     ratio = np.linalg.norm(deps_p)/nrm_model_params
@@ -30,6 +31,7 @@ def save(model,soln_index):
         alpha = desired_ratio/ratio
     else:
         alpha = 1.
+    open("scaling_alpha","w").write("%.4f" % alpha)
     neweps_p = eps_p_0 + alpha*deps_p       
     
     ## For the non-native interactions set the neweps_p to be

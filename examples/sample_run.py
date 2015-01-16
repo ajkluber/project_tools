@@ -25,15 +25,14 @@ T_min = 50
 T_max = 150
 deltaT = 5
 
-contacts = np.loadtxt("%s.contacts" % name,dtype=int)
+pairs = np.loadtxt("%s.contacts" % name,dtype=int)
 
 ## Initialize a C-alpha Go-model with a pdb. All topology files needed for
 ## simulation are automatically generated. 
-#model = mdb.models.SmogCalpha.SmogCalpha(pdb,contacts=contacts,LJtype=LJtype)
-model = mdb.models.SmogCalpha.SmogCalpha(pdb=pdb,contacts=contacts,defaults=True)
+model = mdb.models.SmogCalpha.SmogCalpha(pdb=pdb,pairs=pairs,defaults=True)
 
 
-### Start simulations for a range of temperatures.
+### Uncomment to Start simulations for a range of temperatures.
 #cwd = os.getcwd()
 #for T in range(T_min,T_max+deltaT,deltaT):
 #    if not os.path.exists(str(T)):
@@ -41,6 +40,7 @@ model = mdb.models.SmogCalpha.SmogCalpha(pdb=pdb,contacts=contacts,defaults=True
 #        print "  Running ",T
 #    ## Write simulation files to subdirectory and submit job
 #    os.chdir(str(T))
+#    model.save_simulation_files()
 #    pjt.simulation.constant_temp.run_constant_temp(model,T,nsteps=nsteps)
 #    os.chdir(cwd)
 

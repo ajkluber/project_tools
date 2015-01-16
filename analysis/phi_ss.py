@@ -18,21 +18,26 @@ def get_sec_structure(name):
 
     return element, bounds
 
-def calculate_average_phi_ss(name,iteration):
-    phi = phi_prob.calculate_phi_values(name,iteration)
+def calculate_average_contact_phi_ss(name,iteration):
+
+    phi = phi_prob.calculate_contact_phi_values(name,iteration)
 
     element, bounds = get_sec_structure(name)
 
+    indxs = np.arange(len(phi))
     phi_ss = []
     print "Element     Seq. Bounds  Phi"
-    output = "Element     Seq. Bounds  Phi\n"
+    output = "# Element     Seq. Bounds  Phi\n"
     for i in range(len(element)):
-        temp = np.mean(phi[bounds[i,0]:bounds[i,1]])
+        ## only average over values that aren't exactly zero.
+        residues = ((phi != 0.).astype(int)*(indxs >= (bounds[i,0] - 1)).astype(int)*(indxs <= (bounds[i,1] - 1)).astype(int)).astype(bool)
+        #temp = np.mean(phi[bounds[i,0]:bounds[i,1]])
+        temp = np.mean(residues)
         phi_ss.append(temp)
         print "%-9s   %4d %4d   %.4f " % (element[i],bounds[i,0],bounds[i,1],temp)
         output += "%-9s   %4d %4d   %.4f \n" % (element[i],bounds[i,0],bounds[i,1],temp)
 
-    outfile = "%s/iteration_%d/phi_ss" % (name,iteration)
+    outfile = "%s/iteration_%d/contact_phi_ss" % (name,iteration)
     if not os.path.exists(outfile):
         open(outfile,"w").write(output)
 
