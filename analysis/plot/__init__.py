@@ -24,7 +24,6 @@ import plot_wham
 import res_VMD
 
 import drawss
-import Qgroups
 import Qgroups_ss
 import QivsQ
 import iteration_summary
