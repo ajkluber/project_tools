@@ -29,7 +29,7 @@ def save(model,soln_index):
     if factor > 0.3:
         deps = (deps*max_step_factor) / max_step
         print "Scaling down to 0.3 by maximum step"
-        fitit = 1
+        fitit = max_step_factor/max_step
     
     eplot.plot_epsilons_bin(deps,"d-epsilon",model)
     eplot.plot_epsilons(deps,"d-epsilon",model)
@@ -49,7 +49,7 @@ def save(model,soln_index):
     #estimate_lambda()
     open("%s/pairwise_params" % cwd,"w").write(model.pairwise_param_file_string)
     open("%s/model_params" % cwd,"w").write(model.model_param_file_string)
-    open("%s/fitting_scale" % cwd,"w").write("%d"%fitit)
+    open("%s/fitting_scale" % cwd,"w").write("%f"%fitit)
     model.contact_params_file_location = "%s/pairwise_params" % cwd
     model.model_params_file_location = "%s/model_params" % cwd
 
