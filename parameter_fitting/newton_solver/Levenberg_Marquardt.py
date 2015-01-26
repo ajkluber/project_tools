@@ -48,20 +48,15 @@ def find_solutions(model,method,scaling=False):
     '''
 
     target_feature = np.loadtxt("target_feature.dat")
-    target_feature_err = np.loadtxt("target_feature_err.dat")
     sim_feature = np.loadtxt("sim_feature.dat")
-    sim_feature_err = np.loadtxt("sim_feature_err.dat")
-    Jacobian = np.loadtxt("Jacobian.dat")
-    Jacobian_err = np.loadtxt("Jacobian_err.dat")
-    J = Jacobian
+    J = np.loadtxt("Jacobian.dat")
 
     df = target_feature - sim_feature
-    #JTdf = np.dot(J.T,df)
-    #JTJ = np.dot(J.T,J)
-
-    #n_rows = JTJ.shape[0]
 
     #if scaling:
+    #    JTdf = np.dot(J.T,df)
+    #    JTJ = np.dot(J.T,J)
+    #    n_rows = JTJ.shape[0]
     #    ## Scale the diagonal by the curvature. This makes it the Levenberg-Marquardt method
     #    Levenberg = np.identity(n_rows)
     #    Levenberg[(np.arange(n_rows),np.arange(n_rows))] = np.diag(JTJ)
@@ -78,7 +73,7 @@ def find_solutions(model,method,scaling=False):
     ## parameter are 'damped' out by a filter function.
     Lambdas = np.logspace(smin,np.log10(max(s)),num=200)
 
-    norm_eps = np.linalg.norm(model.model_param_values)
+    norm_eps = np.linalg.norm(model.model_param_values[model.fitting_params])
     nrm_soln = []
     nrm_resd = []
     condition_number = []

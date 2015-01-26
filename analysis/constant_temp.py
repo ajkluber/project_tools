@@ -3,10 +3,8 @@ import subprocess as sb
 import os
 import shutil
 
-import contacts
 import crunch_coordinates
 import wham
-import plot
 
 def determine_walltime(model,long=False):
     ''' Estimate an efficient walltime.'''

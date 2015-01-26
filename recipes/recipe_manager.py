@@ -79,7 +79,7 @@ class ProjectManager(object):
         ''' Adds manually adds a temperature array.'''
 
         subdirs = args.subdirs
-        Models = mdb.check_inputs.load_models(subdirs,dry_run=args.dry_run)
+        Models = mdb.inputs.load_models(subdirs,dry_run=args.dry_run)
     
         if args.short_temps != None:
             T_min = args.short_temps[0] 
@@ -113,7 +113,7 @@ class ProjectManager(object):
         factor = args.factor
 
         subdirs = args.subdirs
-        Models = mdb.check_inputs.load_models(subdirs,dry_run=args.dry_run)
+        Models = mdb.inputs.load_models(subdirs,dry_run=args.dry_run)
 
         if (args.short_temps != None) and (args.long_temps != None):
             print "ERROR!"
@@ -152,7 +152,7 @@ class ProjectManager(object):
     def continue_project(self,args):
         ''' Checks where something left off and continues it.'''
         subdirs = args.subdirs
-        Models = mdb.check_inputs.load_models(subdirs,dry_run=args.dry_run)
+        Models = mdb.inputs.load_models(subdirs,dry_run=args.dry_run)
 
         if args.dry_run == True:
             print "  Dry run complete. Exiting."
@@ -178,4 +178,4 @@ class ProjectManager(object):
         ''' Save the model.info strings.'''
         print "Saving model.info ..."
         for i in range(len(Models)):
-            open(Models[i].subdir+"/model.info","w").write(Models[i].get_model_info_string())
+            open("%s/model.info" % Models[i].subdir,"w").write(mdb.info_string.get_model_info(Models[i]))
