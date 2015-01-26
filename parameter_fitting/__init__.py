@@ -1,4 +1,4 @@
-''' Parameter fitting using Newton's method
+""" Parameter fitting using Newton's method
 
 Description:
 
@@ -35,7 +35,7 @@ Optimization and Nonlinear Equations". SIAM. 1996.
 
 3. Jorge Nocedal; Stephen Wright. "Numerical Optimization". Springer. 2000
 
-'''
+"""
 
 import os 
 import numpy as np
@@ -47,7 +47,7 @@ import RMSF
 import contact_Qi
 
 def prepare_newtons_method(model,method,append_log):
-    ''' Prepare the files to do newtons method '''
+    """ Prepare the files to do newtons method """
 
 
     available_methods = ["ddG_MC2004","FRET","RMSF","contact_Qi"]
@@ -102,7 +102,7 @@ def prepare_newtons_method(model,method,append_log):
     solve_newtons_method(model,method,append_log)
 
 def solve_newtons_method(model,method,append_log):
-    ''' Solve the newton problem '''
+    """ Solve the newton problem """
     name = model.subdir
     iteration = model.iteration
 
@@ -125,7 +125,7 @@ def solve_newtons_method(model,method,append_log):
     append_log(name,"Finished: Solving_Newtons_Method")
 
 def save_new_parameters(model,method,append_log):
-    ''' Save new parameters '''
+    """ Save new parameters """
     available_methods = ["ddG_MC2004","FRET","RMSF","contact_Qi"]
     modules = {"ddG_MC2004":ddG_MC2004,"FRET":FRET,"RMSF":RMSF,"contact_Qi":contact_Qi}
 

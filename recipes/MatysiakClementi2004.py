@@ -1,4 +1,4 @@
-''' A recipe to apply the Matysiak Clementi 2004 algorithm
+""" A recipe to apply the Matysiak Clementi 2004 algorithm
 
 
 Description:
@@ -12,7 +12,7 @@ Reference:
 (1) Matysiak, S.; Clementi, C. Optimal Combination of Theory and Experiment for
 the Characterization of the Protein Folding Landscape of S6: How Far Can a
 Minimalist model Go? J. Mol. Biol. 2004, 343, 235-248.
-'''
+"""
 
 import os
 import argparse
@@ -25,7 +25,7 @@ import model_builder as mdb
 
 class MatysiakClementi2004(ProjectManager):
     
-    ''' A project manager to reproduce Matysiak Clementi 2004 algorithm. 
+    """ A project manager to reproduce Matysiak Clementi 2004 algorithm. 
 
 
     Description:
@@ -51,7 +51,7 @@ class MatysiakClementi2004(ProjectManager):
     (1) Matysiak, S.; Clementi, C. Optimal Combination of Theory and Experiment for
     the Characterization of the Protein Folding Landscape of S6: How Far Can a
     Minimalist model Go? J. Mol. Biol. 2004, 343, 235-248.
-    '''
+    """
 
 
     def logical_flowchart_starting(self,model,task):
@@ -106,9 +106,9 @@ class MatysiakClementi2004(ProjectManager):
             print "Starting Equil_Tf_analysis..."
             analysis.constant_temp.analyze_temperature_array(model,self.append_log,long=True)
         elif task == "Equil_Tf_analysis":
-            ## Use the following sub module to plot PMFS of coordinates:
-            ## analysis.plot.pmfs
-            ## Run heat capacity for equilibrium runs. Cv(T), F(Q)
+            # Use the following sub module to plot PMFS of coordinates:
+            # analysis.plot.pmfs
+            # Run heat capacity for equilibrium runs. Cv(T), F(Q)
             analysis.constant_temp.run_wham_heat_capacity(model,self.append_log,long=True)
         elif task == "Equil_Tf_wham":
             print "Starting calculating feature vector and Jacobian..."
@@ -117,8 +117,8 @@ class MatysiakClementi2004(ProjectManager):
             print "Solving for solutions with Levenberg-Marquardt method..."
             parameter_fitting.solve_newtons_method(model,"ddG_MC2004",self.append_log)
         elif task == "Solving_Newtons_Method":
-            ## Write new parameter file
-            ## Start the next round of simulations with new parameters.
+            # Write new parameter file
+            # Start the next round of simulations with new parameters.
             parameter_fitting.save_new_parameters(model,"ddG_MC2004",self.append_log)
             simulation.constant_temp.start_next_Tf_loop_iteration(model,self.append_log)
         else:
@@ -129,7 +129,7 @@ class MatysiakClementi2004(ProjectManager):
             raise SystemExit
 
     def new_project(self,args,modeloptions):
-        ''' Start a new simulation project'''
+        """ Start a new simulation project"""
 
         subdirs = [ x[:-4] for x in args.pdbs ]
         for sub in subdirs:
@@ -166,12 +166,12 @@ class MatysiakClementi2004(ProjectManager):
 
 
 def get_args():
-    ''' Get command line arguments '''
+    """ Get command line arguments """
 
     parser = argparse.ArgumentParser(description='Options for MatysiakClementi2004 recipe.')
     sp = parser.add_subparsers(dest='action')
 
-    ## Options for initializing a new simulation project.
+    # Options for initializing a new simulation project.
     new_parser = sp.add_parser('new')
     new_parser.add_argument('--pdbs', type=str, required=True, nargs='+',help='PDBs to start simulations.')
     new_parser.add_argument('--pairwise_params_file', type=str, default="None", help='Optional, specify pairwise interactions.')
@@ -187,19 +187,19 @@ def get_args():
     new_parser.add_argument('--temparray', type=int, nargs='+',help='Optional initial temp array: T_min T_max deltaT. Default: predicts now')
     new_parser.add_argument('--dry_run', action='store_true', help='Add this option for dry run. No simulations started.')
 
-    ## Options for continuing from a previously saved simulation project.
+    # Options for continuing from a previously saved simulation project.
     run_parser = sp.add_parser('continue')
     run_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to continue',required=True)
     run_parser.add_argument('--dry_run', action='store_true', help='Dry run. No simulations started.')
 
-    ## Options for manually adding a temperature array.
+    # Options for manually adding a temperature array.
     add_parser = sp.add_parser('add')
     add_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
     add_parser.add_argument('--short_temps', type=int, nargs='+', help='T_initial T_final dT for new temps')
     add_parser.add_argument('--long_temps', type=float, nargs='+', help='List of temps for new equilibrium simulations')
     add_parser.add_argument('--dry_run', action='store_true', help='Dry run. No simulations started.')
 
-    ## Options for manually extending some temperatures.
+    # Options for manually extending some temperatures.
     ext_parser = sp.add_parser('extend')
     ext_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
     ext_parser.add_argument('--factor', type=float, help='Factor by which you want to extend simulations. e.g. --factor 2 doubles length',required=True)

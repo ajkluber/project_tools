@@ -1,6 +1,6 @@
 import numpy as np
 
-'''
+"""
     Author: Alexander Kluber
     Created: August 20, 2013
     Purpose: Have easy and flexible Python code for running WHAM.
@@ -14,7 +14,7 @@ import numpy as np
         This isn't that readable, but thats because its mainly just
     formating.
 
-'''
+"""
 
 class WhamData(object):
     def __init__(self,path=".",inputfilename="input.wham"):

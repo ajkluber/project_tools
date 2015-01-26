@@ -1,5 +1,5 @@
 
-'''
+"""
 November 11 2013
 Purpose:
     Easy way to generate grompp.mdp files for Gromacs simulations. When called
@@ -14,10 +14,10 @@ To Do:
   b. There are probably many options that we haven't thought of modifying 
     before.
 
-'''
+"""
 
 def constant_temperature(T,nsteps):
-    ''' Generate grompp.mdp file string.'''
+    """ Generate grompp.mdp file string."""
     mdp_string = '; RUN CONTROL PARAMETERS \n'
     mdp_string += 'integrator               = sd  \n'
     mdp_string += 'dt                       = 0.0005 \n'

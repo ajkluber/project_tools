@@ -1,4 +1,4 @@
-''' Start simulations in the folding temperature loop. Tf_loop
+""" Start simulations in the folding temperature loop. Tf_loop
 
 Description:
 
@@ -8,7 +8,7 @@ temperature by determining the melting curve over a large spread in
 temperatures then narrowing in on the transition point. The goal is to obtain
 equilibrium simulations at the folding temperature.
 
-'''
+"""
 
 import numpy as np
 import subprocess as sb
@@ -20,7 +20,7 @@ import shutil
 import mdp
 
 def main():
-    ''' Use gmxcheck on subdirectories.  '''
+    """ Use gmxcheck on subdirectories.  """
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--check', action='store_true', help='use gmxcheck on all subdirectories')
     args = parser.parse_args()
@@ -30,14 +30,14 @@ def main():
         pass
 
 def check_completion(model,append_log,long=False):
-    ''' Checks to see if the previous Tf_loop simulation completed. 
+    """ Checks to see if the previous Tf_loop simulation completed. 
 
     Description:
 
         First 
     checks the desired number of steps in the .mdp file then 
     checks to see if md.log has recorded that number of steps.
-    '''
+    """
 
     name = model.subdir
     cwd = os.getcwd()
@@ -91,7 +91,7 @@ def check_completion(model,append_log,long=False):
     os.chdir(cwd)
 
 def gmxcheck_subdirectories():
-    ''' Run gmxcheck on all traj.xtc files in subdirecories. '''
+    """ Run gmxcheck on all traj.xtc files in subdirecories. """
     runs = glob("*/traj.xtc")
     dirs = [ x[:-9] for x in runs ]
     error = 0
@@ -123,11 +123,11 @@ def run_gmxcheck(subdir):
     return error
 
 def determine_new_temperatures():
-    ''' Find the temperatures which bracket the folding temperature.
+    """ Find the temperatures which bracket the folding temperature.
         This takes the temperatures at which the average fraction of
         nonhelical contacts falls below 0.5 as bracketing the folding 
         temperature. A more complicated calculation is probably 
-        needed for more complicated systems (proteins with intermediates)'''
+        needed for more complicated systems (proteins with intermediates)"""
     #temps = open("T_array_last.txt","r").readlines()
     temps = open("short_temps_last","r").readlines()
     temperatures = [ temp[:-1] for temp in temps ]
@@ -167,7 +167,7 @@ def determine_new_temperatures():
     return newT_min, newT_max, newdeltaT
 
 def manually_extend_temperatures(model,append_log,method,temps,factor):
-    ''' To manually extend some temperatures '''
+    """ To manually extend some temperatures """
 
     name = model.subdir
     cwd = os.getcwd()
@@ -221,7 +221,7 @@ def manually_extend_temperatures(model,append_log,method,temps,factor):
     os.chdir(cwd)
 
 def extend_temperature(T,factor):
-    ''' Extend individual temperature run by factor '''
+    """ Extend individual temperature run by factor """
     ## Calculate new nsteps = factor*old_nsteps
     for line in open("nvt.mdp","r").readlines():
         if line.startswith("nsteps"):
@@ -248,12 +248,12 @@ def extend_temperature(T,factor):
     sb.call(qsub.split(),stdout=open("rst.out","w"),stderr=open("rst.err","w"))
 
 def folding_temperature_loop(model,append_log,new=False):
-    ''' The "folding temperature loop" is one of the several large-scale 
+    """ The "folding temperature loop" is one of the several large-scale 
         logical structures in modelbuilder. It is entered anytime we want
         to determine the folding temperature. This could be when we have
         started a new project, refined the paramters, or returned to a 
         project in progress. The folding temperature loop successively 
-        narrows in on the folding temperature.'''
+        narrows in on the folding temperature."""
 
     cwd = os.getcwd()
     sub = model.path+"/"+model.subdir+"/iteration_"+str(model.iteration)
@@ -270,9 +270,9 @@ def folding_temperature_loop(model,append_log,new=False):
     os.chdir(cwd)
 
 def folding_temperature_loop_extension(model,append_log,new=False):
-    ''' This is for doing an additional loop in the Tf_loop. It either starts
+    """ This is for doing an additional loop in the Tf_loop. It either starts
         an initial temperature array or refines the temperature range according
-        to previous data. '''
+        to previous data. """
     ## Check to see if a previous temperature range was used.
     #if (not os.path.exists("T_array_last.txt")) or new:
     if (not os.path.exists("short_temps_last.txt")) or new:
@@ -299,12 +299,12 @@ def folding_temperature_loop_extension(model,append_log,new=False):
     append_log(model.subdir,"Starting: Tf_loop_iteration")
 
 def start_next_Tf_loop_iteration(model,append_log):
-    ''' Estimate new folding temperature with calibration data
+    """ Estimate new folding temperature with calibration data
 
     Description:
 
         We made a calibration curve with the following points.
-    '''
+    """
 
     ## Update System counters and estimate new Tf
     model.iteration += 1
@@ -335,7 +335,7 @@ def start_next_Tf_loop_iteration(model,append_log):
     os.chdir(cwd)
 
 def manually_add_temperature_array(model,append_log,T_min,T_max,deltaT):
-    ''' To manually set the next temperature array.'''
+    """ To manually set the next temperature array."""
     cwd = os.getcwd()
     sub = model.path+"/"+model.subdir+"/iteration_"+str(model.iteration)
     os.chdir(sub)
@@ -346,7 +346,7 @@ def manually_add_temperature_array(model,append_log,T_min,T_max,deltaT):
     os.chdir(cwd)
 
 def manually_add_equilibrium_runs(model,append_log,temps):
-    ''' To manually set the next temperature array.'''
+    """ To manually set the next temperature array."""
     name = model.subdir
     cwd = os.getcwd()
     #sub = "%s/%s/Mut_%d" % (model.path,name,model.iteration)
@@ -379,8 +379,8 @@ def manually_add_equilibrium_runs(model,append_log,temps):
     os.chdir(cwd)
 
 def run_equilibrium_simulations(model,append_log):
-    ''' Run very long (equilibrium) simulations at the estimated folding 
-        temperature.'''
+    """ Run very long (equilibrium) simulations at the estimated folding 
+        temperature."""
 
     name = model.subdir
     cwd = os.getcwd()
@@ -415,7 +415,7 @@ def run_equilibrium_simulations(model,append_log):
     os.chdir(cwd)
 
 def determine_equil_walltime(model):
-    ''' Estimate an efficient walltime.'''
+    """ Estimate an efficient walltime."""
     N = model.n_residues
     ppn = "1"
     nsteps = "500000000"
@@ -431,7 +431,7 @@ def determine_equil_walltime(model):
     return walltime, queue, ppn,nsteps
 
 def determine_walltime(model):
-    ''' Estimate an efficient walltime.'''
+    """ Estimate an efficient walltime."""
     N = model.n_residues
     ppn = "1"
     nsteps = "100000000"
@@ -449,7 +449,7 @@ def determine_walltime(model):
     return walltime, queue, ppn,nsteps
 
 def run_temperature_array(model,T_min,T_max,deltaT):
-    ''' Simulate range of temperatures to find the folding temperature. '''
+    """ Simulate range of temperatures to find the folding temperature. """
 
     Temperatures = range(T_min,T_max+deltaT,deltaT)
     ## Run for longer if the protein is really big.
@@ -474,14 +474,14 @@ def run_temperature_array(model,T_min,T_max,deltaT):
     open("short_Ti_Tf_dT.txt","w").write("%d %d %d" % (T_min, T_max, deltaT))
 
 def run_constant_temp(model,T,nsteps="100000000",walltime="23:00:00",queue="serial",ppn="1"):
-    ''' Start a constant temperature simulation with Gromacs. 
+    """ Start a constant temperature simulation with Gromacs. 
 
     Description:
 
         Save the grofile and topology file in model object, then 
     submit a pbs job to run simulation.
 
-    '''
+    """
     ## Loading and writing grompp.
     mdpfile = mdp.constant_temperature(str(T),nsteps)
     open("nvt.mdp","w").write(mdpfile)
@@ -503,7 +503,7 @@ def run_constant_temp(model,T,nsteps="100000000",walltime="23:00:00",queue="seri
         sb.call(qsub.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
     
 def get_pbs_string(jobname,queue,ppn,walltime,contact_type=None):
-    ''' Return basic PBS job script. '''
+    """ Return basic PBS job script. """
     pbs_string = "#!/bin/bash \n"
     pbs_string +="#PBS -N %s \n" % jobname
     pbs_string +="#PBS -q %s \n" % queue
@@ -518,7 +518,7 @@ def get_pbs_string(jobname,queue,ppn,walltime,contact_type=None):
     return pbs_string
 
 def get_rst_pbs_string(jobname,queue,ppn,walltime,contact_type=None):
-    ''' Return basic PBS job script for restarting. '''
+    """ Return basic PBS job script for restarting. """
     pbs_string = "#!/bin/bash \n"
     rst_string = "#!/bin/bash \n"
     rst_string +="#PBS -N %s_rst \n" % jobname
@@ -534,7 +534,7 @@ def get_rst_pbs_string(jobname,queue,ppn,walltime,contact_type=None):
     return rst_string
 
 def prep_run(jobname,walltime="23:00:00",queue="serial",ppn="1",contact_type=None):
-    ''' Executes the constant temperature runs.'''
+    """ Executes the constant temperature runs."""
 
     prep_step1 = 'grompp_sbm -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.5.tpr'
     prep_step2 = 'grompp -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.6.tpr'

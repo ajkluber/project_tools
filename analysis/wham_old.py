@@ -389,8 +389,8 @@ def submit_heat_capacity_job():
     os.chdir(cwd)
 
 def submit_free_energy_job(reaction_coord_pairs,inputs):
-    ''' Writes and submits multiple PBS jobs for calculating the free energy 
-        as a function of different pairs of coordinates. '''
+    """ Writes and submits multiple PBS jobs for calculating the free energy 
+        as a function of different pairs of coordinates. """
     cwd = os.getcwd()
     os.chdir(cwd + "/wham")
     for idx1,idx2 in reaction_coord_pairs:    
@@ -409,8 +409,8 @@ def submit_free_energy_job(reaction_coord_pairs,inputs):
     os.chdir(cwd)
 
 def submit_free_energy_1D_job(reaction_coords,inputs):
-    ''' Writes and submits multiple PBS jobs for calculating 1D free energy 
-        curves a function of different coordinates. '''
+    """ Writes and submits multiple PBS jobs for calculating 1D free energy 
+        curves a function of different coordinates. """
     cwd = os.getcwd()
     os.chdir(cwd + "/wham")
     for idx1 in reaction_coords:    

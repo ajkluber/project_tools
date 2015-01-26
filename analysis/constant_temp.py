@@ -7,7 +7,7 @@ import crunch_coordinates
 import wham
 
 def determine_walltime(model,long=False):
-    ''' Estimate an efficient walltime.'''
+    """ Estimate an efficient walltime."""
     N = model.n_residues
     ppn = "4"
     queue = "serial"
@@ -39,11 +39,11 @@ def determine_walltime(model,long=False):
     return qwalltime, cwalltime, ppn, queue
 
 def analyze_temperature_array(model,append_log,long=False):
-    ''' Analyze the previously simulated temperatures of a Tf_loop iteration.
+    """ Analyze the previously simulated temperatures of a Tf_loop iteration.
         Goes into the active Tf_loop directory and crunches all coordinates.
         Exits after submitting a couple PBS scripts to compute Q and 
         energyterms.xvg.
-    '''
+    """
     name = model.subdir
     cwd = os.getcwd()
     sub = "%s/iteration_%d" % (name,model.iteration)
@@ -87,9 +87,9 @@ def analyze_temperature_array(model,append_log,long=False):
         append_log(name,"Starting: Tf_loop_analysis",subdir=True)
 
 def check_completion(model,append_log,long=False):
-    ''' Check if the Tf_loop_analysis finished by seeing if all needed files
+    """ Check if the Tf_loop_analysis finished by seeing if all needed files
         were generated.
-    '''
+    """
     name = model.subdir
     done = 0
     cwd = os.getcwd()
@@ -145,8 +145,8 @@ def check_completion(model,append_log,long=False):
         print "  Analysis has not finished."
 
 def run_wham_heat_capacity(model,append_log,long=False):
-    ''' Check if the last temperature step, dT=1. If it was start 
-        prepping and running WHAM calculation for the Heat Capacity.'''
+    """ Check if the last temperature step, dT=1. If it was start 
+        prepping and running WHAM calculation for the Heat Capacity."""
 
     name = model.subdir
     cwd = os.getcwd()

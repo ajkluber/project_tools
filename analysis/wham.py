@@ -1,4 +1,4 @@
-''' Run Weighted Histogram Analysis Method Smog tool.
+""" Run Weighted Histogram Analysis Method Smog tool.
 
 Description:
 
@@ -17,7 +17,7 @@ biomolecules. I. The Method. J. Comput. Chem. 1992, 13, 1011-1021.
 SMOG@ctbp: Simplified Deployment of Structure-Based Models in GROMACS.
 Nucleic Acids Res. 2010, 38, W657-61.
 
-'''
+"""
 
 
 
@@ -97,11 +97,11 @@ def get_wham_config_melting_curve(startTC,deltaTC,ntempsC):
     return wham_config
 
 def run_wham_expdH_k(mut,Tf,bounds):
-    ''' Prepare histogram files for wham.
+    """ Prepare histogram files for wham.
     
         Concatenates all the data from the same temperature for the histogram
     files in the wham subdirectory.
-    '''
+    """
     ## To Do:
     ##  1. Run WHAM to get F(Q) and Cv(T). DONE
     ##      1a. User adjusts T for F(Q) to find Tf --> Save as Mut_0/whamQ/Tf.txt
@@ -245,11 +245,11 @@ def run_wham_expdH_k(mut,Tf,bounds):
     #return wham_basic,temperatures
 
 def prepare_histograms_heat_capacity(long=False):
-    ''' Prepare histogram files for wham.
+    """ Prepare histogram files for wham.
     
         Concatenates all the data from the same temperature for the histogram
     files in the wham subdirectory.
-    '''
+    """
     if long:
         if not os.path.exists("long_wham"):
             os.mkdir("long_wham")
@@ -334,7 +334,7 @@ def prepare_histograms_heat_capacity(long=False):
     return wham_basic,temperatures
 
 def run_wham_for_heat_capacity(model,long=False):
-    ''' Prepare wham histograms and run Jeff's WHAM code'''
+    """ Prepare wham histograms and run Jeff's WHAM code"""
 
     wham_basic,temperatures = prepare_histograms_heat_capacity(long=long)
 
@@ -390,7 +390,7 @@ def run_wham_for_heat_capacity(model,long=False):
     ax1.set_ylabel("Heat Capacity (kJ/mol K)")
     ax1.set_title("$C_v(T)$ and $\\left< Q \\right>(T)$ for %s" % model.name)
 
-    ax2.plot(QvsT[:,0],QvsT[:,1]/model.n_pairs,'b')
+    ax2.plot(QvsT[:,0],QvsT[:,1]/model.n_native_pairs,'b')
     ax2.set_ylim(0,1)
     ax2.set_ylabel("$\\left< Q \\right>(T)$")
     plt.savefig("cv_and_melt.pdf")

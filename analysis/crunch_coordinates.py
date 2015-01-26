@@ -1,21 +1,21 @@
-''' Functions for submitted analysis scripts as PBS jobs
+""" Functions for submitted analysis scripts as PBS jobs
 
 Description:
 
     Utility to submit PBS jobs to calculate simulation observables
 such as rmsd, Q, R_g, potential energy, dihedral angles, and number
 of helical residues for Gromacs trajectories.
-'''
+"""
 
 import subprocess as sb
 import numpy as np
 import os 
 
 def crunch_Q(name,contact_type,walltime="00:01:00",ppn="1",queue="serial"):
-    ''' Submit PBS job to calculate sets of residue-residue contacts.
+    """ Submit PBS job to calculate sets of residue-residue contacts.
 
     Calculates contacts with structure-based models gromacs function g_kuh_sbm 
-    '''
+    """
 
     contact_pbs = "#!/bin/bash\n"
     contact_pbs +="#PBS -N Q_"+name+"\n"
@@ -39,11 +39,11 @@ def crunch_Q(name,contact_type,walltime="00:01:00",ppn="1",queue="serial"):
     
 
 def crunch_all(name,contact_type,walltime="00:01:00",ppn="1",n_tables=0):
-    ''' Submit PBS job to calculate observables
+    """ Submit PBS job to calculate observables
 
     Calculates rmsd, radius gyration, dihedrals, and potential energy with 
     Gromacs utilities.
-    '''
+    """
     analysis_pbs = '#!/bin/bash\n'
     analysis_pbs +='#PBS -N crnch_%s\n' % name
     analysis_pbs +='#PBS -q serial\n'
@@ -59,7 +59,7 @@ def crunch_all(name,contact_type,walltime="00:01:00",ppn="1",n_tables=0):
     sb.call(qsub.split(),stdout=open("energyterms.out","w"),stderr=open("energyterms.err","w"))
 
 def reorganize_qimap():
-    ''' Parse a couple Q coordinates from qimap.dat '''
+    """ Parse a couple Q coordinates from qimap.dat """
     G = np.loadtxt("radius_gyration.xvg")
     np.savetxt("Rg.xvg",G[:,0:2])
 
@@ -84,12 +84,12 @@ def reorganize_qimap():
     np.savetxt("Qnonlocal.dat",Qnonlocal)
 
 def crunch_Nh(tol=40.):
-    ''' Compute number of helical residues 
+    """ Compute number of helical residues 
 
     A residue is in a helical conformation if it is making an i+4 contact and
     the two dihedral angles between it and its contact are within tol of 50 
     degrees (the 'helical' dihedral).
-    '''
+    """
     Qh = np.loadtxt("Qhres.dat")
     phis = np.loadtxt("phis.xvg")
     phis = phis[:,2:]

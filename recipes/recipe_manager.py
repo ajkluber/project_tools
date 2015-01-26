@@ -1,4 +1,4 @@
-''' Top-level class that automates the execution of a recipe
+""" Top-level class that automates the execution of a recipe
 
 Description:
 
@@ -9,7 +9,7 @@ parameter fitting of a structure-based model.
 
 
     
-'''
+"""
 
 import os
 import time
@@ -18,7 +18,7 @@ from project_tools import simulation, analysis, parameter_fitting
 import model_builder as mdb
 
 global GAS_CONSTANT_KJ_MOL
-GAS_CONSTANT_KJ_MOL = 0.0083144621  ## Gas constant in kJ/(mole K)
+GAS_CONSTANT_KJ_MOL = 0.0083144621  # Gas constant in kJ/(mole K)
 
 def print_header():
 
@@ -36,12 +36,12 @@ def print_header():
     print "------------------------------------------------------------------------------"
 
 class ProjectManager(object):
-    ''' A shell class to handle the simulations for a project.
+    """ A shell class to handle the simulations for a project.
 
     Description:
 
         A class that can handle simulation projects.
-    '''
+    """
 
     def __init__(self,args,modeloptions):
         self.path = os.getcwd()
@@ -67,7 +67,7 @@ class ProjectManager(object):
         return now_string
 
     def create_subdirs(self,Models):
-        ''' Create the subdirectories for the system. Skip if they already exist.'''
+        """ Create the subdirectories for the system. Skip if they already exist."""
         for i in range(len(Models)): 
             sub = Models[i].subdirs
             if os.path.exists(sub) != True:
@@ -76,7 +76,7 @@ class ProjectManager(object):
                 self.append_log(sub,"Creating new subdirectory: %s" % sub)
 
     def add_temperature_array(self,args):
-        ''' Adds manually adds a temperature array.'''
+        """ Adds manually adds a temperature array."""
 
         subdirs = args.subdirs
         Models = mdb.inputs.load_models(subdirs,dry_run=args.dry_run)
@@ -109,7 +109,7 @@ class ProjectManager(object):
         print "Success"
 
     def extend_temperatures(self,args):
-        ''' Manually extends.'''
+        """ Manually extends."""
         factor = args.factor
 
         subdirs = args.subdirs
@@ -143,14 +143,14 @@ class ProjectManager(object):
         print "Success"
 
     def check_modelbuilder_log(self,sub):
-        ''' Gets last line of sub/modelbuilder.log to determine where the 
-            program last left off. Could probably be more robust.'''
+        """ Gets last line of sub/modelbuilder.log to determine where the 
+            program last left off. Could probably be more robust."""
         modelbuilder = open(sub+'/modelbuilder.log','r').readlines()
         lasttime, action,task = modelbuilder[-1].split()
         return lasttime,action,task
 
     def continue_project(self,args):
-        ''' Checks where something left off and continues it.'''
+        """ Checks where something left off and continues it."""
         subdirs = args.subdirs
         Models = mdb.inputs.load_models(subdirs,dry_run=args.dry_run)
 
@@ -175,7 +175,7 @@ class ProjectManager(object):
         print "Success"
 
     def save_model_info(self,Models):
-        ''' Save the model.info strings.'''
+        """ Save the model.info strings."""
         print "Saving model.info ..."
         for i in range(len(Models)):
             open("%s/model.info" % Models[i].subdir,"w").write(mdb.info_string.get_model_info(Models[i]))

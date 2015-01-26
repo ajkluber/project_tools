@@ -55,18 +55,18 @@ def get_args():
     parser = argparse.ArgumentParser(description='Run .')
     sp = parser.add_subparsers(dest='action')
 
-    ## Options for initializing a new simulation project.
+    # Options for initializing a new simulation project.
     new_parser = sp.add_parser('new')
     new_parser.add_argument('--pdbs', type=str, required=True, nargs='+',help='PDBs to start simulations.')
     new_parser.add_argument('--dry_run', action='store_true', help='Add this option for dry run. No simulations started.')
     new_parser.add_argument('--temparray', type=int, nargs='+',help='Optional initial temp array: Ti Tf dT. Default: 50 350 50')
 
-    ## Options for continuing from a previously saved simulation project.
+    # Options for continuing from a previously saved simulation project.
     run_parser = sp.add_parser('continue')
     run_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to continue',required=True)
     run_parser.add_argument('--dry_run', action='store_true', help='Dry run. No simulations started.')
 
-    ## Options for manually adding a temperature array.
+    # Options for manually adding a temperature array.
     add_parser = sp.add_parser('add')
     add_parser.add_argument('--subdirs', type=str, nargs='+', help='Subdirectories to add temp array',required=True)
     add_parser.add_argument('--temparray', type=int, nargs='+', help='T_initial T_final dT for new temp array',required=True)
