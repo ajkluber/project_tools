@@ -367,7 +367,7 @@ def manually_add_equilibrium_runs(model,append_log,temps):
                 os.chdir(simpath)
                 append_log(name,"  running T=%s" % simpath, subdir=True)
                 print "    Running temperature ", simpath
-                run_constant_temp(model,T,nsteps=nsteps,walltime=walltime,queue=queue)
+                run_constant_temp(model,T,name,nsteps=nsteps,walltime=walltime,queue=queue)
                 os.chdir("..")
             else:
                 ## Directory exists for this temperature: continue.
@@ -403,7 +403,7 @@ def run_equilibrium_simulations(model,append_log):
                 os.chdir(simpath)
                 append_log(name,"  running T=%s" % simpath, subdir=True)
                 print "    Running temperature ", simpath
-                run_constant_temp(model,T,nsteps=nsteps,walltime=walltime,queue=queue)
+                run_constant_temp(model,T,name,nsteps=nsteps,walltime=walltime,queue=queue)
                 os.chdir("..")
             else:
                 ## Directory exists for this temperature: continue.
@@ -454,7 +454,7 @@ def run_temperature_array(model,T_min,T_max,deltaT):
     Temperatures = range(T_min,T_max+deltaT,deltaT)
     ## Run for longer if the protein is really big.
     walltime, queue, ppn, nsteps = determine_walltime(model)
-
+    name = model.name
     T_string = ''
     for T in Temperatures:
         simpath = str(T)+"_0"
@@ -465,7 +465,7 @@ def run_temperature_array(model,T_min,T_max,deltaT):
             os.chdir(simpath)
             if not model.dry_run:
                 print "  Running temperature ", T
-            run_constant_temp(model,T,nsteps=nsteps,walltime=walltime,queue=queue,ppn=ppn)
+            run_constant_temp(model,T,name,nsteps=nsteps,walltime=walltime,queue=queue,ppn=ppn)
             os.chdir("..")
         else:
             continue
@@ -473,7 +473,7 @@ def run_temperature_array(model,T_min,T_max,deltaT):
     open("short_temps_last","w").write(T_string)
     open("short_Ti_Tf_dT.txt","w").write("%d %d %d" % (T_min, T_max, deltaT))
 
-def run_constant_temp(model,T,nsteps="100000000",walltime="23:00:00",queue="serial",ppn="1"):
+def run_constant_temp(model,T,name,nsteps="100000000",walltime="23:00:00",queue="serial",ppn="1"):
     """ Start a constant temperature simulation with Gromacs. 
 
     Description:
@@ -490,7 +490,7 @@ def run_constant_temp(model,T,nsteps="100000000",walltime="23:00:00",queue="seri
     model.save_simulation_files()
 
     ## Start simulation
-    jobname = model.subdir+"_"+str(T)
+    jobname = "%s_%s" % (name,str(T))
     prep_run(jobname,walltime=walltime,queue=queue,ppn=ppn)
 
     if model.dry_run == True:
