@@ -491,10 +491,7 @@ def run_constant_temp(model,T,nsteps="100000000",walltime="23:00:00",queue="seri
 
     ## Start simulation
     jobname = model.subdir+"_"+str(T)
-    if model.contact_type == "Gaussian":
-        prep_run(jobname,walltime=walltime,queue=queue,ppn=ppn,contact_type="Gaussian")
-    else:
-        prep_run(jobname,walltime=walltime,queue=queue,ppn=ppn)
+    prep_run(jobname,walltime=walltime,queue=queue,ppn=ppn)
 
     if model.dry_run == True:
         print "    Dryrun: Successfully saved simulation files for ", T
@@ -502,7 +499,7 @@ def run_constant_temp(model,T,nsteps="100000000",walltime="23:00:00",queue="seri
         qsub = "qsub run.pbs"
         sb.call(qsub.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
     
-def get_pbs_string(jobname,queue,ppn,walltime,contact_type=None):
+def get_pbs_string(jobname,queue,ppn,walltime):
     """ Return basic PBS job script. """
     pbs_string = "#!/bin/bash \n"
     pbs_string +="#PBS -N %s \n" % jobname
@@ -511,13 +508,10 @@ def get_pbs_string(jobname,queue,ppn,walltime,contact_type=None):
     pbs_string +="#PBS -l walltime=%s \n" % walltime
     pbs_string +="#PBS -V \n\n"
     pbs_string +="cd $PBS_O_WORKDIR\n"
-    if contact_type == "Gaussian":
-        pbs_string +="mdrun_sbm -s topol_4.5.tpr"
-    else:
-        pbs_string +="mdrun -s topol_4.6.tpr"
+    pbs_string +="mdrun -s topol_4.6.tpr"
     return pbs_string
 
-def get_rst_pbs_string(jobname,queue,ppn,walltime,contact_type=None):
+def get_rst_pbs_string(jobname,queue,ppn,walltime):
     """ Return basic PBS job script for restarting. """
     pbs_string = "#!/bin/bash \n"
     rst_string = "#!/bin/bash \n"
@@ -527,13 +521,10 @@ def get_rst_pbs_string(jobname,queue,ppn,walltime,contact_type=None):
     rst_string +="#PBS -l walltime=%s \n" % walltime
     rst_string +="#PBS -V \n\n"
     rst_string +="cd $PBS_O_WORKDIR\n"
-    if contact_type == "Gaussian":
-        rst_string +="mdrun_sbm -s topol_4.5.tpr -cpi state.cpt"
-    else:
-        rst_string +="mdrun -s topol_4.6.tpr -cpi state.cpt"
+    rst_string +="mdrun -s topol_4.6.tpr -cpi state.cpt"
     return rst_string
 
-def prep_run(jobname,walltime="23:00:00",queue="serial",ppn="1",contact_type=None):
+def prep_run(jobname,walltime="23:00:00",queue="serial",ppn="1"):
     """ Executes the constant temperature runs."""
 
     prep_step1 = 'grompp_sbm -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.5.tpr'
@@ -541,10 +532,10 @@ def prep_run(jobname,walltime="23:00:00",queue="serial",ppn="1",contact_type=Non
     sb.call(prep_step1.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
     sb.call(prep_step2.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
 
-    pbs_string = get_pbs_string(jobname,queue,ppn,walltime,contact_type=contact_type)
+    pbs_string = get_pbs_string(jobname,queue,ppn,walltime)
     open("run.pbs","w").write(pbs_string)
 
-    rst_string = get_rst_pbs_string(jobname,queue,ppn,walltime,contact_type=contact_type)
+    rst_string = get_rst_pbs_string(jobname,queue,ppn,walltime)
     open("rst.pbs","w").write(rst_string)
 
 if __name__ == '__main__':
