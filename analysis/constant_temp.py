@@ -159,7 +159,7 @@ def run_wham_heat_capacity(model,append_log,long=False):
             os.mkdir("long_wham")
         append_log(name,"  running wham for heat capacity, free energy, and melting curve",subdir=True)
         append_log(name,"Starting: Equil_Tf_wham")
-        wham.run_wham_for_heat_capacity(model,long=True)
+        wham.run_wham_for_heat_capacity(long=True)
         append_log(name,"Finished: Equil_Tf_wham")
         flag = 1
     else:
@@ -173,7 +173,7 @@ def run_wham_heat_capacity(model,append_log,long=False):
                 os.mkdir("short_wham")
             append_log(name,"  running wham for heat capacity, free energy, and melting curve",subdir=True)
             append_log(name,"Starting: Tf_wham")
-            wham.run_wham_for_heat_capacity(model)
+            wham.run_wham_for_heat_capacity()
             append_log(name,"Finished: Tf_wham")
             flag = 1
         else:

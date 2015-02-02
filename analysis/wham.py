@@ -333,7 +333,7 @@ def prepare_histograms_heat_capacity(long=False):
 
     return wham_basic,temperatures
 
-def run_wham_for_heat_capacity(model,long=False):
+def run_wham_for_heat_capacity(long=False):
     """ Prepare wham histograms and run Jeff's WHAM code"""
 
     wham_basic,temperatures = prepare_histograms_heat_capacity(long=long)
@@ -379,27 +379,4 @@ def run_wham_for_heat_capacity(model,long=False):
     sb.call(cmd1.split(),stdout=open("cv.out","w"),stderr=open("cv.err","w"))
     sb.call(cmd2.split(),stdout=open("free.out","w"),stderr=open("free.err","w"))
     sb.call(cmd3.split(),stdout=open("melt.out","w"),stderr=open("melt.err","w"))
-
-    Cv = np.loadtxt("cv",usecols=(0,1))
-    QvsT = np.loadtxt("Q_vs_T",dtype=float)
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111)
-    ax2 = ax1.twinx()
-    ax1.plot(Cv[:,0],Cv[:,1],'r')
-    ax1.set_xlabel("Temperature (K)")
-    ax1.set_ylabel("Heat Capacity (kJ/mol K)")
-    ax1.set_title("$C_v(T)$ and $\\left< Q \\right>(T)$ for %s" % model.name)
-
-    ax2.plot(QvsT[:,0],QvsT[:,1]/model.n_native_pairs,'b')
-    ax2.set_ylim(0,1)
-    ax2.set_ylabel("$\\left< Q \\right>(T)$")
-    plt.savefig("cv_and_melt.pdf")
-    Tf = Cv[list(Cv[:,1]).index(max(Cv[:,1])),0]
-    print "  Folding temperature: ", Tf
     os.chdir("..")
-    if long == True:
-        print "  Wham done! Plotted Cv and melting curve: long_wham/cv_and_melt.pdf"
-        open("long_Tf","w").write("%.2f" % Tf)
-    else:
-        print "  Wham done! Plotted Cv and melting curve: short_wham/cv_and_melt.pdf"
-        open("short_Tf","w").write("%.2f" % Tf)
