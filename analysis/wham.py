@@ -20,8 +20,6 @@ Nucleic Acids Res. 2010, 38, W657-61.
 """
 
 
-
-import matplotlib.pyplot as plt
 import numpy as np
 import subprocess as sb
 import os
