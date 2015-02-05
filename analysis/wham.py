@@ -381,7 +381,7 @@ def run_wham_for_heat_capacity(long=False):
     # Find and save the folding temperature
     Cv = np.loadtxt("cv",usecols=(0,1))
     maxindx = list(Cv[:,1]).index(max(Cv[:,1]))
-    Tf = Cv[maxindx,0
+    Tf = Cv[maxindx,0]
 
     os.chdir("..")
     if temps == "long":
