@@ -149,7 +149,7 @@ def save_new_parameters(model,fitopts):
     name = model.name
     iteration = model.iteration
     if not os.path.exists("%s/iteration_%d/newton/Lambda_index.txt" % (name,iteration)):
-        raise IOError("%s/iteration_%d/newton/Lambda_index.txt  must exist!" % (name,iteration)
+        raise IOError("%s/iteration_%d/newton/Lambda_index.txt  must exist!" % (name,iteration))
     else:
         soln_index = int(open("%s/iteration_%d/newton/Lambda_index.txt" % (name,iteration),"r").read().rstrip("\n"))
 
