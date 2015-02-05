@@ -58,12 +58,12 @@ def check_completion(model,iteration,long=False):
     for k in range(len(temperatures)):
         tdir = temperatures[k]
         os.chdir(tdir)
-        print "  Running gmxcheck on ",subdir
+        print "  Running gmxcheck on ",tdir
         sb.call("gmxcheck -f traj.xtc",shell=True,stdout=open("check.out","w"),stderr=open("check.err","w")) 
         errorcode = "Fatal error"
         if (errorcode in open("check.err","r").read()) or (errorcode in open("check.out","r").read()):
-            print "  FATAL ERROR in directory: ",subdir
-            print "  somethings wrong with Gromacs traj.xtc file. See %s/check.err" % subdir
+            print "  FATAL ERROR in directory: ",tdir
+            print "  somethings wrong with Gromacs traj.xtc file. See %s/check.err" % tdir
             error = 1
 
         ## Determine the number of steps for completed run.
