@@ -2,7 +2,7 @@ import numpy as np
 import save_and_plot
 import cplex
 
-def find_solutions(model,method,position=42):
+def find_solutions(model,position=42):
     target_feature = np.loadtxt("target_feature.dat")
     target_feature_err = np.loadtxt("target_feature_err.dat")
     sim_feature = np.loadtxt("sim_feature.dat")
