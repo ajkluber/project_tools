@@ -67,16 +67,16 @@ def check_completion(model,iteration,long=False):
             error = 1
 
         ## Determine the number of steps for completed run.
-        for line in open("%s/nvt.mdp" % tdir,"r"):
+        for line in open("nvt.mdp" ,"r"):
             if line[:6] == "nsteps":
                 nsteps = int(line.split()[2]) + 1
                 break    
         finish_line = "Statistics over %d" % nsteps
         ## Check if md.log has finished the required number of steps.
-        if finish_line in open("%s/md.log" % tdir,"r").read():
+        if finish_line in open("md.log","r").read():
             print "    Check %s simulation did not finish." % tdir
             ## Restart run
-            if os.path.exists("%s/rst.pbs" % tdir):
+            if os.path.exists("rst.pbs"):
                 sb.call("qsub rst.pbs",shell=True)
                 print "  Restarting: %s " % tdir
             error = 1
