@@ -377,4 +377,17 @@ def run_wham_for_heat_capacity(long=False):
     sb.call(cmd1.split(),stdout=open("cv.out","w"),stderr=open("cv.err","w"))
     sb.call(cmd2.split(),stdout=open("free.out","w"),stderr=open("free.err","w"))
     sb.call(cmd3.split(),stdout=open("melt.out","w"),stderr=open("melt.err","w"))
+
+    # Find and save the folding temperature
+    Cv = np.loadtxt("cv",usecols=(0,1))
+    maxindx = list(Cv[:,1]).index(max(Cv[:,1]))
+    Tf = Cv[maxindx,0
+
     os.chdir("..")
+    if temps == "long":
+        print "  Wham done! Plotted Cv and melting curve: long_wham/cv_and_melt.pdf"
+        open("long_Tf","w").write("%.2f" % Tf)
+    else:
+        print "  Wham done! Plotted Cv and melting curve: short_wham/cv_and_melt.pdf"
+        open("short_Tf","w").write("%.2f" % Tf)
+
