@@ -142,7 +142,7 @@ def save_new_parameters(model,fitopts):
 
     method = fitopts["data_type"]
     if method not in available_methods:
-        raise ValueError("Requested fitting data %s not in %s" % (method,available_methods.__repr__())
+        raise ValueError("Requested fitting data %s not in %s" % (method,available_methods.__repr__()))
 
     submodule = modules[method]
 
