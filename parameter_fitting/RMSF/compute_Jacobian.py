@@ -52,7 +52,7 @@ def get_rij_Vij(model):
 
 def get_target_feature(model):
     """ Get target features """
-    name = model.subdir
+    name = model.name
     iteration = model.iteration
     cwd = os.getcwd()
     sub = "%s/%s/iteration_%d" % (cwd,name,iteration)
@@ -75,7 +75,7 @@ def get_target_feature(model):
 def calculate_average_Jacobian(model,residues):
     """ Calculate the average feature vector (ddG's) and Jacobian """
     
-    name = model.subdir
+    name = model.name
     iteration = model.iteration
 
     cwd = os.getcwd()

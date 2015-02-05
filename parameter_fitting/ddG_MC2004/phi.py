@@ -21,7 +21,7 @@ GAS_CONSTANT_KJ_MOL = 0.0083144621
 def calculate_perturbation_phi(model,fij):
     ''' Calculate the average feature vector (ddG's) and Jacobian '''
     
-    name = model.subdir
+    name = model.name
     iteration = model.iteration
 
     cwd = os.getcwd()

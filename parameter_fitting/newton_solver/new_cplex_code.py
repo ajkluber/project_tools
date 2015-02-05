@@ -37,8 +37,8 @@ def calculate_MC2004_perturbation(model,append_log,newbeadbead="NewBeadBead.dat"
     weight = 1.
 
     cwd = os.getcwd()
-    sub = cwd+"/"+model.subdir+"/iteration_"+str(model.Mut_iteration)+"/newton"
-    os.chdir(cwd+"/"+model.subdir+"/mutants")
+    sub = cwd+"/"+model.name+"/iteration_"+str(model.Mut_iteration)+"/newton"
+    os.chdir(cwd+"/"+model.name+"/mutants")
     ddGexp, ddGexp_err = mut.get_exp_ddG()
     os.chdir(sub)
     ddGsim, ddGsim_err, M = get_ddG_matrix_M()
@@ -503,7 +503,7 @@ def plot_solution_info(model,s,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs):
 
     plt.figure()
     plt.plot(s/max(s),'ro')
-    plt.title(model.subdir+" Singular value spectrum for M")
+    plt.title(model.name+" Singular value spectrum for M")
     plt.savefig("spectrum.pdf")
     np.savetxt("singular_vals.dat",s)
     np.savetxt("singular_vals_norm.dat",s/max(s))
@@ -520,7 +520,7 @@ def plot_solution_info(model,s,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs):
     ax1.set_xlim(1,len(cond_num)+1)
     ax1.set_xlabel("# sing values")
     ax1.set_ylabel("$cond(M)$")
-    ax1.set_title(model.subdir+" Condition number $cond(M) = ||M||\\cdot||M^+||$")
+    ax1.set_title(model.name+" Condition number $cond(M) = ||M||\\cdot||M^+||$")
     ax2.plot(range(1,len(cond_num)+1),np.log10(cond_num),'r',label="$log(cond(M))$")
     ax2.set_ylabel("$log_{10}(cond(M))$")
     plt.savefig("condition_number.pdf")

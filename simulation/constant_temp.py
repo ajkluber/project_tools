@@ -16,6 +16,7 @@ from glob import glob
 import os
 import argparse
 import shutil
+import logging
 
 import mdp
 
@@ -29,7 +30,7 @@ def main():
     else:
         pass
 
-def check_completion(model,append_log,long=False):
+def check_completion(model,iteration,long=False):
     """ Checks to see if the previous Tf_loop simulation completed. 
 
     Description:
@@ -39,9 +40,13 @@ def check_completion(model,append_log,long=False):
     checks to see if md.log has recorded that number of steps.
     """
 
-    name = model.subdir
+    name = model.name
+
+    logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
+    logger = logging.getLogger("simulation")
+
     cwd = os.getcwd()
-    sub = "%s/iteration_%d" % (name,model.iteration)
+    sub = "%s/iteration_%d" % (name,iteration)
     os.chdir("%s/%s" % (cwd,sub))
     if long == True:
         tempfile = open("long_temps_last","r").readlines()
@@ -52,9 +57,15 @@ def check_completion(model,append_log,long=False):
     error = 0
     for k in range(len(temperatures)):
         tdir = temperatures[k]
-        check_error = run_gmxcheck(tdir)
-        if check_error == 1:
+        os.chdir(tdir)
+        print "  Running gmxcheck on ",subdir
+        sb.call("gmxcheck -f traj.xtc",stdout=open("check.out","w"),stderr=open("check.err","w")) 
+        errorcode = "Fatal error"
+        if (errorcode in open("check.err","r").read()) or (errorcode in open("check.out","r").read()):
+            print "  FATAL ERROR in directory: ",subdir
+            print "  somethings wrong with Gromacs traj.xtc file. See %s/check.err" % subdir
             error = 1
+
         ## Determine the number of steps for completed run.
         for line in open("%s/nvt.mdp" % tdir,"r"):
             if line[:6] == "nsteps":
@@ -63,31 +74,23 @@ def check_completion(model,append_log,long=False):
         finish_line = "Statistics over %d" % nsteps
         ## Check if md.log has finished the required number of steps.
         if finish_line in open("%s/md.log" % tdir,"r").read():
-            append_log(name,"  %s finished." % tdir, subdir=True)
-        else:
             print "    Check %s simulation did not finish." % tdir
-            #print "    Cannot continue with errors."
-            ## Try to restart the run if possible.
-            if os.path.exists(tdir+"/rst.pbs"):
-                os.chdir(tdir)
-                qrst = "qsub rst.pbs"
-                sb.call(qrst.split(),stdout=open("rst.out","w"),stderr=open("rst.err","w"))
-                os.chdir(cwd+"/"+sub)
-                append_log(name,"  %s did not finish. restarting" % tdir, subdir=True)
-                print "  %s did not finish. Restarting: submitting rst.pbs. " % tdir
-            else:
-                append_log(name,"  %s did not finish. did not find a rst.pbs. skipping." % tdir, subdir=True)
+            ## Restart run
+            if os.path.exists("%s/rst.pbs" % tdir):
+                sb.call("qsub rst.pbs",shell=True)
+                print "  Restarting: %s " % tdir
             error = 1
+        os.chdir("..")
 
     if error == 1:
         print "  Cannot continue until simulations complete. Check if all unfinished runs were restarted properly."
-        pass 
+        os.chdir(cwd)
+        raise SystemExit
     else:
         if long == True:
-            append_log(name,"Finished: Equil_Tf")
+            logger.info(" Finished: Equil_Tf")
         else:
-            append_log(name,"Finished: Tf_loop_iteration")
-    model.error = error
+            logger.info(" Finished: Tf_loop_iteration")
     os.chdir(cwd)
 
 def gmxcheck_subdirectories():
@@ -96,31 +99,20 @@ def gmxcheck_subdirectories():
     dirs = [ x[:-9] for x in runs ]
     error = 0
     for subdir in dirs:
-        cwd = os.getcwd()
-        temp = run_gmxcheck(subdir)
-        os.chdir(cwd)
-        error += temp
+        os.chdir(subdir)
+        print "  Running gmxcheck on ",subdir
+        sb.call("gmxcheck -f traj.xtc",stdout=open("check.out","w"),stderr=open("check.err","w")) 
+        errorcode = "Fatal error"
+        if (errorcode in open("check.err","r").read()) or (errorcode in open("check.out","r").read()):
+            print "  FATAL ERROR in directory: ",subdir
+            print "  somethings wrong with Gromacs traj.xtc file. See %s/check.err" % subdir
+            error = 1
+        os.chdir("..")
+    
     if error != 0:
         print "ERROR! Some trajectories did not pass gmxcheck."
         print " Exiting."
         raise SystemExit
-
-def run_gmxcheck(subdir):
-    print "  Running gmxcheck on ",subdir
-    os.chdir(subdir)
-    check = "gmxcheck -f traj.xtc"
-    sb.call(check.split(),stdout=open("check.out","w"),stderr=open("check.err","w")) 
-    
-    errorcode = "Fatal error"
-    if (errorcode in open("check.err","r").read()) or (errorcode in open("check.out","r").read()):
-        print "  FATAL ERROR in directory: ",subdir
-        print "  somethings wrong with Gromacs traj.xtc file. See %s/check.err" % subdir
-        #print open("check.err","r").read()
-        error = 1
-    else:
-        error = 0
-    os.chdir("..")
-    return error
 
 def determine_new_temperatures():
     """ Find the temperatures which bracket the folding temperature.
@@ -166,12 +158,15 @@ def determine_new_temperatures():
     #print "##DEBUGGING: New Ti, Tf, dT", newT_min, newT_max, newdeltaT
     return newT_min, newT_max, newdeltaT
 
-def manually_extend_temperatures(model,append_log,method,temps,factor):
+def manually_extend_temperatures(model,iteration,method,temps,factor):
     """ To manually extend some temperatures """
 
-    name = model.subdir
+    logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
+    logger = logging.getLogger("simulation")
+
+    name = model.name
     cwd = os.getcwd()
-    sub = "%s/%s/iteration_%d" % (model.path,name,model.iteration)
+    sub = "%s/%s/iteration_%d" % (model.path,name,iteration)
     ## Determine directory to enter
     if method == "short":
         Tlist = [ str(int(x))+"_0" for x in temps ]
@@ -214,9 +209,9 @@ def manually_extend_temperatures(model,append_log,method,temps,factor):
                 os.remove("energyterms.xvg")
         os.chdir(cwd2)
     if method == "short":
-        append_log(name,"Starting: Tf_loop_iteration")
+        logger.info(name,"Starting: Tf_loop_iteration")
     elif method == "long":
-        append_log(name,"Starting: Equil_Tf")
+        logger.info(name,"Starting: Equil_Tf")
 
     os.chdir(cwd)
 
@@ -247,7 +242,7 @@ def extend_temperature(T,factor):
     qsub = "qsub rst.pbs"
     sb.call(qsub.split(),stdout=open("rst.out","w"),stderr=open("rst.err","w"))
 
-def folding_temperature_loop(model,append_log,new=False):
+def folding_temperature_loop(model,iteration,new=False):
     """ The "folding temperature loop" is one of the several large-scale 
         logical structures in modelbuilder. It is entered anytime we want
         to determine the folding temperature. This could be when we have
@@ -256,20 +251,19 @@ def folding_temperature_loop(model,append_log,new=False):
         narrows in on the folding temperature."""
 
     cwd = os.getcwd()
-    sub = model.path+"/"+model.subdir+"/iteration_"+str(model.iteration)
-    #print sub  ## DEBUGGING
+    sub = "%s/%s/iteration_%d" % (model.path,model.name,iteration)
     if (not os.path.exists(sub)):
         os.mkdir(sub)
     ## Check to see if the folding temperature has been found. If yes, then continue.
     if (not os.path.exists(sub+"/short_Tf")):
         os.chdir(sub)
-        folding_temperature_loop_extension(model,append_log,new=new)
+        folding_temperature_loop_extension(model,new=new)
     else:
         ## Folding temperature has been found. Continuing.
         pass
     os.chdir(cwd)
 
-def folding_temperature_loop_extension(model,append_log,new=False):
+def folding_temperature_loop_extension(model,new=False):
     """ This is for doing an additional loop in the Tf_loop. It either starts
         an initial temperature array or refines the temperature range according
         to previous data. """
@@ -294,11 +288,13 @@ def folding_temperature_loop_extension(model,append_log,new=False):
         T_min, T_max, deltaT = determine_new_T_array()
     print "  Running temperature array: T_initial = %.2f   T_final = %.2f   dT = %.2f " % (T_min,T_max,deltaT)
     run_temperature_array(model,T_min,T_max,deltaT)
-    append_log(model.subdir,"Submitting short_temps iteration %d " % model.iteration)
-    append_log(model.subdir,"  T_min = %d , T_max = %d , dT = %d" % (T_min, T_max, deltaT))
-    append_log(model.subdir,"Starting: Tf_loop_iteration")
+    logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
+    logger = logging.getLogger("simulation")
+    logger.info("Submitting short_temps iteration ")
+    logger.info("  T_min = %d , T_max = %d , dT = %d" % (T_min, T_max, deltaT))
+    logger.info(" Starting: Tf_loop_iteration")
 
-def start_next_Tf_loop_iteration(model,append_log):
+def start_next_Tf_loop_iteration(model,iteration):
     """ Estimate new folding temperature with calibration data
 
     Description:
@@ -306,8 +302,6 @@ def start_next_Tf_loop_iteration(model,append_log):
         We made a calibration curve with the following points.
     """
 
-    ## Update System counters and estimate new Tf
-    model.iteration += 1
     ## Estimate folding temperature
     E = -model.native_stability
     N = float(model.n_residues)
@@ -319,7 +313,7 @@ def start_next_Tf_loop_iteration(model,append_log):
     deltaT = 2
 
     cwd = os.getcwd()
-    sub = "%s/iteration_%d" % (model.name,model.iteration)
+    sub = "%s/iteration_%d" % (model.name,iteration)
     if os.path.exists(sub):
         print "ERROR!"
         print "  The next iteration directory exists. "
@@ -329,28 +323,31 @@ def start_next_Tf_loop_iteration(model,append_log):
         os.makedirs(sub)
     os.chdir(sub)
     run_temperature_array(model,T_min,T_max,deltaT)
-    append_log(model.subdir,"Submitting T_array iteration %d" % model.iteration)
-    append_log(model.subdir,"  T_min = %d , T_max = %d , dT = %d" % (T_min, T_max, deltaT))
-    append_log(model.subdir,"Starting: Tf_loop_iteration")
+    logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
+    logger = logging.getLogger("simulation")
+    logger.info("Submitting T_array iteration %d" % iteration)
+    logger.info("  T_min = %d , T_max = %d , dT = %d" % (T_min, T_max, deltaT))
+    logger.info(" Starting: Tf_loop_iteration")
     os.chdir(cwd)
 
-def manually_add_temperature_array(model,append_log,T_min,T_max,deltaT):
+def manually_add_temperature_array(model,iteration,T_min,T_max,deltaT):
     """ To manually set the next temperature array."""
     cwd = os.getcwd()
-    sub = model.path+"/"+model.subdir+"/iteration_"+str(model.iteration)
+    sub = "%s/%s/iteration_%d" % (model.path,model.name,iteration)
     os.chdir(sub)
-    append_log(model.subdir,"Submitting T_array iteration %d " % model.iteration)
-    append_log(model.subdir,"  T_min = %d , T_max = %d , dT = %d" % (T_min, T_max, deltaT))
+    logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
+    logger = logging.getLogger("simulation")
+    logger.info("Submitting T_array iteration %d " % iteration)
+    logger.info("  T_min = %d , T_max = %d , dT = %d" % (T_min, T_max, deltaT))
     run_temperature_array(model,T_min,T_max,deltaT)
-    append_log(model.subdir,"Starting: Tf_loop_iteration")
+    logger.info(" Starting: Tf_loop_iteration")
     os.chdir(cwd)
 
-def manually_add_equilibrium_runs(model,append_log,temps):
+def manually_add_equilibrium_runs(model,iteration,temps):
     """ To manually set the next temperature array."""
-    name = model.subdir
+    name = model.name
     cwd = os.getcwd()
-    #sub = "%s/%s/Mut_%d" % (model.path,name,model.iteration)
-    sub = "%s/%s/iteration_%d" % (model.path,name,model.iteration)
+    sub = "%s/%s/iteration_%d" % (model.path,name,iteration)
     os.chdir(sub)
     ## Run for longer if the protein is really big.
     walltime, queue, ppn, nsteps = determine_equil_walltime(model)
@@ -365,7 +362,6 @@ def manually_add_equilibrium_runs(model,append_log,temps):
                 T_string += "%s\n" % simpath
                 os.mkdir(simpath)
                 os.chdir(simpath)
-                append_log(name,"  running T=%s" % simpath, subdir=True)
                 print "    Running temperature ", simpath
                 run_constant_temp(model,T,name,nsteps=nsteps,walltime=walltime,queue=queue)
                 os.chdir("..")
@@ -375,19 +371,20 @@ def manually_add_equilibrium_runs(model,append_log,temps):
 
     open("long_temps","a").write(T_string)
     open("long_temps_last","w").write(T_string)
-    append_log(name,"Starting: Equil_Tf")
+    logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
+    logger = logging.getLogger("simulation")
+    logger.info(" Starting: Equil_Tf")
     os.chdir(cwd)
 
-def run_equilibrium_simulations(model,append_log):
+def run_equilibrium_simulations(model,iteration):
     """ Run very long (equilibrium) simulations at the estimated folding 
         temperature."""
 
-    name = model.subdir
+    name = model.name
     cwd = os.getcwd()
-    sub = "%s/%s/iteration_%d" % (cwd,name,model.iteration)
+    sub = "%s/%s/iteration_%d" % (cwd,name,iteration)
     Tf = open("%s/short_Tf" % sub ,"r").read().split()[0]
 
-    append_log(name,"Starting Equil_Tf", subdir=True)
     walltime, queue, ppn, nsteps = determine_equil_walltime(model)
 
     os.chdir(sub)
@@ -401,7 +398,6 @@ def run_equilibrium_simulations(model,append_log):
                 T_string += "%s\n" % simpath
                 os.mkdir(simpath)
                 os.chdir(simpath)
-                append_log(name,"  running T=%s" % simpath, subdir=True)
                 print "    Running temperature ", simpath
                 run_constant_temp(model,T,name,nsteps=nsteps,walltime=walltime,queue=queue)
                 os.chdir("..")
@@ -411,7 +407,9 @@ def run_equilibrium_simulations(model,append_log):
 
     open("long_temps","a").write(T_string)
     open("long_temps_last","w").write(T_string)
-    append_log(model.subdir,"Starting: Equil_Tf")
+    logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
+    logger = logging.getLogger("simulation")
+    logger.info(" Starting: Equil_Tf")
     os.chdir(cwd)
 
 def determine_equil_walltime(model):

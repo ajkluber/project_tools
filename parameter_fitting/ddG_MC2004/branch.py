@@ -8,7 +8,7 @@ To Do:
   compatibility.
 
 - Update to new directory organization scheme.
-  Instead of name/Mut_# -> name/iteration_#
+  Instead of name/iteration_# -> name/iteration_#
 
 '''
 
@@ -23,10 +23,10 @@ def branch(args):
     destination = args.dest
 
     cwd = os.getcwd()
-    path = "%s/Mut_%d/" % (name,iteration)
-    sub = "%s/%s/Mut_%d" % (cwd,name,iteration)
+    path = "%s/iteration_%d/" % (name,iteration)
+    sub = "%s/%s/iteration_%d" % (cwd,name,iteration)
 
-    paths = ["/Mut_%d/mut" % iteration,"/mutants","/Qref_shadow"]
+    paths = ["/iteration_%d/mut" % iteration,"/mutants","/Qref_shadow"]
 
     for P in paths:
         if not os.path.exists("%s/%s%s" % (destination,name,P)):
@@ -39,7 +39,7 @@ def branch(args):
     "/contacts.dat",
     "/model.info",
     "/modelbuilder.log",
-    "/Mut_%d/T_array_last.txt" % iteration]
+    "/iteration_%d/T_array_last.txt" % iteration]
 
     shutil.copy("%s.pdb" % name, destination+"/")
     shutil.copy("%s_calculated_ddG.dat" % name, destination+"/")
@@ -49,10 +49,10 @@ def branch(args):
             shutil.copy("%s%s" % (name,file),"%s/%s%s" % (destination,name,file))
 
     
-    mut_data = glob("%s/Mut_%d/mut/*" % (name,iteration))
-    print " copying %s/Mut_%d/mut/*" % (name,iteration)
+    mut_data = glob("%s/iteration_%d/mut/*" % (name,iteration))
+    print " copying %s/iteration_%d/mut/*" % (name,iteration)
     for data in mut_data:
-        shutil.copy(data,"%s/%s/Mut_%d/newton" % (destination,name,iteration))
+        shutil.copy(data,"%s/%s/iteration_%d/newton" % (destination,name,iteration))
 
     mutants = glob("%s/mutants/fij*.dat" % name)
     print " copying mutant fij_*dat"
@@ -64,7 +64,7 @@ def update_names(args):
     iteration = args.iteration
 
     cwd = os.getcwd()
-    sub = "%s/%s/Mut_%d" % (cwd,name,iteration)
+    sub = "%s/%s/iteration_%d" % (cwd,name,iteration)
 
     if not os.path.exists("%s/newton" % sub):
         os.mkdir("%s/newton" % sub) 

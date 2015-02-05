@@ -53,7 +53,7 @@ def calc_sim_bins(model,residues=FRET_pairs,fit_temp=def_temp,spacing=defspacing
     print "Calculating Simulation FRET bins"
     fit_temp = check_temp(fit_temp)
     cwd = os.getcwd()
-    subdir = model.subdir
+    subdir = model.name
     iteration = model.iteration
     
     sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
@@ -88,7 +88,7 @@ def get_sim_params(model,fit_temp=def_temp):
     ##assumes you are in the folder containing the model subdir
     fit_temp = check_temp(fit_temp)
     cwd = os.getcwd()
-    subdir = model.subdir
+    subdir = model.name
     iteration = model.iteration
     
     sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
@@ -106,7 +106,7 @@ def get_sim_params(model,fit_temp=def_temp):
 def get_sim_centers(model,fit_temp=def_temp): 
     fit_temp = check_temp(fit_temp)
     cwd = os.getcwd()
-    subdir = model.subdir
+    subdir = model.name
     iteration = model.iteration
     
     sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
@@ -119,7 +119,7 @@ def get_sim_centers(model,fit_temp=def_temp):
 def get_sim_array(model,fit_temp=def_temp):
     fit_temp = check_temp(fit_temp)
     cwd = os.getcwd()
-    subdir = model.subdir
+    subdir = model.name
     iteration = model.iteration
     sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
     subdirec = "%s/fitting_%d" % (sub,iteration)
@@ -139,7 +139,7 @@ def get_sim_array(model,fit_temp=def_temp):
 def fret_hist_calc(model, bin_size, ran_size, spacing):
     ##read trace file from 
     cwd = os.getcwd()
-    subdir = model.subdir
+    subdir = model.name
     iteration = model.iteration
     
     sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
@@ -198,7 +198,7 @@ def get_target_feature(model,fit_temp=def_temp):
     """ Get target features """
     fit_temp = check_temp(fit_temp)
     cwd = os.getcwd()
-    subdir = model.subdir
+    subdir = model.name
     iteration = model.iteration
     
     sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
@@ -232,7 +232,7 @@ def calculate_average_Jacobian(model,residues=FRET_pairs,fit_temp=def_temp):
     """ Calculate the average feature vector (ddG's) and Jacobian """
     fit_temp = check_temp(fit_temp)
     cwd = os.getcwd()
-    subdir = model.subdir
+    subdir = model.name
     iteration = model.iteration
     sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
     os.chdir(sub)

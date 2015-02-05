@@ -1,14 +1,12 @@
-"""A recipe to reproduce Matysiak Clementi 2004 algorithm. 
+"""A recipe to reproduce Matysiak Clementi 2004 algorithm
 
 Description:
 ------------
 
     This project manager is intended to automate the generation of a
 heterogeneous Go-model via the thermodynamic perturbation algorithm
-put forth by Matysiak & Clementi (1).
+put forth by Matysiak & Clementi (1). The recipe is as follows:
 
-Recipe:
--------
 1. Run constant temperature runs to calculate heat capacity Cv(T). Identify the
     folding temperature Tf as the peak in Cv(T).
 2. Run longer simulations around Tf to witness folding/unfolding transitions. 
@@ -29,12 +27,10 @@ Minimalist model Go? J. Mol. Biol. 2004, 343, 235-248.
 import os
 import argparse
 import logging
-import numpy as np
+from numpy import savetxt
 
 from project_tools import simulation, analysis, parameter_fitting
-from recipe_manager import ProjectManager
 import model_builder as mdb
-
 
 #############################################################################
 # Start a new project
@@ -64,9 +60,9 @@ def new_project(args):
         open("clean.pdb","w").write(model.cleanpdb_full)
         open("clean_noH.pdb","w").write(model.cleanpdb_full_noH)
         open("%s.pdb" % model.name,"w").write(model.cleanpdb_full_noH)
-        np.savetxt("contact_map.dat",model.Qref,delimiter=" ",fmt="%1d")
-        np.savetxt("contacts.dat",model.pairs,delimiter=" ",fmt="%5d")
-        np.savetxt("pairs.dat",model.pairs,delimiter=" ",fmt="%5d")
+        savetxt("contact_map.dat",model.Qref,delimiter=" ",fmt="%1d")
+        savetxt("contacts.dat",model.pairs,delimiter=" ",fmt="%5d")
+        savetxt("pairs.dat",model.pairs,delimiter=" ",fmt="%5d")
         os.chdir("..")
 
     for k in range(len(Models)):

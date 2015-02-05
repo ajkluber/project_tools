@@ -61,7 +61,7 @@ def prepare_newtons_method(model,method,append_log):
 
     submodule = modules[method]
 
-    name = model.subdir
+    name = model.name
     iteration = model.iteration
 
     if not os.path.exists("%s/iteration_%d/newton/Jacobian.dat" % (name,iteration)):
@@ -103,7 +103,7 @@ def prepare_newtons_method(model,method,append_log):
 
 def solve_newtons_method(model,method,append_log):
     """ Solve the newton problem """
-    name = model.subdir
+    name = model.name
     iteration = model.iteration
 
     solver_opts = {"Levenberg":newton_solver.Levenberg_Marquardt,"TSVD":newton_solver.Truncated_SVD,"TSVD_Cplex":newton_solver.Truncated_SVD_cplex}
@@ -137,7 +137,7 @@ def save_new_parameters(model,method,append_log):
 
     submodule = modules[method]
 
-    name = model.subdir
+    name = model.name
     iteration = model.iteration
     if not os.path.exists("%s/iteration_%d/newton/Lambda_index.txt" % (name,iteration)):
         print "ERROR! The file: %s/iteration_%d/newton/Lambda_index.txt must exist to continue!" % (name,iteration)

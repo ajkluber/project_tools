@@ -14,5 +14,4 @@ import mutatepdbs
 import compute_Jacobian
 import prepare_ddG
 import branch
-import flip_beadbead
 import save_new_parameters

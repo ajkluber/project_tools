@@ -38,13 +38,13 @@ def determine_walltime(model,long=False):
             cwalltime = "00:10:00"
     return qwalltime, cwalltime, ppn, queue
 
-def analyze_temperature_array(model,append_log,long=False):
+def analyze_temperature_array(model,long=False):
     """ Analyze the previously simulated temperatures of a Tf_loop iteration.
         Goes into the active Tf_loop directory and crunches all coordinates.
         Exits after submitting a couple PBS scripts to compute Q and 
         energyterms.xvg.
     """
-    name = model.subdir
+    name = model.name
     cwd = os.getcwd()
     sub = "%s/iteration_%d" % (name,model.iteration)
     os.chdir("%s/%s" % (cwd,sub))
@@ -79,18 +79,20 @@ def analyze_temperature_array(model,append_log,long=False):
         os.chdir("%s/%s" % (cwd,sub))
 
     os.chdir(cwd)
+    logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
+    logger = logging.getLogger("analysis")
     if long == True:
-        append_log(name,"Starting: Equil_Tf_analysis")
-        append_log(name,"Starting: Equil_Tf_analysis",subdir=True)
+        logger.info(" Starting: Equil_Tf_analysis")
+        logger.info(" Starting: Equil_Tf_analysis",subdir=True)
     else:
-        append_log(name,"Starting: Tf_loop_analysis")
-        append_log(name,"Starting: Tf_loop_analysis",subdir=True)
+        logger.info(" Starting: Tf_loop_analysis")
+        logger.info(" Starting: Tf_loop_analysis",subdir=True)
 
-def check_completion(model,append_log,long=False):
+def check_completion(model,long=False):
     """ Check if the Tf_loop_analysis finished by seeing if all needed files
         were generated.
     """
-    name = model.subdir
+    name = model.name
     done = 0
     cwd = os.getcwd()
     sub = "%s/iteration_%d" % (name,model.iteration)
@@ -111,10 +113,6 @@ def check_completion(model,append_log,long=False):
         files = ["Q.dat","energyterms.xvg"] 
         check_files = all([ os.path.exists(file) for file in files ])
         if check_files:
-            #print "    Saving Qh, Qnh, Qlocal, Qnonlocal for %s" % tdir
-            #append_log(name,"    Saving Qh, Qnh, Qlocal, Qnonlocal for %s" % tdir,subdir=True)
-            #crunch_coordinates.reorganize_qimap()
-            append_log(name,"    analysis done for %s" % tdir,subdir=True)
             done = 1
         else:
             print "    Crunching not done. Retrying for %s" % tdir
@@ -125,30 +123,33 @@ def check_completion(model,append_log,long=False):
             flagQ = all([ os.path.exists(file) for file in crunchQfiles ])
 
             if not flag:
-                crunch_coordinates.crunch_all("%s_%s" % (model.subdir,tdir),model.contact_type,walltime=cwalltime,n_tables=model.n_tables)
+                crunch_coordinates.crunch_all("%s_%s" % (model.name,tdir),model.contact_type,walltime=cwalltime,n_tables=model.n_tables)
 
             if not flagQ:
-                crunch_coordinates.crunch_Q("%s_%s" % (model.subdir,tdir),model.contact_type,walltime=qwalltime)
+                crunch_coordinates.crunch_Q("%s_%s" % (model.name,tdir),model.contact_type,walltime=qwalltime)
             done = 0
         os.chdir("%s/%s" % (cwd,sub))
 
     os.chdir(cwd)
+    logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
+    logger = logging.getLogger("analysis")
     if done == 1:
         print "  Analysis completed."
         if long == True:
-            append_log(name,"Finished: Equil_Tf_analysis")
-            append_log(name,"Finished: Equil_Tf_analysis",subdir=True)
+            logger.info(" Finished: Equil_Tf_analysis")
         else:
-            append_log(name,"Finished: Tf_loop_analysis")
-            append_log(name,"Finished: Tf_loop_analysis",subdir=True)
+            logger.info(" Finished: Tf_loop_analysis")
     else:
         print "  Analysis has not finished."
+        raise SystemExit
 
-def run_wham_heat_capacity(model,append_log,long=False):
+def run_wham_heat_capacity(model,long=False):
     """ Check if the last temperature step, dT=1. If it was start 
         prepping and running WHAM calculation for the Heat Capacity."""
 
-    name = model.subdir
+    name = model.name
+    logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
+    logger = logging.getLogger("analysis")
     cwd = os.getcwd()
     sub = "%s/iteration_%d" % (name,model.iteration)
     os.chdir("%s/%s" % (cwd,sub))
@@ -157,10 +158,9 @@ def run_wham_heat_capacity(model,append_log,long=False):
         print "Running wham for heat capacity, free energy curves, and melting curve"
         if not os.path.exists("long_wham"):
             os.mkdir("long_wham")
-        append_log(name,"  running wham for heat capacity, free energy, and melting curve",subdir=True)
-        append_log(name,"Starting: Equil_Tf_wham")
         wham.run_wham_for_heat_capacity(long=True)
-        append_log(name,"Finished: Equil_Tf_wham")
+        logger.info(" Starting: Equil_Tf_wham")
+        logger.info(" Finished: Equil_Tf_wham")
         flag = 1
     else:
         Tinfo = open("short_Ti_Tf_dT.txt","r").read().split()
@@ -171,10 +171,9 @@ def run_wham_heat_capacity(model,append_log,long=False):
             print "Running wham for heat capacity, free energy curves, and melting curve"
             if not os.path.exists("short_wham"):
                 os.mkdir("short_wham")
-            append_log(name,"  running wham for heat capacity, free energy, and melting curve",subdir=True)
-            append_log(name,"Starting: Tf_wham")
             wham.run_wham_for_heat_capacity()
-            append_log(name,"Finished: Tf_wham")
+            logger.info(" Starting: Tf_wham")
+            logger.info(" Finished: Tf_wham")
             flag = 1
         else:
             ## Its not time for WHAM

@@ -36,9 +36,9 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
     """
     
     cwd = os.getcwd()
-    sub = cwd+"/"+model.subdir+"/Mut_"+str(model.Mut_iteration)
+    sub = cwd+"/"+model.name+"/Mut_"+str(model.Mut_iteration)
 
-    os.chdir(model.subdir+"/mutants")
+    os.chdir(model.name+"/mutants")
     ddGexp, ddGexp_err = mut.get_exp_ddG()
     os.chdir(sub)
     ddGsim, ddGsim_err, M = get_ddG_matrix_M()
@@ -53,7 +53,7 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
     eps = model.contact_epsilons
 
     if not os.path.exists("mut/num_singular_values_include.txt"):
-        append_log(model.subdir,"Starting: Calculating_MC2004") 
+        append_log(model.name,"Starting: Calculating_MC2004") 
         u,s,v = np.linalg.svd(M)
         s_norm = s/max(s)
         cutoffs = np.array(list(0.5*(s_norm[:-1] + s_norm[1:])) + [0.0])
@@ -118,7 +118,7 @@ def calculate_MC2004_perturbation(model,append_log,coord="Q",newbeadbead="NewBea
         model.get_pairs_string()
         open(savebeadbead,"w").write(model.beadbead)
         model.contact_energies = savebeadbead
-        append_log(model.subdir,"Finished: Calculating_MC2004") 
+        append_log(model.name,"Finished: Calculating_MC2004") 
     os.chdir(cwd)
 
 def apply_constraints_with_cplex(model,dg,M,cutoff):
@@ -255,7 +255,7 @@ def plot_solution_info(model,s,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs):
 
     plt.figure()
     plt.plot(s/max(s),'ro')
-    plt.title(model.subdir+" Singular value spectrum for M")
+    plt.title(model.name+" Singular value spectrum for M")
     plt.savefig("mut/spectrum.pdf")
     np.savetxt("mut/singular_vals.dat",s)
     np.savetxt("mut/singular_vals_norm.dat",s/max(s))
@@ -272,7 +272,7 @@ def plot_solution_info(model,s,cond_num,ratios_xp,ratios_cpx,Xps,Xp_cpxs):
     ax1.set_xlim(1,len(cond_num)+1)
     ax1.set_xlabel("# sing values")
     ax1.set_ylabel("$cond(M)$")
-    ax1.set_title(model.subdir+" Condition number $cond(M) = ||M||\\cdot||M^+||$")
+    ax1.set_title(model.name+" Condition number $cond(M) = ||M||\\cdot||M^+||$")
     ax2.plot(range(1,len(cond_num)+1),np.log10(cond_num),'r',label="$log(cond(M))$")
     ax2.set_ylabel("$log_{10}(cond(M))$")
     plt.savefig("mut/condition_number.pdf")

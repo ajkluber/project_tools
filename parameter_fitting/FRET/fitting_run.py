@@ -6,7 +6,7 @@ import truncated_SVD_FRET as fitting
 import numpy as np
 
 def prepare_newtons_method(model,method,append_log)
-    name = model.subdir
+    name = model.name
     iteration = model.iteration
     if not os.path.exists("%s/iteration_%d/newton/Jacobian.dat" % (name,iteration)):
         append_log(name,"Starting: Calculating_Jacobian")
@@ -38,7 +38,7 @@ def prepare_newtons_method(model,method,append_log)
         solve_newtons_method(model,method,append_log)
     
 def solve_newtons_method(model,method,append_log):
-    name = model.subdir
+    name = model.name
     iteration = model.iteration
     append_log(name,"Starting: Solving_Newtons_Method")
     cwd = os.getcwd()
@@ -48,7 +48,7 @@ def solve_newtons_method(model,method,append_log):
     append_log(name,"Finished: Solving_Newtons_Method")
 
 def save_new_parameters(model,method,append_log):
-    name = model.subdir
+    name = model.name
     iteration = model.iteration
     if not os.path.exists("%s/iteration_%d/newton/solution.dat" % (name,iteration)):
         print "ERRROR, MISSING SOLUTION"
