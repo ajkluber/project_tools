@@ -228,7 +228,7 @@ def get_target_feature(model,fit_temp=def_temp):
     
     return target, target_err
 
-def calculate_average_Jacobian(model,residues=FRET_pairs,fit_temp=def_temp):
+def calculate_average_Jacobian(model,fitopts,residues=FRET_pairs,fit_temp=def_temp):
     """ Calculate the average feature vector (ddG's) and Jacobian """
     fit_temp = check_temp(fit_temp)
     cwd = os.getcwd()
@@ -349,7 +349,6 @@ if __name__ == "__main__":
     iteration= args.iteration
 
     pairs = np.loadtxt("%s/pairs.dat" % name,dtype=int)
-    pdb = "%s.pdb" % name
     defaults = True
-    model = mdb.models.SmogCalpha.SmogCalpha(pdb=pdb,pairs=pairs,defaults=defaults,iteration=iteration)
+    model = mdb.models.SmogCalpha.SmogCalpha(name=name,pairs=pairs,defaults=defaults,iteration=iteration)
     sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = calculate_average_Jacobian(model)

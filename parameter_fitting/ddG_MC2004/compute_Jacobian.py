@@ -104,7 +104,7 @@ def get_target_feature(model):
 
     return target_feature, target_feature_err
 
-def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_phi.dat",test=False):
+def calculate_average_Jacobian(model,fitopts,scanning_only=False,scanfij=0.5,saveas="Q_phi.dat",test=False):
     ''' Calculate the average feature vector (ddG's) and Jacobian '''
     
     name = model.name
@@ -116,7 +116,7 @@ def calculate_average_Jacobian(model,scanning_only=False,scanfij=0.5,saveas="Q_p
     ## Get list of mutations and fraction of native pairs deleted for 
     ## each mutation.
     mutants = get_core_mutations()
-    Fij, Fij_pairs = get_mutant_fij(model,mutants)
+    Fij, Fij_pairs = get_mutant_fij(model,fitopts,mutants)
 
     os.chdir(sub)
     temperatures = [ x.split('_')[0] for x in open("long_temps_last","r").readlines() ] 
@@ -266,7 +266,7 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,bounds,state
 
     return sim_feature, Jacobian
 
-def get_mutant_fij(model,mutants):
+def get_mutant_fij(model,fitopts,mutants):
     ''' Load in the fraction of contact loss for each mutation.
 
     Description:
@@ -278,7 +278,7 @@ def get_mutant_fij(model,mutants):
     Fij_pairs = []
     Fij = []
     for mut in mutants:
-        if model.nonnative:
+        if fitopts["nonnative"]:
             fij_temp = np.loadtxt("fij_%s.dat" % mut)
         else:
             fij_temp = model.Qref*np.loadtxt("fij_%s.dat" % mut)
@@ -378,4 +378,4 @@ if __name__ == "__main__":
     pdb = "%s.pdb" % name
     defaults = True
     model = mdb.models.SmogCalpha.SmogCalpha(pdb=pdb,pairs=pairs,defaults=defaults,iteration=iteration)
-    sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = calculate_average_Jacobian(model,test=True)
+    sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = calculate_average_Jacobian(model,fitopts,test=True)

@@ -21,11 +21,8 @@ import save_and_plot
 def find_solutions(model,method):
     cplex = False
     target_feature = np.loadtxt("target_feature.dat")
-    target_feature_err = np.loadtxt("target_feature_err.dat")
     sim_feature = np.loadtxt("sim_feature.dat")
-    sim_feature_err = np.loadtxt("sim_feature_err.dat")
     Jacobian = np.loadtxt("Jacobian.dat")
-    Jacobian_err = np.loadtxt("Jacobian_err.dat")
     J = Jacobian
 
     epsilons = model.model_param_values

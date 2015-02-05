@@ -38,7 +38,7 @@ def determine_walltime(model,long=False):
             cwalltime = "00:10:00"
     return qwalltime, cwalltime, ppn, queue
 
-def analyze_temperature_array(model,long=False):
+def analyze_temperature_array(model,iteration,long=False):
     """ Analyze the previously simulated temperatures of a Tf_loop iteration.
         Goes into the active Tf_loop directory and crunches all coordinates.
         Exits after submitting a couple PBS scripts to compute Q and 
@@ -46,7 +46,7 @@ def analyze_temperature_array(model,long=False):
     """
     name = model.name
     cwd = os.getcwd()
-    sub = "%s/iteration_%d" % (name,model.iteration)
+    sub = "%s/iteration_%d" % (name,iteration)
     os.chdir("%s/%s" % (cwd,sub))
     if long:
         temperatures = [ x.rstrip("\n") for x in open("long_temps","r").readlines() ]
@@ -88,14 +88,14 @@ def analyze_temperature_array(model,long=False):
         logger.info(" Starting: Tf_loop_analysis")
         logger.info(" Starting: Tf_loop_analysis",subdir=True)
 
-def check_completion(model,long=False):
+def check_completion(model,iteration,long=False):
     """ Check if the Tf_loop_analysis finished by seeing if all needed files
         were generated.
     """
     name = model.name
     done = 0
     cwd = os.getcwd()
-    sub = "%s/iteration_%d" % (name,model.iteration)
+    sub = "%s/iteration_%d" % (name,iteration)
     os.chdir("%s/%s" % (cwd,sub))
     if long == True:
         temperatures = [ x.rstrip("\n") for x in open("long_temps","r").readlines() ]
@@ -143,7 +143,7 @@ def check_completion(model,long=False):
         print "  Analysis has not finished."
         raise SystemExit
 
-def run_wham_heat_capacity(model,long=False):
+def run_wham_heat_capacity(model,iteration,long=False):
     """ Check if the last temperature step, dT=1. If it was start 
         prepping and running WHAM calculation for the Heat Capacity."""
 
@@ -151,7 +151,7 @@ def run_wham_heat_capacity(model,long=False):
     logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
     logger = logging.getLogger("analysis")
     cwd = os.getcwd()
-    sub = "%s/iteration_%d" % (name,model.iteration)
+    sub = "%s/iteration_%d" % (name,iteration)
     os.chdir("%s/%s" % (cwd,sub))
     print "*** NOTE: module load jdk required for WHAM ***"
     if long:

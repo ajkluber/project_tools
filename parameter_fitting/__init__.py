@@ -39,6 +39,7 @@ Optimization and Nonlinear Equations". SIAM. 1996.
 
 import os 
 import numpy as np
+import logging
 
 import newton_solver
 import ddG_MC2004
@@ -46,9 +47,13 @@ import FRET
 import RMSF
 import contact_Qi
 
-def prepare_newtons_method(model,method,append_log):
+def prepare_newtons_method(model,fitopts):
     """ Prepare the files to do newtons method """
 
+    method = fitopts["data_type"]
+
+    logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
+    logger = logging.getLogger("parameter_fitting")
 
     available_methods = ["ddG_MC2004","FRET","RMSF","contact_Qi"]
     modules = {"ddG_MC2004":ddG_MC2004,"FRET":FRET,"RMSF":RMSF,"contact_Qi":contact_Qi}
@@ -65,9 +70,9 @@ def prepare_newtons_method(model,method,append_log):
     iteration = model.iteration
 
     if not os.path.exists("%s/iteration_%d/newton/Jacobian.dat" % (name,iteration)):
-        append_log(name,"Starting: Calculating_Jacobian")
+        logger.info(" Starting: Calculating_Jacobian")
 
-        sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = submodule.compute_Jacobian.calculate_average_Jacobian(model)
+        sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = submodule.compute_Jacobian.calculate_average_Jacobian(model,fitopts)
         target_feature, target_feature_err = submodule.compute_Jacobian.get_target_feature(model)
 
         if not os.path.exists("%s/iteration_%d/newton" % (name,iteration)):
@@ -97,77 +102,61 @@ def prepare_newtons_method(model,method,append_log):
         np.savetxt("%s/iteration_%d/newton/Jacobian.dat" % (name,iteration), Jacobian_avg)
         np.savetxt("%s/iteration_%d/newton/Jacobian_err.dat" % (name,iteration) ,Jacobian_err)
 
-        append_log(name,"Finished: Calculating_Jacobian")
+        logger.info(" Finished: Calculating_Jacobian")
 
-    solve_newtons_method(model,method,append_log)
+    solve_newtons_method(model,method)
 
-def solve_newtons_method(model,method,append_log):
+def solve_newtons_method(model,fitopts):
     """ Solve the newton problem """
     name = model.name
     iteration = model.iteration
+    method = fitopts["data_type"]
 
-    solver_opts = {"Levenberg":newton_solver.Levenberg_Marquardt,"TSVD":newton_solver.Truncated_SVD,"TSVD_Cplex":newton_solver.Truncated_SVD_cplex}
-    if model.fitting_solver not in solver_opts.keys():
-        print "ERROR! requested solver algorithm %s not found!" % model.fitting_solver
+    solver_opts = { "Levenberg":newton_solver.Levenberg_Marquardt,
+                    "TSVD":newton_solver.Truncated_SVD,
+                    "TSVD_Cplex":newton_solver.Truncated_SVD_cplex}
+
+    if fitopts["solver"] not in solver_opts.keys():
+        print "ERROR! requested solver algorithm %s not found!" % fitopts["solver"]
         print " Choose from available solvers: ", solver_opts.keys()
         print " Exiting."
         raise SystemExit
     else:
-        solver = solver_opts[model.fitting_solver]
+        solver = solver_opts[fitopts["solver"]]
 
-    append_log(name,"Starting: Solving_Newtons_Method")
+    logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
+    logger = logging.getLogger("parameter_fitting")
+    logger.info(" Starting: Solving_Newtons_Method")
     ## Find solutions with Levenbeg_Marquardt algorithm
-    print "  Solving for solutions with %s method" % model.fitting_solver
+    print "  Solving for solutions with %s method" % fitopts["solver"]
     cwd = os.getcwd()
     os.chdir("%s/iteration_%d/newton" % (name,iteration))
     solver.find_solutions(model,method)
     os.chdir(cwd)
-    append_log(name,"Finished: Solving_Newtons_Method")
+    logger.info(" Finished: Solving_Newtons_Method")
 
-def save_new_parameters(model,method,append_log):
+def save_new_parameters(model,fitopts):
     """ Save new parameters """
     available_methods = ["ddG_MC2004","FRET","RMSF","contact_Qi"]
     modules = {"ddG_MC2004":ddG_MC2004,"FRET":FRET,"RMSF":RMSF,"contact_Qi":contact_Qi}
 
+    method = fitopts["data_type"]
     if method not in available_methods:
-        print "ERROR! requested method not found %s" % method
-        print " Choose from available_methods: ",available_methods
-        print " Exiting."
-        raise SystemExit
+        raise ValueError("Requested fitting data %s not in %s" % (method,available_methods.__repr__())
 
     submodule = modules[method]
 
     name = model.name
     iteration = model.iteration
     if not os.path.exists("%s/iteration_%d/newton/Lambda_index.txt" % (name,iteration)):
-        print "ERROR! The file: %s/iteration_%d/newton/Lambda_index.txt must exist to continue!" % (name,iteration)
-        print "  This file should hold the index of the damping parameter, Lambda, to be used."
-        print "Exiting."
-        raise SystemExit
+        raise IOError("%s/iteration_%d/newton/Lambda_index.txt  must exist!" % (name,iteration)
     else:
         soln_index = int(open("%s/iteration_%d/newton/Lambda_index.txt" % (name,iteration),"r").read().rstrip("\n"))
 
     cwd = os.getcwd()
     os.chdir("%s/iteration_%d/newton" % (name,iteration))
-
     submodule.save_new_parameters.save(model,soln_index)
-
     os.chdir(cwd)
 
 if __name__ == "__main__":
-    ## Module tested. Works!
-    import model_builder as mdb
-    def dummy(this,that):
-        pass
-
-    name = "1RIS"
-    method = "ddG_MC2004"
-
-    model = mdb.check_inputs.load_model(name) 
-    model.iteration = 0
-
-    #prepare_newtons_method(model,method,dummy)
-    #solve_newton_method(model,method,dummy)
-
-    soln_index = 154
-    ddG_MC2004.save_new_parameters.save(model,soln_index) 
+    pass

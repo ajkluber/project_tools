@@ -4,12 +4,15 @@ import compute_Jacobian as compJ
 import save_new_paramter as snp
 import truncated_SVD_FRET as fitting
 import numpy as np
+import logging
 
-def prepare_newtons_method(model,method,append_log)
+def prepare_newtons_method(model,method)
     name = model.name
     iteration = model.iteration
+    logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
+    logger = logging.getLogger("parameter_fitting")
     if not os.path.exists("%s/iteration_%d/newton/Jacobian.dat" % (name,iteration)):
-        append_log(name,"Starting: Calculating_Jacobian")
+        logger.info(name,"Starting: Calculating_Jacobian")
 
         sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = compJ.calculate_average_Jacobian(model)
         target_feature, target_feature_err = compJ.get_target_feature(model)
@@ -34,20 +37,23 @@ def prepare_newtons_method(model,method,append_log)
         np.savetxt("%s/iteration_%d/newton/Jacobian.dat" % (name,iteration), Jacobian_avg)
         np.savetxt("%s/iteration_%d/newton/Jacobian_err.dat" % (name,iteration) ,Jacobian_err)
         
-        append_log(name,"Finished: Calculating_Jacobian")
-        solve_newtons_method(model,method,append_log)
+        logger.info(name,"Finished: Calculating_Jacobian")
+        solve_newtons_method(model,method)
     
-def solve_newtons_method(model,method,append_log):
+def solve_newtons_method(model,method):
     name = model.name
     iteration = model.iteration
-    append_log(name,"Starting: Solving_Newtons_Method")
+
+    logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
+    logger = logging.getLogger("parameter_fitting")
+    logger.info(name,"Starting: Solving_Newtons_Method")
     cwd = os.getcwd()
     os.chdir("%s/iteration_%d/newton" % (name,iteration))
     fitting.find_solutions(model,method)
     os.chdir(cwd)
-    append_log(name,"Finished: Solving_Newtons_Method")
+    logger.info(name,"Finished: Solving_Newtons_Method")
 
-def save_new_parameters(model,method,append_log):
+def save_new_parameters(model,method):
     name = model.name
     iteration = model.iteration
     if not os.path.exists("%s/iteration_%d/newton/solution.dat" % (name,iteration)):
@@ -55,7 +61,6 @@ def save_new_parameters(model,method,append_log):
     cwd = os.getcwd()
     os.chdir("%s/iteration_%d/newton" % (name,iteration))
     snp.savej(model)
-
     os.chdir(cwd)
     
     
