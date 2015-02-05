@@ -104,7 +104,7 @@ def prepare_newtons_method(model,fitopts):
 
         logger.info(" Finished: Calculating_Jacobian")
 
-    solve_newtons_method(model,method)
+    solve_newtons_method(model,fitopts)
 
 def solve_newtons_method(model,fitopts):
     """ Solve the newton problem """
@@ -127,7 +127,6 @@ def solve_newtons_method(model,fitopts):
     logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
     logger = logging.getLogger("parameter_fitting")
     logger.info(" Starting: Solving_Newtons_Method")
-    ## Find solutions with Levenbeg_Marquardt algorithm
     print "  Solving for solutions with %s method" % fitopts["solver"]
     cwd = os.getcwd()
     os.chdir("%s/iteration_%d/newton" % (name,iteration))
