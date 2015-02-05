@@ -59,7 +59,7 @@ def check_completion(model,iteration,long=False):
         tdir = temperatures[k]
         os.chdir(tdir)
         print "  Running gmxcheck on ",subdir
-        sb.call("gmxcheck -f traj.xtc",stdout=open("check.out","w"),stderr=open("check.err","w")) 
+        sb.call("gmxcheck -f traj.xtc",shell=True,stdout=open("check.out","w"),stderr=open("check.err","w")) 
         errorcode = "Fatal error"
         if (errorcode in open("check.err","r").read()) or (errorcode in open("check.out","r").read()):
             print "  FATAL ERROR in directory: ",subdir
@@ -101,7 +101,7 @@ def gmxcheck_subdirectories():
     for subdir in dirs:
         os.chdir(subdir)
         print "  Running gmxcheck on ",subdir
-        sb.call("gmxcheck -f traj.xtc",stdout=open("check.out","w"),stderr=open("check.err","w")) 
+        sb.call("gmxcheck -f traj.xtc",shell=True,stdout=open("check.out","w"),stderr=open("check.err","w")) 
         errorcode = "Fatal error"
         if (errorcode in open("check.err","r").read()) or (errorcode in open("check.out","r").read()):
             print "  FATAL ERROR in directory: ",subdir
