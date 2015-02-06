@@ -105,7 +105,7 @@ def prepare_newtons_method(model,fitopts):
 def solve_newtons_method(model,fitopts):
     """ Solve the newton problem """
     name = model.name
-    iteration = model.iteration
+    iteration = fitopts['iteration']
     method = fitopts["data_type"]
 
     solver_opts = { "Levenberg":newton_solver.Levenberg_Marquardt,
@@ -142,7 +142,7 @@ def save_new_parameters(model,fitopts):
     submodule = modules[method]
 
     name = model.name
-    iteration = model.iteration
+    iteration = fitopts['iteration']
     if not os.path.exists("%s/iteration_%d/newton/Lambda_index.txt" % (name,iteration)):
         raise IOError("%s/iteration_%d/newton/Lambda_index.txt  must exist!" % (name,iteration))
     else:
