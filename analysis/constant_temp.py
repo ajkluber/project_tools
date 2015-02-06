@@ -5,6 +5,7 @@ import shutil
 
 import crunch_coordinates
 import wham
+import logging
 
 def determine_walltime(model,long=False):
     """ Estimate an efficient walltime."""
@@ -83,10 +84,10 @@ def analyze_temperature_array(model,iteration,long=False):
     logger = logging.getLogger("analysis")
     if long == True:
         logger.info(" Starting: Equil_Tf_analysis")
-        logger.info(" Starting: Equil_Tf_analysis",subdir=True)
+        logger.info(" Starting: Equil_Tf_analysis")
     else:
         logger.info(" Starting: Tf_loop_analysis")
-        logger.info(" Starting: Tf_loop_analysis",subdir=True)
+        logger.info(" Starting: Tf_loop_analysis")
 
 def check_completion(model,iteration,long=False):
     """ Check if the Tf_loop_analysis finished by seeing if all needed files

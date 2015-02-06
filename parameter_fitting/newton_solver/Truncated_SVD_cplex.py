@@ -63,7 +63,7 @@ def find_solutions(model,position=42):
 def minimize_frustration_with_cplex(max_solvable_eig):
     
     eps = nrm_soln[max_solvable_eig]
-    num_native_pairs = model.n_native_pairs
+    num_native_pairs = model[0].n_native_pairs
     quadratic_objective_coeff = np.hstack((np.zeros(num_native_pairs, float),np.ones(len(eps)-num_native_pairs)))
     
     
@@ -79,8 +79,8 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
 
     """
     # Find correct wording for the number of native contacts
-    num_native_pairs = model.n_native_pairs
-    eps = model.model_param_values
+    num_native_pairs = model[0].n_native_pairs
+    eps = model[0].model_param_values
     eps_native = eps[0:num_native_pairs]
     
     if len(eps)>len(eps_native):
