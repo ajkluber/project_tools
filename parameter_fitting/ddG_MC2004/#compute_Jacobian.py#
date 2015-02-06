@@ -95,7 +95,7 @@ def get_Vp_plus_Vpk_for_state(model,Vp,rij,Fij_pairs,Fij,state):
 def get_target_feature(model):
     ''' Get target features '''
     name = model.name
-    iteration = model.iteration
+    iteration =iteration
 
     cwd = os.getcwd()
     os.chdir("%s/mutants" % name)
@@ -108,7 +108,7 @@ def calculate_average_Jacobian(model,fitopts,scanning_only=False,scanfij=0.5,sav
     ''' Calculate the average feature vector (ddG's) and Jacobian '''
     
     name = model.name
-    iteration = fitopts['iteration']
+    iteration = model.iteration
 
     cwd = os.getcwd()
     sub = "%s/%s/iteration_%d" % (cwd,name,iteration)
