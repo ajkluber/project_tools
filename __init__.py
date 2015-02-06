@@ -5,7 +5,8 @@ Description:
 
 
 """
-
+import matplotlib as mpl
+mpl.use('Agg')
 import analysis
 import simulation
 import parameter_fitting
