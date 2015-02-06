@@ -384,7 +384,7 @@ def run_wham_for_heat_capacity(long=False):
     Tf = Cv[maxindx,0]
 
     os.chdir("..")
-    if temps == "long":
+    if long:
         print "  Wham done! Plotted Cv and melting curve: long_wham/cv_and_melt.pdf"
         open("long_Tf","w").write("%.2f" % Tf)
     else:

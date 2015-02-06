@@ -50,8 +50,10 @@ import contact_Qi
 def prepare_newtons_method(model,fitopts):
     """ Prepare the files to do newtons method """
 
-    method = fitopts["data_type"]
     name = model.name
+    iteration = fitopts["iteration"]
+    method = fitopts["data_type"]
+
     logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
     logger = logging.getLogger("parameter_fitting")
 
@@ -59,15 +61,9 @@ def prepare_newtons_method(model,fitopts):
     modules = {"ddG_MC2004":ddG_MC2004,"FRET":FRET,"RMSF":RMSF,"contact_Qi":contact_Qi}
 
     if method not in available_methods:
-        print "ERROR! requested method not found %s" % method
-        print " Choose from available_methods: ",available_methods
-        print " Exiting."
-        raise SystemExit
-
-    submodule = modules[method]
-
-    name = model.name
-    iteration = model.iteration
+        raise ValueError("Method %s not in available methods %s" % (method, available_methods.__repr__()) )
+    else:
+        submodule = modules[method]
 
     if not os.path.exists("%s/iteration_%d/newton/Jacobian.dat" % (name,iteration)):
         logger.info(" Starting: Calculating_Jacobian")
