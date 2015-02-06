@@ -105,20 +105,20 @@ def logical_flowchart_starting(model,fitopts,task):
     if task == "Tf_loop_iteration":
         print "Checking if Tf_loop_iteration completed"
         simulation.constant_temp.check_completion(model,iteration)
-        fitopts["last_completed_task"] = "Starting Tf_loop_iteration"
+        fitopts["last_completed_task"] = "Starting: Tf_loop_iteration"
         analysis.constant_temp.analyze_temperature_array(model,iteration)
-        fitopts["last_completed_task"] = "Starting Tf_loop_analysis"
+        fitopts["last_completed_task"] = "Starting: Tf_loop_analysis"
         print "Starting Tf_loop_analysis"
     elif task == "Tf_loop_analysis":
         print "Checking if Tf_loop_analysis completed"
         analysis.constant_temp.check_completion(model,iteration)
-        fitopts["last_completed_task"] = "Finished Tf_loop_analysis"
+        fitopts["last_completed_task"] = "Finished: Tf_loop_analysis"
     elif task == "Equil_Tf":
         print "Starting to check if Equil_Tf completed"
         simulation.constant_temp.check_completion(model,iteration,long=True)
-        fitopts["last_completed_task"] = "Finished Equil_Tf"
+        fitopts["last_completed_task"] = "Finished: Equil_Tf"
         analysis.constant_temp.analyze_temperature_array(model,iteration,long=True)
-        fitopts["last_completed_task"] = "Starting Equil_Tf_analysis"
+        fitopts["last_completed_task"] = "Starting: Equil_Tf_analysis"
     elif task == "Equil_Tf_analysis":
         print "Starting to check if Equil_Tf_analysis completed"
         analysis.constant_temp.check_completion(model,iteration,long=True)
@@ -133,7 +133,7 @@ def logical_flowchart_finished(model,fitopts,task):
         print "Finished Tf_loop_iteration"
         print "Starting Tf_loop_analysis"
         analysis.constant_temp.analyze_temperature_array(model,iteration)
-        fitopts["last_completed_task"] = "Starting Tf_loop_analysis"
+        fitopts["last_completed_task"] = "Starting: Tf_loop_analysis"
     elif task == "Tf_loop_analysis":
         print "Finished Tf_loop_analysis"
         flag = analysis.constant_temp.run_wham_heat_capacity(model,iteration)
@@ -142,35 +142,35 @@ def logical_flowchart_finished(model,fitopts,task):
         else:
             simulation.constant_temp.folding_temperature_loop(model,iteration)
             print "Starting Tf_loop_iteration"
-            fitopts["last_completed_task"] = "Starting Tf_loop_iteration"
+            fitopts["last_completed_task"] = "Starting: Tf_loop_iteration"
     elif task == "Tf_wham":
         print "Starting equilibrium simulations at Tf"
         simulation.constant_temp.run_equilibrium_simulations(model,iteration)
-        fitopts["last_completed_task"] = "Starting Equil_Tf"
+        fitopts["last_completed_task"] = "Starting: Equil_Tf"
     elif task == "Equil_Tf":
         print "Starting Equil_Tf_analysis"
         analysis.constant_temp.analyze_temperature_array(model,iteration,long=True)
-        fitopts["last_completed_task"] = "Starting Equil_Tf_analysis"
+        fitopts["last_completed_task"] = "Starting: Equil_Tf_analysis"
     elif task == "Equil_Tf_analysis":
         # Run heat capacity for equilibrium runs. Cv(T), F(Q)
         analysis.constant_temp.run_wham_heat_capacity(model,iteration,long=True)
-        fitopts["last_completed_task"] = "Starting Equil_Tf_wham"
+        fitopts["last_completed_task"] = "Starting: Equil_Tf_wham"
     elif task == "Equil_Tf_wham":
         print "Starting calculating feature vector and Jacobian"
         parameter_fitting.prepare_newtons_method(model,fitopts)
-        fitopts["last_completed_task"] = "Starting Calculating_Jacobian"
+        fitopts["last_completed_task"] = "Starting: Calculating_Jacobian"
     elif task == "Calculating_Jacobian":
         print "Solving for solutions with Levenberg-Marquardt method"
-        fitopts["last_completed_task"] = "Starting Solving_Newtons_Method"
+        fitopts["last_completed_task"] = "Starting: Solving_Newtons_Method"
         parameter_fitting.solve_newtons_method(model,fitopts)
-        fitopts["last_completed_task"] = "Finished Solving_Newtons_Method"
+        fitopts["last_completed_task"] = "Finished: Solving_Newtons_Method"
     elif task == "Solving_Newtons_Method":
         # Write new parameter file
         # Start the next round of simulations with new parameters.
         parameter_fitting.save_new_parameters(model,fitopts)
         fitopts["iteration"] += 1
         simulation.constant_temp.start_next_Tf_loop_iteration(model,iteration)
-        fitopts["last_completed_task"] = "Starting Tf_loop_iteration"
+        fitopts["last_completed_task"] = "Starting: Tf_loop_iteration"
     else:
         raise ValueError("  Couldn't find next option for task: %s" % task)
 
