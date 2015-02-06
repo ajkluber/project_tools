@@ -11,7 +11,7 @@ def find_solutions(model,position=42):
     Jacobian_err = np.loadtxt("Jacobian_err.dat")
     J = Jacobian
 
-    norm_eps = np.linalg.norm(model.model_param_values)
+    norm_eps = np.linalg.norm(model[0].model_param_values)
 
     ## Normalize the target step. 
     df = target_feature - sim_feature
