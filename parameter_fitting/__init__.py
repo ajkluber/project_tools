@@ -51,7 +51,7 @@ def prepare_newtons_method(model,fitopts):
     """ Prepare the files to do newtons method """
 
     method = fitopts["data_type"]
-
+    name = model.name
     logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
     logger = logging.getLogger("parameter_fitting")
 
@@ -67,7 +67,7 @@ def prepare_newtons_method(model,fitopts):
     submodule = modules[method]
 
     name = model.name
-    iteration = model.iteration
+    iteration = fitopts.iteration
 
     if not os.path.exists("%s/iteration_%d/newton/Jacobian.dat" % (name,iteration)):
         logger.info(" Starting: Calculating_Jacobian")
@@ -109,7 +109,7 @@ def prepare_newtons_method(model,fitopts):
 def solve_newtons_method(model,fitopts):
     """ Solve the newton problem """
     name = model.name
-    iteration = model.iteration
+    iteration = fitopts.iteration
     method = fitopts["data_type"]
 
     solver_opts = { "Levenberg":newton_solver.Levenberg_Marquardt,
