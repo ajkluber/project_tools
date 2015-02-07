@@ -55,7 +55,7 @@ def new_project(args):
     for k in range(len(Models)):
         model = Models[k]
         model.dry_run = args.dry_run
-        os.chdir("%s" % name)
+        os.chdir("%s" % model.name)
         open("Native.pdb","w").write(model.cleanpdb)
         open("clean.pdb","w").write(model.cleanpdb_full)
         open("clean_noH.pdb","w").write(model.cleanpdb_full_noH)
@@ -68,6 +68,9 @@ def new_project(args):
     for k in range(len(Models)):
         model = Models[k]
         fitopts = Fittingopts[k]
+        #set default fitopts
+        if fitopts["iteration"] == None:
+            fitopts["iteration"] = 0
         iteration = fitopts["iteration"]
         print "Starting Tf_loop_iteration for %s: " % model.name
         simulation.constant_temp.folding_temperature_loop(model,iteration,new=True)
@@ -252,12 +255,17 @@ def extend_temperatures(args):
 #############################################################################
 def get_args():
     """Get command line arguments """
-
+    common = argparse.ArgumentParser(description='common arguments for all parsers', add_help=False)
+    
+    common.add_argument('--dry_run',
+        action='store_true',
+        help='Dry run. No simulations submitted.')
+        
     parser = argparse.ArgumentParser(description='Options for MatysiakClementi2004 recipe.')
     sp = parser.add_subparsers(dest='action')
 
     # Options for initializing a new project.
-    new_parser = sp.add_parser('new')
+    new_parser = sp.add_parser('new', parents=[common])
     new_parser.add_argument('--names',
         type=str,
         required=True,
@@ -271,19 +279,15 @@ def get_args():
 
 
     # Options for continuing from a previously saved simulation project.
-    run_parser = sp.add_parser('continue')
+    run_parser = sp.add_parser('continue', parents=[common])
     run_parser.add_argument('--names',
         type=str,
         required=True,
         nargs='+',
         help='Subdirectories to continue')
     
-    run_parser.add_argument('--dry_run',
-        action='store_true',
-        help='Dry run. No simulations submitted.')
-
     # Options for manually adding a temperature array.
-    add_parser = sp.add_parser('add')
+    add_parser = sp.add_parser('add', parents=[common])
     add_parser.add_argument('--names',
         type=str,
         required=True,
@@ -300,12 +304,8 @@ def get_args():
         nargs='+',
         help='List of temps for new equilibrium simulations')
 
-    add_parser.add_argument('--dry_run',
-        action='store_true',
-        help='Dry run. No simulations started.')
-
     # Options for manually extending some temperatures.
-    ext_parser = sp.add_parser('extend')
+    ext_parser = sp.add_parser('extend', parents=[common])
     ext_parser.add_argument('--names',
         type=str,
         required=True,
@@ -326,10 +326,7 @@ def get_args():
         type=float,
         nargs='+',
         help='T_initial T_final dT for new mutational sims array')
-
-    ext_parser.add_argument('--dry_run',
-        action='store_true',
-        help='Dry run. No simulations started.')
+        
 
     args = parser.parse_args()
 

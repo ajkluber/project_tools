@@ -1,6 +1,5 @@
 import numpy as np
 import save_and_plot
-import cplex
 
 def find_solutions(model,position=42):
     target_feature = np.loadtxt("target_feature.dat")
@@ -78,6 +77,8 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
     the given objective function
 
     """
+    import cplex
+
     # Find correct wording for the number of native contacts
     num_native_pairs = model.n_native_pairs
     eps = model.model_param_values
