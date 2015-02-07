@@ -95,7 +95,7 @@ def get_Vp_plus_Vpk_for_state(model,Vp,rij,Fij_pairs,Fij,state):
 def get_target_feature(model):
     ''' Get target features '''
     name = model.name
-    iteration = model.iteration
+    iteration = fitopts['iteration']
 
     cwd = os.getcwd()
     os.chdir("%s/mutants" % name)
