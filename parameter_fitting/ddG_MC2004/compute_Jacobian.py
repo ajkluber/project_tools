@@ -95,7 +95,7 @@ def get_Vp_plus_Vpk_for_state(model,Vp,rij,Fij_pairs,Fij,state):
 def get_target_feature(model):
     ''' Get target features '''
     name = model.name
-    iteration = model.iteration
+    iteration = fitopts['iteration']
 
     cwd = os.getcwd()
     os.chdir("%s/mutants" % name)
@@ -135,7 +135,7 @@ def calculate_average_Jacobian(model,fitopts,scanning_only=False,scanfij=0.5,sav
         T = temperatures[n]
         dir = directories[n]
         beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
-        print "  Calculating Jacobian for iteration_%d/%s" % (model.iteration,dir)
+        print "  Calculating Jacobian for iteration_%d/%s" % (iteration,dir)
         os.chdir(dir)
         sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,bounds,state_labels,saveas=saveas,test=test)
         sim_feature_all.append(sim_feature)
