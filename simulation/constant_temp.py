@@ -288,7 +288,7 @@ def folding_temperature_loop_extension(model,new=False):
         T_min, T_max, deltaT = determine_new_T_array()
     print "  Running temperature array: T_initial = %.2f   T_final = %.2f   dT = %.2f " % (T_min,T_max,deltaT)
     run_temperature_array(model,T_min,T_max,deltaT)
-    logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
+    logging.basicConfig(filename="%s.log" % model.name,level=logging.INFO)
     logger = logging.getLogger("simulation")
     logger.info("Submitting short_temps iteration ")
     logger.info("  T_min = %d , T_max = %d , dT = %d" % (T_min, T_max, deltaT))

@@ -55,7 +55,7 @@ def new_project(args):
     for k in range(len(Models)):
         model = Models[k]
         model.dry_run = args.dry_run
-        os.chdir("%s" % name)
+        os.chdir("%s" % model.name)
         open("Native.pdb","w").write(model.cleanpdb)
         open("clean.pdb","w").write(model.cleanpdb_full)
         open("clean_noH.pdb","w").write(model.cleanpdb_full_noH)
@@ -68,6 +68,9 @@ def new_project(args):
     for k in range(len(Models)):
         model = Models[k]
         fitopts = Fittingopts[k]
+        #set default fitopts
+        if fitopts["iteration"] == None:
+            fitopts["iteration"] = 0
         iteration = fitopts["iteration"]
         print "Starting Tf_loop_iteration for %s: " % model.name
         simulation.constant_temp.folding_temperature_loop(model,iteration,new=True)
