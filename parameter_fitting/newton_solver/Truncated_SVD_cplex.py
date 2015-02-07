@@ -11,7 +11,7 @@ def find_solutions(model,position=42):
     Jacobian_err = np.loadtxt("Jacobian_err.dat")
     J = Jacobian
 
-    norm_eps = np.linalg.norm(model[0].model_param_values)
+    norm_eps = np.linalg.norm(model.model_param_values)
 
     ## Normalize the target step. 
     df = target_feature - sim_feature
@@ -79,8 +79,8 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
 
     """
     # Find correct wording for the number of native contacts
-    num_native_pairs = model[0].n_native_pairs
-    eps = model[0].model_param_values
+    num_native_pairs = model.n_native_pairs
+    eps = model.model_param_values
     eps_native = eps[0:num_native_pairs]
     
     if len(eps)>len(eps_native):
