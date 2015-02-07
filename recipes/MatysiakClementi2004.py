@@ -252,12 +252,17 @@ def extend_temperatures(args):
 #############################################################################
 def get_args():
     """Get command line arguments """
-
+    common = argparse.ArgumentParser(description='common arguments for all parsers', add_help=False)
+    
+    common.add_argument('--dry_run',
+        action='store_true',
+        help='Dry run. No simulations submitted.')
+        
     parser = argparse.ArgumentParser(description='Options for MatysiakClementi2004 recipe.')
     sp = parser.add_subparsers(dest='action')
 
     # Options for initializing a new project.
-    new_parser = sp.add_parser('new')
+    new_parser = sp.add_parser('new', parents=[common])
     new_parser.add_argument('--names',
         type=str,
         required=True,
@@ -271,19 +276,15 @@ def get_args():
 
 
     # Options for continuing from a previously saved simulation project.
-    run_parser = sp.add_parser('continue')
+    run_parser = sp.add_parser('continue', parents=[common])
     run_parser.add_argument('--names',
         type=str,
         required=True,
         nargs='+',
         help='Subdirectories to continue')
     
-    run_parser.add_argument('--dry_run',
-        action='store_true',
-        help='Dry run. No simulations submitted.')
-
     # Options for manually adding a temperature array.
-    add_parser = sp.add_parser('add')
+    add_parser = sp.add_parser('add', parents=[common])
     add_parser.add_argument('--names',
         type=str,
         required=True,
@@ -300,12 +301,8 @@ def get_args():
         nargs='+',
         help='List of temps for new equilibrium simulations')
 
-    add_parser.add_argument('--dry_run',
-        action='store_true',
-        help='Dry run. No simulations started.')
-
     # Options for manually extending some temperatures.
-    ext_parser = sp.add_parser('extend')
+    ext_parser = sp.add_parser('extend', parents=[common])
     ext_parser.add_argument('--names',
         type=str,
         required=True,
@@ -326,10 +323,7 @@ def get_args():
         type=float,
         nargs='+',
         help='T_initial T_final dT for new mutational sims array')
-
-    ext_parser.add_argument('--dry_run',
-        action='store_true',
-        help='Dry run. No simulations started.')
+        
 
     args = parser.parse_args()
 
