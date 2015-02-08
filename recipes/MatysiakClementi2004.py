@@ -75,7 +75,6 @@ def new_project(args):
         print "Starting Tf_loop_iteration for %s: " % model.name
         simulation.constant_temp.folding_temperature_loop(model,iteration,new=True)
         mdb.inputs.save_model(model,fitopts)
-    print "Success"
 
 #############################################################################
 # Continue an existing project
@@ -99,7 +98,6 @@ def continue_project(args):
         else:
             raise IOError("Not valid action: %s" % action)
         mdb.inputs.save_model(model,fitopts)
-    print "Success"
 
 
 def logical_flowchart_starting(model,fitopts,task):
@@ -161,7 +159,7 @@ def logical_flowchart_finished(model,fitopts,task):
     elif task == "Equil_Tf_wham":
         print "Starting calculating feature vector and Jacobian"
         parameter_fitting.prepare_newtons_method(model,fitopts)
-        fitopts["last_completed_task"] = "Starting: Calculating_Jacobian"
+        fitopts["last_completed_task"] = "Finished: Solving_Newtons_Method"
     elif task == "Calculating_Jacobian":
         print "Solving for solutions with Levenberg-Marquardt method"
         fitopts["last_completed_task"] = "Starting: Solving_Newtons_Method"
@@ -172,6 +170,8 @@ def logical_flowchart_finished(model,fitopts,task):
         # Start the next round of simulations with new parameters.
         parameter_fitting.save_new_parameters(model,fitopts)
         fitopts["iteration"] += 1
+        fitopts["last_completed_task"] = "Finished: Saving_New_Params"
+    elif task == "Saving_New_Params":
         simulation.constant_temp.start_next_Tf_loop_iteration(model,iteration)
         fitopts["last_completed_task"] = "Starting: Tf_loop_iteration"
     else:
@@ -184,7 +184,7 @@ def add_temperature_array(args):
     """ Adds manually adds a temperature array."""
 
     names = args.names
-    Models,Fittingopts = mdb.inputs.load_models(name,dry_run=args.dry_run)
+    Models,Fittingopts = mdb.inputs.load_models(names,dry_run=args.dry_run)
 
     if args.short_temps != None:
         T_min = args.short_temps[0] 
@@ -202,16 +202,18 @@ def add_temperature_array(args):
     for i in range(len(Models)):
         model = Models[i]
         iteration = Fittingopts[i]["iteration"]
+        if not os.path.exists("%s/iteration_%d" % (model.name,iteration)):
+            os.mkdir("%s/iteration_%d" % (model.name,iteration))
         if long == False:
             print "Manually adding temperature array Ti=%d Tf=%d dT=%d" % (T_min,T_max,deltaT)
             print "Starting constant_temp_iteration"
             simulation.constant_temp.manually_add_temperature_array(model,iteration,T_min,T_max,deltaT)
+            Fittingopts[i]["last_completed_task"] = "Starting: Tf_loop_iteration"
         elif long == True:
             print "Manually adding equilibrium sims ", temps
             simulation.constant_temp.manually_add_equilibrium_runs(model,iteration,temps)
+            Fittingopts[i]["last_completed_task"] = "Starting: Equil_Tf"
         mdb.inputs.save_model(model,Fittingopts[i])
-        
-    print "Success"
 
 #############################################################################
 # Extend some simulations in existing project 
@@ -247,8 +249,6 @@ def extend_temperatures(args):
         iteration = Fittingopts[i]["iteration"]
         simulation.constant_temp.manually_extend_temperatures(model,iteration,method,temps,factor)
         mdb.inputs.save_model(model,Fittingopts[i])
-        
-    print "Success"
 
 #############################################################################
 # Get command line arguments 
@@ -344,3 +344,4 @@ if __name__ == "__main__":
         add_temperature_array(args)
     elif args.action == 'extend':
         extend_temperatures(args)
+    print "Success"

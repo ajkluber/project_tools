@@ -306,8 +306,8 @@ def start_next_Tf_loop_iteration(model,iteration):
     E = -model.native_stability
     N = float(model.n_residues)
     Tf_guess = (36.081061*E/N) + 56.218196 ## calibration for LJ1210 contacts circa June 2014
-    T_min = Tf_guess - 16
-    T_max = Tf_guess + 16
+    T_min = Tf_guess - 30
+    T_max = Tf_guess + 30
     T_min = int(round(T_min))
     T_max = int(round(T_max))
     deltaT = 2
@@ -332,22 +332,23 @@ def start_next_Tf_loop_iteration(model,iteration):
 
 def manually_add_temperature_array(model,iteration,T_min,T_max,deltaT):
     """ To manually set the next temperature array."""
-    cwd = os.getcwd()
-    sub = "%s/%s/iteration_%d" % (model.path,model.name,iteration)
-    os.chdir(sub)
-    logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
+    logging.basicConfig(filename="%s.log" % model.name,level=logging.INFO)
     logger = logging.getLogger("simulation")
+    sub = "%s/iteration_%d" % (model.name,iteration)
+    os.chdir(sub)
     logger.info("Submitting T_array iteration %d " % iteration)
     logger.info("  T_min = %d , T_max = %d , dT = %d" % (T_min, T_max, deltaT))
     run_temperature_array(model,T_min,T_max,deltaT)
     logger.info(" Starting: Tf_loop_iteration")
-    os.chdir(cwd)
+    os.chdir("../..")
 
 def manually_add_equilibrium_runs(model,iteration,temps):
     """ To manually set the next temperature array."""
     name = model.name
-    cwd = os.getcwd()
-    sub = "%s/%s/iteration_%d" % (model.path,name,iteration)
+    logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
+    logger = logging.getLogger("simulation")
+
+    sub = "%s/iteration_%d" % (name,iteration)
     os.chdir(sub)
     ## Run for longer if the protein is really big.
     walltime, queue, ppn, nsteps = determine_equil_walltime(model)
@@ -371,10 +372,8 @@ def manually_add_equilibrium_runs(model,iteration,temps):
 
     open("long_temps","a").write(T_string)
     open("long_temps_last","w").write(T_string)
-    logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
-    logger = logging.getLogger("simulation")
     logger.info(" Starting: Equil_Tf")
-    os.chdir(cwd)
+    os.chdir("../..")
 
 def run_equilibrium_simulations(model,iteration):
     """ Run very long (equilibrium) simulations at the estimated folding 
