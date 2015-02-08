@@ -73,7 +73,7 @@ def check_completion(model,iteration,long=False):
                 break    
         finish_line = "Statistics over %d" % nsteps
         ## Check if md.log has finished the required number of steps.
-        if finish_line in open("md.log","r").read():
+        if finish_line not in open("md.log","r").read():
             print "    Check %s simulation did not finish." % tdir
             ## Restart run
             if os.path.exists("rst.pbs"):
