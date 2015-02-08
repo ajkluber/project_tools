@@ -69,7 +69,7 @@ def prepare_newtons_method(model,fitopts):
         logger.info(" Starting: Calculating_Jacobian")
 
         sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = submodule.compute_Jacobian.calculate_average_Jacobian(model,fitopts)
-        target_feature, target_feature_err = submodule.compute_Jacobian.get_target_feature(model)
+        target_feature, target_feature_err = submodule.compute_Jacobian.get_target_feature(model,fitopts)
 
         if not os.path.exists("%s/iteration_%d/newton" % (name,iteration)):
             os.mkdir("%s/iteration_%d/newton" % (name,iteration))
@@ -113,10 +113,8 @@ def solve_newtons_method(model,fitopts):
                     "TSVD_Cplex":newton_solver.Truncated_SVD_cplex}
 
     if fitopts["solver"] not in solver_opts.keys():
-        print "ERROR! requested solver algorithm %s not found!" % fitopts["solver"]
-        print " Choose from available solvers: ", solver_opts.keys()
-        print " Exiting."
-        raise SystemExit
+        raise ValueError("requested solver algorithm %s not accepted values: %s " \
+                        % (fitopts["solver"],solver_opts.keys().__repr__()))
     else:
         solver = solver_opts[fitopts["solver"]]
 

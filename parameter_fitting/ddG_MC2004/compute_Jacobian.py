@@ -92,7 +92,7 @@ def get_Vp_plus_Vpk_for_state(model,Vp,rij,Fij_pairs,Fij,state):
 
     return Vp_plus_Vpk_state
 
-def get_target_feature(model):
+def get_target_feature(model,fitopts):
     ''' Get target features '''
     name = model.name
     iteration = fitopts['iteration']

@@ -19,7 +19,7 @@ import numpy as np
 
 import save_and_plot
 
-def find_solutions(model,method,scaling=False):
+def find_solutions(model,scaling=False):
     ''' Solve for new parameters using the Levenberg-Marquardt algorithm 
 
     Description:
@@ -118,14 +118,13 @@ if __name__ == '__main__':
     model = mdb.check_inputs.load_model("%s" % name,dry_run=True)
     model.iteration = iteration
     #model.contact_epsilons = np.ones(model.n_contacts,float)
-    method = "ddG_MC2004"
 
     cwd = os.getcwd()
     if not os.path.exists("%s/iteration_%d/test" % (name,iteration)):
         os.mkdir("%s/iteration_%d/test" % (name,iteration))
     os.chdir("%s/iteration_%d/test" % (name,iteration))
 
-    find_solutions(model,method)
+    find_solutions(model)
 
     os.chdir(cwd)
 
