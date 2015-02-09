@@ -156,7 +156,7 @@ def logical_flowchart_finished(model,fitopts,task):
     elif task == "Equil_Tf_analysis":
         # Run heat capacity for equilibrium runs. Cv(T), F(Q)
         analysis.constant_temp.run_wham_heat_capacity(model,iteration,long=True)
-        fitopts["last_completed_task"] = "Starting: Equil_Tf_wham"
+        fitopts["last_completed_task"] = "Finished: Equil_Tf_wham"
     elif task == "Equil_Tf_wham":
         print "Starting calculating feature vector and Jacobian"
         parameter_fitting.prepare_newtons_method(model,fitopts)
