@@ -43,9 +43,8 @@ def save(model,soln_index):
     ## Update parameters
     model.update_model_param_values(neweps_p)
 
-    path = model.path
     cwd = os.getcwd()
-    relpath = cwd.split(path)[1][1:]
+    relpath = cwd.split("%s/" % model.path)[1]
     open("%s/pairwise_params" % relpath,"w").write(model.pairwise_param_file_string)
     open("%s/model_params" % relpath,"w").write(model.model_param_file_string)
     model.pairwise_params_file_location = "%s/pairwise_params" % relpath
