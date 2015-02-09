@@ -96,7 +96,7 @@ def get_target_feature(model,fitopts):
     ''' Get target features '''
     name = model.name
     iteration = fitopts['iteration']
-
+    
     cwd = os.getcwd()
     os.chdir("%s/mutants" % name)
     target_feature, target_feature_err = get_exp_ddG()
