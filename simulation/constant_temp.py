@@ -66,16 +66,16 @@ def check_completion(model,iteration,long=False):
             print "  somethings wrong with Gromacs traj.xtc file. See %s/check.err" % tdir
             error = 1
 
-        ## Determine the number of steps for completed run.
+        # Determine the number of steps for completed run.
         for line in open("nvt.mdp" ,"r"):
             if line[:6] == "nsteps":
                 nsteps = int(line.split()[2]) + 1
                 break    
         finish_line = "Statistics over %d" % nsteps
-        ## Check if md.log has finished the required number of steps.
+        # Check if md.log has finished the required number of steps.
         if finish_line not in open("md.log","r").read():
             print "    Check %s simulation did not finish." % tdir
-            ## Restart run
+            # Restart run
             if os.path.exists("rst.pbs"):
                 sb.call("qsub rst.pbs",shell=True)
                 print "  Restarting: %s " % tdir
@@ -127,9 +127,9 @@ def determine_new_temperatures():
     lowerT = int(temperatures[0].split("_")[0])
     dT = int(temperatures[1].split("_")[0]) - lowerT
     upperT = int(temperatures[-1].split("_")[0])
-    ## Temperatures bracket the folding temperature if the average 
-    ## fraction of nonlocal native contacts goes from greater than 0.5 to less
-    ## than 0.5.
+    # Temperatures bracket the folding temperature if the average 
+    # fraction of nonlocal native contacts goes from greater than 0.5 to less
+    # than 0.5.
     for tdir in temperatures:
         Q = np.loadtxt(tdir+"/Qnhprob.dat")
         avgQ = np.mean(Q[len(Q)/2:])
@@ -140,13 +140,13 @@ def determine_new_temperatures():
             break
         
     if dT == 2:
-        ## Previous run was final iteration. Now WHAM needs to be
-        ## done.
+        # Previous run was final iteration. Now WHAM needs to be
+        # done.
         newT_min, newT_max, newdeltaT = 0,0,0
     else:
-        ## Determine the finer grain T_array.
+        # Determine the finer grain T_array.
         newdeltaT = int(float(dT)/5.)
-        ## If newdeltaT < 5 then just do finest temperature spacing. 
+        # If newdeltaT < 5 then just do finest temperature spacing. 
         if newdeltaT < 5:
             newdeltaT = 2
             midT = int(0.5*(float(lowerT)+upperT))
@@ -155,7 +155,7 @@ def determine_new_temperatures():
         else:
             newT_min = lowerT + newdeltaT
             newT_max = upperT - newdeltaT
-    #print "##DEBUGGING: New Ti, Tf, dT", newT_min, newT_max, newdeltaT
+    #print "#DEBUGGING: New Ti, Tf, dT", newT_min, newT_max, newdeltaT
     return newT_min, newT_max, newdeltaT
 
 def manually_extend_temperatures(model,iteration,method,temps,factor):
@@ -167,7 +167,7 @@ def manually_extend_temperatures(model,iteration,method,temps,factor):
     name = model.name
     cwd = os.getcwd()
     sub = "%s/%s/iteration_%d" % (model.path,name,iteration)
-    ## Determine directory to enter
+    # Determine directory to enter
     if method == "short":
         Tlist = [ str(int(x))+"_0" for x in temps ]
     elif method == "long":
@@ -182,7 +182,7 @@ def manually_extend_temperatures(model,iteration,method,temps,factor):
 
     os.chdir(sub)
     check_exist = [ os.path.exists(x) for x in Tlist ]
-    ## Check that all temperaures exist 
+    # Check that all temperaures exist 
     if not all(check_exist):
         print "ERROR!"
         print "  Some temperature does not exist!"
@@ -217,18 +217,18 @@ def manually_extend_temperatures(model,iteration,method,temps,factor):
 
 def extend_temperature(T,factor):
     """ Extend individual temperature run by factor """
-    ## Calculate new nsteps = factor*old_nsteps
+    # Calculate new nsteps = factor*old_nsteps
     for line in open("nvt.mdp","r").readlines():
         if line.startswith("nsteps"):
             old_nsteps = int(line.split()[2])
             new_nsteps = str(int(round(factor*old_nsteps)))
             break
     
-    ## Save old .mdp and .tpr as something else.
+    # Save old .mdp and .tpr as something else.
     shutil.move("nvt.mdp","nvt.mdp")
     shutil.move("topol_4.6.tpr","old_topol_4.6.tpr")
 
-    ## Write new .mdp with more steps and recreate .tpr
+    # Write new .mdp with more steps and recreate .tpr
     mdpfile = mdp.constant_temperature(T,new_nsteps)
     open("nvt.mdp","w").write(mdpfile)
 
@@ -238,7 +238,7 @@ def extend_temperature(T,factor):
     sb.call(prep_step1.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
     sb.call(prep_step2.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
 
-    ## Submit rst.pbs
+    # Submit rst.pbs
     qsub = "qsub rst.pbs"
     sb.call(qsub.split(),stdout=open("rst.out","w"),stderr=open("rst.err","w"))
 
@@ -254,12 +254,12 @@ def folding_temperature_loop(model,iteration,new=False):
     sub = "%s/%s/iteration_%d" % (model.path,model.name,iteration)
     if (not os.path.exists(sub)):
         os.mkdir(sub)
-    ## Check to see if the folding temperature has been found. If yes, then continue.
-    if (not os.path.exists(sub+"/short_Tf")):
+    # Check to see if the folding temperature has been found. If yes, then continue.
+    if (not os.path.exists("%s/short_Tf" % sub)):
         os.chdir(sub)
         folding_temperature_loop_extension(model,new=new)
     else:
-        ## Folding temperature has been found. Continuing.
+        # Folding temperature has been found. Continuing.
         pass
     os.chdir(cwd)
 
@@ -267,24 +267,24 @@ def folding_temperature_loop_extension(model,new=False):
     """ This is for doing an additional loop in the Tf_loop. It either starts
         an initial temperature array or refines the temperature range according
         to previous data. """
-    ## Check to see if a previous temperature range was used.
+    # Check to see if a previous temperature range was used.
     #if (not os.path.exists("T_array_last.txt")) or new:
     if (not os.path.exists("short_temps_last.txt")) or new:
-        ## For initial exploration use very broad temperature increments.
+        # For initial exploration use very broad temperature increments.
         if model.initial_T_array != None:
             T_min = model.initial_T_array[0]
             T_max = model.initial_T_array[1]
             deltaT = model.initial_T_array[2]
         else:
-            ## Estimate folding temperature
+            # Estimate folding temperature
             E = -model.native_stability
             N = float(model.n_residues)
-            Tf_guess = int(round((36.081061*E/N) + 56.218196)) ## calibration for LJ1210 contacts circa June 2014
+            Tf_guess = int(round((36.081061*E/N) + 56.218196)) # calibration for LJ1210 contacts circa June 2014
             T_min = Tf_guess - 16
             T_max = Tf_guess + 16
             deltaT = 2
     else:
-        ## Use previous range to determine new range. 
+        # Use previous range to determine new range. 
         T_min, T_max, deltaT = determine_new_T_array()
     print "  Running temperature array: T_initial = %.2f   T_final = %.2f   dT = %.2f " % (T_min,T_max,deltaT)
     run_temperature_array(model,T_min,T_max,deltaT)
@@ -302,27 +302,25 @@ def start_next_Tf_loop_iteration(model,iteration):
         We made a calibration curve with the following points.
     """
 
-    ## Estimate folding temperature
+    # Estimate folding temperature
     E = -model.native_stability
     N = float(model.n_residues)
-    Tf_guess = (36.081061*E/N) + 56.218196 ## calibration for LJ1210 contacts circa June 2014
+    Tf_guess = (36.081061*E/N) + 56.218196 # calibration for LJ1210 contacts circa June 2014
     T_min = Tf_guess - 30
     T_max = Tf_guess + 30
     T_min = int(round(T_min))
     T_max = int(round(T_max))
     deltaT = 2
-
+    name = model.name
     cwd = os.getcwd()
-    sub = "%s/iteration_%d" % (model.name,iteration)
+    sub = "%s/iteration_%d" % (name,iteration)
     if os.path.exists(sub):
-        print "ERROR!"
-        print "  The next iteration directory exists. "
-        print "  exiting"
-        raise SystemExit
+        raise IOError("  The next iteration directory exists.")
     else:
         os.makedirs(sub)
     os.chdir(sub)
     run_temperature_array(model,T_min,T_max,deltaT)
+
     logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
     logger = logging.getLogger("simulation")
     logger.info("Submitting T_array iteration %d" % iteration)
@@ -350,7 +348,7 @@ def manually_add_equilibrium_runs(model,iteration,temps):
 
     sub = "%s/iteration_%d" % (name,iteration)
     os.chdir(sub)
-    ## Run for longer if the protein is really big.
+    # Run for longer if the protein is really big.
     walltime, queue, ppn, nsteps = determine_equil_walltime(model)
 
     T_string = ''
@@ -358,7 +356,7 @@ def manually_add_equilibrium_runs(model,iteration,temps):
         T = "%.2f" % temps[i]
         for simnum in range(1,4):
             simpath = T+"_"+str(simnum)
-            ## Only start the simulation if directory doesn't exist.
+            # Only start the simulation if directory doesn't exist.
             if (not os.path.exists(simpath)):
                 T_string += "%s\n" % simpath
                 os.mkdir(simpath)
@@ -367,7 +365,7 @@ def manually_add_equilibrium_runs(model,iteration,temps):
                 run_constant_temp(model,T,name,nsteps=nsteps,walltime=walltime,queue=queue)
                 os.chdir("..")
             else:
-                ## Directory exists for this temperature: continue.
+                # Directory exists for this temperature: continue.
                 continue
 
     open("long_temps","a").write(T_string)
@@ -392,7 +390,7 @@ def run_equilibrium_simulations(model,iteration):
         T = "%.2f" % (float(Tf)+1.*(n-1))
         for simnum in range(1,4):
             simpath = T+"_"+str(simnum)
-            ## Only start the simulation if directory doesn't exist.
+            # Only start the simulation if directory doesn't exist.
             if (not os.path.exists(simpath)):
                 T_string += "%s\n" % simpath
                 os.mkdir(simpath)
@@ -401,7 +399,7 @@ def run_equilibrium_simulations(model,iteration):
                 run_constant_temp(model,T,name,nsteps=nsteps,walltime=walltime,queue=queue)
                 os.chdir("..")
             else:
-                ## Directory exists for this temperature: continue.
+                # Directory exists for this temperature: continue.
                 continue
 
     open("long_temps","a").write(T_string)
@@ -449,13 +447,13 @@ def run_temperature_array(model,T_min,T_max,deltaT):
     """ Simulate range of temperatures to find the folding temperature. """
 
     Temperatures = range(T_min,T_max+deltaT,deltaT)
-    ## Run for longer if the protein is really big.
+    # Run for longer if the protein is really big.
     walltime, queue, ppn, nsteps = determine_walltime(model)
     name = model.name
     T_string = ''
     for T in Temperatures:
         simpath = str(T)+"_0"
-        ## Only start the simulation is directory doesn't exist.
+        # Only start the simulation is directory doesn't exist.
         if (not os.path.exists(simpath)):
             T_string += "%d_0\n" % T
             os.mkdir(simpath)
@@ -479,14 +477,14 @@ def run_constant_temp(model,T,name,nsteps="100000000",walltime="23:00:00",queue=
     submit a pbs job to run simulation.
 
     """
-    ## Loading and writing grompp.
+    # Loading and writing grompp.
     mdpfile = mdp.constant_temperature(str(T),nsteps)
     open("nvt.mdp","w").write(mdpfile)
 
-    ## Write all needed simulation files.
+    # Write all needed simulation files.
     model.save_simulation_files()
 
-    ## Start simulation
+    # Start simulation
     jobname = "%s_%s" % (name,str(T))
     prep_run(jobname,walltime=walltime,queue=queue,ppn=ppn)
 
