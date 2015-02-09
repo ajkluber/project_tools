@@ -131,12 +131,12 @@ def logical_flowchart_finished(model,fitopts,task):
     sub = model.name
     iteration = fitopts["iteration"]
     if task == "Tf_loop_iteration":
-        print "Finished Tf_loop_iteration"
-        print "Starting Tf_loop_analysis"
+        print "Finished: Tf_loop_iteration"
+        print "Starting: Tf_loop_analysis"
         analysis.constant_temp.analyze_temperature_array(model,iteration)
         fitopts["last_completed_task"] = "Starting: Tf_loop_analysis"
     elif task == "Tf_loop_analysis":
-        print "Finished Tf_loop_analysis"
+        print "Finished: Tf_loop_analysis"
         flag = analysis.constant_temp.run_wham_heat_capacity(model,iteration)
         fitopts["last_completed_task"] = "Finished: Tf_wham"
         if flag == 1:
