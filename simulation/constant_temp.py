@@ -323,7 +323,7 @@ def start_next_Tf_loop_iteration(model,iteration):
         os.makedirs(sub)
     os.chdir(sub)
     run_temperature_array(model,T_min,T_max,deltaT)
-    logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
+    logging.basicConfig(filename="%s.log" % model.name,level=logging.INFO)
     logger = logging.getLogger("simulation")
     logger.info("Submitting T_array iteration %d" % iteration)
     logger.info("  T_min = %d , T_max = %d , dT = %d" % (T_min, T_max, deltaT))
