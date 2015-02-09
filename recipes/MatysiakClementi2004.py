@@ -123,7 +123,7 @@ def logical_flowchart_starting(model,fitopts,task):
     elif task == "Equil_Tf_analysis":
         print "Starting to check if Equil_Tf_analysis completed"
         analysis.constant_temp.check_completion(model,iteration,long=True)
-        fitopts["last_completed_task"] = "Finished Equil_Tf_analysis"
+        fitopts["last_completed_task"] = "Finished: Equil_Tf_analysis"
     else:
         raise ValueError("  Couldn't find next option for task: %s" % task)
 

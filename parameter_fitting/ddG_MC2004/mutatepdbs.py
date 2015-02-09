@@ -12,6 +12,7 @@ Follow instructions at:
 https://docs.rice.edu/confluence/display/ITDIY/How+to+use+BLAS+and+LAPACK+libraries
 
 '''
+import argparse
 import numpy as np
 import os
 
@@ -241,7 +242,7 @@ def count_heavy_atom_contacts(pdb,cutoff=6.0):
 
     return C, residues, atm_coords
 
-def calculate_contacts_lost_for_mutants():
+def calculate_contacts_lost_for_mutants(avgflag):
     ''' Calculates the fraction of heavy-atom contact loss between residues i and j
         for mutant k:  f^k_ij . Must be in mutants directory which holds wild-type 
         pdb wt.pdb.'''
@@ -263,11 +264,10 @@ def calculate_contacts_lost_for_mutants():
     log_string = "Core Mutations:\n"
     for k in range(len(mutants)):
         mut = mutants[k]
-        saveas = mut+".pdb"
         print "    Calculating fij for: %s" % mut
         respos = mut[1:-1]
         restyp = residue_three_letter_code(mut[-1])
-        saveas = mut+".pdb"
+        saveas = "%s.pdb" % mut
         modeller_mutate_pdb(modelname,respos,restyp,saveas)
 
         mutindx = int(mut[1:-1])
@@ -278,17 +278,26 @@ def calculate_contacts_lost_for_mutants():
         Dmut = (Cwt - Cmut)*Cmap
         indices = np.nonzero(Dmut)
         Fij = np.zeros(Cwt.shape)
+        nonzerofij = [ Dmut[indices[0][m],indices[1][m]]/Cwt[indices[0][m],indices[1][m]] for m in range(len(indices[0])) \
+                            if Cwt[indices[0][m],indices[1][m]] != 0 ]
+        avgfij =  np.mean(nonzerofij)
         for m in range(len(indices[0])):
             a = indices[0][m]
             b = indices[1][m]
             if Cwt[a,b] == 0.:
                 continue
             else:
-                fij = Dmut[a,b]/Cwt[a,b]
-                Fij[a,b] = fij
-                tempstring += "%3s %-3d %3s %-3d  %3d  %3d  %3d  %9.5f\n" % \
-                    (residues[a], a+1, residues[b], b+1, Cwt[a,b], Cmut[a,b], Dmut[a,b],fij)
-        np.savetxt("fij_"+mut+".dat",Fij,fmt="%.6f",delimiter=" ")
+                if avgflag:
+                    fij = Dmut[a,b]/Cwt[a,b]
+                    Fij[a,b] = avgfij
+                    tempstring += "%3s %-3d %3s %-3d  %3d  %3d  %3d  %9.5f %9.5f\n" % \
+                        (residues[a], a+1, residues[b], b+1, Cwt[a,b], Cmut[a,b], Dmut[a,b],fij,avgfij)
+                else:
+                    fij = Dmut[a,b]/Cwt[a,b]
+                    Fij[a,b] = fij
+                    tempstring += "%3s %-3d %3s %-3d  %3d  %3d  %3d  %9.5f\n" % \
+                        (residues[a], a+1, residues[b], b+1, Cwt[a,b], Cmut[a,b], Dmut[a,b],fij)
+        np.savetxt("fij_%s.dat" % mut,Fij,fmt="%.6f",delimiter=" ")
         log_string += tempstring+"\n"
 
     log_string += "\nAlanine-Glycine Mutations:\n"
@@ -397,13 +406,20 @@ def modeller_mutate_pdb(modelname,respos,restyp,saveas,chain='A'):
 if __name__ == '__main__':
     ''' Creates a mutated pdb for every mutant.'''
 
+    
+    parser = argparse.ArgumentParser(description='Calculate .')
+    parser.add_argument('--avg',type=bool, default=False, help='Use avgfij.')
+    args = parser.parse_args()
+    
+    avgflag = args.avg
+
+
     from modeller import *
     if (not os.path.exists("calculated_ddG.dat")) and (not os.path.exists("core.ddG")):
-        print "ERROR!"
-        print "  The file calculated_ddG.dat or core.ddG must exist!"
-        print "  exiting..."
-        raise SystemExit
+        raise IOError("calculated_ddG.dat or core.ddG must exist!")
 
     print "  Calculating fraction of contact loss fij."
-    calculate_contacts_lost_for_mutants()
+    if avgflag:
+        print "  Using average fij per mutation"
+    calculate_contacts_lost_for_mutants(avgflag)
     print "  See mutatepdbs.log for summary of contact loss per mutant."
