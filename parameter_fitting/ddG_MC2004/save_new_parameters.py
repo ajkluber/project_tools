@@ -48,6 +48,6 @@ def save(model,soln_index):
     relpath = cwd.split(path)[1][1:]
     open("%s/pairwise_params" % relpath,"w").write(model.pairwise_param_file_string)
     open("%s/model_params" % relpath,"w").write(model.model_param_file_string)
-    model.pairwise_param_file_location = "%s/pairwise_params" % relpath
-    model.model_param_file_location = "%s/model_params" % relpath
+    model.pairwise_params_file_location = "%s/pairwise_params" % relpath
+    model.model_params_file_location = "%s/model_params" % relpath
 
