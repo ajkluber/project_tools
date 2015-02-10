@@ -178,7 +178,7 @@ def add_error_log(note, fit_temp):
         
 def get_target_feature(model,fitopts):
     """ Get target features """
-    fit_temp = fitopt["fit_temp"]
+    fit_temp = fitopts["t_fit"]
     cwd = os.getcwd()
     subdir = model.name
     iteration = fitopts["iteration"]
