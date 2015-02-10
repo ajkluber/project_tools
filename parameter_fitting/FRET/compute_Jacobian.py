@@ -213,7 +213,7 @@ def get_target_feature(model,fitopts):
 def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing=defspacing ):
     """ Calculate the average feature vector (ddG's) and Jacobian """
     if "t_fit" in fitopts:
-        fit_temp = fitopts["fit_temp"]
+        fit_temp = fitopts["t_fit"]
     else:
         raise IOError("Missing the fit_temperature, please specify in .ini file")
     
