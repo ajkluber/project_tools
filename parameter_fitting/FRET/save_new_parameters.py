@@ -50,7 +50,7 @@ def save(model,soln_index):
     open("%s/pairwise_params" % cwd,"w").write(model.pairwise_param_file_string)
     open("%s/model_params" % cwd,"w").write(model.model_param_file_string)
     open("%s/fitting_scale" % cwd,"w").write("%f"%fitit)
-    model.contact_params_file_location = "%s/pairwise_params" % cwd
+    model.pairwise_params_file_location = "%s/pairwise_params" % cwd
     model.model_params_file_location = "%s/model_params" % cwd
 
 def estimate_lambda():
