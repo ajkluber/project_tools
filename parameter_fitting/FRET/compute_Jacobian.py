@@ -212,15 +212,15 @@ def get_target_feature(model,fitopts):
 
 def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing=defspacing ):
     """ Calculate the average feature vector (ddG's) and Jacobian """
-    if hasattr(fitopts, "fit_temp"):
+    if "fit_temp" in fitopts:
         fit_temp = fitopts["fit_temp"]
     else:
         raise IOError("Missing the fit_temperature, please specify in .ini file")
     
-    if hasattr(fitopts, "fret_pairs"):
-        FRET_pairs = fitopts["fit_temp"]
+    if "fret_pairs" in fitopts:
+        FRET_pairs = fitopts["fret_pairs"]
  
-    if hasattr(fitopts, "spacing"):
+    if "spacing" in fitopts:
         spacing = fitopts["spacing"]
         
     cwd = os.getcwd()
