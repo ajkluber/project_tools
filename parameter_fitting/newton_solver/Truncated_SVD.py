@@ -18,7 +18,7 @@ import numpy as np
 
 import save_and_plot
 
-def find_solutions(model,method):
+def find_solutions(model,scaling=False):
     cplex = False
     target_feature = np.loadtxt("target_feature.dat")
     sim_feature = np.loadtxt("sim_feature.dat")
