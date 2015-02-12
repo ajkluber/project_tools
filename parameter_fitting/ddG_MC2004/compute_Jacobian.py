@@ -377,5 +377,6 @@ if __name__ == "__main__":
     pairs = np.loadtxt("%s/pairs.dat" % name)
     pdb = "%s.pdb" % name
     defaults = True
-    model = mdb.models.SmogCalpha.SmogCalpha(pdb=pdb,pairs=pairs,defaults=defaults,iteration=iteration)
+    model, fitopts = inputs.load_model(name)
+#    model = mdb.models.SmogCalpha.SmogCalpha(pdb=pdb,pairs=pairs,defaults=defaults,iteration=iteration)
     sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = calculate_average_Jacobian(model,fitopts,test=True)
