@@ -9,16 +9,16 @@ import os
 def save(model,soln_index):
     ''' Save new parameters '''
 
-    ## Only the fitting_params (a subset of model_params) are
-    ## being updated.
+    # Only the fitting_params (a subset of model_params) are
+    # being updated.
 
-    ## Use new method of model_parameters
+    # Use new method of model_parameters
     eps_p_0 = model.model_param_values[model.fitting_params]
     deps_p = np.loadtxt("xp_%d.dat" % soln_index)
 
-    ## Scale model parameters by a constant such that the ratio 
-    ## of the norm of the perturbation to the norm of the parameters
-    ## is 0.2.
+    # Scale model parameters by a constant such that the ratio 
+    # of the norm of the perturbation to the norm of the parameters
+    # is 0.2.
     if os.path.exists("desired_ratio"):
         desired_ratio = np.loadtxt("desired_ratio")
     else:
@@ -34,13 +34,13 @@ def save(model,soln_index):
     open("scaling_alpha","w").write("%.4f" % alpha)
     neweps_p = eps_p_0 + alpha*deps_p       
     
-    ## For the non-native interactions set the neweps_p to be
-    ## equal to the delta.
+    # For the non-native interactions set the neweps_p to be
+    # equal to the delta.
     #for i in range(model.n_contacts):
-    #    ##
+    #    #
     #    pass 
 
-    ## Update parameters
+    # Update parameters
     model.update_model_param_values(neweps_p)
 
     cwd = os.getcwd()
