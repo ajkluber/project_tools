@@ -123,7 +123,7 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
     
     if eps_non_native == []:
     ## Objective 3: Maximize attractiveness of minimal attraction interaction
-        linear_objective_coeff = np.hstack((np.zeros(N.shape[1], float), -1.0))
+        linear_objective_coeff = np.hstack((np.zeros(N.shape[1], float), 1.0))
 
     else:
     ## Objective_4: Maximize attractiveness of minimal native interaction (linear objective)
@@ -132,7 +132,7 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
     ## objective with a cplex LP program. Thus, both objectives are simultaneous and a weight factor is added to 
     ## assign each of them a relative importance
 
-        linear_objective_coeff = np.hstack((np.zeros(N.shape[1],float),(np.ones(2)))
+        linear_objective_coeff = np.hstack((np.zeros(N.shape[1],float),(np.ones(2))))
 #        linear_objective_coeff = np.hstack((linear_objective_coeff, np.ones(len(eps_non_native),float)))
 #        quadratic_objective_coeff = np.hstack((np.zeros(N.shape[1],float),-1.0))
 #        quadratic_objective_coeff = np.hstack((quadratic_objective_coeff,np.ones(len(eps_non_native),float)))
@@ -316,7 +316,7 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
     ## Since (-EGap) should be negative, the upper boundary for this variable is set to 0.
     upper_bounds = list(100.*np.ones(N.shape[1]))
     upper_bounds.append(float(0))
-    upper_bounds.append(float(0))
+    upper_bounds.append(float(1000))
 #    upper_bounds_2 = list(eps_upper_bound_non_native*np.ones(len(eps_non_native)))
 #    upper_bounds.extend(upper_bounds_2)
 
