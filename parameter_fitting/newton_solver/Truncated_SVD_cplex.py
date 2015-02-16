@@ -1,7 +1,7 @@
 import numpy as np
 import save_and_plot
 
-def find_solutions(model,position=100):
+def find_solutions(model,position=7):
     target_feature = np.loadtxt("target_feature.dat")
     target_feature_err = np.loadtxt("target_feature_err.dat")
     sim_feature = np.loadtxt("sim_feature.dat")
@@ -47,7 +47,7 @@ def find_solutions(model,position=100):
 
     if status == 1:
         max_solvable_eig = i
-        cplex_solution = x_particular + np.dot(N,cplex_lambdas[:-1]) 
+        cplex_solution = x_particular + np.dot(N,cplex_lambdas[:-2]) 
         residual = np.dot(J,cplex_solution) - df
         nrm_soln.append(np.linalg.norm(cplex_solution))
         nrm_resd.append(np.linalg.norm(residual))
@@ -314,13 +314,14 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
     ## Set upper and lower bounds on the solution. Arbitrary. Hopefully these 
     ## don't matter. These are bounds on vector lambda and the (-EGap)
     ## Since (-EGap) should be negative, the upper boundary for this variable is set to 0.
-    upper_bounds = list(100.*np.ones(N.shape[1]))
-    upper_bounds.append(float(0))
-    upper_bounds.append(float(1000))
+    upper_bounds = list(10000.*np.ones(N.shape[1]))
+    upper_bounds.append(float(10000))
+    upper_bounds.append(float(10000))
 #    upper_bounds_2 = list(eps_upper_bound_non_native*np.ones(len(eps_non_native)))
 #    upper_bounds.extend(upper_bounds_2)
 
-    lower_bounds = list(-100.*np.ones(N.shape[1]+1))
+    lower_bounds = list(-10000.*np.ones(N.shape[1]))
+    lower_bounds.append(float(0))
     lower_bounds.append(float(-eps_upper_bound_non_native))
 #    lower_bounds_2 = list(eps_lower_bound_non_native*np.zeros(len(eps_non_native)))
 #    lower_bounds.extend(lower_bounds_2)
