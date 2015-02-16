@@ -14,7 +14,7 @@ def save(model,soln_index):
     cwd = os.getcwd()
     eps0 = model.pairwise_strengths
     deps = np.loadtxt("xp_%d.dat" % soln_index)
-    fitit = 0
+    fitit = 1
     
     ##calculate the scaling based upon what would actually happen: if it's already at 0.01, and goes more negative, now it effectively shows a deps there of 0, and not some arbitrarily large number
     neweps_effective = eps0 + deps
@@ -50,7 +50,7 @@ def save(model,soln_index):
     open("%s/pairwise_params" % cwd,"w").write(model.pairwise_param_file_string)
     open("%s/model_params" % cwd,"w").write(model.model_param_file_string)
     open("%s/fitting_scale" % cwd,"w").write("%f"%fitit)
-    model.contact_params_file_location = "%s/pairwise_params" % cwd
+    model.pairwise_params_file_location = "%s/pairwise_params" % cwd
     model.model_params_file_location = "%s/model_params" % cwd
 
 def estimate_lambda():

@@ -29,14 +29,14 @@ GAS_CONSTANT_KJ_MOL = 0.0083144621
 def_FRET_pairs = [[114,192]]
 defspacing = 0.1 ## in nm
 
-def calc_sim_bins(model, fit_temp, residues=def_FRET_pairs, spacing=defspacing):
+def calc_sim_bins(model, fitopts, residues=def_FRET_pairs, spacing=defspacing):
     """calc_sim_bins calculates and writes the simulation files """
     ##assumes you are in the folder containing the model subdir
     print "Calculating Simulation FRET bins"
-    fit_temp = check_temp(fit_temp)
     cwd = os.getcwd()
     subdir = model.name
-    iteration = model.iteration
+    iteration = fitopts["iteration"]
+    fit_temp = fitopts["t_fit"]
     
     sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
     subtemp = "%s/%d_0" % (sub,fit_temp)
@@ -66,50 +66,50 @@ def calc_sim_bins(model, fit_temp, residues=def_FRET_pairs, spacing=defspacing):
     os.chdir(cwd)
     print "Calculated bins for simulation data at a spacing of %.4f" % spacing
 
-def get_sim_params(model,fit_temp):
+def get_sim_params(model,fitopts):
     ##assumes you are in the folder containing the model subdir
-    fit_temp = check_temp(fit_temp)
+    fit_temp = fitopts["t_fit"]
     cwd = os.getcwd()
     subdir = model.name
-    iteration = model.iteration
+    iteration = fitopts["iteration"]
     
     sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
     subdirec = "%s/fitting_%d" % (sub,iteration)
     parmfile = "%s/simf-params%d.dat" % (subdirec,fit_temp)
     
     if not os.path.isfile(parmfile):
-        calc_sim_bins(model, fit_temp)  
+        calc_sim_bins(model, fitopts)  
     parms = np.loadtxt(parmfile)
     num_bins = parms[0]
     ran_size = (parms[1],parms[2])
     spacing = parms[3]
     return num_bins, ran_size, spacing
 
-def get_sim_centers(model,fit_temp): 
-    fit_temp = check_temp(fit_temp)
+def get_sim_centers(model,fitopts): 
+    fit_temp = fitopts["t_fit"]
     cwd = os.getcwd()
     subdir = model.name
-    iteration = model.iteration
+    iteration = fitopts["iteration"]
     
     sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
     subdirec = "%s/fitting_%d" % (sub,iteration)
     simfile = "%s/simf_centers%d.dat" % (subdirec,fit_temp)
     if not os.path.isfile(simfile):
-        calc_sim_bins(model,fit_temp=fit_temp)
+        calc_sim_bins(model,fitopts)
     return np.loadtxt(simfile)
 
-def get_sim_array(model,fit_temp):
-    fit_temp = check_temp(fit_temp)
+def get_sim_array(model,fitopts):
+    fit_temp = fitopts["t_fit"]
     cwd = os.getcwd()
     subdir = model.name
-    iteration = model.iteration
+    iteration = fitopts["iteration"]
     sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
     subdirec = "%s/fitting_%d" % (sub,iteration)
     simfile = "%s/simf_centers%d.dat" % (subdirec,fit_temp)
     simfilef = "%s/simf_valuesT%d.dat" % (subdirec,fit_temp)
     print "Fit temp is : ", fit_temp
     if not os.path.isfile(simfile):
-        calc_sim_bins(model,fit_temp)
+        calc_sim_bins(model,fitopts)
     centers = np.loadtxt(simfile)
     values = np.loadtxt(simfilef)
     simarray = np.array([centers,values])
@@ -118,11 +118,11 @@ def get_sim_array(model,fit_temp):
     os.chdir(cwd)
     return simarray
     
-def fret_hist_calc(model, bin_size, ran_size, spacing):
+def fret_hist_calc(model, fitopts, bin_size, ran_size, spacing):
     ##read trace file from 
     cwd = os.getcwd()
     subdir = model.name
-    iteration = model.iteration
+    iteration = fitopts["iteration"]
     
     sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
     subdirec = "%s/fitting_%d" % (sub,iteration)
@@ -178,10 +178,10 @@ def add_error_log(note, fit_temp):
         
 def get_target_feature(model,fitopts):
     """ Get target features """
-    fit_temp = fitopt["fit_temp"]
+    fit_temp = fitopts["t_fit"]
     cwd = os.getcwd()
     subdir = model.name
-    iteration = model.iteration
+    iteration = fitopts["iteration"]
     
     sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
     subdirec = "%s/fitting_%d" % (sub,iteration)
@@ -189,18 +189,18 @@ def get_target_feature(model,fitopts):
     FRETfile = "%s/FRET_hist.dat" % subdirec
     FRETtracefile = "%s/FRET_trace.dat" % sub
     
-    bin_centers = get_sim_centers(model, fit_temp)
-    bin_size, ran_size, spacing = get_sim_params(model, fit_temp)
+    bin_centers = get_sim_centers(model, fitopts)
+    bin_size, ran_size, spacing = get_sim_params(model, fitopts)
    
     if not os.path.isfile(FRETfile):
-        fret_hist_calc(model, bin_size, ran_size, spacing)  
+        fret_hist_calc(model, fitopts, bin_size, ran_size, spacing)  
     FRETdata = np.loadtxt(FRETfile)  
     
     print FRETdata[:,0]
     print bin_centers
     if check_exp_data(FRETdata[:,0], bin_centers):
         print "Mismatched experimental data and simulated data. Attempting Re-binning"
-        fret_hist_calc(model, bin_size, ran_size, spacing)
+        fret_hist_calc(model, fitopts, bin_size, ran_size, spacing)
         FRETdata = np.loadtxt(FRETfile)
         if check_exp_data(FRETdata[:,0], bin_centers):
             add_error_log("Catastrophic miscalculation of FRET bins", fit_temp)
@@ -212,20 +212,20 @@ def get_target_feature(model,fitopts):
 
 def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing=defspacing ):
     """ Calculate the average feature vector (ddG's) and Jacobian """
-    if hasattr(fitopts, "fit_temp"):
-        fit_temp = fitopts["fit_temp"]
+    if "t_fit" in fitopts:
+        fit_temp = fitopts["t_fit"]
     else:
         raise IOError("Missing the fit_temperature, please specify in .ini file")
     
-    if hasattr(fitopts, "fret_pairs"):
-        FRET_pairs = fitopts["fit_temp"]
+    if "fret_pairs" in fitopts:
+        FRET_pairs = fitopts["fret_pairs"]
  
-    if hasattr(fitopts, "spacing"):
+    if "spacing" in fitopts:
         spacing = fitopts["spacing"]
         
     cwd = os.getcwd()
     subdir = model.name
-    iteration = model.iteration
+    iteration = fitopts["iteration"]
     sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
     os.chdir(sub)
     os.chdir("%d_0" % (fit_temp))
@@ -243,7 +243,7 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
     Jacobian, simparams = compute_Jacobian_for_directory(model,beta,FRET_pairs, spacing)
     
     os.chdir(cwd)
-    if not np.array_equal(simparams, get_sim_array(model,fit_temp)):
+    if not np.array_equal(simparams, get_sim_array(model,fitopts)):
         add_error_log("Catastrophic error. Simparams from compute_Jacobian_for_directory is different from get_sim_params", fit_temp)
     
     sim_feature = simparams[:,1]
