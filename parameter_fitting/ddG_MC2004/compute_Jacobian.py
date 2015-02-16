@@ -293,29 +293,33 @@ def compute_dHk(model,fitopts):
         dir = dirs[n]
         beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
         os.chdir(dir)
-        if not os.path.exists("dHk_%s_U.dat" % mutants[0]):
+        if not os.path.exists("expdHk_%s_U.dat" % mutants[0]):
             print "going into directory: %s" % dir
             # Get trajectory, state indicators, contact energy
             traj,rij = get_traj_rij(model)
 
             Q = np.loadtxt("Q.dat")
             U,TS,N,Uframes,TSframes,Nframes = get_state_indicators(Q,bounds)
+            allframes = np.ones(len(traj.n_frams)).astype(bool)
 
             for k in range(len(mutants)):
             #for k in range(len(mutants)):
                 mut = mutants[k]
+                # Compute energy perturbation
+                #dHk = get_dHk_for_state(model,rij,Fij_pairs[k],Fij[k],allframes,traj.n_frames)
+                #np.savetxt("dHk_%s_U.dat" % mut,dHk_U)
+
                 dHk_U = np.zeros(traj.n_frames,float)
                 dHk_TS = np.zeros(traj.n_frames,float)
                 dHk_N = np.zeros(traj.n_frames,float)
-
-                # Compute energy perturbation
                 dHk_U[U] = get_dHk_for_state(model,rij,Fij_pairs[k],Fij[k],U,Uframes)
                 dHk_TS[TS] = get_dHk_for_state(model,rij,Fij_pairs[k],Fij[k],TS,TSframes)
                 dHk_N[N] = get_dHk_for_state(model,rij,Fij_pairs[k],Fij[k],N,Nframes)
-                
+
                 np.savetxt("dHk_%s_U.dat" % mut,dHk_U)
                 np.savetxt("dHk_%s_TS.dat" % mut,dHk_TS)
                 np.savetxt("dHk_%s_N.dat" % mut,dHk_N)
+
                 print "  mutant %d of %d done %s " % (k,len(mutants),mut)
 
         os.chdir("..")

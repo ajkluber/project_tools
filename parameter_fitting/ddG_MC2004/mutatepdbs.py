@@ -1,4 +1,4 @@
-''' Mutate the pdbs with MODELLER
+""" Mutate the pdbs with MODELLER
 
 Description:
 
@@ -11,13 +11,13 @@ MODELLER broke my Numpy build :( ===> FIXED by adding library path to LD_LIBRARY
 Follow instructions at:
 https://docs.rice.edu/confluence/display/ITDIY/How+to+use+BLAS+and+LAPACK+libraries
 
-'''
+"""
 import argparse
 import numpy as np
 import os
 
 def residue_three_letter_code(rescode):
-    '''Converting from three letter code to one letter FASTA code.'''
+    """Converting from three letter code to one letter FASTA code."""
     residue_code = {'A': 'ALA', 'R': 'ARG', 'N': 'ASN',
                     'D': 'ASP', 'C': 'CYS', 'Q': 'GLN',
                     'E': 'GLU', 'G': 'GLY', 'H': 'HIS',
@@ -28,7 +28,7 @@ def residue_three_letter_code(rescode):
     return residue_code[rescode]
 
 def get_all_core_mutations():
-    ''' Extract mutational data. Only return info for useable mutations '''
+    """ Extract mutational data. Only return info for useable mutations """
     if os.path.exists("core.ddG"):
         data = np.loadtxt("core.ddG",skiprows=1,dtype=str)
         mutants = [ "%s%s%s" % (data[i,1],data[i,0],data[i,2]) for i in range(data.shape[0]) ]
@@ -50,7 +50,7 @@ def get_all_core_mutations():
     return mutants
 
 def get_scanning_mutations():
-    ''' Return alanine-glycine scanning mutants.'''
+    """ Return alanine-glycine scanning mutants."""
     if os.path.exists("scanning.ddG"):
         data = np.loadtxt("scanning.ddG",skiprows=1,dtype=str)
         use = np.where(data[:,8] == "0")[0]
@@ -76,7 +76,7 @@ def get_scanning_mutations():
     return mutants
 
 def get_core_mutations():
-    ''' Extract mutational data. Only return info for useable mutations '''
+    """ Extract mutational data. Only return info for useable mutations """
     if os.path.exists("core.ddG"):
         data = np.loadtxt("core.ddG",skiprows=1,dtype=str)
         use = np.where(data[:,8] == "0")[0]
@@ -99,7 +99,7 @@ def get_core_mutations():
     return mutants
 
 def get_core_mutation_ddG():
-    ''' Extract mutational data. Only return info for useable mutations '''
+    """ Extract mutational data. Only return info for useable mutations """
     if os.path.exists("core.ddG"):
         data = np.loadtxt("core.ddG",skiprows=1,dtype=str)
         use = np.where(data[:,8] == "0")[0]
@@ -126,7 +126,7 @@ def get_core_mutation_ddG():
     return ddG_N_D,ddG_N_D_err,ddG_TS_D,ddG_TS_D_err
 
 def get_exp_ddG():
-    ''' Return both surface and core ddG_exp that are useable '''
+    """ Return both surface and core ddG_exp that are useable """
     print "  Getting experimental ddG"
     if os.path.exists("core.ddG"):
         data = np.loadtxt("core.ddG",skiprows=1,dtype=str)
@@ -158,7 +158,7 @@ def get_exp_ddG():
     return ddGexp, ddGexp_err
 
 def get_sim_ddG(mutants,coord):
-    ''' Get the saved ddG from simulation that should have been computed already.'''
+    """ Get the saved ddG from simulation that should have been computed already."""
 
     ddGsim_TS_D = ddG = np.zeros(len(mutants),float)
     ddGsim_N_D = ddG = np.zeros(len(mutants),float)
@@ -181,7 +181,7 @@ def get_sim_ddG(mutants,coord):
     return ddGsim_TS_D, ddGsim_N_D
 
 def get_AApdb_coords(pdb):
-    ''' Parse atom names, indices, coordinates; residue names, indices from all-atom pdb '''
+    """ Parse atom names, indices, coordinates; residue names, indices from all-atom pdb """
 
     ## Only interested in ATOM lines.
     atmlines = [ line.rstrip('\n') for line in open(pdb,'r').readlines() if line.startswith("ATOM") ] 
@@ -210,7 +210,7 @@ def get_AApdb_coords(pdb):
     return atm_nums,atm_names,atm_coords,res_nums,res_names
 
 def count_heavy_atom_contacts(pdb,cutoff=6.0):
-    ''' Calculate # of residue-residue heavy atom contacts. '''
+    """ Calculate # of residue-residue heavy atom contacts. """
 
     atm_nums,atm_names,atm_coords,res_nums,res_names = get_AApdb_coords(pdb)
     n_atoms = len(res_nums)
@@ -243,9 +243,9 @@ def count_heavy_atom_contacts(pdb,cutoff=6.0):
     return C, residues, atm_coords
 
 def calculate_contacts_lost_for_mutants(avgflag):
-    ''' Calculates the fraction of heavy-atom contact loss between residues i and j
+    """ Calculates the fraction of heavy-atom contact loss between residues i and j
         for mutant k:  f^k_ij . Must be in mutants directory which holds wild-type 
-        pdb wt.pdb.'''
+        pdb wt.pdb."""
 
     Cwt, wtresidues, wtcoords = count_heavy_atom_contacts("wt.pdb")
     if not os.path.exists("Cwt.dat"):
@@ -309,7 +309,7 @@ def calculate_contacts_lost_for_mutants(avgflag):
     open("mutatepdbs.log","w").write(log_string)
 
 def modeller_mutate_pdb(modelname,respos,restyp,saveas,chain='A'):
-    ''' Use MODELLER to mutate the pdb modelname at respos to restyp then save as saveas.
+    """ Use MODELLER to mutate the pdb modelname at respos to restyp then save as saveas.
 
         Taken almost entirely as-is from a sample script in the MODELLER
     documentation. I deleted the final part that does energy minimization
@@ -337,7 +337,7 @@ def modeller_mutate_pdb(modelname,respos,restyp,saveas,chain='A'):
     Resulting pdbs will be named: <wt_res><mut_indx><mut_res>.pdb
     For example mutating PHE (F) at position 90 in the wild-type structure to ALA
     (A) would result in a pdb: F90A.pdb
-    '''
+    """
 
     log.none()
 
@@ -404,7 +404,7 @@ def modeller_mutate_pdb(modelname,respos,restyp,saveas,chain='A'):
     mdl1.write(file=saveas)
 
 if __name__ == '__main__':
-    ''' Creates a mutated pdb for every mutant.'''
+    """ Creates a mutated pdb for every mutant."""
 
     
     parser = argparse.ArgumentParser(description='Calculate .')
