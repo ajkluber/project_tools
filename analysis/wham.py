@@ -383,11 +383,10 @@ def run_wham_for_heat_capacity(long=False):
     maxindx = list(Cv[:,1]).index(max(Cv[:,1]))
     Tf = Cv[maxindx,0]
 
+    print "  Wham done! Tf = %.2f" % Tf
     os.chdir("..")
     if long:
-        print "  Wham done! Plotted Cv and melting curve: long_wham/cv_and_melt.pdf"
         open("long_Tf","w").write("%.2f" % Tf)
     else:
-        print "  Wham done! Plotted Cv and melting curve: short_wham/cv_and_melt.pdf"
         open("short_Tf","w").write("%.2f" % Tf)
 
