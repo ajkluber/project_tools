@@ -160,7 +160,7 @@ def add_error_log(note, fit_temp):
         f.write("Error Log for This run\n\n")
         f.write("Global variables are:\n")
         f.write("Gas constant in kJ per mol = %d\n" % GAS_CONSTANT_KJ_MOL)
-        f.write("pairs used are = " + str(FRET_pairs) + "\n")
+        f.write("pairs used are = " + str(def_FRET_pairs) + "\n")
         f.write("Temperature for Fitting used is T = %d\n" % fit_temp)
         f.write("Spacing in FRET pair distance used is = %d\n" %defspacing)
         f.write("\n")
