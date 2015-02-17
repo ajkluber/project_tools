@@ -74,6 +74,7 @@ def new_project(args):
         iteration = fitopts["iteration"]
         print "Starting Tf_loop_iteration for %s: " % model.name
         simulation.constant_temp.folding_temperature_loop(model,iteration,new=True)
+        fitopts["last_completed_task"] = "Starting: Tf_loop_iteration"
         mdb.inputs.save_model(model,fitopts)
 
 #############################################################################
