@@ -304,7 +304,7 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
                 senses += "L"
             elif model.pairwise_type[i] == 1 or model.pairwise_type[i] == 3:
                 temp.append(float(-1))
-                senses =+ "G"
+                senses += "G"
             else:
                 pass
             rows.append([ column_names, temp ])
