@@ -421,10 +421,10 @@ def determine_equil_walltime(model):
         walltime="16:00:00"
     else:
         if N > 100:
-            queue="serial_long"
-            walltime="20:00:00"
+            #queue="serial_long"
+            walltime="24:00:00"
         else:
-            walltime="15:00:00"
+            walltime="18:00:00"
     return walltime, queue, ppn,nsteps
 
 def determine_walltime(model):
@@ -434,15 +434,15 @@ def determine_walltime(model):
     nsteps = "100000000"
     queue="serial"
     if N < 60:
-        walltime="03:00:00"
+        walltime="05:00:00"
     else:
         if N > 100:
             if N > 200:
-                walltime="16:00:00"
+                walltime="20:00:00"
             else:
-                walltime="5:00:00"
+                walltime="15:00:00"
         else:
-            walltime="3:00:00"
+            walltime="8:00:00"
     return walltime, queue, ppn,nsteps
 
 def run_temperature_array(model,T_min,T_max,deltaT):
