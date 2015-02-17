@@ -148,7 +148,13 @@ def save_new_parameters(model,fitopts):
 
     cwd = os.getcwd()
     os.chdir("%s/iteration_%d/newton" % (name,iteration))
-    submodule.save_new_parameters.save(model,soln_index)
+    if fitopts.has_key("nonnative"):
+        if fitopts["nonnative"] == True:
+            submodule.save_new_parameters.save(model,soln_index,nonnative=True)
+        else:
+            submodule.save_new_parameters.save(model,soln_index)
+    else:
+        submodule.save_new_parameters.save(model,soln_index)
     os.chdir(cwd)
 
 if __name__ == "__main__":

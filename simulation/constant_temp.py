@@ -496,16 +496,22 @@ def run_constant_temp(model,T,name,nsteps="100000000",walltime="23:00:00",queue=
         qsub = "qsub run.pbs"
         sb.call(qsub.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
     
-def get_pbs_string(jobname,queue,ppn,walltime):
+def get_pbs_string(jobname,queue,ppn,walltime,mpi=None):
     """ Return basic PBS job script. """
     pbs_string = "#!/bin/bash \n"
     pbs_string +="#PBS -N %s \n" % jobname
     pbs_string +="#PBS -q %s \n" % queue
-    pbs_string +="#PBS -l nodes=1:ppn=%s \n" % ppn
+    if mpi != None:
+        pbs_string +="#PBS -l nodes=1:ppn=%d \n" % mpi
+    else:
+        pbs_string +="#PBS -l nodes=1:ppn=%s \n" % ppn
     pbs_string +="#PBS -l walltime=%s \n" % walltime
     pbs_string +="#PBS -V \n\n"
     pbs_string +="cd $PBS_O_WORKDIR\n"
-    pbs_string +="mdrun -s topol_4.6.tpr"
+    if mpi != None:
+        pbs_string +="mpiexec -n %d mdrun_mpi -ntmpi %d -s topol_4.6.tpr" % (mpi,mpi)
+    else:
+        pbs_string +="mdrun -s topol_4.6.tpr"
     return pbs_string
 
 def get_rst_pbs_string(jobname,queue,ppn,walltime):
