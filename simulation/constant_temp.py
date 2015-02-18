@@ -508,6 +508,8 @@ def get_pbs_string(jobname,queue,ppn,walltime,mpi=None):
     pbs_string +="#PBS -l walltime=%s \n" % walltime
     pbs_string +="#PBS -V \n\n"
     pbs_string +="cd $PBS_O_WORKDIR\n"
+    pbs_string +="echo 'I ran on:'\n"
+    pbs_string +="cat $PBS_NODEFILE\n"
     if mpi != None:
         pbs_string +="mpiexec -n %d mdrun_mpi -ntmpi %d -s topol_4.6.tpr" % (mpi,mpi)
     else:
@@ -516,7 +518,6 @@ def get_pbs_string(jobname,queue,ppn,walltime,mpi=None):
 
 def get_rst_pbs_string(jobname,queue,ppn,walltime):
     """ Return basic PBS job script for restarting. """
-    pbs_string = "#!/bin/bash \n"
     rst_string = "#!/bin/bash \n"
     rst_string +="#PBS -N %s_rst \n" % jobname
     rst_string +="#PBS -q %s \n" % queue
@@ -524,6 +525,8 @@ def get_rst_pbs_string(jobname,queue,ppn,walltime):
     rst_string +="#PBS -l walltime=%s \n" % walltime
     rst_string +="#PBS -V \n\n"
     rst_string +="cd $PBS_O_WORKDIR\n"
+    rst_string +="echo 'I ran on:'\n"
+    rst_string +="cat $PBS_NODEFILE\n"
     rst_string +="mdrun -s topol_4.6.tpr -cpi state.cpt"
     return rst_string
 
