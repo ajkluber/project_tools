@@ -328,13 +328,15 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
     ## Since (-EGap) should be negative, the upper boundary for this variable is set to 0.
     upper_bounds = list(10000.*np.ones(N.shape[1]))
     upper_bounds.append(float(10000))
-    upper_bounds.append(float(10))
+    if eps_non_native != []:
+        upper_bounds.append(float(10))
 #    upper_bounds_2 = list(eps_upper_bound_non_native*np.ones(len(eps_non_native)))
 #    upper_bounds.extend(upper_bounds_2)
 
     lower_bounds = list(-10000.*np.ones(N.shape[1]))
     lower_bounds.append(float(0))
-    lower_bounds.append(float(-eps_upper_bound_non_native))
+    if eps_non_native != []:
+        lower_bounds.append(float(-eps_upper_bound_non_native))
 #    lower_bounds_2 = list(eps_lower_bound_non_native*np.zeros(len(eps_non_native)))
 #    lower_bounds.extend(lower_bounds_2)
 #    print len(objective_coeff), len(upper_bounds), len(lower_bounds), len(column_names)
@@ -369,8 +371,12 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
     LP_problem.solve()
     status = LP_problem.solution.get_status()
     cplex_lambdas = LP_problem.solution.get_values()
-    print "EGap" + str(cplex_lambdas[-2])
-    print "MaxFrust" + str(-cplex_lambdas[-1])
+    if eps_non_native == []:
+        print "EGap" + str(cplex_lambdas[-1])
+    else:
+        print "EGap" + str(cplex_lambdas[-2])
+        print "MaxFrust" + str(-cplex_lambdas[-1])
+
     if status == 1:
         sensitivity = LP_problem.solution.sensitivity.objective("EGap")
     else:
