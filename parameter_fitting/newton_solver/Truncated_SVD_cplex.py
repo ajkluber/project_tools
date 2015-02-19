@@ -47,15 +47,20 @@ def find_solutions(model,position=100):
 
     if status == 1:
         max_solvable_eig = i
-        cplex_solution = x_particular + np.dot(N,cplex_lambdas[:-2]) 
+        if len(lambdas)>(N.shape[1]+1):
+            cplex_solution = x_particular + np.dot(N,cplex_lambdas[:-2])
+            print "EGap = "+str(cplex_lambdas[-2])
+            print "MaxFrustr" +str(-cplex_lambdas[-1])
+        else:
+            cplex_solution = x_particular + np.dot(N,cplex_lambdas[:-1])
+            print "EGap = "+str(cplex_lambdas[-1])
+
         residual = np.dot(J,cplex_solution) - df
         nrm_soln.append(np.linalg.norm(cplex_solution))
         nrm_resd.append(np.linalg.norm(residual))
         solutions.append(cplex_solution)
         Taus.append(tau)
         print "status:"+str(status)
-        print "EGap = "+str(cplex_lambdas[-2])
-        print "MaxFrustr" +str(-cplex_lambdas[-1])
                          
     else:
         print "status:"+str(status)
