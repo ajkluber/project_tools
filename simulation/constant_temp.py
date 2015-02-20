@@ -421,10 +421,10 @@ def determine_equil_walltime(model):
         walltime="16:00:00"
     else:
         if N > 100:
-            queue="serial_long"
-            walltime="20:00:00"
+            #queue="serial_long"
+            walltime="24:00:00"
         else:
-            walltime="15:00:00"
+            walltime="18:00:00"
     return walltime, queue, ppn,nsteps
 
 def determine_walltime(model):
@@ -434,15 +434,15 @@ def determine_walltime(model):
     nsteps = "100000000"
     queue="serial"
     if N < 60:
-        walltime="03:00:00"
+        walltime="05:00:00"
     else:
         if N > 100:
             if N > 200:
-                walltime="16:00:00"
+                walltime="20:00:00"
             else:
-                walltime="5:00:00"
+                walltime="15:00:00"
         else:
-            walltime="3:00:00"
+            walltime="8:00:00"
     return walltime, queue, ppn,nsteps
 
 def run_temperature_array(model,T_min,T_max,deltaT):
@@ -508,6 +508,8 @@ def get_pbs_string(jobname,queue,ppn,walltime,mpi=None):
     pbs_string +="#PBS -l walltime=%s \n" % walltime
     pbs_string +="#PBS -V \n\n"
     pbs_string +="cd $PBS_O_WORKDIR\n"
+    pbs_string +="echo 'I ran on:'\n"
+    pbs_string +="cat $PBS_NODEFILE\n"
     if mpi != None:
         pbs_string +="mpiexec -n %d mdrun_mpi -ntmpi %d -s topol_4.6.tpr" % (mpi,mpi)
     else:
@@ -516,7 +518,6 @@ def get_pbs_string(jobname,queue,ppn,walltime,mpi=None):
 
 def get_rst_pbs_string(jobname,queue,ppn,walltime):
     """ Return basic PBS job script for restarting. """
-    pbs_string = "#!/bin/bash \n"
     rst_string = "#!/bin/bash \n"
     rst_string +="#PBS -N %s_rst \n" % jobname
     rst_string +="#PBS -q %s \n" % queue
@@ -524,6 +525,8 @@ def get_rst_pbs_string(jobname,queue,ppn,walltime):
     rst_string +="#PBS -l walltime=%s \n" % walltime
     rst_string +="#PBS -V \n\n"
     rst_string +="cd $PBS_O_WORKDIR\n"
+    rst_string +="echo 'I ran on:'\n"
+    rst_string +="cat $PBS_NODEFILE\n"
     rst_string +="mdrun -s topol_4.6.tpr -cpi state.cpt"
     return rst_string
 

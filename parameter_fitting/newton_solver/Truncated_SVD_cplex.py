@@ -1,7 +1,7 @@
 import numpy as np
 import save_and_plot
 
-def find_solutions(model,position=7):
+def find_solutions(model,position=100):
     target_feature = np.loadtxt("target_feature.dat")
     target_feature_err = np.loadtxt("target_feature_err.dat")
     sim_feature = np.loadtxt("sim_feature.dat")
@@ -47,13 +47,21 @@ def find_solutions(model,position=7):
 
     if status == 1:
         max_solvable_eig = i
-        cplex_solution = x_particular + np.dot(N,cplex_lambdas[:-2]) 
+        if len(cplex_lambdas)>(N.shape[1]+1):
+            cplex_solution = x_particular + np.dot(N,cplex_lambdas[:-2])
+            print "EGap = "+str(cplex_lambdas[-2])
+            print "MaxFrustr" +str(-cplex_lambdas[-1])
+        else:
+            cplex_solution = x_particular + np.dot(N,cplex_lambdas[:-1])
+            print "EGap = "+str(cplex_lambdas[-1])
+
         residual = np.dot(J,cplex_solution) - df
         nrm_soln.append(np.linalg.norm(cplex_solution))
         nrm_resd.append(np.linalg.norm(residual))
         solutions.append(cplex_solution)
         Taus.append(tau)
         print "status:"+str(status)
+                         
     else:
         print "status:"+str(status)
 #        except:
@@ -132,7 +140,8 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
     ## objective with a cplex LP program. Thus, both objectives are simultaneous and a weight factor is added to 
     ## assign each of them a relative importance
 
-        linear_objective_coeff = np.hstack((np.zeros(N.shape[1],float),(np.ones(2))))
+#        linear_objective_coeff = np.hstack((np.zeros(N.shape[1],float),(np.ones(2))))
+        linear_objective_coeff = np.hstack(( np.zeros(N.shape[1],float) , np.hstack((1.0,0.2)) ))
 #        linear_objective_coeff = np.hstack((linear_objective_coeff, np.ones(len(eps_non_native),float)))
 #        quadratic_objective_coeff = np.hstack((np.zeros(N.shape[1],float),-1.0))
 #        quadratic_objective_coeff = np.hstack((quadratic_objective_coeff,np.ones(len(eps_non_native),float)))
@@ -206,8 +215,13 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
     ## --> Sum(Lambda_i * Y_i)_l < -x_particular_l - eps_l + eps_upper_bound  
     ## (x_p + x_n)_l -EGap > 0.
     ## --> Sum(Lambda_i*Y_i)_l -EGap > -x_particular_l
+    ## For the 4th condition (minimization of frustration):
+    ## If contact was originally attractive:
     ## (x_p + x_n)_l + eps_non_native_l < Efrust = -NegEfrust
     ## --> x_n_l + NegEfrust < -x_p_l  - eps_non_native_l
+    ## If contact was originally repulsive:
+    ## (x_p + x_n)_l + eps_non_native_l > -Efrust = NegEfrust
+    ## --> x_n_l - NegEfrust > -x_p_l  - eps_non_native_l  
 
     eps_lower_bound = 0.1
     eps_upper_bound = 10.0
@@ -242,7 +256,7 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
         # The variable to be minimized is Z = (-EGap)
             temp.append(float(-1))
             rows.append([ column_names, temp ])
-
+    
     else:
         
         zeros_native = list(np.zeros(len(eps_native)))
@@ -268,34 +282,37 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
 
         row_names = [ "c"+str(i) for i in range(len(right_hand_side)) ]
 #        senses = "G"*len(right_hand_side_2) + "L"*len(right_hand_side_2) + "G"*len(right_hand_side_2)+"G"*len(right_hand_side_4)+"L"*len(right_hand_side_4) + "E"*len(right_hand_side_6)
-        senses = "G"*len(right_hand_side_2) + "L"*len(right_hand_side_2) + "G"*len(right_hand_side_2)+"L"*len(right_hand_side_4)
-
+#        senses = "G"*len(right_hand_side_2) + "L"*len(right_hand_side_2) + "G"*len(right_hand_side_2)+"L"*len(right_hand_side_4)
+        senses = "G"*len(right_hand_side_2) + "L"*len(right_hand_side_2) + "G"*len(right_hand_side_2)
         rows = []
 
         for i in range(len(eps_native)):
             temp = list(N[i,:])
             temp.append(float(0))
             temp.append(float(0))
-#            temp.extend(zeros_non_native)
             rows.append([ column_names, temp ])
         for i in range(len(eps_native)):
             temp = list(N[i,:])
             temp.append(float(0))
             temp.append(float(0))
-#            temp.extend(zeros_non_native)
             rows.append([ column_names, temp ])
         for i in range(len(eps_native)):
             temp = list(N[i,:])
-        # The variable to be minimized is Z = (-EGap)                                  
+        # The variable to be maximized is EGap                                  
             temp.append(float(-1))
             temp.append(float(0))
-#            temp.extend(zeros_non_native)
             rows.append([ column_names, temp ])
         for i in range(len(eps_native),len(N)):
             temp = list(N[i,:])
             temp.append(float(0))
-            temp.append(float(1))
-#            temp.extend(zeros_non_native)
+            if model.pairwise_type[i] == 2:
+                temp.append(float(1))
+                senses = senses + "L"
+            elif model.pairwise_type[i] == 1 or model.pairwise_type[i] == 3:
+                temp.append(float(-1))
+                senses = senses + "G"
+            else:
+                pass
             rows.append([ column_names, temp ])
 #        for i in range(len(eps_native),len(N)):
 #            temp = list(N[i,:])
@@ -316,13 +333,15 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
     ## Since (-EGap) should be negative, the upper boundary for this variable is set to 0.
     upper_bounds = list(10000.*np.ones(N.shape[1]))
     upper_bounds.append(float(10000))
-    upper_bounds.append(float(10000))
+    if eps_non_native != []:
+        upper_bounds.append(float(10))
 #    upper_bounds_2 = list(eps_upper_bound_non_native*np.ones(len(eps_non_native)))
 #    upper_bounds.extend(upper_bounds_2)
 
     lower_bounds = list(-10000.*np.ones(N.shape[1]))
     lower_bounds.append(float(0))
-    lower_bounds.append(float(-eps_upper_bound_non_native))
+    if eps_non_native != []:
+        lower_bounds.append(float(-eps_upper_bound_non_native))
 #    lower_bounds_2 = list(eps_lower_bound_non_native*np.zeros(len(eps_non_native)))
 #    lower_bounds.extend(lower_bounds_2)
 #    print len(objective_coeff), len(upper_bounds), len(lower_bounds), len(column_names)
@@ -351,11 +370,18 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
 #        LP_problem.objective.set_quadratic(quadratic_objective_coeff)
 #    print LP_problem.variables.get_names()
 #    print LP_problem.variables.get_lower_bounds()
+
     print 'solve'
     ## Let cplex do work.
     LP_problem.solve()
     status = LP_problem.solution.get_status()
     cplex_lambdas = LP_problem.solution.get_values()
+    if eps_non_native == []:
+        print "EGap" + str(cplex_lambdas[-1])
+    else:
+        print "EGap" + str(cplex_lambdas[-2])
+        print "MaxFrust" + str(-cplex_lambdas[-1])
+
     if status == 1:
         sensitivity = LP_problem.solution.sensitivity.objective("EGap")
     else:
