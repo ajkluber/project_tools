@@ -47,7 +47,7 @@ def find_solutions(model,position=100):
 
     if status == 1:
         max_solvable_eig = i
-        if len(lambdas)>(N.shape[1]+1):
+        if len(cplex_lambdas)>(N.shape[1]+1):
             cplex_solution = x_particular + np.dot(N,cplex_lambdas[:-2])
             print "EGap = "+str(cplex_lambdas[-2])
             print "MaxFrustr" +str(-cplex_lambdas[-1])
@@ -256,7 +256,7 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
         # The variable to be minimized is Z = (-EGap)
             temp.append(float(-1))
             rows.append([ column_names, temp ])
-
+    
     else:
         
         zeros_native = list(np.zeros(len(eps_native)))
