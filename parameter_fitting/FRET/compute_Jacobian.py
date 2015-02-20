@@ -59,7 +59,7 @@ def calc_sim_bins(model, fitopts, residues=def_FRET_pairs, spacing=defspacing):
     np.savetxt("simf_valuesT%d.dat"%fit_temp,hist)
     edges = edges + (0.5*spacing)
     bincenters = edges[:-1]
-    bincenters = np.arange((minvalue*spacing)+(spacing/2.0), maxvalue*spacing, spacing)
+    #bincenters = np.arange((minvalue*spacing)+(spacing/2.0), maxvalue*spacing, spacing)
     np.savetxt("simf_centers%d.dat"%fit_temp,bincenters)
     np.savetxt("simf-params%d.dat"%fit_temp,np.array([num_bins,minvalue*spacing,maxvalue*spacing,spacing]))
     
@@ -196,14 +196,20 @@ def get_target_feature(model,fitopts):
         fret_hist_calc(model, fitopts, bin_size, ran_size, spacing)  
     FRETdata = np.loadtxt(FRETfile)  
     
+    print "initial FRET data and bin_centers"
+
     print FRETdata[:,0]
     print bin_centers
+    
     if check_exp_data(FRETdata[:,0], bin_centers):
         print "Mismatched experimental data and simulated data. Attempting Re-binning"
         fret_hist_calc(model, fitopts, bin_size, ran_size, spacing)
         FRETdata = np.loadtxt(FRETfile)
         if check_exp_data(FRETdata[:,0], bin_centers):
             add_error_log("Catastrophic miscalculation of FRET bins", fit_temp)
+            print "Found the FRETdata and bin_centers to be:"
+            print FRETdata[:,0]
+            print bin_centers
     
     target = FRETdata[:,1]
     target_err = target**0.5 ##for lack of a better way, take sqrt of bins for error estimate
@@ -218,7 +224,12 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
         raise IOError("Missing the fit_temperature, please specify in .ini file")
     
     if "fret_pairs" in fitopts:
-        FRET_pairs = fitopts["fret_pairs"]
+        fret_pairs = fitopts["fret_pairs"]
+        FRET_pairs = np.array(fret_pairs) - 1
+        print "The FRET pairs are:"
+        print FRET_pairs
+            
+            
  
     if "spacing" in fitopts:
         spacing = fitopts["spacing"]
@@ -245,10 +256,14 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
     os.chdir(cwd)
     if not np.array_equal(simparams, get_sim_array(model,fitopts)):
         add_error_log("Catastrophic error. Simparams from compute_Jacobian_for_directory is different from get_sim_params", fit_temp)
-    
+            
     sim_feature = simparams[:,1]
     sim_feature_err = sim_feature ** 0.5
     Jacobian_err = np.zeros(np.shape(Jacobian))
+    
+    print "current simparams and simarrays are:"
+    print simparams
+    print get_sim_array(model,fitopts)
     
     return sim_feature, sim_feature_err, Jacobian, Jacobian_err
 
@@ -302,7 +317,7 @@ def compute_Jacobian_for_directory(model,beta,residues,spacing):
     count = 0
     for i in Qcount:
         if not i == 0:
-            Qr[count] /= i
+            Qr[count] /= total_traj ##fixed 2015-02-19 switch total_traj to i for old Jacobian
             count += 1
     
     Qavg /= total_traj

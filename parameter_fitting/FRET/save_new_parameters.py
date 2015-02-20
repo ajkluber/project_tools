@@ -18,17 +18,18 @@ def save(model,soln_index):
     
     ##calculate the scaling based upon what would actually happen: if it's already at 0.01, and goes more negative, now it effectively shows a deps there of 0, and not some arbitrarily large number
     neweps_effective = eps0 + deps
+    deps_actual = neweps_effective - eps0
     neweps_effective[neweps_effective < 0.01] = 0.01
     deps_effective = neweps_effective - eps0
     
     
     factor = np.linalg.norm(deps_effective)/np.linalg.norm(eps0)
-    max_step = np.max(np.abs(deps_effective/eps0))
+    max_step = np.max(np.abs(deps_actual/eps0))
     max_step_factor = 0.3
         
-    if factor > 0.3:
+    if factor > max_step_factor:
         deps = (deps*max_step_factor) / max_step
-        print "Scaling down to 0.3 by maximum step"
+        print "Scaling down to %f by maximum step" % max_step_factor
         fitit = max_step_factor/max_step
     
     eplot.plot_epsilons_bin(deps,"d-epsilon",model)
@@ -46,23 +47,13 @@ def save(model,soln_index):
     plt.title("spared of epsilons", fontsize=20)
     plt.savefig("eps_spread.png")
     
-    #estimate_lambda()
     open("%s/pairwise_params" % cwd,"w").write(model.pairwise_param_file_string)
     open("%s/model_params" % cwd,"w").write(model.model_param_file_string)
     open("%s/fitting_scale" % cwd,"w").write("%f"%fitit)
     model.pairwise_params_file_location = "%s/pairwise_params" % cwd
     model.model_params_file_location = "%s/model_params" % cwd
 
-def estimate_lambda():
-    svs = np.loadtxt("singular_values.dat")
-    index = 0
-    num = np.shape(svs)[0]
-    cwd = os.getcwd()
-    for i in range(num-1):
-        if svs[i]/svs[i+1] > 10000:
-            index = num - i - 1
-    open("%s/Lambda_index.txt"%cwd, "w").write("%d"%index)
-    print "biggest difference is for a value of %f and %f" % (svs[num-1-index], svs[num-index]) 
+
         
         
         
