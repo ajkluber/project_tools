@@ -18,14 +18,14 @@ def save(model,soln_index):
     
     ##calculate the scaling based upon what would actually happen: if it's already at 0.01, and goes more negative, now it effectively shows a deps there of 0, and not some arbitrarily large number
     neweps_effective = eps0 + deps
-    deps_actual = neweps_effective - eps0
+    #deps_actual = neweps_effective - eps0
     neweps_effective[neweps_effective < 0.01] = 0.01
     deps_effective = neweps_effective - eps0
     
     
     factor = np.linalg.norm(deps_effective)/np.linalg.norm(eps0)
-    max_step = np.max(np.abs(deps_actual/eps0))
-    max_step_factor = 0.3
+    max_step = np.max(np.abs(deps_effective/eps0))
+    max_step_factor = 0.2
         
     if factor > max_step_factor:
         deps = (deps*max_step_factor) / max_step
