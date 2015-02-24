@@ -22,8 +22,6 @@ import mdtraj as md
 
 import model_builder as mdb
 
-import scipy.stats as stats
-
 from project_tools.parameter_fitting.util.util import *
 
 global GAS_CONSTANT_KJ_MOL
@@ -31,9 +29,10 @@ GAS_CONSTANT_KJ_MOL = 0.0083144621
 def_FRET_pairs = [[114,192]]
 defspacing = 0.1 ## in nm
 
-def calc_sim_bins(filelocation, residues=def_FRET_pairs, spacing=defspacing, weights=None):
-    """find_sim_bins calculates and writes the simulation files """
+def calc_sim_bins(model, fitopts, residues=def_FRET_pairs, spacing=defspacing):
+    """calc_sim_bins calculates and writes the simulation files """
     ##assumes you are in the folder containing the model subdir
+    print "Calculating Simulation FRET bins"
     cwd = os.getcwd()
     subdir = model.name
     iteration = fitopts["iteration"]
@@ -48,48 +47,24 @@ def calc_sim_bins(filelocation, residues=def_FRET_pairs, spacing=defspacing, wei
      
     os.chdir(subtemp)
     traj = md.load("traj.xtc",top="Native.pdb")
+    
+    os.chdir(subdirec)
     FRETr = md.compute_distances(traj,residues, periodic=False)
-    
-    find_sim_bins(subdirec, FRETr, fit_temp, residues=residues, spacing=spacing, weights=weights)
-    os.chdir(cwd)
-
-def find_sim_bins(savelocation, FRETr, fit_temp, residues=def_FRET_pairs, spacing=defspacing, weights=None):
-    """calc_sim_bins does the actual calculation, with minimal assumptions of directory location """
-    ##assumes nothing about where you are, but assumes the savelocation is specified correctly
-    print "Calculating Simulation FRET bins"
-    #savelocation should be in "cwd/subdir/iteration_number/fitting_number
-    cwd = os.getcwd()
-    
-    if not os.path.isdir(savelocation):
-        os.mkdir(savelocation)
-     
-    os.chdir(savelocation)
-    
-    #calcualte the parameters for binning
     maxvalue = int(np.amax(FRETr)/spacing) + 1
     minvalue = int(np.amin(FRETr)/spacing)
     num_bins = maxvalue - minvalue
     ran_size = (minvalue*spacing,maxvalue*spacing)
-    
-    #if not weighted, set weights to ones
-    if weights == None:
-        weights = np.ones(np.shape(FRETr)[0])
-    
-    #actually histogram it
-    hist, edges, slices = stats.binned_statistic(FRETr, weights, statistic="sum", range=[ran_size], bins=num_bins)
+    hist, edges = np.histogram(FRETr,num_bins,ran_size)
     hist = hist/(np.sum(hist)*spacing)
-    bincenters = 0.5 * (edges[1:] + edges[:-1])
-    
-    print "Saving the bincenters:"
-    #actually save it
     np.savetxt("simf_valuesT%d.dat"%fit_temp,hist)
+    edges = edges + (0.5*spacing)
+    bincenters = edges[:-1]
+    #bincenters = np.arange((minvalue*spacing)+(spacing/2.0), maxvalue*spacing, spacing)
     np.savetxt("simf_centers%d.dat"%fit_temp,bincenters)
     np.savetxt("simf-params%d.dat"%fit_temp,np.array([num_bins,minvalue*spacing,maxvalue*spacing,spacing]))
     
     os.chdir(cwd)
     print "Calculated bins for simulation data at a spacing of %.4f" % spacing
-    
-    return hist, slices
 
 def get_sim_params(model,fitopts):
     ##assumes you are in the folder containing the model subdir
@@ -103,7 +78,7 @@ def get_sim_params(model,fitopts):
     parmfile = "%s/simf-params%d.dat" % (subdirec,fit_temp)
     
     if not os.path.isfile(parmfile):
-        find_sim_bins(model, fitopts)  
+        calc_sim_bins(model, fitopts)  
     parms = np.loadtxt(parmfile)
     num_bins = parms[0]
     ran_size = (parms[1],parms[2])
@@ -120,7 +95,7 @@ def get_sim_centers(model,fitopts):
     subdirec = "%s/fitting_%d" % (sub,iteration)
     simfile = "%s/simf_centers%d.dat" % (subdirec,fit_temp)
     if not os.path.isfile(simfile):
-        find_sim_bins(model,fitopts)
+        calc_sim_bins(model,fitopts)
     return np.loadtxt(simfile)
 
 def get_sim_array(model,fitopts):
@@ -134,7 +109,7 @@ def get_sim_array(model,fitopts):
     simfilef = "%s/simf_valuesT%d.dat" % (subdirec,fit_temp)
     print "Fit temp is : ", fit_temp
     if not os.path.isfile(simfile):
-        find_sim_bins(model,fitopts)
+        calc_sim_bins(model,fitopts)
     centers = np.loadtxt(simfile)
     values = np.loadtxt(simfilef)
     simarray = np.array([centers,values])
@@ -168,21 +143,12 @@ def fret_hist_calc(model, fitopts, bin_size, ran_size, spacing):
     print "Rebinned FRET_hist_calc Data"
 
 def check_exp_data(FRETdata, bin_centers):
-     #if correct within this marigin, then thinks its okay
-     #Will check that the FRETdata centers and bin)centers are within 10^-6 of the spacing
     terms = np.shape(FRETdata)[0]
     i = 0
-    
-    spacing_FRET = FRETdata[1] - FRETdata[0]
-    spacing_bin_centers = bin_centers[1] - bin_centers[0]
-    
-    min_difference = (min([spacing_FRET, spacing_bin_centers]))/1000000 #if correct within this marigin, then thinks its okay
-    
     recalc = not np.shape(FRETdata)[0] == np.shape(bin_centers)[0]
-    
     ##Verify that the bins line up 
     while (not recalc) and i<terms:
-        if not (FRETdata[i] - bin_centers[i]) < min_difference:
+        if not FRETdata[i] == bin_centers[i]:
             recalc = True
         i += 1
     return recalc
@@ -225,8 +191,7 @@ def get_target_feature(model,fitopts):
     
     bin_centers = get_sim_centers(model, fitopts)
     bin_size, ran_size, spacing = get_sim_params(model, fitopts)
-    ##Re-round to utilize the same range for ran_size as used in the simparams, in case floating point is round-off errored
-    ran_size = (int(round(ran_size[0]/spacing))*spacing, int(round(ran_size[1]/spacing))*spacing)
+   
     if not os.path.isfile(FRETfile):
         fret_hist_calc(model, fitopts, bin_size, ran_size, spacing)  
     FRETdata = np.loadtxt(FRETfile)  
@@ -268,32 +233,13 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
  
     if "spacing" in fitopts:
         spacing = fitopts["spacing"]
-    
-    ##Define location of logical files    
+        
     cwd = os.getcwd()
     subdir = model.name
     iteration = fitopts["iteration"]
     sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
-    traj_location = "%s/%d_0" % (sub, fit_temp)
-    sim_location = "%s/fitting_%d" % (sub,iteration)
-    ##define location of logical files
-    
-    os.chdir(traj_location)
-    ## Get trajectory, state indicators, contact energy
-    print "Working on calculating model's trajectory and contact info"
-    traj,rij,qij = get_rij_Vp(model)
-
-    ## Get simulation feature
-    print "Now working on calculating the trajectories"
-    FRETr = md.compute_distances(traj,FRET_pairs, periodic=False)
-    
-    ##WARNING: CONFIGURED FOR ONLY ONE PAIR OF FRET PROBES
-    ## To configure for more, modify such that you iterate over each pair in FRETr, calcualte the sim_feature, sim_slices
-    ## The nrun the Jacobian on just that slice
-    ## then rerun sim_feature, sim_slices using next pair
-    ## append at the end
-    sim_feature, sim_slices = find_sim_bins(sim_location, FRETr[:,0], fit_temp, residues=FRET_pairs, spacing=spacing, weights=None)
-    
+    os.chdir(sub)
+    os.chdir("%d_0" % (fit_temp))
     beta = 1.0 * (GAS_CONSTANT_KJ_MOL*float(fit_temp))
     
     
@@ -303,46 +249,24 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
     f = open("%s/newton/temp-used-here.txt"%sub, "w")
     f.write(str(fit_temp))
     f.close()
-
-    os.chdir(cwd)
     
     print "Computing Jacobian and Simparams for the temperature %d, with spacing %f" % (fit_temp, spacing)
-    Jacobian = compute_Jacobian_basic(qij,sim_feature, sim_slices, beta)
+    Jacobian, simparams = compute_Jacobian_for_directory(model,beta,FRET_pairs, spacing)
+    
+    os.chdir(cwd)
+    if not np.array_equal(simparams, get_sim_array(model,fitopts)):
+        add_error_log("Catastrophic error. Simparams from compute_Jacobian_for_directory is different from get_sim_params", fit_temp)
             
+    sim_feature = simparams[:,1]
     sim_feature_err = sim_feature ** 0.5
     Jacobian_err = np.zeros(np.shape(Jacobian))
     
+    print "current simparams and simarrays are:"
+    print simparams
+    print get_sim_array(model,fitopts)
+    
     return sim_feature, sim_feature_err, Jacobian, Jacobian_err
 
-def compute_Jacobian_basic(qij, fr, sim_slices, beta):
-    """ Method for computing a Jacobian given only the rudimenary pieces necessary """
-    ## qij is a NXM array containing the Qij values from the simulation
-    ## fr is a RX1 array containing the normalized distributin f(r)
-    ## Sim_slices is an NX1 array containing the bin_index+1 for the r matrix
-    ## beta is the kbT for this particular Jacobian
-    ## N = Number of frames, M = number of contacts to be fitted, R=number of bins of R data
-    
-    nbins = np.shape(fr)[0]
-    (N_total_traj, npairs) = np.shape(qij)
-    
-    Jacobian = np.zeros((nbins, npairs),float)
-    for idx, bin_location in enumerate(sim_slices):
-        Jacobian[bin_location-1, :] += qij[idx,:]
-    
-    Jacobian /= N_total_traj
-    Qavg = np.sum(Jacobian, axis=0)
-    
-    avg_matrix = np.dot(np.array([fr]).transpose(), np.array([Qavg]))
-    print "The shape of these matrices are:"
-    print np.shape(avg_matrix)
-    print np.shape(Jacobian)
-    Jacobian -= avg_matrix
-    
-    Jacobian *= (-1.0) * beta
-    
-    return Jacobian
-    
-    
 def compute_Jacobian_for_directory(model,beta,residues,spacing):
     """ Calculates the Jacobian for one directory """
 
@@ -409,7 +333,7 @@ def compute_Jacobian_for_directory(model,beta,residues,spacing):
     for i in Fr:
         counte = 0
         for j in Qavg:
-            Jacobian[countr,counte] += i*j
+            Jacobian[countr,counte] -= i*j
             counte += 1
         countr =+ 1
     Jacobian *= -1 * beta
