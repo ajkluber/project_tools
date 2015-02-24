@@ -66,6 +66,9 @@ def find_solutions(model,position=100):
         print "status:"+str(status)
 #        except:
 #            pass
+
+    np.savetxt('x_particular.dat', x_particular)
+    np.savetxt('lambda_vector.dat', cplex_lambdas)
     save_and_plot.save_solution_data(solutions,Taus,nrm_soln,nrm_resd,norm_eps,condition_number,s)
 
     
@@ -222,6 +225,8 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
     ## If contact was originally repulsive:
     ## (x_p + x_n)_l + eps_non_native_l > -Efrust = NegEfrust
     ## --> x_n_l - NegEfrust > -x_p_l  - eps_non_native_l  
+    ## Enforce lower limits for originally attractive contacts and upper limits for originally repulsive contacts
+
 
     eps_lower_bound = 0.1
     eps_upper_bound = 10.0
@@ -269,7 +274,7 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
         right_hand_side.extend(right_hand_side_3)
         right_hand_side_4 = list(-eps_non_native -x_particular[num_native_pairs:])
         right_hand_side.extend(right_hand_side_4)
-#        right_hand_side_5 = list(-eps_non_native -x_particular[num_native_pairs:] + eps_upper_bound_non_native)
+        right_hand_side_5 = list(-eps_non_native -x_particular[num_native_pairs:])
 #        right_hand_side.extend(right_hand_side_5)
 #        right_hand_side_6 = list(-eps_non_native -x_particular[num_native_pairs:]) 
 #        right_hand_side.extend(right_hand_side_6)
@@ -280,7 +285,7 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
 #        column_names_2 = [ "x"+str(i) for i in range(len(eps_non_native))]
 #        column_names.extend(column_names_2)
 
-        row_names = [ "c"+str(i) for i in range(len(right_hand_side)) ]
+#        row_names = [ "c"+str(i) for i in range(len(right_hand_side)) ]
 #        senses = "G"*len(right_hand_side_2) + "L"*len(right_hand_side_2) + "G"*len(right_hand_side_2)+"G"*len(right_hand_side_4)+"L"*len(right_hand_side_4) + "E"*len(right_hand_side_6)
 #        senses = "G"*len(right_hand_side_2) + "L"*len(right_hand_side_2) + "G"*len(right_hand_side_2)+"L"*len(right_hand_side_4)
         senses = "G"*len(right_hand_side_2) + "L"*len(right_hand_side_2) + "G"*len(right_hand_side_2)
@@ -314,6 +319,25 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
             else:
                 pass
             rows.append([ column_names, temp ])
+            
+        temp2 = []
+        for i in range(len(eps_native),len(N)):
+            temp = list(N[i,:])
+            temp.append(float(0))
+            temp.append(float(0))
+            if model.pairwise_type[i] == 2:
+                senses = senses + "G"
+                temp2.append(-eps_upper_bound)
+            elif model.pairwise_type[i] == 1 or model.pairwise_type[i] == 3:
+                senses = senses + "L"
+                temp2.append(eps_upper_bound)
+            else:
+                pass
+            rows.append([ column_names, temp ])
+        right_hand_side_5 = np.array(right_hand_side_5) + np.array(temp2)
+        right_hand_side.extend(list(right_hand_side_5))
+
+        row_names = [ "c"+str(i) for i in range(len(right_hand_side)) ]
 #        for i in range(len(eps_native),len(N)):
 #            temp = list(N[i,:])
 #            temp.append(float(0))
@@ -332,14 +356,14 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
     ## don't matter. These are bounds on vector lambda and the (-EGap)
     ## Since (-EGap) should be negative, the upper boundary for this variable is set to 0.
     upper_bounds = list(10000.*np.ones(N.shape[1]))
-    upper_bounds.append(float(10000))
+    upper_bounds.append(float(eps_upper_bound))
     if eps_non_native != []:
-        upper_bounds.append(float(10))
+        upper_bounds.append(float(eps_upper_bound))
 #    upper_bounds_2 = list(eps_upper_bound_non_native*np.ones(len(eps_non_native)))
 #    upper_bounds.extend(upper_bounds_2)
 
     lower_bounds = list(-10000.*np.ones(N.shape[1]))
-    lower_bounds.append(float(0))
+    lower_bounds.append(float(0.001))
     if eps_non_native != []:
         lower_bounds.append(float(-eps_upper_bound_non_native))
 #    lower_bounds_2 = list(eps_lower_bound_non_native*np.zeros(len(eps_non_native)))
