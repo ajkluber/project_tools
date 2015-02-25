@@ -73,7 +73,7 @@ def new_project(args):
             fitopts["iteration"] = 0
         iteration = fitopts["iteration"]
         print "Starting Tf_loop_iteration for %s: " % model.name
-        simulation.constant_temp.folding_temperature_loop(model,iteration,new=True)
+        simulation.constant_temp.folding_temperature_loop(model,fitopts,iteration,new=True)
         fitopts["last_completed_task"] = "Starting: Tf_loop_iteration"
         mdb.inputs.save_model(model,fitopts)
 
@@ -106,7 +106,7 @@ def logical_flowchart_starting(model,fitopts,task):
     iteration = fitopts["iteration"]
     if task == "Tf_loop_iteration":
         print "Checking if Tf_loop_iteration completed"
-        simulation.constant_temp.check_completion(model,iteration)
+        simulation.constant_temp.check_completion(model,fitopts,iteration)
         fitopts["last_completed_task"] = "Starting: Tf_loop_iteration"
         analysis.constant_temp.analyze_temperature_array(model,iteration)
         fitopts["last_completed_task"] = "Starting: Tf_loop_analysis"
@@ -117,7 +117,7 @@ def logical_flowchart_starting(model,fitopts,task):
         fitopts["last_completed_task"] = "Finished: Tf_loop_analysis"
     elif task == "Equil_Tf":
         print "Starting to check if Equil_Tf completed"
-        simulation.constant_temp.check_completion(model,iteration,long=True)
+        simulation.constant_temp.check_completion(model,fitopts,iteration,long=True)
         fitopts["last_completed_task"] = "Finished: Equil_Tf"
         analysis.constant_temp.analyze_temperature_array(model,iteration,long=True)
         fitopts["last_completed_task"] = "Starting: Equil_Tf_analysis"
@@ -143,12 +143,12 @@ def logical_flowchart_finished(model,fitopts,task):
         if flag == 1:
             pass 
         else:
-            simulation.constant_temp.folding_temperature_loop(model,iteration)
+            simulation.constant_temp.folding_temperature_loop(model,fitopts,iteration)
             print "Starting Tf_loop_iteration"
             fitopts["last_completed_task"] = "Starting: Tf_loop_iteration"
     elif task == "Tf_wham":
         print "Starting equilibrium simulations at Tf"
-        simulation.constant_temp.run_equilibrium_simulations(model,iteration)
+        simulation.constant_temp.run_equilibrium_simulations(model,fitopts,iteration)
         fitopts["last_completed_task"] = "Starting: Equil_Tf"
     elif task == "Equil_Tf":
         print "Starting Equil_Tf_analysis"
@@ -174,7 +174,7 @@ def logical_flowchart_finished(model,fitopts,task):
         fitopts["iteration"] += 1
         fitopts["last_completed_task"] = "Finished: Saving_New_Params"
     elif task == "Saving_New_Params":
-        simulation.constant_temp.start_next_Tf_loop_iteration(model,iteration)
+        simulation.constant_temp.start_next_Tf_loop_iteration(model,fitopts,iteration)
         fitopts["last_completed_task"] = "Starting: Tf_loop_iteration"
     else:
         raise ValueError("  Couldn't find next option for task: %s" % task)
@@ -203,17 +203,18 @@ def add_temperature_array(args):
 
     for i in range(len(Models)):
         model = Models[i]
-        iteration = Fittingopts[i]["iteration"]
+        fitopts = Fittingopts[i]
+        iteration = fitopts["iteration"]
         if not os.path.exists("%s/iteration_%d" % (model.name,iteration)):
             os.mkdir("%s/iteration_%d" % (model.name,iteration))
         if long == False:
             print "Manually adding temperature array Ti=%d Tf=%d dT=%d" % (T_min,T_max,deltaT)
             print "Starting constant_temp_iteration"
-            simulation.constant_temp.manually_add_temperature_array(model,iteration,T_min,T_max,deltaT)
+            simulation.constant_temp.manually_add_temperature_array(model,fitopts,iteration,T_min,T_max,deltaT)
             Fittingopts[i]["last_completed_task"] = "Starting: Tf_loop_iteration"
         elif long == True:
             print "Manually adding equilibrium sims ", temps
-            simulation.constant_temp.manually_add_equilibrium_runs(model,iteration,temps)
+            simulation.constant_temp.manually_add_equilibrium_runs(model,fitopts,iteration,temps)
             Fittingopts[i]["last_completed_task"] = "Starting: Equil_Tf"
         mdb.inputs.save_model(model,Fittingopts[i])
 
@@ -248,8 +249,9 @@ def extend_temperatures(args):
 
     for i in range(len(names)):
         model = Models[i]
-        iteration = Fittingopts[i]["iteration"]
-        simulation.constant_temp.manually_extend_temperatures(model,iteration,method,temps,factor)
+        fitopts = Fittingopts[i]
+        iteration = fitopts["iteration"]
+        simulation.constant_temp.manually_extend_temperatures(model,fitopts,iteration,method,temps,factor)
         mdb.inputs.save_model(model,Fittingopts[i])
 
 #############################################################################

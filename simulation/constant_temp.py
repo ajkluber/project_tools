@@ -30,7 +30,7 @@ def main():
     else:
         pass
 
-def check_completion(model,iteration,long=False):
+def check_completion(model,fitopts,iteration,long=False):
     """ Checks to see if the previous Tf_loop simulation completed. 
 
     Description:
@@ -158,7 +158,7 @@ def determine_new_temperatures():
     #print "##DEBUGGING: New Ti, Tf, dT", newT_min, newT_max, newdeltaT
     return newT_min, newT_max, newdeltaT
 
-def manually_extend_temperatures(model,iteration,method,temps,factor):
+def manually_extend_temperatures(model,fitopts,iteration,method,temps,factor):
     """ To manually extend some temperatures """
 
     logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
@@ -242,7 +242,7 @@ def extend_temperature(T,factor):
     qsub = "qsub rst.pbs"
     sb.call(qsub.split(),stdout=open("rst.out","w"),stderr=open("rst.err","w"))
 
-def folding_temperature_loop(model,iteration,new=False):
+def folding_temperature_loop(model,fitopts,iteration,new=False):
     """ The "folding temperature loop" is one of the several large-scale 
         logical structures in modelbuilder. It is entered anytime we want
         to determine the folding temperature. This could be when we have
@@ -257,13 +257,13 @@ def folding_temperature_loop(model,iteration,new=False):
     ## Check to see if the folding temperature has been found. If yes, then continue.
     if (not os.path.exists(sub+"/short_Tf")):
         os.chdir(sub)
-        folding_temperature_loop_extension(model,new=new)
+        folding_temperature_loop_extension(model,fitopts,new=new)
     else:
         ## Folding temperature has been found. Continuing.
         pass
     os.chdir(cwd)
 
-def folding_temperature_loop_extension(model,new=False):
+def folding_temperature_loop_extension(model,fitopts,new=False):
     """ This is for doing an additional loop in the Tf_loop. It either starts
         an initial temperature array or refines the temperature range according
         to previous data. """
@@ -287,14 +287,14 @@ def folding_temperature_loop_extension(model,new=False):
         ## Use previous range to determine new range. 
         T_min, T_max, deltaT = determine_new_T_array()
     print "  Running temperature array: T_initial = %.2f   T_final = %.2f   dT = %.2f " % (T_min,T_max,deltaT)
-    run_temperature_array(model,T_min,T_max,deltaT)
+    run_temperature_array(model,fitopts,T_min,T_max,deltaT)
     logging.basicConfig(filename="%s.log" % model.name,level=logging.INFO)
     logger = logging.getLogger("simulation")
     logger.info("Submitting short_temps iteration ")
     logger.info("  T_min = %d , T_max = %d , dT = %d" % (T_min, T_max, deltaT))
     logger.info(" Starting: Tf_loop_iteration")
 
-def start_next_Tf_loop_iteration(model,iteration):
+def start_next_Tf_loop_iteration(model,fitopts,iteration):
     """ Estimate new folding temperature with calibration data
 
     Description:
@@ -322,7 +322,7 @@ def start_next_Tf_loop_iteration(model,iteration):
     else:
         os.makedirs(sub)
     os.chdir(sub)
-    run_temperature_array(model,T_min,T_max,deltaT)
+    run_temperature_array(model,fitopts,T_min,T_max,deltaT)
     logging.basicConfig(filename="%s.log" % model.name,level=logging.INFO)
     logger = logging.getLogger("simulation")
     logger.info("Submitting T_array iteration %d" % iteration)
@@ -330,7 +330,7 @@ def start_next_Tf_loop_iteration(model,iteration):
     logger.info(" Starting: Tf_loop_iteration")
     os.chdir(cwd)
 
-def manually_add_temperature_array(model,iteration,T_min,T_max,deltaT):
+def manually_add_temperature_array(model,fitopts,iteration,T_min,T_max,deltaT):
     """ To manually set the next temperature array."""
     logging.basicConfig(filename="%s.log" % model.name,level=logging.INFO)
     logger = logging.getLogger("simulation")
@@ -338,11 +338,11 @@ def manually_add_temperature_array(model,iteration,T_min,T_max,deltaT):
     os.chdir(sub)
     logger.info("Submitting T_array iteration %d " % iteration)
     logger.info("  T_min = %d , T_max = %d , dT = %d" % (T_min, T_max, deltaT))
-    run_temperature_array(model,T_min,T_max,deltaT)
+    run_temperature_array(model,fitopts,T_min,T_max,deltaT)
     logger.info(" Starting: Tf_loop_iteration")
     os.chdir("../..")
 
-def manually_add_equilibrium_runs(model,iteration,temps):
+def manually_add_equilibrium_runs(model,fitopts,iteration,temps):
     """ To manually set the next temperature array."""
     name = model.name
     logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
@@ -351,7 +351,7 @@ def manually_add_equilibrium_runs(model,iteration,temps):
     sub = "%s/iteration_%d" % (name,iteration)
     os.chdir(sub)
     ## Run for longer if the protein is really big.
-    walltime, queue, ppn, nsteps = determine_equil_walltime(model)
+    walltime, queue, ppn, nsteps = determine_equil_walltime(model,fitopts)
 
     T_string = ''
     for i in range(len(temps)):
@@ -375,7 +375,7 @@ def manually_add_equilibrium_runs(model,iteration,temps):
     logger.info(" Starting: Equil_Tf")
     os.chdir("../..")
 
-def run_equilibrium_simulations(model,iteration):
+def run_equilibrium_simulations(model,fitopts,iteration):
     """ Run very long (equilibrium) simulations at the estimated folding 
         temperature."""
 
@@ -384,7 +384,7 @@ def run_equilibrium_simulations(model,iteration):
     sub = "%s/%s/iteration_%d" % (cwd,name,iteration)
     Tf = open("%s/short_Tf" % sub ,"r").read().split()[0]
 
-    walltime, queue, ppn, nsteps = determine_equil_walltime(model)
+    walltime, queue, ppn, nsteps = determine_equil_walltime(model,fitopts)
 
     os.chdir(sub)
     T_string = ''
@@ -411,28 +411,54 @@ def run_equilibrium_simulations(model,iteration):
     logger.info(" Starting: Equil_Tf")
     os.chdir(cwd)
 
-def determine_equil_walltime(model):
+def determine_equil_walltime(model,fitopts):
     """ Estimate an efficient walltime."""
     N = model.n_residues
     ppn = "1"
     nsteps = "500000000"
     queue="serial"
+    if "equil_walltime" in fitopts:
+        walltime = fitopts["equil_walltime"]
+        test = walltime.split(":")
+        if len(test) == 3 and len(test[0]) == 2 and len(test[1]) == 2 and len(test[2]) == 2:
+            pass
+        else:
+            print "Error, incorrect format for walltime, using default guess"
+            walltime = guess_equil_walltime(N)
+    else:
+        walltime = guess_equil_walltime(N)
+    return walltime, queue, ppn,nsteps
+
+def guess_equil_walltime(N):
     if N < 60:
         walltime="16:00:00"
     else:
         if N > 100:
-            #queue="serial_long"
             walltime="24:00:00"
         else:
             walltime="18:00:00"
-    return walltime, queue, ppn,nsteps
-
-def determine_walltime(model):
+    return walltime
+    
+def determine_walltime(model,fitopts):
     """ Estimate an efficient walltime."""
     N = model.n_residues
     ppn = "1"
     nsteps = "100000000"
     queue="serial"
+    
+    if "walltime" in fitopts:
+        walltime = fitopts["walltime"]
+        test = walltime.split(":")
+        if len(test) == 3 and len(test[0]) == 2 and len(test[1]) == 2 and len(test[2]) == 2:
+            pass
+        else:
+            print "Error, incorrect format for walltime, using default guess"
+            walltime = guess_walltime(N)
+    else:
+        walltime = guess_walltime(N)
+    return walltime, queue, ppn,nsteps
+
+def guess_walltime(N):
     if N < 60:
         walltime="05:00:00"
     else:
@@ -443,14 +469,14 @@ def determine_walltime(model):
                 walltime="15:00:00"
         else:
             walltime="8:00:00"
-    return walltime, queue, ppn,nsteps
-
-def run_temperature_array(model,T_min,T_max,deltaT):
+    return walltime
+    
+def run_temperature_array(model,fitopts,T_min,T_max,deltaT):
     """ Simulate range of temperatures to find the folding temperature. """
 
     Temperatures = range(T_min,T_max+deltaT,deltaT)
     ## Run for longer if the protein is really big.
-    walltime, queue, ppn, nsteps = determine_walltime(model)
+    walltime, queue, ppn, nsteps = determine_walltime(model,fitopts)
     name = model.name
     T_string = ''
     for T in Temperatures:
