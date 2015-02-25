@@ -161,10 +161,9 @@ def determine_new_temperatures():
 def manually_extend_temperatures(model,fitopts,iteration,method,temps,factor):
     """ To manually extend some temperatures """
 
-    logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
-    logger = logging.getLogger("simulation")
-
     name = model.name
+    
+
     cwd = os.getcwd()
     sub = "%s/%s/iteration_%d" % (model.path,name,iteration)
     ## Determine directory to enter
@@ -208,10 +207,13 @@ def manually_extend_temperatures(model,fitopts,iteration,method,temps,factor):
             if os.path.exists("energyterms.xvg"):
                 os.remove("energyterms.xvg")
         os.chdir(cwd2)
+
+    logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
+    logger = logging.getLogger("simulation")
     if method == "short":
-        logger.info(name,"Starting: Tf_loop_iteration")
+        logger.info("Starting: Tf_loop_iteration")
     elif method == "long":
-        logger.info(name,"Starting: Equil_Tf")
+        logger.info("Starting: Equil_Tf")
 
     os.chdir(cwd)
 

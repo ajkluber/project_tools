@@ -226,7 +226,7 @@ def extend_temperatures(args):
     factor = args.factor
 
     names = args.names
-    Models,Fittingopts = mdb.inputs.load_models(name,dry_run=args.dry_run)
+    Models,Fittingopts = mdb.inputs.load_models(names,dry_run=args.dry_run)
 
     if (args.short_temps != None) and (args.long_temps != None):
         print "ERROR!"
@@ -329,7 +329,7 @@ def get_args():
     ext_parser.add_argument('--long_temps',
         type=float,
         nargs='+',
-        help='T_initial T_final dT for new mutational sims array')
+        help='Temperatures that you want extended')
         
 
     args = parser.parse_args()
