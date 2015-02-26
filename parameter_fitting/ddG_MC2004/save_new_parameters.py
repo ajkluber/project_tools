@@ -6,7 +6,7 @@
 import numpy as np
 import os
 
-def save(model,soln_index,nonnative=False):
+def save(model,fitopts,soln_index,nonnative=False):
     ''' Save new parameters '''
 
     # Only the fitting_params (a subset of model_params) are

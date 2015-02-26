@@ -7,14 +7,21 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 
-def save(model,soln_index):
+def save(model,fitopts,soln_index):
     """ Save new parameters """
     import analysis_scripts.plot_depsilon_native as eplot
+    
+    if "max_step_factor" in fitopts:
+        max_step_factor = float(fitopts["max_step_factor"])
+    else:
+        max_step_factor = 0.3
     
     cwd = os.getcwd()
     eps0 = model.pairwise_strengths
     deps = np.loadtxt("xp_%d.dat" % soln_index)
     fitit = 1
+    
+    
     
     ##calculate the scaling based upon what would actually happen: if it's already at 0.01, and goes more negative, now it effectively shows a deps there of 0, and not some arbitrarily large number
     neweps_effective = eps0 + deps
@@ -25,7 +32,7 @@ def save(model,soln_index):
     
     factor = np.linalg.norm(deps_effective)/np.linalg.norm(eps0)
     max_step = np.max(np.abs(deps_effective))
-    max_step_factor = 0.2
+    
         
     if factor > max_step_factor:
         deps = (deps*max_step_factor) / max_step

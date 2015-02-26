@@ -150,11 +150,11 @@ def save_new_parameters(model,fitopts):
     os.chdir("%s/iteration_%d/newton" % (name,iteration))
     if fitopts.has_key("nonnative"):
         if fitopts["nonnative"] == True:
-            submodule.save_new_parameters.save(model,soln_index,nonnative=True)
+            submodule.save_new_parameters.save(model,fitopts,soln_index,nonnative=True)
         else:
-            submodule.save_new_parameters.save(model,soln_index)
+            submodule.save_new_parameters.save(model,fitopts,soln_index)
     else:
-        submodule.save_new_parameters.save(model,soln_index)
+        submodule.save_new_parameters.save(model,fitopts,soln_index)
     os.chdir(cwd)
 
 if __name__ == "__main__":

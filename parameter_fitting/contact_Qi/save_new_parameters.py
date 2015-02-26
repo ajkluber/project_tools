@@ -7,7 +7,7 @@ import numpy as np
 import os
 
 
-def save(model,soln_index):
+def save(model,fitopts,soln_index):
     """ Save new parameters """
     
     cwd = os.getcwd()
