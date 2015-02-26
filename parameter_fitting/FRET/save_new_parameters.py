@@ -24,7 +24,7 @@ def save(model,soln_index):
     
     
     factor = np.linalg.norm(deps_effective)/np.linalg.norm(eps0)
-    max_step = np.max(np.abs(deps_effective/eps0))
+    max_step = np.max(np.abs(deps_effective))
     max_step_factor = 0.2
         
     if factor > max_step_factor:
