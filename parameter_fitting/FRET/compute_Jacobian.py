@@ -286,7 +286,7 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
         print FRET_pairs
     
     if "y_shift" in fitopts:
-        y_shift = float(fitopts["y_shift"])   
+        y_shift = fitopts["y_shift"]   
     else:
         y_shift = 0.0
         fitopts["y_shift"] = 0.0        
