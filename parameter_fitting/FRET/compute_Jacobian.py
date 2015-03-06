@@ -31,9 +31,29 @@ GAS_CONSTANT_KJ_MOL = 0.0083144621
 def_FRET_pairs = [[114,192]]
 defspacing = 0.1 ## in nm
 
-def calc_sim_bins(filelocation, residues=def_FRET_pairs, spacing=defspacing, weights=None):
-    """find_sim_bins calculates and writes the simulation files """
+def calc_sim_bins(model, fitopts, residues=def_FRET_pairs, spacing=defspacing, weights=None):
+    """calc_sim_bins does the actual calculation, with minimal assumptions of directory location """
     ##assumes you are in the folder containing the model subdir
+    if "t_fit" in fitopts:
+        fit_temp = fitopts["t_fit"]
+    else:
+        raise IOError("Missing the fit_temperature, please specify in .ini file")
+    
+    if "fret_pairs" in fitopts:
+        fret_pairs = fitopts["fret_pairs"]
+        FRET_pairs = np.array(fret_pairs) - 1
+        print "The FRET pairs are:"
+        print FRET_pairs
+    
+    if "y_shift" in fitopts:
+        y_shift = fitopts["y_shift"]   
+    else:
+        y_shift = 0
+        fitopts["y_shift"] = 0        
+ 
+    if "spacing" in fitopts:
+        spacing = fitopts["spacing"]
+        
     cwd = os.getcwd()
     subdir = model.name
     iteration = fitopts["iteration"]
@@ -49,12 +69,13 @@ def calc_sim_bins(filelocation, residues=def_FRET_pairs, spacing=defspacing, wei
     os.chdir(subtemp)
     traj = md.load("traj.xtc",top="Native.pdb")
     FRETr = md.compute_distances(traj,residues, periodic=False)
+    FRETr += y_shift 
     
     find_sim_bins(subdirec, FRETr, fit_temp, residues=residues, spacing=spacing, weights=weights)
     os.chdir(cwd)
 
 def find_sim_bins(savelocation, FRETr, fit_temp, residues=def_FRET_pairs, spacing=defspacing, weights=None):
-    """calc_sim_bins does the actual calculation, with minimal assumptions of directory location """
+    """find_sim_bins calculates and writes the simulation files """
     ##assumes nothing about where you are, but assumes the savelocation is specified correctly
     print "Calculating Simulation FRET bins"
     #savelocation should be in "cwd/subdir/iteration_number/fitting_number
@@ -103,7 +124,7 @@ def get_sim_params(model,fitopts):
     parmfile = "%s/simf-params%d.dat" % (subdirec,fit_temp)
     
     if not os.path.isfile(parmfile):
-        find_sim_bins(model, fitopts)  
+        calc_sim_bins(model, fitopts)  
     parms = np.loadtxt(parmfile)
     num_bins = parms[0]
     ran_size = (parms[1],parms[2])
@@ -263,8 +284,12 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
         FRET_pairs = np.array(fret_pairs) - 1
         print "The FRET pairs are:"
         print FRET_pairs
-            
-            
+    
+    if "y_shift" in fitopts:
+        y_shift = float(fitopts["y_shift"])   
+    else:
+        y_shift = 0.0
+        fitopts["y_shift"] = 0.0        
  
     if "spacing" in fitopts:
         spacing = fitopts["spacing"]
@@ -286,7 +311,10 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
     ## Get simulation feature
     print "Now working on calculating the trajectories"
     FRETr = md.compute_distances(traj,FRET_pairs, periodic=False)
-    
+    print FRETr
+    FRETr += y_shift
+    print "Shifted simulated FRET-distance data by a y_shift = %f" % y_shift
+    print FRETr
     ##WARNING: CONFIGURED FOR ONLY ONE PAIR OF FRET PROBES
     ## To configure for more, modify such that you iterate over each pair in FRETr, calcualte the sim_feature, sim_slices
     ## The nrun the Jacobian on just that slice
