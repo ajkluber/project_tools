@@ -380,12 +380,20 @@ def compute_Jacobian_basic(qij, fr, sim_slices, beta, weights=None):
     nbins = np.shape(fr)[0]
     (N_total_traj, npairs) = np.shape(qij)
     
+    if weights == None:
+        N_total_weight = N_total_traj
+        weights = np.ones(N_total_traj)
+    else:
+        if np.shape(weights)[0] == N_total_traj:
+            raise IOError("Not every frame is weighted, aborting! Check to make sure weights is same length as trajectory")
+        N_total_weight = np.sum(weights)
+    
     Jacobian = np.zeros((nbins, npairs),float)
     for idx, bin_location in enumerate(sim_slices):
-        Jacobian[bin_location-1, :] += qij[idx,:]
+        Jacobian[bin_location-1, :] += qij[idx,:]*weights[idx]
     
     
-    Jacobian /= N_total_traj
+    Jacobian /= N_total_weight
     Qavg = np.sum(Jacobian, axis=0)
     
     avg_matrix = np.dot(np.array([fr]).transpose(), np.array([Qavg]))
