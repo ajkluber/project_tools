@@ -384,7 +384,7 @@ def compute_Jacobian_basic(qij, fr, sim_slices, beta, weights=None):
         N_total_weight = N_total_traj
         weights = np.ones(N_total_traj)
     else:
-        if np.shape(weights)[0] == N_total_traj:
+        if not np.shape(weights)[0] == N_total_traj:
             raise IOError("Not every frame is weighted, aborting! Check to make sure weights is same length as trajectory")
         N_total_weight = np.sum(weights)
     
