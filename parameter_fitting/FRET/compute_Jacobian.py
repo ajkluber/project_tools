@@ -142,7 +142,7 @@ def get_sim_params(model,fitopts):
     if not os.path.isfile(parmfile):
         calc_sim_bins(model, fitopts)  
     parms = np.loadtxt(parmfile)
-    analyze_sim_params(parms)
+    num_bins, ran_size, spacing = analyze_sim_params(parms)
     return num_bins, ran_size, spacing
 
 def analyze_sim_params(parms):
