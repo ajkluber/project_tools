@@ -71,6 +71,10 @@ def calc_sim_bins(model, fitopts, residues=def_FRET_pairs, spacing=defspacing, w
     FRETr = md.compute_distances(traj,residues, periodic=False)
     FRETr += y_shift 
     
+    print "FRETr after md.compute is:"
+    print FRETr
+    print np.shape(FRETr)
+    
     find_sim_bins(subdirec, FRETr, fit_temp, residues=residues, spacing=spacing, weights=weights)
     os.chdir(cwd)
 
@@ -85,6 +89,8 @@ def find_sim_bins(savelocation, FRETr, fit_temp, residues=def_FRET_pairs, spacin
     print savelocation
     print "FRETr is:"
     print FRETr
+    print "shape of FRETr is:"
+    print np.shape(FRETr)
     print "fit temp is:"
     print fit_temp
     print "residues are:"
