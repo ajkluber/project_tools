@@ -1,7 +1,7 @@
 import numpy as np
 import save_and_plot
 
-def find_solutions(model,position=100):
+def find_solutions(model,position=100,eps_lower_bound=0.01,eps_upper_bound=10.0,eps_lower_bound_non_native=-1.,eps_upper_bound_non_native=10.,EGap_lower_bound=-0.3,frustration_fraction=0.5):
     target_feature = np.loadtxt("target_feature.dat")
     target_feature_err = np.loadtxt("target_feature_err.dat")
     sim_feature = np.loadtxt("sim_feature.dat")
@@ -20,7 +20,7 @@ def find_solutions(model,position=100):
     temp  = list(0.5*(s[:-1] + s[1:])) + [0.0]
     temp.reverse()
     cutoffs = np.array(temp)
-    print list(cutoffs)
+#    print list(cutoffs)
 
     nrm_soln = []
     nrm_resd = []
@@ -31,19 +31,22 @@ def find_solutions(model,position=100):
 #    for i in range(len(cutoffs)):
     S = np.zeros(J.shape)
 # temporary fix 
-    if position == 0:
-        i = int(len(cutoffs)/2)
-    else:
-        i = position
-    print "i = "+str(i)
+#    if position == 0:
+#        i = int(len(cutoffs)/2)
+#    else:
+    i = position
+    total_eigenvalues = len(list(cutoff))
+    n_eigenvalues = total_eigenvalues - position
+    print "Position = "+str(i)+", taking "+str(n_eigenvalues)+" eigenvalues out of a total "+str(total_eigenvalues)
     tau = cutoffs[i] 
+    print "Cutoff value = "+str(tau)
     s_use = s[s > tau]
     S[np.diag_indices(len(s_use))] = 1./s_use
     J_pinv = np.dot(v.T,np.dot(S.T,u.T))
     x_particular = np.dot(J_pinv,df)  ## particular
         #x_soln = np.dot(v.T,np.dot(S.T,np.dot(u.T,df)))
 #        try:
-    LP_problem,cplex_lambdas, status, sensitivity = apply_constraints_with_cplex(model,x_particular,N)
+    LP_problem,cplex_lambdas, status, sensitivity = apply_constraints_with_cplex(model,x_particular,N,eps_lower_bound,eps_upper_bound,eps_lower_bound_non_native,eps_upper_bound_non_native,EGap_lower_bound)
 
     if status == 1:
         max_solvable_eig = i
@@ -60,21 +63,36 @@ def find_solutions(model,position=100):
         nrm_resd.append(np.linalg.norm(residual))
         solutions.append(cplex_solution)
         Taus.append(tau)
-        print "status:"+str(status)
-                         
+        print "status:"+str(status)+", a feasible solution has been found"
+        np.savetxt('x_particular.dat', x_particular)
+        np.savetxt('lambda_vector.dat', cplex_lambdas)
+        save_and_plot.save_solution_data(solutions,Taus,nrm_soln,nrm_resd,norm_eps,condition_number,s)                 
     else:
         print "status:"+str(status)
-#        except:
-#            pass
+        if status ==3:
+            print "No feasible solution found"
+#   except:
+#      pass
 
     np.savetxt('x_particular.dat', x_particular)
     np.savetxt('lambda_vector.dat', cplex_lambdas)
-    save_and_plot.save_solution_data(solutions,Taus,nrm_soln,nrm_resd,norm_eps,condition_number,s)
+    save_and_plot.save_solution_data(solutions,Taus,nrm_soln,nrm_resd,norm_eps,condition_number,s)    
+    parameters_log = open('cplex_parameters.dat','w')
+    r = "Cplex simulation parameters\n\n"
+    r+= "position = "+str(i)+"\n"
+    r+= "eps_lower_bound = "+str(eps_lower_bound)+"\n"
+    r+="eps_upper_bound = "+str(eps_upper_bound)+"\n"
+    r+="eps_lower_bound_non_native = "+str(eps_lower_bound_non_native)+"\n"
+    r+="eps_upper_bound_non_native = "+str(eps_upper_bound_non_native)+"\n"
+    r+="EGap_lower_bound = "+str(EGap_lower_bound)+"\n"
+    r+="frustration_fraction = "+str(frustration_fraction)+"\n"
+    if status==1:
+        r+= "Feasible solution found"
+    else:
+        r+= "No feasible solution found"
+    parameters_log.write(r)
 
-    
-    
-
-def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
+def apply_constraints_with_cplex(model,x_particular,N,eps_lower_bound,eps_upper_bound,eps_lower_bound_non_native,eps_upper_bound_non_native,EGap_lower_bound,frustration_fraction):
     """ Construct and solve a linear/quadratic programming problem for new parameters.
 
     Description:
@@ -144,7 +162,7 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
     ## assign each of them a relative importance
 
 #        linear_objective_coeff = np.hstack((np.zeros(N.shape[1],float),(np.ones(2))))
-        linear_objective_coeff = np.hstack(( np.zeros(N.shape[1],float) , np.hstack((1.0,0.2)) ))
+        linear_objective_coeff = np.hstack(( np.zeros(N.shape[1],float) , np.hstack((1-frustration_fraction,frustration_fraction)) ))
 #        linear_objective_coeff = np.hstack((linear_objective_coeff, np.ones(len(eps_non_native),float)))
 #        quadratic_objective_coeff = np.hstack((np.zeros(N.shape[1],float),-1.0))
 #        quadratic_objective_coeff = np.hstack((quadratic_objective_coeff,np.ones(len(eps_non_native),float)))
@@ -228,10 +246,10 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
     ## Enforce lower limits for originally attractive contacts and upper limits for originally repulsive contacts
 
 
-    eps_lower_bound = 0.1
-    eps_upper_bound = 10.0
+#    eps_lower_bound = 0.01
+#    eps_upper_bound = 10.0
 #    eps_lower_bound_non_native = -0.5
-    eps_upper_bound_non_native = 0.5
+#    eps_upper_bound_non_native = 1.0
 
     if eps_non_native == []: 
         right_hand_side = list(-eps -x_particular + eps_lower_bound)
@@ -358,14 +376,14 @@ def apply_constraints_with_cplex(model,x_particular,N,weight=1.):
     upper_bounds = list(10000.*np.ones(N.shape[1]))
     upper_bounds.append(float(eps_upper_bound))
     if eps_non_native != []:
-        upper_bounds.append(float(eps_upper_bound))
+        upper_bounds.append(float(eps_upper_bound_non_native))
 #    upper_bounds_2 = list(eps_upper_bound_non_native*np.ones(len(eps_non_native)))
 #    upper_bounds.extend(upper_bounds_2)
 
     lower_bounds = list(-10000.*np.ones(N.shape[1]))
-    lower_bounds.append(float(0.001))
+    lower_bounds.append(float(EGap_lower_bound))
     if eps_non_native != []:
-        lower_bounds.append(float(-eps_upper_bound_non_native))
+        lower_bounds.append(float(eps_lower_bound_non_native))
 #    lower_bounds_2 = list(eps_lower_bound_non_native*np.zeros(len(eps_non_native)))
 #    lower_bounds.extend(lower_bounds_2)
 #    print len(objective_coeff), len(upper_bounds), len(lower_bounds), len(column_names)
