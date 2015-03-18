@@ -35,7 +35,7 @@ def find_solutions(model,position=100,eps_lower_bound=0.01,eps_upper_bound=10.0,
 #        i = int(len(cutoffs)/2)
 #    else:
     i = position
-    total_eigenvalues = len(list(cutoff))
+    total_eigenvalues = len(list(cutoffs))
     n_eigenvalues = total_eigenvalues - position
     print "Position = "+str(i)+", taking "+str(n_eigenvalues)+" eigenvalues out of a total "+str(total_eigenvalues)
     tau = cutoffs[i] 
