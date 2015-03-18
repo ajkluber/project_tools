@@ -46,7 +46,7 @@ def find_solutions(model,position=100,eps_lower_bound=0.01,eps_upper_bound=10.0,
     x_particular = np.dot(J_pinv,df)  ## particular
         #x_soln = np.dot(v.T,np.dot(S.T,np.dot(u.T,df)))
 #        try:
-    LP_problem,cplex_lambdas, status, sensitivity = apply_constraints_with_cplex(model,x_particular,N,eps_lower_bound,eps_upper_bound,eps_lower_bound_non_native,eps_upper_bound_non_native,EGap_lower_bound)
+    LP_problem,cplex_lambdas, status, sensitivity = apply_constraints_with_cplex(model,x_particular,N,eps_lower_bound,eps_upper_bound,eps_lower_bound_non_native,eps_upper_bound_non_native,EGap_lower_bound,frustration_fraction)
 
     if status == 1:
         max_solvable_eig = i
