@@ -42,7 +42,7 @@ def save(model,fitopts,soln_index,nonnative=False):
 
     # Update parameters
     if nonnative:
-        update_model_param_values_nonnative(neweps_p)
+        update_model_param_values_nonnative(model, neweps_p)
     else:
         model.update_model_param_values(neweps_p)
 
