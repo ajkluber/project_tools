@@ -87,9 +87,9 @@ def find_solutions(model,position=100,eps_lower_bound=0.01,eps_upper_bound=10.0,
     r+="EGap_lower_bound = "+str(EGap_lower_bound)+"\n"
     r+="frustration_fraction = "+str(frustration_fraction)+"\n"
     if status==1:
-        r+= "Feasible solution found"
+        r+= "Feasible solution found\n\n"
     else:
-        r+= "No feasible solution found"
+        r+= "No feasible solution found\n\n"
     parameters_log.write(r)
 
 def apply_constraints_with_cplex(model,x_particular,N,eps_lower_bound,eps_upper_bound,eps_lower_bound_non_native,eps_upper_bound_non_native,EGap_lower_bound,frustration_fraction):
