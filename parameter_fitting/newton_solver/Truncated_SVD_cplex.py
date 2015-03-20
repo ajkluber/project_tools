@@ -63,12 +63,12 @@ def find_solutions(model,position=100,eps_lower_bound=0.01,eps_upper_bound=10.0,
         nrm_resd.append(np.linalg.norm(residual))
         solutions.append(cplex_solution)
         Taus.append(tau)
-        print "status:"+str(status)+", a feasible solution has been found"
+        print "status:{0}, a feasible solution has been found".format(status)
         np.savetxt('x_particular.dat', x_particular)
         np.savetxt('lambda_vector.dat', cplex_lambdas)
         save_and_plot.save_solution_data(solutions,Taus,nrm_soln,nrm_resd,norm_eps,condition_number,s)                 
     else:
-        print "status:"+str(status)
+        print "status:{0}\n".format(status)
         if status ==3:
             print "No feasible solution found"
 #   except:
