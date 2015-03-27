@@ -68,9 +68,9 @@ def find_solutions(model,position=100,eps_lower_bound=0.01,eps_upper_bound=10.0,
         np.savetxt('lambda_vector.dat', cplex_lambdas)
         save_and_plot.save_solution_data(solutions,Taus,nrm_soln,nrm_resd,norm_eps,condition_number,s)                 
     else:
-        print "status:{0}\n".format(status)
+        print "status:{0} ".format(status)
         if status ==3:
-            print "No feasible solution found"
+            print ", no feasible solution found"
 #   except:
 #      pass
 
