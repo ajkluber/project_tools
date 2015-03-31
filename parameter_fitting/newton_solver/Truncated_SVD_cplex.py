@@ -1,7 +1,7 @@
 import numpy as np
 import save_and_plot
 
-def find_solutions(model,position=100,eps_lower_bound=0.01,eps_upper_bound=10.0,eps_lower_bound_non_native=-1.,eps_upper_bound_non_native=10.,EGap_lower_bound=-0.3,frustration_fraction=0.5):
+def find_solutions(model,fitopts,position=100,eps_lower_bound=0.01,eps_upper_bound=10.0,eps_lower_bound_non_native=-1.,eps_upper_bound_non_native=10.,EGap_lower_bound=-0.3,frustration_fraction=0.5):
     target_feature = np.loadtxt("target_feature.dat")
     target_feature_err = np.loadtxt("target_feature_err.dat")
     sim_feature = np.loadtxt("sim_feature.dat")
@@ -20,34 +20,47 @@ def find_solutions(model,position=100,eps_lower_bound=0.01,eps_upper_bound=10.0,
     temp  = list(0.5*(s[:-1] + s[1:])) + [0.0]
     temp.reverse()
     cutoffs = np.array(temp)
-#    print list(cutoffs)
 
     nrm_soln = []
     nrm_resd = []
     condition_number = []
     solutions = []
     Taus = []
-    
-#    for i in range(len(cutoffs)):
-    S = np.zeros(J.shape)
-# temporary fix 
-#    if position == 0:
-#        i = int(len(cutoffs)/2)
-#    else:
-    i = position
-    total_eigenvalues = len(list(cutoffs))
-    n_eigenvalues = total_eigenvalues - position
-    print "Position = "+str(i)+", taking "+str(n_eigenvalues)+" eigenvalues out of a total "+str(total_eigenvalues)
-    tau = cutoffs[i] 
-    print "Cutoff value = "+str(tau)
-    s_use = s[s > tau]
-    S[np.diag_indices(len(s_use))] = 1./s_use
-    J_pinv = np.dot(v.T,np.dot(S.T,u.T))
-    x_particular = np.dot(J_pinv,df)  ## particular
-        #x_soln = np.dot(v.T,np.dot(S.T,np.dot(u.T,df)))
-#        try:
-    LP_problem,cplex_lambdas, status, sensitivity = apply_constraints_with_cplex(model,x_particular,N,eps_lower_bound,eps_upper_bound,eps_lower_bound_non_native,eps_upper_bound_non_native,EGap_lower_bound,frustration_fraction)
 
+    if (fitopts['nonnative']==True)==False:
+        print "Solving for native parameters"
+        for i in range(len(cutoffs)):                                                                                        
+            S = np.zeros(J.shape)
+            total_eigenvalues = len(list(cutoffs))
+            n_eigenvalues = total_eigenvalues - i
+            print "Position = "+str(i)+", taking "+str(n_eigenvalues)+" eigenvalues out of a total "+str(total_eigenvalues)
+            tau = cutoffs[i]
+            print "Cutoff value = "+str(tau)
+            s_use = s[s > tau]
+            S[np.diag_indices(len(s_use))] = 1./s_use
+            J_pinv = np.dot(v.T,np.dot(S.T,u.T))
+            x_particular = np.dot(J_pinv,df)  ## particular                                                                      
+                                                                                               
+            LP_problem,cplex_lambdas, status, sensitivity = apply_constraints_with_cplex(model,x_particular,N,eps_lower_bound,eps_upper_bound,eps_lower_bound_non_native,eps_upper_bound_non_native,EGap_lower_bound,frustration_fraction)
+            print status
+            if status == 1:
+                break
+    else:
+        print "Solving for native and non native parameters"
+        S = np.zeros(J.shape)
+        i = position
+        total_eigenvalues = len(list(cutoffs))
+        n_eigenvalues = total_eigenvalues - position
+        print "Position = "+str(i)+", taking "+str(n_eigenvalues)+" eigenvalues out of a total "+str(total_eigenvalues)
+        tau = cutoffs[i] 
+        print "Cutoff value = "+str(tau)
+        s_use = s[s > tau]
+        S[np.diag_indices(len(s_use))] = 1./s_use
+        J_pinv = np.dot(v.T,np.dot(S.T,u.T))
+        x_particular = np.dot(J_pinv,df)  ## particular
+        
+        LP_problem,cplex_lambdas, status, sensitivity = apply_constraints_with_cplex(model,x_particular,N,eps_lower_bound,eps_upper_bound,eps_lower_bound_non_native,eps_upper_bound_non_native,EGap_lower_bound,frustration_fraction)
+        
     if status == 1:
         max_solvable_eig = i
         if len(cplex_lambdas)>(N.shape[1]+1):
@@ -70,9 +83,7 @@ def find_solutions(model,position=100,eps_lower_bound=0.01,eps_upper_bound=10.0,
     else:
         print "status:{0} ".format(status)
         if status ==3:
-            print ", no feasible solution found"
-#   except:
-#      pass
+            print "no feasible solution found"
 
     np.savetxt('x_particular.dat', x_particular)
     np.savetxt('lambda_vector.dat', cplex_lambdas)
@@ -91,7 +102,9 @@ def find_solutions(model,position=100,eps_lower_bound=0.01,eps_upper_bound=10.0,
     else:
         r+= "No feasible solution found\n\n"
     parameters_log.write(r)
-
+    open('Lambda_index.txt', 'w').write('0')
+    open('desired_ratio', 'w').write('1.0')
+    
 def apply_constraints_with_cplex(model,x_particular,N,eps_lower_bound,eps_upper_bound,eps_lower_bound_non_native,eps_upper_bound_non_native,EGap_lower_bound,frustration_fraction):
     """ Construct and solve a linear/quadratic programming problem for new parameters.
 
@@ -246,11 +259,6 @@ def apply_constraints_with_cplex(model,x_particular,N,eps_lower_bound,eps_upper_
     ## Enforce lower limits for originally attractive contacts and upper limits for originally repulsive contacts
 
 
-#    eps_lower_bound = 0.01
-#    eps_upper_bound = 10.0
-#    eps_lower_bound_non_native = -0.5
-#    eps_upper_bound_non_native = 1.0
-
     if eps_non_native == []: 
         right_hand_side = list(-eps -x_particular + eps_lower_bound)
         right_hand_side_2 = list(-eps -x_particular + eps_upper_bound)
@@ -276,8 +284,8 @@ def apply_constraints_with_cplex(model,x_particular,N,eps_lower_bound,eps_upper_
             rows.append([ column_names, temp ])
         for i in range(len(N)):
             temp = list(N[i,:])
-        # The variable to be minimized is Z = (-EGap)
-            temp.append(float(-1))
+        # The variable to be maximized is EGap
+            temp.append(float(1))
             rows.append([ column_names, temp ])
     
     else:
