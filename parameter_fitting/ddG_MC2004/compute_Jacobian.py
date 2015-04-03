@@ -300,7 +300,7 @@ def compute_dHk(model,fitopts):
 
             Q = np.loadtxt("Q.dat")
             U,TS,N,Uframes,TSframes,Nframes = get_state_indicators(Q,bounds)
-            allframes = np.ones(len(traj.n_frams)).astype(bool)
+            #allframes = np.ones(len(traj.n_frames)).astype(bool)
 
             for k in range(len(mutants)):
             #for k in range(len(mutants)):
@@ -434,7 +434,7 @@ if __name__ == "__main__":
     #name = args.name
     #iteration= args.iteration
     
-    name = "S6_0"
+    name = "S6_2"
     model, fitopts = mdb.inputs.load_model(name)
     model.name = "S6"
     compute_dHk(model,fitopts)
