@@ -51,7 +51,7 @@ def save(model,fitopts,soln_index):
     plt.hist(neweps, 50, alpha=0.75)
     plt.xlabel("epsilon",fontsize=20)
     plt.ylabel("number",fontsize=20)
-    plt.title("spared of epsilons", fontsize=20)
+    plt.title("spread of epsilons", fontsize=20)
     plt.savefig("eps_spread.png")
     
     open("%s/pairwise_params" % cwd,"w").write(model.pairwise_param_file_string)

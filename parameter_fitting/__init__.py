@@ -124,7 +124,10 @@ def solve_newtons_method(model,fitopts):
     print "  Solving for solutions with %s method" % fitopts["solver"]
     cwd = os.getcwd()
     os.chdir("%s/iteration_%d/newton" % (name,iteration))
-    solver.find_solutions(model)
+    if fitopts["solver"] == "TSVD_Cplex":
+        solver.find_solutions(model,fitopts)
+    else:
+        solver.find_solutions(model)
     os.chdir(cwd)
     logger.info(" Finished: Solving_Newtons_Method")
 

@@ -22,7 +22,7 @@ def save(model,fitopts,soln_index,nonnative=False):
     if os.path.exists("desired_ratio"):
         desired_ratio = np.loadtxt("desired_ratio")
     else:
-        desired_ratio = 0.2
+        desired_ratio = 1.
     print " scaling step size to %.3f" % desired_ratio
 
     nrm_model_params = np.linalg.norm(eps_p_0)
@@ -42,7 +42,7 @@ def save(model,fitopts,soln_index,nonnative=False):
 
     # Update parameters
     if nonnative:
-        update_model_param_values_nonnative(neweps_p)
+        update_model_param_values_nonnative(model, neweps_p)
     else:
         model.update_model_param_values(neweps_p)
 
@@ -71,9 +71,7 @@ def update_model_param_values_nonnative(model,new_model_param_values):
                     model.pairwise_type[p_pairs[n]] = 2
                 else:
                     model.pairwise_type[p_pairs[n]] = potential_type_switch[model.pairwise_type[p_pairs[n]]]
-            else:
-                if model.pairwise_type[p_pairs[n]] == 1:
-                    model.pairwise_type[p_pairs[n]] = 2
+
             # Model parameters are always positive
             model.model_param_values[p_idx] = abs(new_model_param_values[i])   
 

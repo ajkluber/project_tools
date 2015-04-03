@@ -71,11 +71,7 @@ def calc_sim_bins(model, fitopts, residues=def_FRET_pairs, spacing=defspacing, w
     FRETr = md.compute_distances(traj,residues, periodic=False)
     FRETr += y_shift 
     
-    print "FRETr after md.compute is:"
-    print FRETr
-    print np.shape(FRETr)
-    
-    find_sim_bins(subdirec, FRETr[:,0], fit_temp, residues=residues, spacing=spacing, weights=weights)
+    find_sim_bins(subdirec, FRETr, fit_temp, residues=residues, spacing=spacing, weights=weights)
     os.chdir(cwd)
 
 def find_sim_bins(savelocation, FRETr, fit_temp, residues=def_FRET_pairs, spacing=defspacing, weights=None):
@@ -83,24 +79,6 @@ def find_sim_bins(savelocation, FRETr, fit_temp, residues=def_FRET_pairs, spacin
     ##assumes nothing about where you are, but assumes the savelocation is specified correctly
     print "Calculating Simulation FRET bins"
     #savelocation should be in "cwd/subdir/iteration_number/fitting_number
-    
-    ##debugging
-    print "save location is in:"
-    print savelocation
-    print "FRETr is:"
-    print FRETr
-    print "shape of FRETr is:"
-    print np.shape(FRETr)
-    print "fit temp is:"
-    print fit_temp
-    print "residues are:"
-    print residues
-    print "spacing is:"
-    print spacing
-    print "weights is"
-    print weights
-    ##debugging
-    
     cwd = os.getcwd()
     
     if not os.path.isdir(savelocation):
@@ -148,10 +126,6 @@ def get_sim_params(model,fitopts):
     if not os.path.isfile(parmfile):
         calc_sim_bins(model, fitopts)  
     parms = np.loadtxt(parmfile)
-    num_bins, ran_size, spacing = analyze_sim_params(parms)
-    return num_bins, ran_size, spacing
-
-def analyze_sim_params(parms):
     num_bins = parms[0]
     ran_size = (parms[1],parms[2])
     spacing = parms[3]
@@ -384,7 +358,7 @@ def compute_Jacobian_basic(qij, fr, sim_slices, beta, weights=None):
         N_total_weight = N_total_traj
         weights = np.ones(N_total_traj)
     else:
-        if not np.shape(weights)[0] == N_total_traj:
+        if np.shape(weights)[0] == N_total_traj:
             raise IOError("Not every frame is weighted, aborting! Check to make sure weights is same length as trajectory")
         N_total_weight = np.sum(weights)
     
