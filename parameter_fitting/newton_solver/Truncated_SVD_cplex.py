@@ -1,7 +1,8 @@
 import numpy as np
 import save_and_plot
 
-def find_solutions(model,fitopts,position=100,eps_lower_bound=0.01,eps_upper_bound=10.0,eps_lower_bound_non_native=-1.,eps_upper_bound_non_native=10.,EGap_lower_bound=-0.3,frustration_fraction=0.5):
+def find_solutions(model,fitopts,position=100,eps_lower_bound=0.01,eps_upper_bound=4.,eps_lower_bound_non_native=-1.,eps_upper_bound_non_native=3.,EGap_lower_bound=-0.4,frustration_fraction=0.5, n_bins=13):
+    
     target_feature = np.loadtxt("target_feature.dat")
     target_feature_err = np.loadtxt("target_feature_err.dat")
     sim_feature = np.loadtxt("sim_feature.dat")
@@ -9,6 +10,10 @@ def find_solutions(model,fitopts,position=100,eps_lower_bound=0.01,eps_upper_bou
     Jacobian = np.loadtxt("Jacobian.dat")
     Jacobian_err = np.loadtxt("Jacobian_err.dat")
     J = Jacobian
+
+    binned_nonnatives = False
+    if J.shape[1] == (model.n_native_pairs+n_bins):
+        binned_nonnatives = True
 
     norm_eps = np.linalg.norm(model.model_param_values)
 
@@ -27,7 +32,7 @@ def find_solutions(model,fitopts,position=100,eps_lower_bound=0.01,eps_upper_bou
     solutions = []
     Taus = []
 
-    if (fitopts['nonnative']==True)==False:
+    if (fitopts['nonnative']==True)==False or (binned_nonnatives == True):
         print "Solving for native parameters"
         for i in range(len(cutoffs)):                                                                                        
             S = np.zeros(J.shape)
@@ -41,7 +46,7 @@ def find_solutions(model,fitopts,position=100,eps_lower_bound=0.01,eps_upper_bou
             J_pinv = np.dot(v.T,np.dot(S.T,u.T))
             x_particular = np.dot(J_pinv,df)  ## particular                                                                      
                                                                                                
-            LP_problem,cplex_lambdas, status, sensitivity = apply_constraints_with_cplex(model,x_particular,N,eps_lower_bound,eps_upper_bound,eps_lower_bound_non_native,eps_upper_bound_non_native,EGap_lower_bound,frustration_fraction)
+            LP_problem,cplex_lambdas, status, sensitivity = apply_constraints_with_cplex(model,x_particular,N,eps_lower_bound,eps_upper_bound,eps_lower_bound_non_native,eps_upper_bound_non_native,EGap_lower_bound,frustration_fraction, binned_nonnatives, n_bins)
             print status
             if status == 1:
                 break
@@ -59,7 +64,7 @@ def find_solutions(model,fitopts,position=100,eps_lower_bound=0.01,eps_upper_bou
         J_pinv = np.dot(v.T,np.dot(S.T,u.T))
         x_particular = np.dot(J_pinv,df)  ## particular
         
-        LP_problem,cplex_lambdas, status, sensitivity = apply_constraints_with_cplex(model,x_particular,N,eps_lower_bound,eps_upper_bound,eps_lower_bound_non_native,eps_upper_bound_non_native,EGap_lower_bound,frustration_fraction)
+        LP_problem,cplex_lambdas, status, sensitivity = apply_constraints_with_cplex(model,x_particular,N,eps_lower_bound,eps_upper_bound,eps_lower_bound_non_native,eps_upper_bound_non_native,EGap_lower_bound,frustration_fraction, binned_nonnatives, n_bins)
         
     if status == 1:
         max_solvable_eig = i
@@ -74,9 +79,26 @@ def find_solutions(model,fitopts,position=100,eps_lower_bound=0.01,eps_upper_bou
         residual = np.dot(J,cplex_solution) - df
         nrm_soln.append(np.linalg.norm(cplex_solution))
         nrm_resd.append(np.linalg.norm(residual))
-        solutions.append(cplex_solution)
+#        solutions.append(cplex_solution)
         Taus.append(tau)
         print "status:{0}, a feasible solution has been found".format(status)
+
+        if binned_nonnatives == True:
+            x_particular_binned = x_particular[:model.n_native_pairs]
+            cplex_solution_binned = cplex_solution[:model.n_native_pairs]
+            x_particular_reference = x_particular[model.n_native_pairs:]
+            cplex_solution_reference = cplex_solution[model.n_native_pairs:]
+            pairs_order = np.loadtxt('../../pairs_order.dat')
+
+            for j in range(model.n_native_pairs,len(model.pairs)):
+                order_index = pairs_order[j]
+                x_particular_binned = np.append(x_particular_binned, x_particular_reference[order_index])
+                cplex_solution_binned = np.append(cplex_solution_binned, cplex_solution_reference[order_index])
+            
+            x_particular = x_particular_binned
+            cplex_solution = cplex_solution_binned
+
+        solutions.append(cplex_solution)
         np.savetxt('x_particular.dat', x_particular)
         np.savetxt('lambda_vector.dat', cplex_lambdas)
         save_and_plot.save_solution_data(solutions,Taus,nrm_soln,nrm_resd,norm_eps,condition_number,s)                 
@@ -85,9 +107,9 @@ def find_solutions(model,fitopts,position=100,eps_lower_bound=0.01,eps_upper_bou
         if status ==3:
             print "no feasible solution found"
 
-    np.savetxt('x_particular.dat', x_particular)
-    np.savetxt('lambda_vector.dat', cplex_lambdas)
-    save_and_plot.save_solution_data(solutions,Taus,nrm_soln,nrm_resd,norm_eps,condition_number,s)    
+#    np.savetxt('x_particular.dat', x_particular)
+#    np.savetxt('lambda_vector.dat', cplex_lambdas)
+#    save_and_plot.save_solution_data(solutions,Taus,nrm_soln,nrm_resd,norm_eps,condition_number,s)    
     parameters_log = open('cplex_parameters.dat','w')
     r = "Cplex simulation parameters\n\n"
     r+= "position = "+str(i)+"\n"
@@ -105,7 +127,7 @@ def find_solutions(model,fitopts,position=100,eps_lower_bound=0.01,eps_upper_bou
     open('Lambda_index.txt', 'w').write('0')
     open('desired_ratio', 'w').write('1.0')
     
-def apply_constraints_with_cplex(model,x_particular,N,eps_lower_bound,eps_upper_bound,eps_lower_bound_non_native,eps_upper_bound_non_native,EGap_lower_bound,frustration_fraction):
+def apply_constraints_with_cplex(model,x_particular,N,eps_lower_bound,eps_upper_bound,eps_lower_bound_non_native,eps_upper_bound_non_native,EGap_lower_bound,frustration_fraction, binned_nonnatives, n_bins):
     """ Construct and solve a linear/quadratic programming problem for new parameters.
 
     Description:
@@ -122,10 +144,19 @@ def apply_constraints_with_cplex(model,x_particular,N,eps_lower_bound,eps_upper_
     eps = model.model_param_values
     eps_native = eps[0:num_native_pairs]
     
-    if len(eps)>len(eps_native):
-        eps_non_native = eps[num_native_pairs:]
-    else:
+    if len(eps) == len(eps_native):
         eps_non_native = []
+    elif binned_nonnatives == True:
+        pairs_order = np.loadtxt('../../pairs_order.dat')
+        eps_non_native = []
+        for i in range(n_bins):
+            for j in range(len(pairs_order[model.n_native_pairs:])):
+                if pairs_order[j] == i:
+                    eps_non_native.append(eps[j])
+                    break
+        eps_non_native = np.array(eps_non_native)
+    else:
+        eps_non_native = eps[num_native_pairs:]
 
 #    print len(eps_non_native)
 ## ADDITION needed: non-native epsilons
@@ -285,7 +316,7 @@ def apply_constraints_with_cplex(model,x_particular,N,eps_lower_bound,eps_upper_
         for i in range(len(N)):
             temp = list(N[i,:])
         # The variable to be maximized is EGap
-            temp.append(float(1))
+            temp.append(float(-1))
             rows.append([ column_names, temp ])
     
     else:
