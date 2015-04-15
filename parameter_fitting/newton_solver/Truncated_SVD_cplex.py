@@ -1,7 +1,7 @@
 import numpy as np
 import save_and_plot
 
-def find_solutions(model,fitopts,position=100,eps_lower_bound=0.01,eps_upper_bound=4.,eps_lower_bound_non_native=-1.,eps_upper_bound_non_native=3.,EGap_lower_bound=-0.4,frustration_fraction=0.5, n_bins=13):
+def find_solutions(model,fitopts,position=100,eps_lower_bound=-2.,eps_upper_bound=2.,eps_lower_bound_non_native=-2.,eps_upper_bound_non_native=2.,EGap_lower_bound=-1.,frustration_fraction=0., n_bins=13):
     
     target_feature = np.loadtxt("target_feature.dat")
     target_feature_err = np.loadtxt("target_feature_err.dat")
@@ -125,7 +125,7 @@ def find_solutions(model,fitopts,position=100,eps_lower_bound=0.01,eps_upper_bou
         r+= "No feasible solution found\n\n"
     parameters_log.write(r)
     open('Lambda_index.txt', 'w').write('0')
-    open('desired_ratio', 'w').write('1.0')
+    open('desired_ratio', 'w').write('0.5')
     
 def apply_constraints_with_cplex(model,x_particular,N,eps_lower_bound,eps_upper_bound,eps_lower_bound_non_native,eps_upper_bound_non_native,EGap_lower_bound,frustration_fraction, binned_nonnatives, n_bins):
     """ Construct and solve a linear/quadratic programming problem for new parameters.
