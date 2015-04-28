@@ -5,6 +5,7 @@ Description:
     Utility to submit PBS jobs to calculate simulation observables
 such as rmsd, Q, R_g, potential energy, dihedral angles, and number
 of helical residues for Gromacs trajectories.
+
 """
 
 import subprocess as sb
@@ -59,7 +60,10 @@ def crunch_all(name,contact_type,walltime="00:01:00",ppn="1",n_tables=0):
     sb.call(qsub.split(),stdout=open("energyterms.out","w"),stderr=open("energyterms.err","w"))
 
 def reorganize_qimap():
-    """ Parse a couple Q coordinates from qimap.dat """
+    """ Parse a couple Q coordinates from qimap.dat 
+
+    DEPRECATED
+    """
     G = np.loadtxt("radius_gyration.xvg")
     np.savetxt("Rg.xvg",G[:,0:2])
 
@@ -89,6 +93,8 @@ def crunch_Nh(tol=40.):
     A residue is in a helical conformation if it is making an i+4 contact and
     the two dihedral angles between it and its contact are within tol of 50 
     degrees (the 'helical' dihedral).
+
+    DEPRECATED
     """
     Qh = np.loadtxt("Qhres.dat")
     phis = np.loadtxt("phis.xvg")
