@@ -1,0 +1,16 @@
+""" Creating a CACB structure-based model """
+
+# Using the all-atom pdb, obtain an all-atom contact map from smog server.
+# Ex: SH3.pdb  all_atom_map
+
+# Get CACB pdb and pairs
+import model_builder as mdb
+mdb.models.pdb_parser.get_CACB_contacts_from_AA_contact_map("SH3.pdb","all_atom_map")
+# Saves -> SH3cacb.pdb SH3caca_cbcb_pairs
+
+# Make pairwise_params for gaussian contacts
+python ~/code/model_builder/models/prep_Gaussian_pairwise --pdb SH3cacb.pdb --pairs SH3caca_cbcb_pairs --noclean
+# Saves -> SH3cacb_pairwise_params SH3cacb_model_params
+
+# See the adjacent SH3.ini file for the relevant model options.
+# Include "using_sbm_gmx = True" and use "mdrun_sbm" for simulations.
