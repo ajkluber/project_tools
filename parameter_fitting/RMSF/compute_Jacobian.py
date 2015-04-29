@@ -13,7 +13,10 @@ import os
 import time
 import argparse
 
-import mdtraj as md
+try:
+    import mdtraj as md
+except:
+    pass
 
 import model_builder as mdb
 

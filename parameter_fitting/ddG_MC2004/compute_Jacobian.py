@@ -18,8 +18,6 @@ import argparse
 import time
 import numpy as np
 
-import mdtraj as md
-
 from mutatepdbs import get_core_mutations, get_scanning_mutations, get_exp_ddG
 
 #import project_tools.parameter_fitting.util.util as util

@@ -5,8 +5,6 @@ import argparse
 import time
 import numpy as np
 
-import mdtraj as md
-
 from mutatepdbs import get_core_mutations, get_scanning_mutations, get_exp_ddG
 from compute_Jacobian import get_dHk_for_state,get_mutant_fij,save_phi_values
 

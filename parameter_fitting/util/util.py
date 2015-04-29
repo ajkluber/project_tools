@@ -1,9 +1,13 @@
 '''Module containing all the shared function from the subdirectories of parameter_fitting
 
 '''
-import mdtraj as md
 import numpy as np
 import time
+
+try:
+    import mdtraj as md
+except:
+    pass
 
 def get_rij_Vp(model):
     ''' Load trajectory, state indicators, and contact energy '''

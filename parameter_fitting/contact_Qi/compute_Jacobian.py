@@ -12,7 +12,11 @@ import os
 import time
 import argparse
 
-import mdtraj as md
+try:
+    import mdtraj as md
+except:
+    print "mdtraj is not available on this system"
+
 
 import model_builder as mdb
 

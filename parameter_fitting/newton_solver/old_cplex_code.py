@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-import mdtraj as md
 import cplex
 
 from project_tools.parameter_fitting.ddG_MC2004 import phi_values as phi
