@@ -20,16 +20,6 @@ import logging
 
 import mdp
 
-def main():
-    """ Use gmxcheck on subdirectories.  """
-    parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--check', action='store_true', help='use gmxcheck on all subdirectories')
-    args = parser.parse_args()
-    if args.check == True:
-        gmxcheck_subdirectories()
-    else:
-        pass
-
 def check_completion(model,fitopts,iteration,long=False):
     """ Checks to see if the previous Tf_loop simulation completed. 
 
@@ -524,15 +514,29 @@ def run_constant_temp(model,T,name,nsteps="100000000",walltime="23:00:00",queue=
 
     # Start simulation
     jobname = "%s_%s" % (name,str(T))
-    prep_run(jobname,walltime=walltime,queue=queue,ppn=ppn)
+    prep_run(jobname,walltime=walltime,queue=queue,ppn=ppn,sbm=model.using_sbm_gmx)
 
     if model.dry_run == True:
         print "    Dryrun: Successfully saved simulation files for ", T
     else:
         qsub = "qsub run.pbs"
         sb.call(qsub.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
+
+def prep_run(jobname,walltime="23:00:00",queue="serial",ppn="1",sbm=False):
+    """ Executes the constant temperature runs."""
+
+    prep_step1 = 'grompp_sbm -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.5.tpr'
+    prep_step2 = 'grompp -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.6.tpr'
+    sb.call(prep_step1.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
+    sb.call(prep_step2.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
+
+    pbs_string = get_pbs_string(jobname,queue,ppn,walltime,sbm=sbm)
+    open("run.pbs","w").write(pbs_string)
+
+    rst_string = get_rst_pbs_string(jobname,queue,ppn,walltime,sbm=sbm)
+    open("rst.pbs","w").write(rst_string)
     
-def get_pbs_string(jobname,queue,ppn,walltime):
+def get_pbs_string(jobname,queue,ppn,walltime,sbm=False):
     """ Return basic PBS job script. """
     pbs_string = "#!/bin/bash \n"
     pbs_string +="#PBS -N %s \n" % jobname
@@ -543,13 +547,13 @@ def get_pbs_string(jobname,queue,ppn,walltime):
     pbs_string +="cd $PBS_O_WORKDIR\n"
     pbs_string +="echo 'I ran on:'\n"
     pbs_string +="cat $PBS_NODEFILE\n"
-    if int(ppn) > 1:
-        pbs_string +="mdrun_mpi -ntmpi %d -s topol_4.6.tpr" % (mpi,mpi)
+    if sbm:
+        pbs_string +="mdrun_sbm -s topol_4.5.tpr"
     else:
         pbs_string +="mdrun -s topol_4.6.tpr"
     return pbs_string
 
-def get_rst_pbs_string(jobname,queue,ppn,walltime):
+def get_rst_pbs_string(jobname,queue,ppn,walltime,sbm=False):
     """ Return basic PBS job script for restarting. """
     rst_string = "#!/bin/bash \n"
     rst_string +="#PBS -N %s_rst \n" % jobname
@@ -560,22 +564,18 @@ def get_rst_pbs_string(jobname,queue,ppn,walltime):
     rst_string +="cd $PBS_O_WORKDIR\n"
     rst_string +="echo 'I ran on:'\n"
     rst_string +="cat $PBS_NODEFILE\n"
-    rst_string +="mdrun -s topol_4.6.tpr -cpi state.cpt"
+    if sbm:
+        rst_string +="mdrun_sbm -s topol_4.5.tpr -cpi state.cpt"
+    else:
+        rst_string +="mdrun -s topol_4.6.tpr -cpi state.cpt"
     return rst_string
 
-def prep_run(jobname,walltime="23:00:00",queue="serial",ppn="1"):
-    """ Executes the constant temperature runs."""
-
-    prep_step1 = 'grompp_sbm -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.5.tpr'
-    prep_step2 = 'grompp -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.6.tpr'
-    sb.call(prep_step1.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
-    sb.call(prep_step2.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
-
-    pbs_string = get_pbs_string(jobname,queue,ppn,walltime)
-    open("run.pbs","w").write(pbs_string)
-
-    rst_string = get_rst_pbs_string(jobname,queue,ppn,walltime)
-    open("rst.pbs","w").write(rst_string)
-
 if __name__ == '__main__':
-    main()
+    """ Use gmxcheck on subdirectories.  """
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--check', action='store_true', help='use gmxcheck on all subdirectories')
+    args = parser.parse_args()
+    if args.check == True:
+        gmxcheck_subdirectories()
+    else:
+        pass

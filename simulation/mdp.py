@@ -11,7 +11,7 @@ already set (e.g. temperature, timestep, friction constant).
 
 """
 
-def constant_temperature(T,nsteps):
+def constant_temperature(T,nsteps,nstout="1000"):
     """ Generate grompp.mdp file string. Gromacs 4.5 """
     mdp_string = "; Run control parameters \n"
     mdp_string += "integrator               = sd  \n"
@@ -22,8 +22,8 @@ def constant_temperature(T,nsteps):
     mdp_string += "nstvout                  = 0 \n"
     mdp_string += "nstfout                  = 0 \n"
     mdp_string += "nstlog                   = 5000 \n"
-    mdp_string += "nstenergy                = 1000 \n"
-    mdp_string += "nstxtcout                = 1000 \n"
+    mdp_string += "nstenergy                = %s \n" % nstout
+    mdp_string += "nstxtcout                = %s \n" % nstout
     mdp_string += "xtc_grps                 = system \n"
     mdp_string += "energygrps               = system \n\n" 
     mdp_string += "; neighborsearching parameters \n"
