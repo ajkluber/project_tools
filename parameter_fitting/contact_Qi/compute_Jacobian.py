@@ -15,7 +15,7 @@ import argparse
 try:
     import mdtraj as md
 except:
-    print "mdtraj is not available on this system"
+    pass
 
 
 import model_builder as mdb
