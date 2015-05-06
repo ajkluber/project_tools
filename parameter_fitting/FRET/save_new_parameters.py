@@ -17,7 +17,7 @@ def save(model,fitopts,soln_index):
         max_step_factor = 0.3
     
     cwd = os.getcwd()
-    eps0 = model.pairwise_strengths
+    eps0 = model.model_param_values
     deps = np.loadtxt("xp_%d.dat" % soln_index)
     fitit = 1
     
@@ -56,7 +56,7 @@ def save(model,fitopts,soln_index):
     
     open("%s/pairwise_params" % cwd,"w").write(model.pairwise_param_file_string)
     open("%s/model_params" % cwd,"w").write(model.model_param_file_string)
-    open("%s/fitting_scale" % cwd,"w").write("%f"%fitit)
+    open("%s/fitting_scale" % cwd,"w").write("%f\n%f"%(fitit, np.sum(neweps)/np.shape(neweps)[0]))
     model.pairwise_params_file_location = "%s/pairwise_params" % cwd
     model.model_params_file_location = "%s/model_params" % cwd
 

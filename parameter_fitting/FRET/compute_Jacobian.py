@@ -8,7 +8,7 @@ such as measured with FRET.
 
 note: as of now, only compute distances for FRET is updated
 
-last updated: Justin Chen, December 03, 2014
+last updated: Justin Chen, May 05, 2015
 
 
 """
@@ -202,7 +202,10 @@ def fret_hist_calc(model, fitopts, bin_size, ran_size, spacing):
     sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
     subdirec = "%s/fitting_%d" % (sub,iteration)
     FRETfile = "%s/FRET_hist.dat" % subdirec
-    FRETtracefile = "%s/FRET_trace.dat" % cwd
+    if not "fretdata" in fitopts:
+        FRETtracefile = "%s/FRET_trace.dat" % cwd
+    else:
+        FRETtracefile = fitopts["fretdata"]
     
     ftrace = np.loadtxt(FRETtracefile)
     hist, edges = np.histogram(ftrace,bin_size,ran_size)
@@ -271,7 +274,6 @@ def get_target_feature(model,fitopts):
     subdirec = "%s/fitting_%d" % (sub,iteration)
     simfile = "%s/simf_centers%d.dat" % (subdirec,fit_temp)
     FRETfile = "%s/FRET_hist.dat" % subdirec
-    FRETtracefile = "%s/FRET_trace.dat" % sub
     
     bin_centers = get_sim_centers(model, fitopts)
     bin_size, ran_size, spacing = get_sim_params(model, fitopts)
