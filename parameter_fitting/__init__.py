@@ -82,13 +82,14 @@ def prepare_newtons_method(model,fitopts):
         np.savetxt("%s/iteration_%d/%s/sim_feature.dat" % (name,iteration,method), sim_feature_avg)
         np.savetxt("%s/iteration_%d/%s/sim_feature_err.dat" % (name,iteration,method), sim_feature_err)
         np.savetxt("%s/iteration_%d/%s/Jacobian.dat" % (name,iteration,method), Jacobian_avg)
-        np.savetxt("%s/iteration_%d/%s/Jacobian_err.dat" % (name,iteration,method) ,Jacobian_err)
+        if Jacobian_err is not None:
+            np.savetxt("%s/iteration_%d/%s/Jacobian_err.dat" % (name,iteration,method) ,Jacobian_err)
 
-        ## To Do:
-        ##  - Code Fitting_Includes option
-        ##      - Collect Jacobian rows from all fitting_includes directories.
-        ##      - Map columns (parameters) to match those of the first directory. Stack the rows.
-        ##      - Save in the first fitting directory.
+        # To Do:
+        #  - Code Fitting_Includes option
+        #      - Collect Jacobian rows from all fitting_includes directories.
+        #      - Map columns (parameters) to match those of the first directory. Stack the rows.
+        #      - Save in the first fitting directory.
 
         print "  Saving feature vector and Jacobian in %s/iteration_%d/newton" % (name,iteration)
         np.savetxt("%s/iteration_%d/newton/target_feature.dat" % (name,iteration), target_feature)
@@ -96,7 +97,8 @@ def prepare_newtons_method(model,fitopts):
         np.savetxt("%s/iteration_%d/newton/sim_feature.dat" % (name,iteration), sim_feature_avg)
         np.savetxt("%s/iteration_%d/newton/sim_feature_err.dat" % (name,iteration), sim_feature_err)
         np.savetxt("%s/iteration_%d/newton/Jacobian.dat" % (name,iteration), Jacobian_avg)
-        np.savetxt("%s/iteration_%d/newton/Jacobian_err.dat" % (name,iteration) ,Jacobian_err)
+        if Jacobian_err is not None:
+            np.savetxt("%s/iteration_%d/newton/Jacobian_err.dat" % (name,iteration) ,Jacobian_err)
 
         logger.info(" Finished: Calculating_Jacobian")
 
