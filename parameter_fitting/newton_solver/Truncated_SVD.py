@@ -18,23 +18,20 @@ import numpy as np
 
 import save_and_plot
 
-def find_solutions(model,scaling=False):
-    cplex = False
+def find_solutions(model):
     target_feature = np.loadtxt("target_feature.dat")
     sim_feature = np.loadtxt("sim_feature.dat")
     Jacobian = np.loadtxt("Jacobian.dat")
     J = Jacobian
 
-    epsilons = model.model_param_values
-    norm_eps = np.linalg.norm(epsilons)
-
-    ## Normalize the target step. 
+    norm_eps = np.linalg.norm(model.model_param_values[model.fitting_params])
     df = target_feature - sim_feature
 
     u,s,v = np.linalg.svd(J)
     temp  = list(0.5*(s[:-1] + s[1:])) + [0.0]
     temp.reverse()
     Lambdas = np.array(temp)
+    print s
 
     nrm_soln = []
     nrm_resd = []
@@ -50,8 +47,6 @@ def find_solutions(model,scaling=False):
         x_soln = np.dot(J_pinv,df)  ## particular
 
         #x_soln = np.dot(v.T,np.dot(S.T,np.dot(u.T,df)))
-        if cplex:
-            solution_cplex = func(J,cutoff,weight)
 
         residual = np.dot(J,x_soln) - df
 
@@ -68,30 +63,11 @@ def find_solutions(model,scaling=False):
 
 if __name__ == '__main__':
     import os
-    import argparse
     import model_builder as mdb
 
-    parser = argparse.ArgumentParser(description='.')
-    parser.add_argument('--name', type=str, required=True, help='Name of protein to plot.')
-    parser.add_argument('--iteration', type=int, required=True, help='Iteration to plot.')
-    args = parser.parse_args()
+    name = "S6" 
+    model, fitopts = mdb.inputs.load_model("%s" % name)
 
-    name = args.name
-    iteration = args.iteration
-    
-    model = mdb.check_inputs.load_model("%s" % name,dry_run=True)
-    model.iteration = iteration
-    model.contact_epsilons = np.ones(model.n_contacts,float)
-    method = "ddG_MC2004"
-
-    cwd = os.getcwd()
-    if not os.path.exists("%s/iteration_%d/test" % (name,iteration)):
-        os.mkdir("%s/iteration_%d/test" % (name,iteration))
-    os.chdir("%s/iteration_%d/test" % (name,iteration))
-
-    find_solutions(model,method)
-
-    os.chdir(cwd)
-
-
-
+    os.chdir("%s/iteration_%d/newton" % (name,0))
+    find_solutions(model)
+    os.chdir("../../..")
