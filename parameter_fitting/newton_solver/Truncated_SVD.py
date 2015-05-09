@@ -18,14 +18,19 @@ import numpy as np
 
 import save_and_plot
 
-def find_solutions(model):
+def find_solutions(model,fitopts):
     target_feature = np.loadtxt("target_feature.dat")
     sim_feature = np.loadtxt("sim_feature.dat")
-    Jacobian = np.loadtxt("Jacobian.dat")
-    J = Jacobian
+    J_unc = np.loadtxt("Jacobian.dat")
+    df_unc = target_feature - sim_feature
+    if ("constrain_avg_eps" in fitopts) and (fitopts["constrain_avg_eps"] == True):
+        J = np.vstack((J_unc,np.ones(J_unc.shape[1])))
+        df = np.concatenate((df_unc,np.zeros(1)))
+    else:
+        J = J_unc
+        df = df_unc
 
     norm_eps = np.linalg.norm(model.model_param_values[model.fitting_params])
-    df = target_feature - sim_feature
 
     u,s,v = np.linalg.svd(J)
     temp  = list(0.5*(s[:-1] + s[1:])) + [0.0]
@@ -68,6 +73,6 @@ if __name__ == '__main__':
     name = "S6" 
     model, fitopts = mdb.inputs.load_model("%s" % name)
 
-    os.chdir("%s/iteration_%d/newton" % (name,0))
-    find_solutions(model)
+    os.chdir("%s/iteration_%d/newton" % (model.name,fitopts["iteration"]))
+    find_solutions(model,fitopts)
     os.chdir("../../..")

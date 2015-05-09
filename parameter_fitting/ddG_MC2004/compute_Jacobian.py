@@ -146,8 +146,12 @@ def calculate_average_Jacobian(model,fitopts,scanning_only=False,scanfij=0.5,sav
 
     lasttime = time.time()
     for k in range(n_muts):
-        sys.stdout.write("\r\x1b[K" + " Computing Jacobian: %3f %% done " % (float(k)/float(n_muts)))
-        sys.stdout.flush()
+        if k == (n_muts-1):
+            print " Computing Jacobian: %3f %% done " % (100.*float(k)/float(n_muts))
+        else:
+            sys.stdout.write("\r\x1b[K" + " Computing Jacobian: %3f %% done " % (100.*float(k)/float(n_muts)))
+            sys.stdout.flush()
+
         compute_mutation(k,beta,model,rij,n_muts,sim_feature,Jacobian,dG,ddG,phi,Fij_pairs,Fij,
                         U,TS,N,Uframes,TSframes,Nframes,Vp_U,Vp_TS,Vp_N,sumVp_U,sumVp_TS,sumVp_N)
 
@@ -168,7 +172,7 @@ def calculate_average_Jacobian(model,fitopts,scanning_only=False,scanfij=0.5,sav
 
     # Call function to compute error on sim_feature.
     Jacobian_err = np.zeros(Jacobian.shape,float)
-    sim_feature_err = None
+    sim_feature_err = np.zeros(sim_feature.shape,float)
 
     return sim_feature, sim_feature_err, Jacobian, Jacobian_err
 

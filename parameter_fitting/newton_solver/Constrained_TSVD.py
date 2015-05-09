@@ -18,7 +18,7 @@ import numpy as np
 
 import save_and_plot
 
-def find_solutions(model):
+def find_solutions(model,fitopts):
     target_feature = np.loadtxt("target_feature.dat")
     sim_feature = np.loadtxt("sim_feature.dat")
     Jacobian = np.loadtxt("Jacobian.dat")
@@ -70,5 +70,5 @@ if __name__ == '__main__':
     model, fitopts = mdb.inputs.load_model("%s" % name)
 
     os.chdir("%s/iteration_%d/newton" % (name,0))
-    find_solutions(model)
+    find_solutions(model,fitopts)
     os.chdir("../../..")

@@ -19,7 +19,7 @@ import numpy as np
 
 import save_and_plot
 
-def find_solutions(model,scaling=False):
+def find_solutions(model,fitopts):
     ''' Solve for new parameters using the Levenberg-Marquardt algorithm 
 
     Description:
@@ -49,28 +49,29 @@ def find_solutions(model,scaling=False):
 
     target_feature = np.loadtxt("target_feature.dat")
     sim_feature = np.loadtxt("sim_feature.dat")
-    J = np.loadtxt("Jacobian.dat")
+    J_unc = np.loadtxt("Jacobian.dat")
+    df_unc = target_feature - sim_feature
+    if ("constrain_avg_eps" in fitopts) and (fitopts["constrain_avg_eps"] == True):
+        # Need to determine the strength of the constraint relative to the 
+        # other elements of the Jacobian.
+        constval = 0.25*np.max(J_unc.ravel())
+        open("constraint_value","w").write("%18.10e" % constval)
+        print " using constraint value %.5f" % constval
+        J = np.vstack((J_unc,constval*np.ones(J_unc.shape[1])))
+        df = np.concatenate((df_unc,np.zeros(1)))
+    else:
+        J = J_unc
+        df = df_unc
 
-    df = target_feature - sim_feature
-
-    #if scaling:
-    #    JTdf = np.dot(J.T,df)
-    #    JTJ = np.dot(J.T,J)
-    #    n_rows = JTJ.shape[0]
-    #    ## Scale the diagonal by the curvature. This makes it the Levenberg-Marquardt method
-    #    Levenberg = np.identity(n_rows)
-    #    Levenberg[(np.arange(n_rows),np.arange(n_rows))] = np.diag(JTJ)
-
-    #u,s,v = np.linalg.svd(JTJ)
     u,s,v = np.linalg.svd(J)
     if np.log10(min(s)) < -10:
         smin = -10
     else:
         smin = np.log10(min(s)) - 2
-    ## The damping parameter, lambda, is scanned from below the smallest
-    ## singular value to above the largest singular value.
-    ## The contributions from singular values less than the damping 
-    ## parameter are 'damped' out by a filter function.
+    # The damping parameter, lambda, is scanned from below the smallest
+    # singular value to above the largest singular value.
+    # The contributions from singular values less than the damping 
+    # parameter are 'damped' out by a filter function.
     Lambdas = np.logspace(smin,np.log10(max(s)),num=200)
 
     norm_eps = np.linalg.norm(model.model_param_values[model.fitting_params])
@@ -82,7 +83,6 @@ def find_solutions(model,scaling=False):
         S = np.zeros(J.shape) 
         Lambda = Lambdas[i]
 
-        #S[np.arange(len(s)),np.arange(len(s))] = s/((s**2) + (Lambda**2))
         S[np.diag_indices(len(s))] = s/((s**2) + (Lambda**2))
 
         J_pinv = np.dot(v.T,np.dot(S.T,u.T))
@@ -106,6 +106,7 @@ if __name__ == '__main__':
     import os
     import argparse
     import model_builder as mdb
+    ## DEPRECATED 
 
     parser = argparse.ArgumentParser(description='.')
     parser.add_argument('--name', type=str, required=True, help='Name of protein to plot.')
@@ -113,20 +114,17 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     name = args.name
-    iteration = args.iteration
     
-    model = mdb.check_inputs.load_model("%s" % name,dry_run=True)
-    model.iteration = iteration
-    #model.contact_epsilons = np.ones(model.n_contacts,float)
+    model,fitopts = mdb.inputs.load_model("%s" % name)
 
     cwd = os.getcwd()
     if not os.path.exists("%s/iteration_%d/test" % (name,iteration)):
         os.mkdir("%s/iteration_%d/test" % (name,iteration))
-    os.chdir("%s/iteration_%d/test" % (name,iteration))
+    os.chdir("%s/iteration_%d/newton" % (name,fitopts["iteration"]))
 
-    find_solutions(model)
+    find_solutions(model,fitopts)
 
-    os.chdir(cwd)
+    os.chdir("../../..")
 
 
 
