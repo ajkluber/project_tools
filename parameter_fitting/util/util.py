@@ -35,7 +35,7 @@ def get_rij_Vp(model):
     return traj,rij,Vp
 
 def get_traj_rij(model):
-    ''' Load trajectory, state indicators, and contact energy '''
+    ''' Load trajectory and pairwise distances '''
     #assumes you are in the directory with traj.xtc and Native.pdb
     time1 = time.time()
     traj = md.load("traj.xtc",top="Native.pdb")     # Loading from file takes most time.
@@ -50,12 +50,24 @@ def get_traj_rij(model):
     
     return traj,rij
 
-def get_Vp_for_state(model,rij,state,n_frames):
-    ''' Load trajectory, state indicators, and contact energy '''
+def get_rij(model,trajfiles,native):
+    ''' Load trajectory and pairwise distances '''
+    time1 = time.time()
+    traj = md.load(trajfiles,top=native)     # Loading from file takes most time.
+    time2 = time.time()
+    print " Loading traj took: %.2f sec = %.2f min" % (time2-time1,(time2-time1)/60.)
+
+    # rij is a matrix, where first index represents trajectory step, and the second index represents the different pairs
+    time1 = time.time()
+    rij = md.compute_distances(traj,model.pairs-np.ones(model.pairs.shape),periodic=False)
+    time2 = time.time()
+    print " Calculating rij took: %.2f sec = %.2f min" % (time2-time1,(time2-time1)/60.)
     
-    # TO DO(alex)
-    #  - Only parameters listed in model.fitting_parameters should 
-    #    be calculated
+    return rij
+
+def get_Vp_for_state(model,rij,state,n_frames):
+    ''' Get contact energy for subset of frames'''
+    
     time1 = time.time()
     Vp_state = np.zeros((n_frames,model.n_fitting_params),float)
     for i in range(model.n_fitting_params):   
@@ -109,5 +121,26 @@ def get_state_indicators(x,bounds):
     Nframes  = float(sum(N.astype(int)))
     Uframes  = float(sum(U.astype(int)))
     TSframes = float(sum(TS.astype(int)))
+
+    return U,TS,N,Uframes,TSframes,Nframes
+
+def concatenate_state_indicators(coorddirs,bounds,coord="Q.dat"):
+    x = np.concatenate([ np.loadtxt("%s/%s" % (y,coord)) for y in coorddirs])
+    state_indicator = np.zeros(len(x),int)
+    # Assign every frame a state label. State indicator is integer 1-N for N states.
+    for state_num in range(len(bounds)-1):
+        instate = (x > bounds[state_num]).astype(int)*(x <= bounds[state_num+1]).astype(int)
+        state_indicator[instate == 1] = state_num+1
+    if any(state_indicator == 0):
+        num_not_assign = sum((state_indicator == 0).astype(int))
+        print "  Warning! %d frames were not assigned out of %d total frames!" % (num_not_assign,len(x))
+    # Boolean arrays that indicate which state each frame is in.
+    # States are defined by their boundaries along coordinate x.
+    U  = ((x > bounds[1]).astype(int)*(x < bounds[2]).astype(int)).astype(bool)
+    TS = ((x > bounds[3]).astype(int)*(x < bounds[4]).astype(int)).astype(bool)
+    N  = ((x > bounds[5]).astype(int)*(x < bounds[6]).astype(int)).astype(bool)
+    Nframes  = sum(N.astype(int))
+    Uframes  = sum(U.astype(int))
+    TSframes = sum(TS.astype(int))
 
     return U,TS,N,Uframes,TSframes,Nframes
