@@ -5,6 +5,7 @@ Description:
 
     This module computes the jacobian of the contact probability function.
 
+DEPRECATED
 """
 
 import numpy as np

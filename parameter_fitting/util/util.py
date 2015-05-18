@@ -85,14 +85,10 @@ def get_Vp_for_state(model,rij,state,n_frames):
 def get_state_bounds():
     ''' Bounds for each state. Bounds are bin edges along Q. '''
     import os
-    if os.path.exists("state_bounds.txt"):
-        statefile = open("state_bounds.txt","r").readlines()
+    if not os.path.exists("state_bounds.txt"):
+        raise IOError("Create state_bounds.txt with the boundaries of each state")
     else:
-        print "ERROR!"
-        print "  Please create state_bounds.txt"
-        print "  With the boundaries of each state along Q"
-        print "  Exiting"
-        raise SystemExit
+        statefile = open("state_bounds.txt","r").readlines()
     
     state_bounds = []
     state_labels = []

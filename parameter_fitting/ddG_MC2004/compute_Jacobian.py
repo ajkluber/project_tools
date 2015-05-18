@@ -28,9 +28,6 @@ from project_tools.parameter_fitting.util.util import *
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
-global SKIP_INTERACTIONS
-SKIP_INTERACTIONS = [1,8,9]
-
 def get_dHk(model,rij,Fij_conts,Fij):
     """ Get perturbed potential energy """
     dHk = np.zeros(rij.shape[0],float)
@@ -63,7 +60,6 @@ def get_dHk_for_state(model,rij,Fij_pairs,Fij,state,n_frames):
             # If that interaction corresponds to a fitting parameter 
             # and is not an excluded volume interaction (e.g. LJ12)
             # then add the perturbed interaction energy.
-            #if (not (model.pair_type[inter_idx] in SKIP_INTERACTIONS)) and (param_idx in model.fitting_params):
             if param_idx in model.fitting_params:
                 dHk_state = dHk_state - Fij[i]*model.pair_eps[inter_idx]*model.pair_V[inter_idx](rij[state,inter_idx])
     return dHk_state
@@ -83,7 +79,6 @@ def get_Vp_plus_Vpk_for_state(model,Vp,rij,Fij_pairs,Fij,state):
             # If that interaction corresponds to a fitting parameter 
             # and is not an excluded volume interaction (e.g. LJ12)
             # then add the perturbed interaction energy.
-            #if (not (model.pair_type[inter_idx] in SKIP_INTERACTIONS)) and (param_idx in model.fitting_params):
             if param_idx in model.fitting_params:
                 # If that interaction is associated with one of the parameters being fit.
                 fitting_param_idx = np.where(model.fitting_params == param_idx)[0][0]
@@ -147,7 +142,8 @@ def calculate_average_Jacobian(model,fitopts,scanning_only=False,scanfij=0.5,sav
     lasttime = time.time()
     for k in range(n_muts):
         if k == (n_muts-1):
-            print " Computing Jacobian: %3f %% done " % (100.*float(k)/float(n_muts))
+            sys.stdout.write("\r\x1b[K" + " Computing Jacobian: %3f %% done \n" % (100.*float(k)/float(n_muts)))
+            sys.stdout.flush()
         else:
             sys.stdout.write("\r\x1b[K" + " Computing Jacobian: %3f %% done " % (100.*float(k)/float(n_muts)))
             sys.stdout.flush()
