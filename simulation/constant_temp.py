@@ -407,8 +407,12 @@ def determine_equil_walltime(model,fitopts):
     """ Estimate an efficient walltime."""
     N = model.n_residues
     nsteps = "500000000"
-    if "queue" in fitopts and (fitopts["queue"] in possible_queues):
-        queue = fitopts["queue"]
+    possible_queues = ["serial", "serial_long", "parallel", "bigmem", "interactive", "graphics"]
+    if "queue" in fitopts and (fitopts["queue"] is not None):
+        if fitopts["queue"] in possible_queues:
+            queue = fitopts["queue"]
+        else:
+            raise IOError("invalid queue specified, please check possible_queue list in simulation.constant_temp.determine_equil_walltime")
     else:
         queue="serial"
     if "equil_walltime" in fitopts and (fitopts["equil_walltime"] is not None):
@@ -441,9 +445,12 @@ def determine_walltime(model,fitopts):
     """ Estimate an efficient walltime."""
     N = model.n_residues
     nsteps = "100000000"
-    
-    if "queue" in fitopts and (fitopts["queue"] in possible_queues):
-        queue = fitopts["queue"]
+    possible_queues = ["serial", "serial_long", "parallel", "bigmem", "interactive", "graphics"]
+    if "queue" in fitopts and (fitopts["queue"] is not None):
+        if fitopts["queue"] in possible_queues:
+            queue = fitopts["queue"]
+        else:
+            raise IOError("invalid queue specified, please check possible_queue list in simulation.constant_temp.determine_walltime")
     else:
         queue="serial"
     
