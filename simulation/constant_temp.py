@@ -538,10 +538,11 @@ def run_constant_temp(model,T,name,nsteps="100000000",walltime="23:00:00",queue=
 
 def prep_run(jobname,walltime="23:00:00",queue="serial",ppn="1",sbm=False):
     """ Executes the constant temperature runs."""
-
+    
     prep_step1 = 'grompp_sbm -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.5.tpr'
     prep_step2 = 'grompp -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.6.tpr'
-    sb.call(prep_step1.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
+    if sbm:
+        sb.call(prep_step1.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
     sb.call(prep_step2.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
 
     pbs_string = get_pbs_string(jobname,queue,ppn,walltime,sbm=sbm)
