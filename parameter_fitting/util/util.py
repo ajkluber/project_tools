@@ -82,6 +82,23 @@ def get_Vp_for_state(model,rij,state,n_frames):
     
     return Vp_state
 
+def get_dVp_for_state(model,rij,state,n_frames):
+    ''' Get contact energy for subset of frames'''
+    
+    time1 = time.time()
+    dVp_state = np.zeros((n_frames,model.n_fitting_params),float)
+    for i in range(model.n_fitting_params):   
+        param_idx = model.fitting_params[i]
+
+        # Loop over interactions that use this parameter
+        for j in range(len(model.model_param_interactions[param_idx])):
+            pair_idx = model.model_param_interactions[param_idx][j]
+            dVp_state[:,i] = dVp_state[:,i] + model.pair_dV[pair_idx](rij[state,pair_idx])
+    time2 = time.time()
+    print " Calculating dVp took: %.2f sec = %.2f min" % (time2-time1,(time2-time1)/60.)
+    
+    return dVp_state
+
 def get_state_bounds():
     ''' Bounds for each state. Bounds are bin edges along Q. '''
     import os
