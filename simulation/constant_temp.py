@@ -191,7 +191,7 @@ def manually_extend_temperatures(model,fitopts,iteration,method,temps,factor):
             os.chdir(cwd)
             raise SystemExit
         else:
-            extend_temperature(T,factor)
+            extend_temperature(T,factor,using_sbm_gmx=model.using_sbm_gmx)
             if os.path.exists("Q.dat"):
                 os.remove("Q.dat")
             if os.path.exists("energyterms.xvg"):
@@ -207,7 +207,7 @@ def manually_extend_temperatures(model,fitopts,iteration,method,temps,factor):
 
     os.chdir(cwd)
 
-def extend_temperature(T,factor):
+def extend_temperature(T,factor,using_sbm_gmx=None):
     """ Extend individual temperature run by factor """
     # Calculate new nsteps = factor*old_nsteps
     for line in open("nvt.mdp","r").readlines():
@@ -216,19 +216,16 @@ def extend_temperature(T,factor):
             new_nsteps = str(int(round(factor*old_nsteps)))
             break
     
-    # Save old .mdp and .tpr as something else.
-    shutil.move("nvt.mdp","nvt.mdp")
-    shutil.move("topol_4.6.tpr","old_topol_4.6.tpr")
-
     # Write new .mdp with more steps and recreate .tpr
     mdpfile = mdp.constant_temperature(T,new_nsteps)
     open("nvt.mdp","w").write(mdpfile)
 
     print "  Extending temp ", T, " to nsteps ",new_nsteps
+    if using_sbm_gmx is None:
+        prep_step2 = 'grompp -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.6.tpr '
+        sb.call(prep_step2.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
     prep_step1 = 'grompp_sbm -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.5.tpr '
-    prep_step2 = 'grompp -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.6.tpr '
     sb.call(prep_step1.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
-    sb.call(prep_step2.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
 
     # Submit rst.pbs
     qsub = "qsub rst.pbs"
