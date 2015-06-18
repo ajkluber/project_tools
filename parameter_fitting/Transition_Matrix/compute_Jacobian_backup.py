@@ -125,8 +125,8 @@ def find_sim_bins(savelocation, FRETr, fit_temp, residues=def_FRET_pairs, spacin
     hist, edges, slices = stats.binned_statistic(FRETr, weights, statistic="sum", range=[ran_size], bins=num_bins)
     hist = hist/(np.sum(hist)*spacing)
     bincenters = 0.5 * (edges[1:] + edges[:-1])
-    
-    # Get indices of transition bins
+	
+	# Get indices of transition bins
     F_indices, t_indices = get_transition_bins(slices, num_bins)
     
     print "Saving the bincenters:"
@@ -139,22 +139,22 @@ def find_sim_bins(savelocation, FRETr, fit_temp, residues=def_FRET_pairs, spacin
     print "Calculated bins for simulation data at a spacing of %.4f" % spacing
     
     return hist, F_indices, t_indices, num_bins
-    
+	
 def get_transition_bins(slices, num_bins):
-    # Get indices of transition bins
-    # Returns linear indices of "transition bins," should match with numpy.ndarray.flatten() results
-    # 'slices' has dimension Nx1, where N=number of frames
-    
-    # Get i and j slices, i=macrostate before transition, j=macrostate after transition
-    # Subtract one to convert to zero-based indices
-    F_indices = slices - 1
-    state_i = F_indices[:-1]
-    state_j = F_indices[1:]
-    
-    # Compute bin indices for transitions
-    t_indices = state_i*num_bins + state_j
-    
-    return F_indices, t_indices
+	# Get indices of transition bins
+	# Returns linear indices of "transition bins," should match with numpy.ndarray.flatten() results
+	# 'slices' has dimension Nx1, where N=number of frames
+	
+	# Get i and j slices, i=macrostate before transition, j=macrostate after transition
+	# Subtract one to convert to zero-based indices
+	F_indices = slices - 1
+	state_i = F_indices[:-1]
+	state_j = F_indices[1:]
+	
+	# Compute bin indices for transitions
+	t_indices = state_i*num_bins + state_j
+	
+	return F_indices, t_indices
 
 def get_sim_params(model,fitopts):
     ##assumes you are in the folder containing the model subdir
@@ -235,8 +235,8 @@ def fret_hist_calc(model, fitopts, bin_size, ran_size, spacing):
     bincenters = np.arange(ran_size[0]+(spacing/2.0), ran_size[1], spacing)
     datas = np.array([bincenters,hist])
     datas = np.transpose(datas)
-    
-    
+	
+	
     np.savetxt(FRETfile, datas)
     
     print "Rebinned FRET_hist_calc Data"
@@ -262,51 +262,51 @@ def check_exp_data(FRETdata, bin_centers):
     return recalc
     
 def find_FRET_bins(FRETr):
-    # Histograms the trace data into macrostate bins, analogous to find_sim_bins from compute_Jacobian script
-    print np.shape(FRETr)
-    weights = np.ones(np.shape(FRETr)[0])
-    spacing = 0.1
-    
-    # Taken from find_sim_bins, included for consistency
-    maxvalue = int(np.amax(FRETr)/spacing) + 1
-    minvalue = int(np.amin(FRETr)/spacing)
-    num_bins = maxvalue - minvalue
-    ran_size = (minvalue*spacing,maxvalue*spacing)
-    
-    hist, bins, slices = stats.binned_statistic(FRETr[:,0], weights, statistic="sum", range=[ran_size], bins=num_bins)
-    
-    # Call get_transition_bins to make transition bin indices
-    F_indices, t_indices = get_transition_bins(slices, num_bins)
-    
-    return hist, F_indices, t_indices, num_bins
-    
-def get_T_Matrix(FRETr):    
-    # Calculate flattened transition matrix for a given FRET trace
-    # Based on fret_analysis/compute_transitions.py
-    
-    # Get FRET bins
-    hist, F_indices, t_indices, num_bins = find_FRET_bins(FRETr)
-    
-    T_matrix = np.zeros((num_bins, num_bins))
-    
-    # Add ones to transition bins in square transition matrix
-    for i in range(np.shape(F_indices)[0] - 1):
-        T_matrix[F_indices[i], F_indices[i+1]] += 1
-    
-    # Mask zeros to avoid divide-by-zero in normalization
-    T_masked = np.ma.masked_where(T_matrix == 0, T_matrix)
-    
-    # Normalize each row
-    for i in range(np.shape(T_matrix)[0]):
-        T_masked[i,:] /= np.sum(T_masked[i,:])
-        
-    # Reshape to column vector
-    T_matrix_flat = np.ndarray.flatten(T_masked)
-    T_matrix_flat = np.transpose(T_matrix_flat)
-    
-    print np.shape(T_matrix_flat)
-    
-    return T_matrix_flat
+	# Histograms the trace data into macrostate bins, analogous to find_sim_bins from compute_Jacobian script
+	print np.shape(FRETr)
+	weights = np.ones(np.shape(FRETr)[0])
+	spacing = 0.1
+	
+	# Taken from find_sim_bins, included for consistency
+	maxvalue = int(np.amax(FRETr)/spacing) + 1
+	minvalue = int(np.amin(FRETr)/spacing)
+	num_bins = maxvalue - minvalue
+	ran_size = (minvalue*spacing,maxvalue*spacing)
+	
+	hist, bins, slices = stats.binned_statistic(FRETr[:,0], weights, statistic="sum", range=[ran_size], bins=num_bins)
+	
+	# Call get_transition_bins to make transition bin indices
+	F_indices, t_indices = get_transition_bins(slices, num_bins)
+	
+	return hist, F_indices, t_indices, num_bins
+	
+def get_T_Matrix(FRETr):	
+	# Calculate flattened transition matrix for a given FRET trace
+	# Based on fret_analysis/compute_transitions.py
+	
+	# Get FRET bins
+	hist, F_indices, t_indices, num_bins = find_FRET_bins(FRETr)
+	
+	T_matrix = np.zeros((num_bins, num_bins))
+	
+	# Add ones to transition bins in square transition matrix
+	for i in range(np.shape(F_indices)[0] - 1):
+		T_matrix[F_indices[i], F_indices[i+1]] += 1
+	
+	# Mask zeros to avoid divide-by-zero in normalization
+	T_masked = np.ma.masked_where(T_matrix == 0, T_matrix)
+	
+	# Normalize each row
+	for i in range(np.shape(T_matrix)[0]):
+		T_masked[i,:] /= np.sum(T_masked[i,:])
+		
+	# Reshape to column vector
+	T_matrix_flat = np.ndarray.flatten(T_masked)
+	T_matrix_flat = np.transpose(T_matrix_flat)
+	
+	print np.shape(T_matrix_flat)
+	
+	return T_matrix_flat
 
 def add_error_log(note, fit_temp):
     errfile = "error_log-JC.txt"
@@ -367,12 +367,12 @@ def get_target_feature(model,fitopts):
             print bin_centers
     
     target = FRETdata[:,1]
-    
-    ## FORCE FEED TARGET FEATURE
+	
+	## FORCE FEED TARGET FEATURE
     T_matrix = np.loadtxt("T_matrix_exp_temp.dat")
     target = np.ndarray.flatten(T_matrix)
-    ##
-    
+	##
+	
     target_err = target**0.5 ##for lack of a better way, take sqrt of bins for error estimate
     
     return target, target_err
@@ -422,12 +422,12 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
     print FRETr
     ##WARNING: CONFIGURED FOR ONLY ONE PAIR OF FRET PROBES
     
-    
+	
     fr, F_indices, t_indices, num_bins = find_sim_bins(sim_location, FRETr[:,0], fit_temp, residues=FRET_pairs, spacing=spacing, weights=None)
-    
-    # FLATTENED T-MATRIX
+	
+	# FLATTENED T-MATRIX
     sim_feature = get_T_Matrix(FRETr)
-    
+	
     #calculate beta    
     beta = 1.0 / (GAS_CONSTANT_KJ_MOL*float(fit_temp))
     
@@ -439,12 +439,12 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
     f.close()
 
     os.chdir(cwd)
-    
+	
     print "Computing Jacobian and T-matrix for the temperature %d, with spacing %f" % (fit_temp, spacing)
 #    Tmatrix, Tmatrix_error = get_T_matrix(FRETr, ran_size, nbins) 
     Jacobian = compute_Jacobian_basic(qij, fr, F_indices, t_indices, beta)
     
-    
+	
     sim_feature_err = sim_feature ** 0.5
     Jacobian_err = np.zeros(np.shape(Jacobian))
     
@@ -459,17 +459,17 @@ def compute_Jacobian_basic(qij, fr, F_indices, t_indices, beta, weights=None):
     ## N = Number of frames, M = number of contacts to be fitted, R=number of bins of R data
     ## Note: assumes fr is already weighted!
     print "Starting compute_Jacobian_basic"
-    # number of FRET bins
+	# number of FRET bins
     nstates = np.shape(fr)[0]
-    
-    # number of TRANSITION bins
+	
+	# number of TRANSITION bins
     nbins = nstates**2
-        
+		
     (N_total_traj, npairs) = np.shape(qij)
-    
+	
     qi = np.zeros((nstates, npairs))
     qi_count = np.zeros(nstates)
-        
+	    
     if weights == None:
         N_total_weight = N_total_traj
         weights = np.ones(N_total_traj)
@@ -478,31 +478,32 @@ def compute_Jacobian_basic(qij, fr, F_indices, t_indices, beta, weights=None):
             raise IOError("Not every frame is weighted, aborting! Check to make sure weights is same length as trajectory")
         N_total_weight = np.sum(weights)
 
-    # Q values for all frames starting in a particular bin
-    for idx, F_bin_location in enumerate(F_indices):
-        qi[F_bin_location,:] += (qij[idx,:])
-        qi_count[F_bin_location] += 1
-        
-    #normalize the average value for the pair sum starting in state i
+	# Q values for all frames starting in a particular bin
+	for idx, F_bin_location in enumerate(F_indices):
+		qi[F_bin_location,:] += (qij[idx,:])
+		qi_count[F_bin_location] += 1
+		
+	#normalize the average value for the pair sum starting in state i
     for i in range(np.shape(qi)[0]):
         if qi_count[i] != [0]:
             qi[i,:] /= float(qi_count[i])
     
     Jacobian = np.zeros((nbins, npairs))
     for idx, t_bin_location in enumerate(t_indices):
-        # Add q values for specific transition
-        Jacobian[t_bin_location, :] += (qij[idx,:] + qij[idx+1,:])    
-    
-    # Normalize by i bin count
+		# Add q values for specific transition
+		Jacobian[t_bin_location, :] += (qij[idx,:] + qij[idx+1,:])	
+	
+	# Normalize by i bin count
     for i in range(np.shape(Jacobian)[0]):
-        state_i_idx = int(np.floor(i/nstates))
+        state_i_idx = np.floor(i/nstates)
         if qi_count[state_i_idx] != 0:
             Jacobian[i,:] /= (2*qi_count[state_i_idx])
-
+		
     for idx, t_bin_location in enumerate(t_indices):
-        # Index for q value of all transitions starting at state i
-        state_i_idx = int(np.floor(t_bin_location/nstates))
-        # Subtract q values for all starting at state i
+		# Index for q value of all transitions starting at state i
+        state_i_idx = np.floor(t_bin_location/nstates)
+		
+		# Subtract q values for all starting at state i
         Jacobian[t_bin_location, :] -= qi[state_i_idx,:]
     
     Jacobian *= (-1.0) * beta

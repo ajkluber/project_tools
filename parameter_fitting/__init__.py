@@ -46,6 +46,7 @@ import ddG_MC2004
 import FRET
 import RMSF
 import contact_Qi
+import Transition_Matrix
 
 def prepare_newtons_method(model,fitopts):
     """ Prepare the files to do newtons method """
@@ -57,8 +58,8 @@ def prepare_newtons_method(model,fitopts):
     logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
     logger = logging.getLogger("parameter_fitting")
 
-    available_methods = ["ddG_MC2004","FRET","RMSF","contact_Qi"]
-    modules = {"ddG_MC2004":ddG_MC2004,"FRET":FRET,"RMSF":RMSF,"contact_Qi":contact_Qi}
+    available_methods = ["ddG_MC2004","FRET","RMSF","contact_Qi", "tmatrix"]
+    modules = {"ddG_MC2004":ddG_MC2004,"FRET":FRET,"RMSF":RMSF,"contact_Qi":contact_Qi,"tmatrix":Transition_Matrix}
 
     if method not in available_methods:
         raise ValueError("Method %s not in available methods %s" % (method, available_methods.__repr__()) )
@@ -133,9 +134,9 @@ def solve_newtons_method(model,fitopts):
 
 def save_new_parameters(model,fitopts):
     """ Save new parameters """
-    available_methods = ["ddG_MC2004","FRET","RMSF","contact_Qi"]
-    modules = {"ddG_MC2004":ddG_MC2004,"FRET":FRET,"RMSF":RMSF,"contact_Qi":contact_Qi}
-
+    available_methods = ["ddG_MC2004","FRET","RMSF","contact_Qi", "tmatrix"]
+    modules = {"ddG_MC2004":ddG_MC2004,"FRET":FRET,"RMSF":RMSF,"contact_Qi":contact_Qi,"tmatrix":Transition_Matrix}\
+    
     method = fitopts["data_type"]
     if method not in available_methods:
         raise ValueError("Requested fitting data %s not in %s" % (method,available_methods.__repr__()))

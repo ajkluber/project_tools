@@ -122,6 +122,9 @@ def find_sim_bins(savelocation, FRETr, fit_temp, residues=def_FRET_pairs, spacin
         weights = np.ones(np.shape(FRETr)[0])
     
     #actually histogram it
+    print "***************************"
+    print np.shape(FRETr)
+    print "***************************"
     hist, edges, slices = stats.binned_statistic(FRETr, weights, statistic="sum", range=[ran_size], bins=num_bins)
     hist = hist/(np.sum(hist)*spacing)
     bincenters = 0.5 * (edges[1:] + edges[:-1])
@@ -353,7 +356,7 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
     ## append at the end
     sim_feature, sim_slices = find_sim_bins(sim_location, FRETr[:,0], fit_temp, residues=FRET_pairs, spacing=spacing, weights=None)
     
-    beta = 1.0 * (GAS_CONSTANT_KJ_MOL*float(fit_temp))
+    beta = 1.0 / (GAS_CONSTANT_KJ_MOL*float(fit_temp))
     
     
     #save the temperature this was done in
