@@ -3,7 +3,7 @@ import glob
 
 
 all_fij = glob.glob("fij*dat")
-nn_weight = 0.5
+nn_weight = 1.0
 natives = np.loadtxt('../contact_map.dat')
 
 #Does not make an exception for i:i+1, i+2 and i+3. Check that this is being taken care of

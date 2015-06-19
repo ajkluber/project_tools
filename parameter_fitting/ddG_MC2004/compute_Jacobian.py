@@ -35,7 +35,7 @@ def get_dHk(model,rij,Fij_conts,Fij):
     dHk = np.zeros(rij.shape[0],float)
     for i in range(len(Fij_conts)): 
         cont_idx = Fij_conts[i]
-        dHk = dHk - Fij[i]*model.pairwise_strengths[cont_idx]*model.pairwise_potentials[cont_idx](rij[:,cont_idx])
+        dHk = dHk - Fij[i]*model.pair_eps[cont_idx]*model.pairwise_potentials[cont_idx](rij[:,cont_idx])
     return dHk
 
 def get_Vp_plus_Vpk(model,Vp,rij,Fij_conts,Fij):
@@ -64,7 +64,7 @@ def get_dHk_for_state(model,rij,Fij_pairs,Fij,state,n_frames):
             # and is not an excluded volume interaction (e.g. LJ12)
             # then add the perturbed interaction energy.
             if (not (model.pairwise_type[inter_idx] in SKIP_INTERACTIONS)) and (param_idx in model.fitting_params):
-                dHk_state = dHk_state - Fij[i]*model.pairwise_strengths[inter_idx]*model.pairwise_potentials[inter_idx](rij[state,inter_idx])
+                dHk_state = dHk_state - Fij[i]*model.pair_eps[inter_idx]*model.pairwise_potentials[inter_idx](rij[state,inter_idx])
     return dHk_state
 
 def get_Vp_plus_Vpk_for_state(model,Vp,rij,Fij_pairs,Fij,state):

@@ -1,7 +1,7 @@
 import numpy as np
 import save_and_plot
 
-def find_solutions(model,fitopts,position=100,eps_lower_bound=-2.,eps_upper_bound=2.,eps_lower_bound_non_native=-2.,eps_upper_bound_non_native=2.,EGap_lower_bound=-1.,frustration_fraction=0., n_bins=13):
+def find_solutions(model,fitopts,position=100,eps_lower_bound=-2.,eps_upper_bound=3.,eps_lower_bound_non_native=-2.,eps_upper_bound_non_native=2.,EGap_lower_bound=-1.,frustration_fraction=0.):
     
     target_feature = np.loadtxt("target_feature.dat")
     target_feature_err = np.loadtxt("target_feature_err.dat")
@@ -12,9 +12,9 @@ def find_solutions(model,fitopts,position=100,eps_lower_bound=-2.,eps_upper_boun
     J = Jacobian
 
     binned_nonnatives = False
-    if J.shape[1] == (model.n_native_pairs+n_bins):
+    if J.shape[1] > (model.n_native_pairs):
         binned_nonnatives = True
-
+        n_bins = J.shape[1]-model.n_native_pairs
     norm_eps = np.linalg.norm(model.model_param_values)
 
     ## Normalize the target step. 

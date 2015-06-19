@@ -270,8 +270,8 @@ def folding_temperature_loop_extension(model,fitopts,new=False):
             N = float(model.n_residues)
             Tf_guess = int(round((36.081061*E/N) + 56.218196)) # calibration for LJ1210 contacts circa June 2014
             T_min = Tf_guess - 16
-            T_max = Tf_guess + 16
-            deltaT = 2
+            T_max = Tf_guess + 10
+            deltaT = 1
     else:
         # Use previous range to determine new range. 
         T_min, T_max, deltaT = determine_new_T_array()
@@ -345,7 +345,7 @@ def manually_add_equilibrium_runs(model,fitopts,iteration,temps):
     T_string = ''
     for i in range(len(temps)):
         T = "%.2f" % temps[i]
-        for simnum in range(1,4):
+        for simnum in range(1,2):
             simpath = T+"_"+str(simnum)
             # Only start the simulation if directory doesn't exist.
             if (not os.path.exists(simpath)):
@@ -377,9 +377,9 @@ def run_equilibrium_simulations(model,fitopts,iteration):
 
     os.chdir(sub)
     T_string = ''
-    for n in range(3):
-        T = "%.2f" % (float(Tf)+1.*(n-1))
-        for simnum in range(1,4):
+    for n in range(24):
+        T = "%.2f" % (float(Tf)+1.*(float(n)/8-1.))
+        for simnum in range(1,2):
             simpath = T+"_"+str(simnum)
             # Only start the simulation if directory doesn't exist.
             if (not os.path.exists(simpath)):
