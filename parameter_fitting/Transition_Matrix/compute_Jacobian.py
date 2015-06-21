@@ -212,7 +212,7 @@ def get_sim_array(model,fitopts):
     os.chdir(cwd)
     return simarray
     
-def fret_hist_calc(model, fitopts, bin_size, ran_size, spacing):
+def tmatrix_exp_calc(model, fitopts, bin_size, ran_size, spacing):
     ##read trace file from 
     cwd = os.getcwd()
     subdir = model.name
@@ -220,52 +220,42 @@ def fret_hist_calc(model, fitopts, bin_size, ran_size, spacing):
     
     sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
     subdirec = "%s/fitting_%d" % (sub,iteration)
-    FRETfile = "%s/FRET_hist.dat" % subdirec
-    if not "fretdata" in fitopts:
-        FRETtracefile = "%s/FRET_trace.dat" % cwd
+    TMfile = "%s/T_matrix_flat.dat" % subdirec
+    
+    ## MAY NEED TO MODIFY OPTIONS FOR T-MATRIX
+    if not "TMdata" in fitopts:
+        Tmatrixfile = "%s/T_matrix_exp.dat" % cwd
     else:
-        FRETtracefile = fitopts["fretdata"]
+        Tmatrixfile = fitopts["TMdata"]
     
-    ftrace = np.loadtxt(FRETtracefile)
-    hist, edges = np.histogram(ftrace,bin_size,ran_size)
-    #normalize and find bin centers
-    hist = hist/(np.shape(ftrace)[0]*spacing)
-    edges = edges + (0.5*spacing)
-    edges = edges[:-1]
-    bincenters = np.arange(ran_size[0]+(spacing/2.0), ran_size[1], spacing)
-    datas = np.array([bincenters,hist])
-    datas = np.transpose(datas)
+    Tmatrix = np.loadtxt(Tmatrixfile)
+        
+    #Extract entries matching range specified by ran_size
+    lower_bin = int(ran_size[0]/spacing)
+    upper_bin = int(ran_size[1]/spacing)
+    T_matrix_small = Tmatrix[lower_bin:upper_bin, lower_bin:upper_bin]
     
+    # Flatten and save
+    T_matrix_flat = np.ndarray.flatten(T_matrix_small)
+    np.savetxt(TMfile, T_matrix_flat)
     
-    np.savetxt(FRETfile, datas)
-    
-    print "Rebinned FRET_hist_calc Data"
+    print "Extracted transition matrix"
 
-def check_exp_data(FRETdata, bin_centers):
-     #if correct within this marigin, then thinks its okay
-     #Will check that the FRETdata centers and bin)centers are within 10^-6 of the spacing
-    terms = np.shape(FRETdata)[0]
-    i = 0
-    
-    spacing_FRET = FRETdata[1] - FRETdata[0]
+def check_exp_data(TMdata, bin_centers):
+    # Check to make sure dimensions match 
+    ## ASSUMES EXPERIMENTAL T-MATRIX WAS PROPERLY BINNED, may need to change later if Tmatrix is rebinned every time
+        
+    spacing_FRET = TMdata[1] - TMdata[0]
     spacing_bin_centers = bin_centers[1] - bin_centers[0]
+        
+    recalc = not np.shape(TMdata)[0] == (np.shape(bin_centers)[0])**2
     
-    min_difference = (min([spacing_FRET, spacing_bin_centers]))/1000000 #if correct within this marigin, then thinks its okay
-    
-    recalc = not np.shape(FRETdata)[0] == np.shape(bin_centers)[0]
-    
-    ##Verify that the bins line up 
-    while (not recalc) and i<terms:
-        if not (FRETdata[i] - bin_centers[i]) < min_difference:
-            recalc = True
-        i += 1
     return recalc
     
-def find_FRET_bins(FRETr):
+def find_FRET_bins(FRETr, spacing=defspacing):
     # Histograms the trace data into macrostate bins, analogous to find_sim_bins from compute_Jacobian script
     print np.shape(FRETr)
     weights = np.ones(np.shape(FRETr)[0])
-    spacing = 0.1
     
     # Taken from find_sim_bins, included for consistency
     maxvalue = int(np.amax(FRETr)/spacing) + 1
@@ -341,38 +331,31 @@ def get_target_feature(model,fitopts):
     sub = "%s/%s/iteration_%d" % (cwd,subdir,iteration)
     subdirec = "%s/fitting_%d" % (sub,iteration)
     simfile = "%s/simf_centers%d.dat" % (subdirec,fit_temp)
-    FRETfile = "%s/FRET_hist.dat" % subdirec
+    TMfile = "%s/T_matrix_flat.dat" % subdirec
     
     bin_centers = get_sim_centers(model, fitopts)
     bin_size, ran_size, spacing = get_sim_params(model, fitopts)
     ##Re-round to utilize the same range for ran_size as used in the simparams, in case floating point is round-off errored
     ran_size = (int(round(ran_size[0]/spacing))*spacing, int(round(ran_size[1]/spacing))*spacing)
-    if not os.path.isfile(FRETfile):
-        fret_hist_calc(model, fitopts, bin_size, ran_size, spacing)  
-    FRETdata = np.loadtxt(FRETfile)  
+    if not os.path.isfile(TMfile):
+        tmatrix_exp_calc(model, fitopts, bin_size, ran_size, spacing)  
+    TMdata = np.loadtxt(TMfile)  
     
-    print "initial FRET data and bin_centers"
+    print "Initial Transition Matrix"
 
-    print FRETdata[:,0]
-    print bin_centers
+    print TMdata
     
-    if check_exp_data(FRETdata[:,0], bin_centers):
+    if check_exp_data(TMdata, bin_centers):
         print "Mismatched experimental data and simulated data. Attempting Re-binning"
-        fret_hist_calc(model, fitopts, bin_size, ran_size, spacing)
-        FRETdata = np.loadtxt(FRETfile)
-        if check_exp_data(FRETdata[:,0], bin_centers):
+        tmatrix_exp_calc(model, fitopts, bin_size, ran_size, spacing)
+        TMdata = np.loadtxt(TMfile)
+        if check_exp_data(TMdata, bin_centers):
             add_error_log("Catastrophic miscalculation of FRET bins", fit_temp)
-            print "Found the FRETdata and bin_centers to be:"
-            print FRETdata[:,0]
-            print bin_centers
+            print "Found the TMdata to be:"
+            print TMdata
     
-    target = FRETdata[:,1]
-    
-    ## FORCE FEED TARGET FEATURE
-    T_matrix = np.loadtxt("T_matrix_exp_temp.dat")
-    target = np.ndarray.flatten(T_matrix)
-    ##
-    
+    target = TMdata
+        
     target_err = target**0.5 ##for lack of a better way, take sqrt of bins for error estimate
     
     return target, target_err
