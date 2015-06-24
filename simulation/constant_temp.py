@@ -438,7 +438,7 @@ def determine_walltime(model,fitopts):
     """ Estimate an efficient walltime."""
     N = model.n_residues
     nsteps = "100000000"
-    if "queue" in fitopts and (fitopts["queue"] is not None)
+    if "queue" in fitopts:
         queue = fitopts["queue"]
     else:    
         queue = "serial"
