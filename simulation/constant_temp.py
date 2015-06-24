@@ -404,7 +404,10 @@ def determine_equil_walltime(model,fitopts):
     """ Estimate an efficient walltime."""
     N = model.n_residues
     nsteps = "500000000"
-    queue="serial"
+    if "queue" in fitopts and (fitopts["queue"] is not None)
+        queue = fitopts["queue"]
+    else:    
+        queue = "serial"
     if "equil_walltime" in fitopts and (fitopts["equil_walltime"] is not None):
         walltime = fitopts["equil_walltime"]
         test = walltime.split(":")
@@ -435,7 +438,10 @@ def determine_walltime(model,fitopts):
     """ Estimate an efficient walltime."""
     N = model.n_residues
     nsteps = "100000000"
-    queue="serial"
+    if "queue" in fitopts and (fitopts["queue"] is not None)
+        queue = fitopts["queue"]
+    else:    
+        queue = "serial"
     
     if "walltime" in fitopts:
         walltime = fitopts["walltime"]
