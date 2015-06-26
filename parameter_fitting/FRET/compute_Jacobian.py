@@ -370,7 +370,7 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
     
     print "Computing Jacobian and Simparams for the temperature %d, with spacing %f" % (fit_temp, spacing)
     Jacobian = compute_Jacobian_basic(qij,sim_feature*spacing, sim_slices, beta)
-            
+    Jacobian /= spacing        
     sim_feature_err = sim_feature ** 0.5
     Jacobian_err = np.zeros(np.shape(Jacobian))
     
