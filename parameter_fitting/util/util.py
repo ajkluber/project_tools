@@ -23,12 +23,16 @@ def get_rij_Vp(model):
     time2 = time.time()
     print " Calculating rij took: %.2f sec = %.2f min" % (time2-time1,(time2-time1)/60.)
     
-    # NOT GENERALIZED FOR FITTING SUBSET OF MODEL PARAMETERS
+    # IS NOW GENERALIZED FOR FITTING SUBSET OF MODEL PARAMETERS
     time1 = time.time()
-    Vp = np.zeros((traj.n_frames,model.n_model_param),float)
-    for i in range(model.n_pairs):   
-        param_idx = model.pairwise_param_assignment[i]
-        Vp[:,param_idx] = Vp[:,param_idx] + model.pair_V[i](rij[:,i])
+    Vp = np.zeros((traj.n_frames,model.n_fitting_params),float)
+    for i in range(model.n_fitting_params):   
+        param_idx = model.fitting_params[i]
+
+        # Loop over interactions that use this parameter
+        for j in range(len(model.model_param_interactions[param_idx])):
+            pair_idx = model.model_param_interactions[param_idx][j]
+            Vp[:,i] = Vp[:,i] + model.pair_V[pair_idx](rij[:,pair_idx])
     time2 = time.time()
     print " Calculating Vp took: %.2f sec = %.2f min" % (time2-time1,(time2-time1)/60.)
     
@@ -53,9 +57,6 @@ def get_traj_rij(model):
 def get_Vp_for_state(model,rij,state,n_frames):
     ''' Load trajectory, state indicators, and contact energy '''
     
-    # TO DO(alex)
-    #  - Only parameters listed in model.fitting_parameters should 
-    #    be calculated
     time1 = time.time()
     Vp_state = np.zeros((n_frames,model.n_fitting_params),float)
     for i in range(model.n_fitting_params):   
