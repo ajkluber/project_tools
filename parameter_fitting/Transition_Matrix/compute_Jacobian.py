@@ -33,6 +33,7 @@ global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 def_FRET_pairs = [[114,192]]
 defspacing = 0.1 ## in nm
+framestep  = 2 ## Frames between transitions
 
 def calc_sim_bins(model, fitopts, residues=def_FRET_pairs, spacing=defspacing, weights=None):
     """calc_sim_bins does the actual calculation, with minimal assumptions of directory location """
@@ -148,8 +149,8 @@ def get_transition_bins(slices, num_bins):
     # Get i and j slices, i=macrostate before transition, j=macrostate after transition
     # Subtract one to convert to zero-based indices
     F_indices = slices - 1
-    state_i = F_indices[:-1]
-    state_j = F_indices[1:]
+    state_i = F_indices[:-framestep]
+    state_j = F_indices[framestep:]
     
     # Compute bin indices for transitions
     t_indices = state_i*num_bins + state_j
@@ -229,12 +230,12 @@ def tmatrix_exp_calc(model, fitopts, bin_size, ran_size, spacing):
         Tmatrixfile = fitopts["TMdata"]
     
     Tmatrix = np.loadtxt(Tmatrixfile)
-        
+
     #Extract entries matching range specified by ran_size
     lower_bin = int(ran_size[0]/spacing)
     upper_bin = int(ran_size[1]/spacing)
     T_matrix_small = Tmatrix[lower_bin:upper_bin, lower_bin:upper_bin]
-    
+
     # Flatten and save
     T_matrix_flat = np.ndarray.flatten(T_matrix_small)
     np.savetxt(TMfile, T_matrix_flat)
@@ -280,8 +281,8 @@ def get_T_Matrix(FRETr):
     T_matrix = np.zeros((num_bins, num_bins))
     
     # Add ones to transition bins in square transition matrix
-    for i in range(np.shape(F_indices)[0] - 1):
-        T_matrix[F_indices[i], F_indices[i+1]] += 1
+    for i in range(np.shape(F_indices)[0] - framestep):
+        T_matrix[F_indices[i], F_indices[i+framestep]] += 1
     
     # Mask zeros to avoid divide-by-zero in normalization
     T_masked = np.ma.masked_where(T_matrix == 0, T_matrix)
@@ -462,8 +463,8 @@ def compute_Jacobian_basic(qij, fr, F_indices, t_indices, beta, weights=None):
         N_total_weight = np.sum(weights)
 
     # Q values for all frames starting in a particular bin
-    for idx, F_bin_location in enumerate(F_indices):
-        qi[F_bin_location,:] += (qij[idx,:])
+    for idx, F_bin_location in enumerate(F_indices[:-framestep]):
+        qi[F_bin_location,:] += (qij[idx,:] + qij[idx+framestep,:])
         qi_count[F_bin_location] += 1
         
     #normalize the average value for the pair sum starting in state i
@@ -474,13 +475,13 @@ def compute_Jacobian_basic(qij, fr, F_indices, t_indices, beta, weights=None):
     Jacobian = np.zeros((nbins, npairs))
     for idx, t_bin_location in enumerate(t_indices):
         # Add q values for specific transition
-        Jacobian[t_bin_location, :] += (qij[idx,:] + qij[idx+1,:])    
+        Jacobian[t_bin_location, :] += (qij[idx,:] + qij[idx+framestep,:])    
     
     # Normalize by i bin count
     for i in range(np.shape(Jacobian)[0]):
         state_i_idx = int(np.floor(i/nstates))
         if qi_count[state_i_idx] != 0:
-            Jacobian[i,:] /= (2*qi_count[state_i_idx])
+            Jacobian[i,:] /= (qi_count[state_i_idx])
 
     for idx, t_bin_location in enumerate(t_indices):
         # Index for q value of all transitions starting at state i
