@@ -39,9 +39,6 @@ def save(model,fitopts,soln_index):
         print "Scaling down to %f by maximum step" % max_step_factor
         fitit = max_step_factor/max_step
     
-    eplot.plot_epsilons_bin(deps,"d-epsilon",model)
-    eplot.plot_epsilons(deps,"d-epsilon",model)
-    
     neweps = eps0 + deps
     neweps[neweps < 0.01] = 0.01
     
@@ -59,6 +56,11 @@ def save(model,fitopts,soln_index):
     open("%s/fitting_scale" % cwd,"w").write("%f\n%f"%(fitit, np.sum(neweps)/np.shape(neweps)[0]))
     model.pairwise_params_file_location = "%s/pairwise_params" % cwd
     model.model_params_file_location = "%s/model_params" % cwd
+    
+    eplot.plot_epsilons_bin(deps,"d-epsilon",model)
+    eplot.plot_epsilons(deps,"d-epsilon",model)
+    
+    
 
 
         
