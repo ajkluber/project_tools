@@ -33,7 +33,7 @@ global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 def_FRET_pairs = [[114,192]]
 defspacing = 0.1 ## in nm
-framestep  = 2 ## Frames between transitions
+framestep  = 1 ## Frames between transitions
 
 def calc_sim_bins(model, fitopts, residues=def_FRET_pairs, spacing=defspacing, weights=None):
     """calc_sim_bins does the actual calculation, with minimal assumptions of directory location """
@@ -445,7 +445,7 @@ def compute_Jacobian_basic(qij, fr, F_indices, t_indices, beta, weights=None):
     print "Starting compute_Jacobian_basic"
     # number of FRET bins
     nstates = np.shape(fr)[0]
-    
+    print qij[:,53]
     # number of TRANSITION bins
     nbins = nstates**2
         
@@ -466,23 +466,25 @@ def compute_Jacobian_basic(qij, fr, F_indices, t_indices, beta, weights=None):
     for idx, F_bin_location in enumerate(F_indices[:-framestep]):
         qi[F_bin_location,:] += (qij[idx,:] + qij[idx+framestep,:])
         qi_count[F_bin_location] += 1
-        
+    
     #normalize the average value for the pair sum starting in state i
     for i in range(np.shape(qi)[0]):
         if qi_count[i] != [0]:
             qi[i,:] /= float(qi_count[i])
-    
+
     Jacobian = np.zeros((nbins, npairs))
     for idx, t_bin_location in enumerate(t_indices):
         # Add q values for specific transition
         Jacobian[t_bin_location, :] += (qij[idx,:] + qij[idx+framestep,:])    
-    
+    print "*********"
+    print Jacobian[10,53]
     # Normalize by i bin count
     for i in range(np.shape(Jacobian)[0]):
         state_i_idx = int(np.floor(i/nstates))
         if qi_count[state_i_idx] != 0:
             Jacobian[i,:] /= (qi_count[state_i_idx])
-
+    print "*********"
+    print Jacobian[10,53]
     for idx, t_bin_location in enumerate(t_indices):
         # Index for q value of all transitions starting at state i
         state_i_idx = int(np.floor(t_bin_location/nstates))

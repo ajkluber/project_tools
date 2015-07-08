@@ -66,9 +66,14 @@ def check_completion(model,fitopts,iteration,long=False):
         if finish_line not in open("md.log","r").read():
             print "    Check %s simulation did not finish." % tdir
             # Restart run
-            if os.path.exists("rst.pbs"):
-                sb.call("qsub rst.pbs",shell=True)
-                print "  Restarting: %s " % tdir
+            if determine_use_torque():
+                if os.path.exists("rst.pbs"):
+                    sb.call("qsub rst.pbs",shell=True)
+                    print "  Restarting: %s " % tdir
+            else:
+                if os.path.exists("rst.slurm"):
+                    sb.call("sbatch rst.slurm",shell=True)
+                    print "  Restarting: %s " % tdir
             error = 1
         os.chdir("..")
 
@@ -228,8 +233,12 @@ def extend_temperature(T,factor,using_sbm_gmx=None):
     sb.call(prep_step1.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
 
     # Submit rst.pbs
-    qsub = "qsub rst.pbs"
-    sb.call(qsub.split(),stdout=open("rst.out","w"),stderr=open("rst.err","w"))
+    if determine_use_torque():
+        qsub = "qsub rst.pbs"
+        sb.call(qsub.split(),stdout=open("rst.out","w"),stderr=open("rst.err","w"))
+    else:
+        qsub = "sbatch rst.slurm"
+        sb.call(qsub.split(),stdout=open("rst.out","w"),stderr=open("rst.err","w"))
 
 def folding_temperature_loop(model,fitopts,iteration,new=False):
     """ The "folding temperature loop" is one of the several large-scale 
@@ -514,31 +523,84 @@ def run_constant_temp(model,T,name,nsteps="100000000",walltime="23:00:00",queue=
 
     # Write all needed simulation files.
     model.save_simulation_files()
-
+    
+    #determine if this is a system that still uses torque, mainly biou. This is temporary and will be deprecated soon - JC July-2015
+    torque_use = determine_use_torque()
+    
     # Start simulation
     jobname = "%s_%s" % (name,str(T))
-    prep_run(jobname,walltime=walltime,queue=queue,ppn=ppn,sbm=model.using_sbm_gmx)
-
+    prep_run(jobname,walltime=walltime,queue=queue,ppn=ppn,sbm=model.using_sbm_gmx, torque=torque_use)
+    
+    
     if model.dry_run == True:
         print "    Dryrun: Successfully saved simulation files for ", T
     else:
-        qsub = "qsub run.pbs"
+        if torque_use:
+            qsub = "qsub run.pbs"
+        else:
+            qsub = "sbatch run.slurm"
         sb.call(qsub.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
-
-def prep_run(jobname,walltime="23:00:00",queue="serial",ppn="1",sbm=False):
+            
+def prep_run(jobname,walltime="23:00:00",queue="serial",ppn="1",sbm=False, torque=False):
     """ Executes the constant temperature runs."""
 
     prep_step1 = 'grompp_sbm -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.5.tpr'
     prep_step2 = 'grompp -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.6.tpr'
     sb.call(prep_step1.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
     sb.call(prep_step2.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
-
-    pbs_string = get_pbs_string(jobname,queue,ppn,walltime,sbm=sbm)
-    open("run.pbs","w").write(pbs_string)
-
-    rst_string = get_rst_pbs_string(jobname,queue,ppn,walltime,sbm=sbm)
-    open("rst.pbs","w").write(rst_string)
     
+    if torque:
+        pbs_string = get_pbs_string(jobname,queue,ppn,walltime,sbm=sbm)
+        open("run.pbs","w").write(pbs_string)
+
+        rst_string = get_rst_pbs_string(jobname,queue,ppn,walltime,sbm=sbm)
+        open("rst.pbs","w").write(rst_string)
+    else:
+        slurm_string = get_slurm_string(jobname,queue,ppn,walltime,sbm=sbm)
+        open("run.slurm","w").write(pbs_string)
+
+        rst_string = get_rst_slurm_string(jobname,queue,ppn,walltime,sbm=sbm)
+        open("rst.slurm","w").write(rst_string)
+
+
+def get_slurm_string(jobname,queue,ppn,walltime,sbm=False):
+    """ Return basic PBS job script. """
+    pbs_string = "#!/bin/bash \n"
+    pbs_string +="#SBATCH --job-name=%s \n" % jobname
+    pbs_string +="#SBATCH --partition=%s \n" % queue
+    pbs_string +="#SBATCH --nodes=1\n" 
+    pbs_string +="#SBATCH --ntasks-per-node=%s\n" %ppn
+    pbs_string +="#SBATCH --time=%s \n" % walltime
+    pbs_string +="#SBATCH --export=ALL \n\n"
+    pbs_string +="cd $SLURM_JOBID\n"
+    pbs_string +="echo 'I ran on:'\n"
+    pbs_string +="cat $SLURM_JOB_NODELIST\n"
+    if sbm:
+        pbs_string +="mdrun_sbm -s topol_4.5.tpr -nt %s" %ppn
+    else:
+        pbs_string +="mdrun -s topol_4.6.tpr"
+    return pbs_string
+
+def get_rst_slurm_string(jobname,queue,ppn,walltime,sbm=False):
+    """ Return basic PBS job script for restarting. """
+    rst_string = "#!/bin/bash \n"
+    rst_string +="#SBATCH --job-name=%s \n" % jobname
+    rst_string +="#SBATCH --partition=%s \n" % queue
+    rst_string +="#SBATCH --nodes=1\n" 
+    rst_string +="#SBATCH --ntasks-per-node=%s\n" %ppn
+    rst_string +="#SBATCH --time=%s \n" % walltime
+    rst_string +="#SBATCH --export=ALL \n\n"
+    rst_string +="cd $SLURM_JOBID\n"
+    rst_string +="echo 'I ran on:'\n"
+    rst_string +="cat $SLURM_JOB_NODELIST\n"
+    if sbm:
+        rst_string +="mdrun_sbm -s topol_4.5.tpr -cpi state.cpt -nt %s" %ppn
+    else:
+        rst_string +="mdrun -s topol_4.6.tpr -cpi state.cpt"
+    return rst_string
+
+
+   
 def get_pbs_string(jobname,queue,ppn,walltime,sbm=False):
     """ Return basic PBS job script. """
     pbs_string = "#!/bin/bash \n"
@@ -572,6 +634,16 @@ def get_rst_pbs_string(jobname,queue,ppn,walltime,sbm=False):
     else:
         rst_string +="mdrun -s topol_4.6.tpr -cpi state.cpt"
     return rst_string
+
+def determine_use_torque():
+    import socket
+    host = socket.gethostname()
+    if host[:4] == "biou":
+        torque_use = True
+    else:
+        torque_use = False
+    
+    return torque_use
 
 if __name__ == '__main__':
     """ Use gmxcheck on subdirectories.  """

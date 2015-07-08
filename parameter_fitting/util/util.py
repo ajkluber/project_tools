@@ -26,6 +26,9 @@ def get_rij_Vp(model):
     # IS NOW GENERALIZED FOR FITTING SUBSET OF MODEL PARAMETERS
     time1 = time.time()
     Vp = np.zeros((traj.n_frames,model.n_fitting_params),float)
+    print "**********************************"
+    print model.n_fitting_params
+    print "**********************************"
     for i in range(model.n_fitting_params):   
         param_idx = model.fitting_params[i]
 
