@@ -558,10 +558,10 @@ def prep_run(jobname,walltime="23:00:00",queue="serial",ppn="1",sbm=False, torqu
         open("rst.pbs","w").write(rst_string)
     else:
         slurm_string = get_slurm_string(jobname,queue,ppn,walltime,sbm=sbm)
-        open("run.slurm","w").write(pbs_string)
+        open("run.slurm","w").write(slurm_string)
 
-        rst_string = get_rst_slurm_string(jobname,queue,ppn,walltime,sbm=sbm)
-        open("rst.slurm","w").write(rst_string)
+        slurm_rst_string = get_rst_slurm_string(jobname,queue,ppn,walltime,sbm=sbm)
+        open("rst.slurm","w").write(slurm_rst_string)
 
 
 def get_slurm_string(jobname,queue,ppn,walltime,sbm=False):
