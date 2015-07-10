@@ -614,7 +614,7 @@ def get_pbs_string(jobname,queue,ppn,walltime,sbm=False):
     pbs_string +="echo 'I ran on:'\n"
     pbs_string +="cat $PBS_NODEFILE\n"
     if sbm:
-        pbs_string +="mdrun_sbm -s topol_4.5.tpr -nt %s" %ppn
+        pbs_string +="mdrun_sbm -s topol_4.5.tpr -nt %s -ntmpi %s" %(ppn,ppn)
     else:
         pbs_string +="mdrun -s topol_4.6.tpr"
     return pbs_string
@@ -631,7 +631,7 @@ def get_rst_pbs_string(jobname,queue,ppn,walltime,sbm=False):
     rst_string +="echo 'I ran on:'\n"
     rst_string +="cat $PBS_NODEFILE\n"
     if sbm:
-        rst_string +="mdrun_sbm -s topol_4.5.tpr -cpi state.cpt -nt %s" %ppn
+        rst_string +="mdrun_sbm -s topol_4.5.tpr -cpi state.cpt -nt %s -ntmpi %s" %(ppn,ppn)
     else:
         rst_string +="mdrun -s topol_4.6.tpr -cpi state.cpt"
     return rst_string
