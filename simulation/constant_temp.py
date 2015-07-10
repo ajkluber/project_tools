@@ -573,7 +573,7 @@ def get_slurm_string(jobname,queue,ppn,walltime,sbm=False):
     pbs_string +="#SBATCH --ntasks-per-node=%s\n" %ppn
     pbs_string +="#SBATCH --time=%s \n" % walltime
     pbs_string +="#SBATCH --export=ALL \n\n"
-    pbs_string +="cd $SLURM_JOBID\n"
+    pbs_string +="cd $SLURM_SUBMIT_DIR\n"
     pbs_string +="echo 'I ran on:'\n"
     pbs_string +="cat $SLURM_JOB_NODELIST\n"
     if sbm:
@@ -591,7 +591,7 @@ def get_rst_slurm_string(jobname,queue,ppn,walltime,sbm=False):
     rst_string +="#SBATCH --ntasks-per-node=%s\n" %ppn
     rst_string +="#SBATCH --time=%s \n" % walltime
     rst_string +="#SBATCH --export=ALL \n\n"
-    rst_string +="cd $SLURM_JOBID\n"
+    rst_string +="cd $SLURM_SUBMIT_DIR\n"
     rst_string +="echo 'I ran on:'\n"
     rst_string +="cat $SLURM_JOB_NODELIST\n"
     if sbm:
