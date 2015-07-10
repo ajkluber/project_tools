@@ -18,9 +18,14 @@ def save(model,fitopts,soln_index):
     
     cwd = os.getcwd()
     eps0 = model.model_param_values
-    deps = np.loadtxt("xp_%d.dat" % soln_index)
+    temp_deps = np.loadtxt("xp_%d.dat" % soln_index)
     fitit = 1
     
+    ##read in the deps and assign them to the proper matrix for telegraphing to eps0 correctly
+    deps = np.zeros(model.n_model_param)
+    for i in range(model.n_fitting_params):
+        param_idx = model.fitting_params[i]
+        deps[param_idx] = temp_deps[i]
     
     
     ##calculate the scaling based upon what would actually happen: if it's already at 0.01, and goes more negative, now it effectively shows a deps there of 0, and not some arbitrarily large number
