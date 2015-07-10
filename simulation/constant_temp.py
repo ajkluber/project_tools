@@ -579,7 +579,7 @@ def get_slurm_string(jobname,queue,ppn,walltime,sbm=False):
     if sbm:
         pbs_string +="mdrun_sbm -s topol_4.5.tpr -nt %s" %ppn
     else:
-        pbs_string +="mdrun -s topol_4.6.tpr"
+        pbs_string +="mdrun -s topol_4.6.tpr -nt %s" %ppn
     return pbs_string
 
 def get_rst_slurm_string(jobname,queue,ppn,walltime,sbm=False):
@@ -597,7 +597,7 @@ def get_rst_slurm_string(jobname,queue,ppn,walltime,sbm=False):
     if sbm:
         rst_string +="mdrun_sbm -s topol_4.5.tpr -cpi state.cpt -nt %s" %ppn
     else:
-        rst_string +="mdrun -s topol_4.6.tpr -cpi state.cpt"
+        rst_string +="mdrun -s topol_4.6.tpr -cpi state.cpt -nt %s" %ppn
     return rst_string
 
 
