@@ -5,7 +5,6 @@ Description:
 
     This module computes the jacobian of the contact probability function.
 
-DEPRECATED
 """
 
 import numpy as np
@@ -145,68 +144,110 @@ def compute_Jacobian_for_directory(model,beta,bounds):
 
     return sim_feature, Jacobian
 
-if __name__ == "__main__":    
+def calculate_average_Jacobian(model,fitopts):
+    """ Calculate ddG's and Jacobian over replicas"""
     
-    name = "1FMK"
-    #iteration = 1
+    name = model.name
+    iteration = fitopts['iteration']
 
-    model = mdb.check_inputs.load_model(name)
-    #iteration = model.iteration
-    iteration = 0
+    # Get mutations and fraction of native pairs deleted for each mutation.
+    os.chdir("%s/iteration_%d" % (name,iteration))
 
-    cwd = os.getcwd()
-    sub = "%s/%s/iteration_%d" % (cwd,name,iteration)
-    os.chdir(sub)
 
-    temperatures = [ x.split('_')[0] for x in open("long_temps_last","r").readlines() ] 
-    directories = [ x.rstrip("\n") for x in open("long_temps_last","r").readlines() ] 
+    Tlist = [ x.rstrip("\n") for x in open("long_temps_last","r").readlines() ] 
+    Tlist = Tlist[0]
+    beta = 1./(GAS_CONSTANT_KJ_MOL*float(Tlist[0].split("_")[0]))
+    
+    # Get pairwise distances from trajectories
+    trajfiles = [ "%s/traj.xtc" % x.rstrip("\n") for x in open("long_temps_last","r").readlines() ] 
+    native = "%s/Native.pdb" % Tlist[0]
+    rij = get_rij(model,trajfiles,native)
+    contact_distance = np.array([ model.pairwise_other_parameters[x][0] for x in range(1,model.n_pairs,2) ])
 
-    #bounds, state_labels = util.get_state_bounds()
     bounds, state_labels = get_state_bounds()
-    bounds = [0] + bounds + [model.n_contacts]
+    bounds = [0] + bounds + [model.n_pairs]
 
-    ## Loop over temperatures in iteration subdir. Calculate ddG vector and 
-    ## Jacobian for each directory indpendently then save. 
-    #for n in range(len(directories)):
-    lasttime = time.time()
-    for n in [0]:
-        T = temperatures[n]
-        dir = directories[n]
-        beta = 1./(GAS_CONSTANT_KJ_MOL*float(T))
-        print "  Calculating Jacobian for iteration_%d/%s" % (model.iteration,dir)
-        os.chdir(dir)
-        sim_feature, Jacobian = compute_Jacobian_for_directory(model,beta,bounds)
+    # Found speedups by calculating quantities on per state basis
+    U,TS,N,Uframes,TSframes,Nframes = concatenate_state_indicators(Tlist,bounds,coord="Q.dat")
 
-        thistime = time.time()
-        timediff = thistime - lasttime
-        lasttime = thistime
-        print "  calculation took %.2f seconds = %.2f minutes" % (timediff,timediff/60.)
+    # Average dimensionless potential energy for each state
+    Vp_U   = get_Vp_for_state(model,rij,U,Uframes)
+    Vp_TS  = get_Vp_for_state(model,rij,TS,TSframes)
+    Vp_N   = get_Vp_for_state(model,rij,N,Nframes)
+    sumVp_U = np.mean(Vp_U,axis=0); sumVp_TS = np.mean(Vp_TS,axis=0); sumVp_N = np.mean(Vp_N,axis=0) 
 
-    np.savetxt("test_J.dat",Jacobian)
-    os.chdir(cwd)
-
-
-    """
+if __name__ == "__main__":    
+    """Calculate the  """
     parser = argparse.ArgumentParser(description='Calculate .')
     parser.add_argument('--name', type=str, required=True, help='Directory.')
-    parser.add_argument('--iteration', type=int, required=True, help='Iteration.')
+    #parser.add_argument('--iteration', type=int, required=True, help='Iteration.')
     args = parser.parse_args()
+
     name = args.name
-    iteration = args.iteration
-    model = mdb.check_inputs.load_model(name) 
-    model.iteration = iteration
-    target_feature, target_feature_err = get_target_feature(model)
-    sim_feature_avg, sim_feature_err, Jacobian_avg, Jacobian_err = calculate_average_Jacobian(model)
+    
+    model, fitopts = mdb.inputs.load_model(name)
+    iteration = fitopts['iteration']
+    model.fitting_params = np.arange(1,model.n_pairs,2)
+    model.n_fitting_params = len(model.fitting_params)
+    
+    wantpairs = model.pairs[1::2] - 1
 
-    if not os.path.exists("%s/iteration_%d/contact_Qi" % (name,iteration)):
-        os.mkdir("%s/iteration_%d/contact_Qi" % (name,iteration))
+    # Get mutations and fraction of native pairs deleted for each mutation.
+    os.chdir("%s/iteration_%d" % (name,iteration))
 
-    np.savetxt("%s/iteration_%d/contact_Qi/target_feature.dat" % (name,iteration), target_feature)
-    np.savetxt("%s/iteration_%d/contact_Qi/target_feature_err.dat" % (name,iteration), target_feature_err)
-    np.savetxt("%s/iteration_%d/contact_Qi/target_feature.dat" % (name,iteration), target_feature)
-    np.savetxt("%s/iteration_%d/contact_Qi/target_feature_err.dat" % (name,iteration), target_feature_err)
-    np.savetxt("%s/iteration_%d/contact_Qi/sim_feature.dat" % (name,iteration), sim_feature_avg)
-    np.savetxt("%s/iteration_%d/contact_Qi/sim_feature_err.dat" % (name,iteration), sim_feature_err)
-    np.savetxt("%s/iteration_%d/contact_Qi/Jacobian.dat" % (name,iteration), Jacobian_avg)
-    np.savetxt("%s/iteration_%d/contact_Qi/Jacobian_err.dat" % (name,iteration) ,Jacobian_err)
-    """
+    Tlist = [ x.rstrip("\n") for x in open("long_temps_last","r").readlines() ] 
+    Tlist = [ Tlist[0] ]
+    beta = 1./(GAS_CONSTANT_KJ_MOL*float(Tlist[0].split("_")[0]))
+    
+    # Get pairwise distances from trajectories
+    trajfiles = [ "%s/traj.xtc" % x.rstrip("\n") for x in Tlist ] 
+    native = "%s/Native.pdb" % Tlist[0]
+    n_residues = len(open(native,"r").readlines()) - 1
+    rij = get_rij(model,trajfiles,native)
+    contact_r0 = np.array([ model.pairwise_other_parameters[x][0] for x in model.fitting_params ])
+    
+    # Get state bounds
+    bounds, state_labels = get_state_bounds()
+    bounds = [0] + bounds + [model.n_pairs]
+
+    # Found speedups by calculating quantities on per state basis
+    U,TS,N,Uframes,TSframes,Nframes = concatenate_state_indicators(Tlist,bounds,coord="Q.dat")
+
+    # Average potential energy for each state
+    Vp_U   = beta*get_Vp_for_state(model,rij,U,Uframes)
+    Vp_TS  = beta*get_Vp_for_state(model,rij,TS,TSframes)
+    Vp_N   = beta*get_Vp_for_state(model,rij,N,Nframes)
+    sumVp_U = np.mean(Vp_U,axis=0); sumVp_TS = np.mean(Vp_TS,axis=0); sumVp_N = np.mean(Vp_N,axis=0) 
+
+    # Average of contact function for each state
+    rij_nat = rij[:,model.fitting_params] 
+    Q_U  = (rij_nat[U,:]  < (contact_r0 + 0.1)).astype(int)
+    Q_TS = (rij_nat[TS,:] < (contact_r0 + 0.1)).astype(int)
+    Q_N  = (rij_nat[N,:]  < (contact_r0 + 0.1)).astype(int)
+    sumQ_U = np.mean(Q_U,axis=0); sumQ_TS = np.mean(Q_TS,axis=0); sumQ_N = np.mean(Q_N,axis=0)
+
+    # Jacobian
+    J_U  = np.dot(Q_U.T,Vp_U)   - np.outer(sumQ_U,sumVp_U)
+    J_TS = np.dot(Q_TS.T,Vp_TS) - np.outer(sumQ_TS,sumVp_TS)
+    J_N  = np.dot(Q_N.T,Vp_N)   - np.outer(sumQ_N,sumVp_N)
+
+    # Hessian
+    H_U  = np.dot(J_U.T,J_U)
+    H_TS = np.dot(J_TS.T,J_TS)
+    H_N  = np.dot(J_N.T,J_N)
+
+    vals_U, vecs_U = np.linalg.eig(H_U)    
+    vals_TS, vecs_TS = np.linalg.eig(H_TS)    
+    vals_N, vecs_N = np.linalg.eig(H_N)    
+
+    C_U = np.zeros((n_residues,n_residues))
+    for i in range(model.n_native_pairs):
+        C_U[model.native_pairs[i][1] - 1, model.native_pairs[i][0] - 1] = vecs_U[i,0]
+    C_TS = np.zeros((n_residues,n_residues))
+    for i in range(model.n_native_pairs):
+        C_TS[model.native_pairs[i][1] - 1, model.native_pairs[i][0] - 1] = vecs_TS[i,0]
+    C_N = np.zeros((n_residues,n_residues))
+    for i in range(model.n_native_pairs):
+        C_N[model.native_pairs[i][1] - 1, model.native_pairs[i][0] - 1] = vecs_N[i,0]
+
+    os.chdir("../..")

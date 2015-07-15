@@ -15,7 +15,6 @@ Minimalist model Go? J. Mol. Biol. 2004, 343, 235-248.
 
 import os
 import sys
-import argparse
 import time
 import numpy as np
 
@@ -483,19 +482,19 @@ def save_phi_values(mutants,state_labels,dG,ddG,phi):
     return header_string+"\n"+data_string
 
 if __name__ == "__main__":
+    """Sandbox"""
+    import argparse
     import model_builder as mdb
 
-    #parser = argparse.ArgumentParser(description='Calculate .')
-    #parser.add_argument('--name', type=str, required=True, help='name.')
-    #parser.add_argument('--iteration', type=int, required=True, help='iteration.')
-    #args = parser.parse_args()
+    parser = argparse.ArgumentParser(description='Calculate .')
+    parser.add_argument('--name', type=str, required=True, help='name.')
+    parser.add_argument('--iteration', type=int, required=True, help='iteration.')
+    args = parser.parse_args()
     
-    #name = args.name
-    #iteration= args.iteration
+    name = args.name
+    iteration= args.iteration
     
-    name = "S6"
     model, fitopts = mdb.inputs.load_model(name)
-    #compute_dHk(model,fitopts)
     sim_f, sim_f_err, J, J_err = calculate_average_Jacobian(model,fitopts)
     target_feature, target_feature_err = get_target_feature(model,fitopts)
-    np.savetxt("S6/iteration_0/newton/target_feature.dat", target_feature)
+    np.savetxt("%s/iteration_%d/newton/target_feature.dat" % (name,iteration), target_feature)
