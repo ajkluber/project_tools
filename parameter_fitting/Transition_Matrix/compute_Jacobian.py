@@ -35,7 +35,7 @@ def_FRET_pairs = [[114,192]]
 defspacing = 0.1 ## in nm
 framestep  = 1 ## Frames between transitions
 
-def calc_sim_bins(model, fitopts, residues=def_FRET_pairs, spacing=defspacing, weights=None):
+def calc_sim_bins(model, fitopts, framestep, residues=def_FRET_pairs, spacing=defspacing, weights=None):
     """calc_sim_bins does the actual calculation, with minimal assumptions of directory location """
     ##assumes you are in the folder containing the model subdir
     if "t_fit" in fitopts:
@@ -79,10 +79,10 @@ def calc_sim_bins(model, fitopts, residues=def_FRET_pairs, spacing=defspacing, w
     print FRETr
     print np.shape(FRETr)
     
-    find_sim_bins(subdirec, FRETr[:,0], fit_temp, residues=residues, spacing=spacing, weights=weights)
+    find_sim_bins(subdirec, FRETr[:,0], fit_temp, framestep, residues=residues, spacing=spacing, weights=weights)
     os.chdir(cwd)
 
-def find_sim_bins(savelocation, FRETr, fit_temp, residues=def_FRET_pairs, spacing=defspacing, weights=None):
+def find_sim_bins(savelocation, FRETr, fit_temp, framestep, residues=def_FRET_pairs, spacing=defspacing, weights=None):
     """find_sim_bins calculates and writes the simulation files """
     ##assumes nothing about where you are, but assumes the savelocation is specified correctly
     print "Calculating Simulation FRET bins"
@@ -128,7 +128,7 @@ def find_sim_bins(savelocation, FRETr, fit_temp, residues=def_FRET_pairs, spacin
     bincenters = 0.5 * (edges[1:] + edges[:-1])
     
     # Get indices of transition bins
-    F_indices, t_indices = get_transition_bins(slices, num_bins)
+    F_indices, t_indices = get_transition_bins(slices, num_bins, framestep)
     
     print "Saving the bincenters:"
     #actually save it
@@ -141,7 +141,7 @@ def find_sim_bins(savelocation, FRETr, fit_temp, residues=def_FRET_pairs, spacin
     
     return hist, F_indices, t_indices, num_bins
     
-def get_transition_bins(slices, num_bins):
+def get_transition_bins(slices, num_bins, framestep):
     # Get indices of transition bins
     # Returns linear indices of "transition bins," should match with numpy.ndarray.flatten() results
     # 'slices' has dimension Nx1, where N=number of frames
@@ -253,7 +253,7 @@ def check_exp_data(TMdata, bin_centers):
     
     return recalc
     
-def find_FRET_bins(FRETr, spacing=defspacing):
+def find_FRET_bins(FRETr, framestep, spacing=defspacing):
     # Histograms the trace data into macrostate bins, analogous to find_sim_bins from compute_Jacobian script
     print np.shape(FRETr)
     weights = np.ones(np.shape(FRETr)[0])
@@ -267,16 +267,16 @@ def find_FRET_bins(FRETr, spacing=defspacing):
     hist, bins, slices = stats.binned_statistic(FRETr[:,0], weights, statistic="sum", range=[ran_size], bins=num_bins)
     
     # Call get_transition_bins to make transition bin indices
-    F_indices, t_indices = get_transition_bins(slices, num_bins)
+    F_indices, t_indices = get_transition_bins(slices, num_bins, framestep)
     
     return hist, F_indices, t_indices, num_bins
     
-def get_T_Matrix(FRETr):    
+def get_T_Matrix(FRETr, framestep):    
     # Calculate flattened transition matrix for a given FRET trace
     # Based on fret_analysis/compute_transitions.py
     
     # Get FRET bins
-    hist, F_indices, t_indices, num_bins = find_FRET_bins(FRETr)
+    hist, F_indices, t_indices, num_bins = find_FRET_bins(FRETr, framestep)
     
     T_matrix = np.zeros((num_bins, num_bins))
     
@@ -383,6 +383,11 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
     if "spacing" in fitopts:
         spacing = fitopts["spacing"]
     
+    if "framestep" in fitopts:
+        framestep = fitopts["framestep"]
+    else:
+        framestep = 1
+        
     ##Define location of logical files    
     cwd = os.getcwd()
     subdir = model.name
@@ -407,10 +412,10 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
     ##WARNING: CONFIGURED FOR ONLY ONE PAIR OF FRET PROBES
     
     
-    fr, F_indices, t_indices, num_bins = find_sim_bins(sim_location, FRETr[:,0], fit_temp, residues=FRET_pairs, spacing=spacing, weights=None)
+    fr, F_indices, t_indices, num_bins = find_sim_bins(sim_location, FRETr[:,0], fit_temp, framestep, residues=FRET_pairs, spacing=spacing, weights=None)
     
     # FLATTENED T-MATRIX
-    sim_feature = get_T_Matrix(FRETr)
+    sim_feature = get_T_Matrix(FRETr, framestep)
     
     #calculate beta    
     beta = 1.0 / (GAS_CONSTANT_KJ_MOL*float(fit_temp))
