@@ -33,7 +33,6 @@ global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 def_FRET_pairs = [[114,192]]
 defspacing = 0.1 ## in nm
-framestep  = 1 ## Frames between transitions
 
 def calc_sim_bins(model, fitopts, framestep, residues=def_FRET_pairs, spacing=defspacing, weights=None):
     """calc_sim_bins does the actual calculation, with minimal assumptions of directory location """
@@ -383,8 +382,8 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
     if "spacing" in fitopts:
         spacing = fitopts["spacing"]
     
-    if "framestep" in fitopts:
-        framestep = fitopts["framestep"]
+    if "lag_step" in fitopts:
+        framestep = fitopts["lag_step"]
     else:
         framestep = 1
         
