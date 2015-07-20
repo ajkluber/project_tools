@@ -430,7 +430,7 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
     
     print "Computing Jacobian and T-matrix for the temperature %d, with spacing %f" % (fit_temp, spacing)
 #    Tmatrix, Tmatrix_error = get_T_matrix(FRETr, ran_size, nbins) 
-    Jacobian = compute_Jacobian_basic(qij, fr, F_indices, t_indices, beta)
+    Jacobian = compute_Jacobian_basic(qij, fr, framestep, F_indices, t_indices, beta)
     
     
     sim_feature_err = sim_feature ** 0.5
@@ -438,7 +438,7 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
     
     return sim_feature, sim_feature_err, Jacobian, Jacobian_err
 
-def compute_Jacobian_basic(qij, fr, F_indices, t_indices, beta, weights=None):
+def compute_Jacobian_basic(qij, fr, framestep, F_indices, t_indices, beta, weights=None):
     """ Method for computing a Jacobian given only the rudimenary pieces necessary """
     ## qij is a NXM array containing the Qij values from the simulation
     ## fr is a RX1 array containing the normalized distributin f(r)
