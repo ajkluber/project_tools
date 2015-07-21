@@ -43,9 +43,10 @@ def find_solutions(model,scaling=False):
         min_value = np.min(Lambdas[1:])
         max_power = math.floor(math.log(max_value, 10))
         min_power = math.floor(math.log(min_value, 10))
-        Lambdas = np.zeros(max_power - min_power+1)
-        for i in range(int(max_power - min_power)):
-            Lambdas[i+1] = 10 ** (min_power + i +1)
+        Lambdas = np.zeros(2*(max_power - min_power)-1)
+        for i in range(int(max_power - min_power)-1):
+            Lambdas[2*i+1] = 10 ** (min_power + i +1)
+            Lambdas[2*i+2] = 5*Lambdas[2*i+1]
         print Lambdas
     nrm_soln = []
     nrm_resd = []
