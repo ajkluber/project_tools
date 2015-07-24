@@ -231,8 +231,8 @@ def tmatrix_exp_calc(model, fitopts, bin_size, ran_size, spacing):
     Tmatrix = np.loadtxt(Tmatrixfile)
 
     #Extract entries matching range specified by ran_size
-    lower_bin = int(ran_size[0]/spacing)
-    upper_bin = int(ran_size[1]/spacing)
+    lower_bin = int(np.around(ran_size[0]/spacing, 0))
+    upper_bin = int(np.around(ran_size[1]/spacing, 0))
     T_matrix_small = Tmatrix[lower_bin:upper_bin, lower_bin:upper_bin]
 
     # Flatten and save
