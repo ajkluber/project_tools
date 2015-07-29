@@ -54,7 +54,7 @@ def constant_temperature(T,nsteps,nstout="1000"):
     mdp_string += "comm_grps                = System \n"
     return mdp_string
 
-def simulated_annealing(Tlist,pslist,nstout="1000"):
+def simulated_annealing(Tlist,pslist,nsteps,nstout="1000"):
     """ Generate grompp.mdp file string. Gromacs 4.6 """
     # Should we assert that the total number of steps is longer than the
     # annealing schedule? 
@@ -62,7 +62,7 @@ def simulated_annealing(Tlist,pslist,nstout="1000"):
     annealtimes = ""
     annealtemps = ""
     for i in range(len(Tlist)):
-        annealtimes += "%.2f " % pslist[i]
+        annealtimes += "%.2f " % (pslist[i] + sum(pslist[:i]))
         annealtemps += "%.2f " % Tlist[i]
 
     mdp_string = "; Run control parameters \n"
@@ -95,11 +95,11 @@ def simulated_annealing(Tlist,pslist,nstout="1000"):
     mdp_string += "ld_seed                  = -1 \n"
     mdp_string += "tc-grps                  = system \n"
     mdp_string += "tau_t                    = 1 \n"
-    mdp_string += "ref_t                    = %s \n" % T
+    mdp_string += "ref_t                    = %s \n" % Tlist[0]
     mdp_string += "Pcoupl                   = no \n\n"
     mdp_string += "; generate velocities for startup run \n"
     mdp_string += "gen_vel                  = yes \n"
-    mdp_string += "gen_temp                 = %s \n" % T
+    mdp_string += "gen_temp                 = %s \n" % Tlist[0]
     mdp_string += "gen_seed                 = -1 \n\n"
     mdp_string += "; remove center of mass\n"
     mdp_string += "comm_mode                = angular \n"
