@@ -305,9 +305,10 @@ def prepare_histograms_heat_capacity(long=False):
             maxE = max([max(E),maxE])
             minE = min([min(E),minE])
 
-        histogram = np.zeros((len(Q),2),float)
-        histogram[:,0] = E
-        histogram[:,1] = Q
+        minsize = min([len(E),len(Q)])
+        histogram = np.zeros((minsize,2),float)
+        histogram[:,0] = E[:minsize]
+        histogram[:,1] = Q[:minsize]
         if long:
             np.savetxt("long_wham/hist_%.2f" % float(T),histogram,fmt="%15.6f")
         else:
