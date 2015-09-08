@@ -20,7 +20,7 @@ import save_and_plot
 
 import math
 
-def find_solutions(model,scaling=False):
+def find_solutions(model, scaling=False, chosen_cutoffs=None, simplify=False):
     cplex = False
     target_feature = np.loadtxt("target_feature.dat")
     sim_feature = np.loadtxt("sim_feature.dat")
@@ -34,20 +34,28 @@ def find_solutions(model,scaling=False):
     df = target_feature - sim_feature
 
     u,s,v = np.linalg.svd(J)
-    temp  = list(0.5*(s[:-1] + s[1:])) + [0.0]
-    temp.reverse()
-    Lambdas = np.array(temp)
-    #check and see length of Lambda, if it's super large, cut down by order of magnitude...:
-    if len(Lambdas) > 500:
-        max_value = np.max(Lambdas)
-        min_value = np.min(Lambdas[1:])
-        max_power = math.floor(math.log(max_value, 10))
-        min_power = math.floor(math.log(min_value, 10))
-        Lambdas = np.zeros(2*(max_power - min_power)-1)
-        for i in range(int(max_power - min_power)-1):
-            Lambdas[2*i+1] = 10 ** (min_power + i +1)
-            Lambdas[2*i+2] = 5*Lambdas[2*i+1]
-        print Lambdas
+    
+    #pick the lambdas (set of cutoffs)
+    if chosen_cutoffs == None:
+        temp  = list(0.5*(s[:-1] + s[1:])) + [0.0]
+        temp.reverse()
+        Lambdas = np.array(temp)
+        
+        #check and see length of Lambda, if it's super large, cut down by order of magnitude...:
+        if len(Lambdas) > 200 and simplify:
+            print "Number of cutoff values > 200, simplifying down to order of magnitudes"
+            max_value = np.max(Lambdas)
+            min_value = np.min(Lambdas[1:])
+            max_power = math.floor(math.log(max_value, 10))
+            min_power = math.floor(math.log(min_value, 10))
+            Lambdas = np.zeros(2*(max_power - min_power)-1)
+            for i in range(int(max_power - min_power)-1):
+                Lambdas[2*i+1] = 10 ** (min_power + i +1)
+                Lambdas[2*i+2] = 5*Lambdas[2*i+1]
+            print Lambdas
+    else:
+        Lambdas = chosen_cutoffs
+        
     nrm_soln = []
     nrm_resd = []
     condition_number = []

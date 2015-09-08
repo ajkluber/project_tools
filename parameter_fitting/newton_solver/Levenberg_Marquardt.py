@@ -19,7 +19,7 @@ import numpy as np
 
 import save_and_plot
 
-def find_solutions(model,scaling=False):
+def find_solutions(model, scaling=False, chosen_cutoffs=None, simplify=False):
     ''' Solve for new parameters using the Levenberg-Marquardt algorithm 
 
     Description:

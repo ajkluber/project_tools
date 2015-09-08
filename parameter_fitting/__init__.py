@@ -128,7 +128,7 @@ def solve_newtons_method(model,fitopts):
     if fitopts["solver"] == "TSVD_Cplex":
         solver.find_solutions(model,fitopts)
     else:
-        solver.find_solutions(model)
+        solver.find_solutions(model, chosen_cutoffs=fitopts["cutoffs"], simplify=fitopts["simplify_lambdas"])
     os.chdir(cwd)
     logger.info(" Finished: Solving_Newtons_Method")
 
