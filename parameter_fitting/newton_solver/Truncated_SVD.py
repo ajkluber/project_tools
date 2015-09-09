@@ -53,7 +53,7 @@ def find_solutions(model, scaling=False, chosen_cutoffs=None, simplify=False):
                 Lambdas[2*i+1] = 10 ** (min_power + i +1)
                 Lambdas[2*i+2] = 5*Lambdas[2*i+1]
             if not Lambdas[-1] == 10**int(max_power):
-                Lambdas.append(10**int(max_power))
+                Lambdas = np.append(Lambdas, [10**int(max_power)])
             print Lambdas
     else:
         Lambdas = chosen_cutoffs
