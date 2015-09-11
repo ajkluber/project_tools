@@ -16,6 +16,18 @@ def save(model,fitopts,soln_index):
     else:
         max_step_factor = 0.3
     
+    if "prevent_zero" in fitopts:
+        prevent_zero = fitopts["prevent_zero"]
+    else:
+        prevent_zero = True
+    
+    if model.using_sbm_gmx == None or model.using_sbm_gmx == False:
+        gauss = False
+    elif model.using_sbm_gmx == True:
+        gauss = True
+    else:
+        gauss = False
+    
     cwd = os.getcwd()
     eps0 = model.model_param_values
     temp_deps = np.loadtxt("xp_%d.dat" % soln_index)
@@ -31,7 +43,8 @@ def save(model,fitopts,soln_index):
     ##calculate the scaling based upon what would actually happen: if it's already at 0.01, and goes more negative, now it effectively shows a deps there of 0, and not some arbitrarily large number
     neweps_effective = eps0 + deps
     #deps_actual = neweps_effective - eps0
-    neweps_effective[neweps_effective < 0.01] = 0.01
+    if prevent_zero:
+        neweps_effective[neweps_effective < 0.01] = 0.01
     deps_effective = neweps_effective - eps0
     
     
@@ -45,7 +58,8 @@ def save(model,fitopts,soln_index):
         fitit = max_step_factor/max_step
     
     neweps = eps0 + deps
-    neweps[neweps < 0.01] = 0.01
+    if prevent_zero:
+        neweps[neweps < 0.01] = 0.01
     
     model.update_model_param_values(neweps)
     
@@ -62,8 +76,12 @@ def save(model,fitopts,soln_index):
     model.pairwise_params_file_location = "%s/pairwise_params" % cwd
     model.model_params_file_location = "%s/model_params" % cwd
     
-    eplot.plot_epsilons_bin(deps,"d-epsilon",model)
-    eplot.plot_epsilons(deps,"d-epsilon",model)
+    if gauss:
+        eplot.plot_epsilons_bin(deps[np.arange(1,len(deps),2)],"d-epsilon",model)
+        eplot.plot_epsilons(deps[np.arange(1,len(deps),2)],"d-epsilon",model)
+    else:
+        eplot.plot_epsilons_bin(deps,"d-epsilon",model)
+        eplot.plot_epsilons(deps,"d-epsilon",model)
     
     
 
