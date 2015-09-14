@@ -32,7 +32,6 @@ def save(model,fitopts,soln_index):
     eps0 = model.model_param_values
     temp_deps = np.loadtxt("xp_%d.dat" % soln_index)
     fitit = 1
-    
     ##read in the deps and assign them to the proper matrix for telegraphing to eps0 correctly
     deps = np.zeros(model.n_model_param)
     for i in range(model.n_fitting_params):
@@ -77,8 +76,8 @@ def save(model,fitopts,soln_index):
     model.model_params_file_location = "%s/model_params" % cwd
     
     if gauss:
-        eplot.plot_epsilons_bin(deps[np.arange(1,len(deps),2)],"d-epsilon",model)
-        eplot.plot_epsilons(deps[np.arange(1,len(deps),2)],"d-epsilon",model)
+        eplot.plot_epsilons_bin(deps[np.arange(1,len(deps),2)],"d-epsilon",model,gauss=gauss)
+        eplot.plot_epsilons(deps[np.arange(1,len(deps),2)],"d-epsilon",model,gauss=gauss)
     else:
         eplot.plot_epsilons_bin(deps,"d-epsilon",model)
         eplot.plot_epsilons(deps,"d-epsilon",model)
