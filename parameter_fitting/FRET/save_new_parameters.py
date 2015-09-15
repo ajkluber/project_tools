@@ -77,8 +77,9 @@ def save(model,fitopts,soln_index):
     model.pairwise_params_file_location = "%s/pairwise_params" % cwd
     model.model_params_file_location = "%s/model_params" % cwd
     
-    eplot.plot_epsilons_bin(deps,"d-epsilon",model)
-    eplot.plot_epsilons(deps,"d-epsilon",model)
+    eplot.plot_epsilons_bin(deps, "d-epsilon", model)
+    eplot.plot_epsilons(deps, "d-epsilon", model)
+    eplot.plot_epsilons(neweps,"new-epsilon", model)
     
 
 
