@@ -27,16 +27,15 @@ def save(model,fitopts,soln_index):
         gauss = True
     else:
         gauss = False
-    
+     
     cwd = os.getcwd()
     eps_temp = model.model_param_values
     deps = np.loadtxt("xp_%d.dat" % soln_index) ##read in the deps and assign them to the proper matrix for telegraphing to eps0 correctly
-    eps0 = np.zeros(model.n_model_param) #eps0 is the reduced vector set of model params needed to be fit
+    eps0 = np.zeros(model.n_fitting_params) #eps0 is the reduced vector set of model params needed to be fit
     
     for i in range(model.n_fitting_params): #read in the the indices of the fitting parameters and constructed a reduced vector of them
         param_idx = model.fitting_params[i]
         eps0[i] = eps_temp[param_idx]
-    
     
     ##calculate the scaling based upon what would actually happen: if it's already at 0.01, and goes more negative, now it effectively shows a deps there of 0, and not some arbitrarily large number
     neweps_effective = eps0 + deps
