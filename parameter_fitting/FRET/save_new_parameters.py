@@ -29,14 +29,13 @@ def save(model,fitopts,soln_index):
         gauss = False
     
     cwd = os.getcwd()
-    eps0 = model.model_param_values
-    temp_deps = np.loadtxt("xp_%d.dat" % soln_index)
-    fitit = 1
-    ##read in the deps and assign them to the proper matrix for telegraphing to eps0 correctly
-    deps = np.zeros(model.n_model_param)
-    for i in range(model.n_fitting_params):
+    eps_temp = model.model_param_values
+    deps = np.loadtxt("xp_%d.dat" % soln_index) ##read in the deps and assign them to the proper matrix for telegraphing to eps0 correctly
+    eps0 = np.zeros(model.n_model_param) #eps0 is the reduced vector set of model params needed to be fit
+    
+    for i in range(model.n_fitting_params): #read in the the indices of the fitting parameters and constructed a reduced vector of them
         param_idx = model.fitting_params[i]
-        deps[param_idx] = temp_deps[i]
+        eps0[i] = eps_temp[param_idx]
     
     
     ##calculate the scaling based upon what would actually happen: if it's already at 0.01, and goes more negative, now it effectively shows a deps there of 0, and not some arbitrarily large number
@@ -44,6 +43,8 @@ def save(model,fitopts,soln_index):
     #deps_actual = neweps_effective - eps0
     if prevent_zero:
         neweps_effective[neweps_effective < 0.01] = 0.01
+    else:
+        neweps_effective[neweps_effective < 0.00] = 0.00
     deps_effective = neweps_effective - eps0
     
     
@@ -59,7 +60,9 @@ def save(model,fitopts,soln_index):
     neweps = eps0 + deps
     if prevent_zero:
         neweps[neweps < 0.01] = 0.01
-    
+    else:
+        neweps[neweps < 0.00] = 0.00
+        
     model.update_model_param_values(neweps)
     
     plt.figure()
@@ -75,13 +78,8 @@ def save(model,fitopts,soln_index):
     model.pairwise_params_file_location = "%s/pairwise_params" % cwd
     model.model_params_file_location = "%s/model_params" % cwd
     
-    if gauss:
-        eplot.plot_epsilons_bin(deps[np.arange(1,len(deps),2)],"d-epsilon",model,gauss=gauss)
-        eplot.plot_epsilons(deps[np.arange(1,len(deps),2)],"d-epsilon",model,gauss=gauss)
-    else:
-        eplot.plot_epsilons_bin(deps,"d-epsilon",model)
-        eplot.plot_epsilons(deps,"d-epsilon",model)
-    
+    eplot.plot_epsilons_bin(deps,"d-epsilon",model)
+    eplot.plot_epsilons(deps,"d-epsilon",model)
     
 
 
