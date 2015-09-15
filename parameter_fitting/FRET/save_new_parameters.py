@@ -80,6 +80,7 @@ def save(model,fitopts,soln_index):
     eplot.plot_epsilons_bin(deps, "d-epsilon", model)
     eplot.plot_epsilons(deps, "d-epsilon", model)
     eplot.plot_epsilons(neweps,"new-epsilon", model)
+    eplot.plot_epsilons(model.model_param_values[model.fitting_params], "epsilon-saved", model)
     
 
 
