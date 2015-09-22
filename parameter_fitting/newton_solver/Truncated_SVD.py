@@ -42,8 +42,8 @@ def find_solutions(model, scaling=False, chosen_cutoffs=None, simplify=False):
         Lambdas = np.array(temp)
         
         #check and see length of Lambda, if it's super large, cut down by order of magnitude...:
-        if len(Lambdas) > 200 and simplify:
-            print "Number of cutoff values > 200, simplifying down to order of magnitudes"
+        if len(Lambdas) > 50 and simplify:
+            print "Number of cutoff values > 50, simplifying down to order of magnitudes"
             max_value = np.max(Lambdas)
             min_value = np.min(Lambdas[1:])
             max_power = math.floor(math.log(max_value, 10))
