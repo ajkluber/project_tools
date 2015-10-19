@@ -61,6 +61,7 @@ def find_sim_bins(savelocation, FRETr, fit_temp, residues=def_FRET_pairs, spacin
     #actually histogram it
     print "***************************"
     print np.shape(FRETr)
+    print np.shape(residues)
     print "***************************"
     hist, edges, slices = stats.binned_statistic(FRETr, weights, statistic="sum", range=[ran_size], bins=num_bins)
     hist = hist/(np.sum(hist)*spacing)
@@ -68,9 +69,9 @@ def find_sim_bins(savelocation, FRETr, fit_temp, residues=def_FRET_pairs, spacin
     
     print "Making list of values:"
     #actually save it
-    np.savetxt("simf_valuesT%d-P%d-%d.dat"%(fit_temp, residues[0][0], residues[0][1]),hist)
-    np.savetxt("simf_edgesT%d-P%d-%d.dat"%(fit_temp, residues[0][0], residues[0][1]),bincenters)
-    np.savetxt("simf-paramsT%d-P%d-%d.dat"%(fit_temp, residues[0][0], residues[0][1]),np.array([num_bins,minvalue*spacing,maxvalue*spacing,spacing]))
+    np.savetxt("simf_valuesT%d-P%d-%d.dat"%(fit_temp, residues[0], residues[1]),hist)
+    np.savetxt("simf_edgesT%d-P%d-%d.dat"%(fit_temp, residues[0], residues[1]),edges)
+    np.savetxt("simf-paramsT%d-P%d-%d.dat"%(fit_temp, residues[0], residues[1]),np.array([num_bins,minvalue*spacing,maxvalue*spacing,spacing]))
     
     os.chdir(cwd)
     print "Calculated bins for simulation data at a spacing of %.4f" % spacing
@@ -79,6 +80,7 @@ def find_sim_bins(savelocation, FRETr, fit_temp, residues=def_FRET_pairs, spacin
 
     
 def fret_hist_calc(model, fitopts):
+    fit_temp = fitopts["t_fit"]
     ##read trace file from 
     cwd = os.getcwd()
     subdir = model.name
@@ -227,13 +229,13 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
     FRETr = md.compute_distances(traj,FRET_pairs, periodic=False)
 
     
-    for i in range(np.shape(FRET_pairs)[0])
+    for i in range(np.shape(FRET_pairs)[0]):
         FRETr_use = FRETr[:,i] + y_shift
         print "Shifted simulated FRET-distance data by a y_shift = %f" % y_shift
         print FRETr_use
         sim_feature, sim_slices = find_sim_bins(sim_location, FRETr_use, fit_temp, residues=FRET_pairs[i,:], spacing=spacing, weights=None)
         print "Computing Jacobian and Simparams for the temperature %d, with spacing %f" % (fit_temp, spacing)
-        Jacobian = compute_Jacobian_basic(qij,sim_feature_all*spacing, sim_slices_all, beta)
+        Jacobian = compute_Jacobian_basic(qij,sim_feature*spacing, sim_slices, beta)
         Jacobian /= spacing        
         #store the sim_feature into a total array:
         if i == 0:
