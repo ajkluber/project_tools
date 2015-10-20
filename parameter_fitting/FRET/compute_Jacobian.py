@@ -236,7 +236,7 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
         print "Shifted simulated FRET-distance data by a y_shift = %f" % y_shift
         print FRETr_use
         sim_feature, sim_slices = find_sim_bins(sim_location, FRETr_use, fit_temp, residues=FRET_pairs[i,:], spacing=spacing, weights=None)
-                Jacobian = compute_Jacobian_basic(qij,sim_feature*spacing, sim_slices, beta)
+        Jacobian = compute_Jacobian_basic(qij,sim_feature*spacing, sim_slices, beta)
         Jacobian /= spacing        
         #store the sim_feature into a total array:
         if i == 0:
