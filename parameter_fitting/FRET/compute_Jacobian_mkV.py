@@ -100,10 +100,11 @@ def fret_hist_calc(model, fitopts):
     else:
         FRETtracefile = fitopts["fretdata"]
     
-    
+    print "FRETtracefile is:"
+    print FRETtracefile 
     for i in range(np.shape(FRET_pairs)[0]):
         residues = FRET_pairs[i,:]
-        ftrace = np.loadtxt(FRETtracefile[0])
+        ftrace = np.loadtxt(FRETtracefile[i])
         edge_file = "%s/simf_edgesT%d-P%d-%d.dat"%(subdirec, fit_temp, residues[0], residues[1])
         edges = np.loadtxt(edge_file)
         hist, edges = np.histogram(ftrace, bins=edges, normed=True)
@@ -114,7 +115,7 @@ def fret_hist_calc(model, fitopts):
             fret_total = datas
         else:
             fret_total = np.append(fret_total, datas, axis=0)
-    np.savetxt(FRETfile, datas)
+    np.savetxt(FRETfile, fret_total)
     
     print "Binned FRET_hist_calc Data"
 
@@ -227,15 +228,15 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
     beta = 1.0 / (GAS_CONSTANT_KJ_MOL*float(fit_temp))
 
     FRETr = md.compute_distances(traj,FRET_pairs, periodic=False)
-
     
+    print "Computing Jacobian and Simparams for the temperature %d, with spacing %f" % (fit_temp, spacing)
+
     for i in range(np.shape(FRET_pairs)[0]):
         FRETr_use = FRETr[:,i] + y_shift
         print "Shifted simulated FRET-distance data by a y_shift = %f" % y_shift
         print FRETr_use
         sim_feature, sim_slices = find_sim_bins(sim_location, FRETr_use, fit_temp, residues=FRET_pairs[i,:], spacing=spacing, weights=None)
-        print "Computing Jacobian and Simparams for the temperature %d, with spacing %f" % (fit_temp, spacing)
-        Jacobian = compute_Jacobian_basic(qij,sim_feature*spacing, sim_slices, beta)
+                Jacobian = compute_Jacobian_basic(qij,sim_feature*spacing, sim_slices, beta)
         Jacobian /= spacing        
         #store the sim_feature into a total array:
         if i == 0:
@@ -244,7 +245,6 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
         else:
             sim_feature_all = np.append(sim_feature_all, sim_feature)
             Jacobian_all = np.append(Jacobian_all, Jacobian, axis=0)
-    
     
     #save the temperature this was done in
     if not os.path.isdir("%s/newton"%sub):
