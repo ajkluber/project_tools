@@ -208,7 +208,7 @@ def fret_hist_calc(model, fitopts, bin_size, ran_size, spacing):
     if not "fretdata" in fitopts:
         FRETtracefile = "%s/FRET_trace.dat" % cwd
     else:
-        FRETtracefile = fitopts["fretdata"]
+        FRETtracefile = fitopts["fretdata"][0]
     
     ftrace = np.loadtxt(FRETtracefile)
     hist, edges = np.histogram(ftrace,bin_size,ran_size)
