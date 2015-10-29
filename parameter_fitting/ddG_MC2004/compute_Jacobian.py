@@ -218,7 +218,7 @@ def compute_mutation(k,beta,model,rij,n_muts,sim_feature,Jacobian,dG,ddG,phi,Fij
     Jacobian[k + n_muts,:] = beta*(((Vp_Vpk_expdHk_N/expdHk_N) - sumVp_N) - ((Vp_Vpk_expdHk_U/expdHk_U) - sumVp_U))
 
 def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,bounds,state_labels,saveas="Q_phi.dat",test=False):
-    """ Calculates the feature vector (ddG's) and Jacobian for one directory """
+    """ Calculates the feature vector (ddG's) and Jacobian for one directory. DEPRECATED """
     # Get trajectory, state indicators, contact energy
     traj,rij = get_traj_rij(model)
 
