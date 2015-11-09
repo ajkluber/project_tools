@@ -23,3 +23,5 @@ I. The Method. J. Comp. Chem. 1992, 13, 1011-1021
 import crunch_coordinates
 import constant_temp
 import wham
+import smog_AA_constant_temp
+import smog_AA_crunch_coordinates
