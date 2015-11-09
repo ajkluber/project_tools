@@ -18,7 +18,7 @@ import argparse
 import shutil
 import logging
 
-import mdp
+import smog_AA_mdp as mdp
 
 def check_completion(model,fitopts,iteration,long=False):
     """ Checks to see if the previous Tf_loop simulation completed. 
@@ -49,7 +49,7 @@ def check_completion(model,fitopts,iteration,long=False):
         tdir = temperatures[k]
         os.chdir(tdir)
         print "  Running gmxcheck on ",tdir
-        sb.call("gmxcheck -f traj.xtc",shell=True,stdout=open("check.out","w"),stderr=open("check.err","w")) 
+        sb.call("gmxcheck_sbm -f traj.xtc",shell=True,stdout=open("check.out","w"),stderr=open("check.err","w")) 
         errorcode = "Fatal error"
         if (errorcode in open("check.err","r").read()) or (errorcode in open("check.out","r").read()):
             print "  FATAL ERROR in directory: ",tdir
@@ -68,7 +68,7 @@ def check_completion(model,fitopts,iteration,long=False):
             # Restart run
             if determine_use_torque():
                 if os.path.exists("rst.pbs"):
-                    sb.call("qsub rst.pbs",shell=True)
+                    sb.call("sbatch rst.pbs",shell=True)
                     print "  Restarting: %s " % tdir
             else:
                 if os.path.exists("rst.slurm"):
@@ -96,7 +96,7 @@ def gmxcheck_subdirectories():
     for subdir in dirs:
         os.chdir(subdir)
         print "  Running gmxcheck on ",subdir
-        sb.call("gmxcheck -f traj.xtc",shell=True,stdout=open("check.out","w"),stderr=open("check.err","w")) 
+        sb.call("gmxcheck_sbm -f traj.xtc",shell=True,stdout=open("check.out","w"),stderr=open("check.err","w")) 
         errorcode = "Fatal error"
         if (errorcode in open("check.err","r").read()) or (errorcode in open("check.out","r").read()):
             print "  FATAL ERROR in directory: ",subdir
@@ -226,10 +226,8 @@ def extend_temperature(T,factor,using_sbm_gmx=None):
     open("nvt.mdp","w").write(mdpfile)
 
     print "  Extending temp ", T, " to nsteps ",new_nsteps
-    if using_sbm_gmx is None:
-        prep_step2 = 'grompp -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.6.tpr '
-        sb.call(prep_step2.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
-    prep_step1 = 'grompp_sbm -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.5.tpr '
+    
+    prep_step1 = 'grompp_sbm -n smog.ndx -f nvt.mdp -c smog.gro -p smog_main.top -o topol.tpr '
     sb.call(prep_step1.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
 
     # Submit rst.pbs
@@ -269,18 +267,19 @@ def folding_temperature_loop_extension(model,fitopts,new=False):
     #if (not os.path.exists("T_array_last.txt")) or new:
     if (not os.path.exists("short_temps_last.txt")) or new:
         # For initial exploration use very broad temperature increments.
-        if model.initial_T_array != None:
-            T_min = model.initial_T_array[0]
-            T_max = model.initial_T_array[1]
-            deltaT = model.initial_T_array[2]
+        if model.initial_t_array != None:
+            T_min = model.initial_t_array[0]
+            T_max = model.initial_t_array[1]
+            deltaT = model.initial_t_array[2]
         else:
             # Estimate folding temperature
-            E = -model.native_stability
-            N = float(model.n_residues)
-            Tf_guess = int(round((36.081061*E/N) + 56.218196)) # calibration for LJ1210 contacts circa June 2014
-            T_min = Tf_guess - 16
-            T_max = Tf_guess + 10
-            deltaT = 1
+           # E = -model.native_stability
+           # N = float(model.n_residues)
+           # Tf_guess = int(round((36.081061*E/N) + 56.218196)) # calibration for LJ1210 contacts circa June 2014
+            Tf_guess = 90
+            T_min = Tf_guess - 30
+            T_max = Tf_guess + 30
+            deltaT = 2
     else:
         # Use previous range to determine new range. 
         T_min, T_max, deltaT = determine_new_T_array()
@@ -301,9 +300,10 @@ def start_next_Tf_loop_iteration(model,fitopts,iteration):
     """
 
     # Estimate folding temperature
-    E = -model.native_stability
-    N = float(model.n_residues)
-    Tf_guess = (36.081061*E/N) + 56.218196 # calibration for LJ1210 contacts circa June 2014
+    #E = -model.native_stability
+    #N = float(model.n_residues)
+    #Tf_guess = (36.081061*E/N) + 56.218196 # calibration for LJ1210 contacts circa June 2014
+    Tf_guess = 100
     T_min = Tf_guess - 15
     T_max = Tf_guess + 15
     T_min = int(round(T_min))
@@ -424,28 +424,23 @@ def determine_equil_walltime(model,fitopts):
             pass
         else:
             print "Error, incorrect format for walltime, using default guess"
-            walltime = guess_equil_walltime(N)
+            walltime = guess_equil_walltime()
     else:
-        walltime = guess_equil_walltime(N)
+        walltime = guess_equil_walltime()
     if fitopts["n_processors"] is not None:
         ppn = fitopts["n_processors"]
     else:
         ppn = "1"
     return walltime, queue, ppn,nsteps
 
-def guess_equil_walltime(N):
-    if N < 60:
-        walltime="16:00:00"
-    else:
-        if N > 100:
-            walltime="24:00:00"
-        else:
-            walltime="18:00:00"
+def guess_equil_walltime():
+    
+    walltime="23:00:00"
+    
     return walltime
     
 def determine_walltime(model,fitopts):
     """ Estimate an efficient walltime."""
-    N = model.n_residues
     nsteps = "100000000"
     if "queue" in fitopts:
         queue = fitopts["queue"]
@@ -459,9 +454,9 @@ def determine_walltime(model,fitopts):
             pass
         else:
             print "Error, incorrect format for walltime, using default guess"
-            walltime = guess_walltime(N)
+            walltime = guess_walltime()
     else:
-        walltime = guess_walltime(N)
+        walltime = guess_walltime()
 
     if fitopts["n_processors"] is not None:
         ppn = fitopts["n_processors"]
@@ -470,17 +465,10 @@ def determine_walltime(model,fitopts):
 
     return walltime, queue, ppn,nsteps
 
-def guess_walltime(N):
-    if N < 60:
-        walltime="05:00:00"
-    else:
-        if N > 100:
-            if N > 200:
-                walltime="20:00:00"
-            else:
-                walltime="20:00:00"
-        else:
-            walltime="8:00:00"
+def guess_walltime():
+    
+    walltime="23:00:00"
+    
     return walltime
     
 def run_temperature_array(model,fitopts,T_min,T_max,deltaT):
@@ -543,12 +531,12 @@ def run_constant_temp(model,T,name,nsteps="100000000",walltime="23:00:00",queue=
             
 def prep_run(jobname,walltime="23:00:00",queue="serial",ppn="1",sbm=False, torque=False):
     """ Executes the constant temperature runs."""
-    if sbm:
-        prep_step1 = 'grompp_sbm -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.5.tpr'
-        sb.call(prep_step1.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
+
+    prep_step1 = 'grompp_sbm -f nvt.mdp -c smog.gro -p smog_main.top -o topol_4.5.tpr'
+    sb.call(prep_step1.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
         
-    prep_step2 = 'grompp -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.6.tpr'
-    sb.call(prep_step2.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
+    #prep_step2 = 'grompp -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.6.tpr'
+    #sb.call(prep_step2.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
     
     if torque:
         pbs_string = get_pbs_string(jobname,queue,ppn,walltime,sbm=sbm)
@@ -582,7 +570,7 @@ def get_slurm_string(jobname,queue,ppn,walltime,sbm=False):
         pbs_string +="mdrun -s topol_4.6.tpr -nt %s" %ppn
     return pbs_string
 
-def get_rst_slurm_string(jobname,queue,ppn,walltime,sbm=False):
+def get_rst_slurm_string(jobname,queue,ppn,walltime,sbm=True):
     """ Return basic PBS job script for restarting. """
     rst_string = "#!/bin/bash \n"
     rst_string +="#SBATCH --job-name=%s \n" % jobname
@@ -602,7 +590,7 @@ def get_rst_slurm_string(jobname,queue,ppn,walltime,sbm=False):
 
 
    
-def get_pbs_string(jobname,queue,ppn,walltime,sbm=False):
+def get_pbs_string(jobname,queue,ppn,walltime,sbm=True):
     """ Return basic PBS job script. """
     pbs_string = "#!/bin/bash \n"
     pbs_string +="#PBS -N %s \n" % jobname
@@ -619,7 +607,7 @@ def get_pbs_string(jobname,queue,ppn,walltime,sbm=False):
         pbs_string +="mdrun -s topol_4.6.tpr"
     return pbs_string
 
-def get_rst_pbs_string(jobname,queue,ppn,walltime,sbm=False):
+def get_rst_pbs_string(jobname,queue,ppn,walltime,sbm=True):
     """ Return basic PBS job script for restarting. """
     rst_string = "#!/bin/bash \n"
     rst_string +="#PBS -N %s_rst \n" % jobname

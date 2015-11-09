@@ -47,6 +47,7 @@ import FRET
 import RMSF
 import contact_Qi
 import Transition_Matrix
+import ddG_smog_MC2004
 
 def prepare_newtons_method(model,fitopts):
     """ Prepare the files to do newtons method """
@@ -58,8 +59,8 @@ def prepare_newtons_method(model,fitopts):
     logging.basicConfig(filename="%s.log" % name,level=logging.INFO)
     logger = logging.getLogger("parameter_fitting")
 
-    available_methods = ["ddG_MC2004","FRET","RMSF","contact_Qi", "tmatrix"]
-    modules = {"ddG_MC2004":ddG_MC2004,"FRET":FRET,"RMSF":RMSF,"contact_Qi":contact_Qi,"tmatrix":Transition_Matrix}
+    available_methods = ["ddG_MC2004","FRET","RMSF","contact_Qi", "tmatrix","ddG_smog_MC2004"]
+    modules = {"ddG_MC2004":ddG_MC2004,"FRET":FRET,"RMSF":RMSF,"contact_Qi":contact_Qi,"tmatrix":Transition_Matrix, "ddG_smog_MC2004":smog_ddG_MC2004}
 
     if method not in available_methods:
         raise ValueError("Method %s not in available methods %s" % (method, available_methods.__repr__()) )
@@ -111,7 +112,8 @@ def solve_newtons_method(model,fitopts):
 
     solver_opts = { "Levenberg":newton_solver.Levenberg_Marquardt,
                     "TSVD":newton_solver.Truncated_SVD,
-                    "TSVD_Cplex":newton_solver.Truncated_SVD_cplex}
+                    "TSVD_Cplex":newton_solver.Truncated_SVD_cplex,
+                    "Smog_TSVD_Cplex":newton_solver.Smog_truncated_SVD_cplex}
 
     if fitopts["solver"] not in solver_opts.keys():
         raise ValueError("requested solver algorithm %s not accepted values: %s " \
@@ -128,6 +130,8 @@ def solve_newtons_method(model,fitopts):
     if fitopts["solver"] == "TSVD_Cplex":
         solver.find_solutions(model,fitopts)
     else:
+        if fitopts["solver"] == "Smog_TSVD_Cplex":
+            solver.find_solutions(model,fitopts)
         if fitopts["solver"]  == "TSVD":
             solver.find_solutions(model, chosen_cutoffs=fitopts["cutoffs"], simplify=fitopts["simplify_lambdas"])
         else:
@@ -137,9 +141,8 @@ def solve_newtons_method(model,fitopts):
 
 def save_new_parameters(model,fitopts):
     """ Save new parameters """
-    available_methods = ["ddG_MC2004","FRET","RMSF","contact_Qi", "tmatrix"]
-    modules = {"ddG_MC2004":ddG_MC2004,"FRET":FRET,"RMSF":RMSF,"contact_Qi":contact_Qi,"tmatrix":Transition_Matrix}\
-    
+    available_methods = ["ddG_MC2004","FRET","RMSF","contact_Qi", "tmatrix", "ddG_smog_MC2004"]
+    modules = {"ddG_MC2004":ddG_MC2004,"FRET":FRET,"RMSF":RMSF,"contact_Qi":contact_Qi,"tmatrix":Transition_Matrix, "ddG_smog_MC2004":ddG_smog_MC2004}
     method = fitopts["data_type"]
     if method not in available_methods:
         raise ValueError("Requested fitting data %s not in %s" % (method,available_methods.__repr__()))
