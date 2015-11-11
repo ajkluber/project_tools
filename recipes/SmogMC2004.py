@@ -36,6 +36,8 @@ from project_tools import simulation, analysis, parameter_fitting
 
 import model_builder as mdb
 
+from model_builder.models.coarse import generate_files
+
 #############################################################################
 # Start a new project
 #############################################################################
@@ -45,6 +47,7 @@ def new_project(args):
     names = args.names
     for sub in names:
         if not os.path.exists(sub):
+            generate_files(sub)
             os.mkdir(sub)
             for path in glob.iglob('smog_*.top'):                                                      
                 shutil.copy(path, sub)   
