@@ -59,8 +59,10 @@ def new_project(args):
             os.mkdir(smog_dir)
             for path in glob.iglob('smog*'):
                 shutil.move(path,smog_dir)
+            os.mkdir('mutants')
             os.chdir('..')
-            
+            shutil.copy(sub+'.pdb',sub+'/mutants/wt.pdb')
+            shutil.copy('long_residue_contacts.dat',sub+'/mutants/contacts')
         else:
             raise IOError("Subdirectory: %s already exists!" % sub)
 
