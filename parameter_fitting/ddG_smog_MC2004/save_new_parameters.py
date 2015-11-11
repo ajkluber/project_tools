@@ -58,7 +58,7 @@ def save(model,fitopts,soln_index,nonnative=False):
 def update_model_param_values_nonnative(model,new_model_param_values):
     """ If parameter changed sign, change the pairwise interaction type """
     # Switching between different interaction function types
-    potential_type_switch = {2:1,3:2,4:5,5:4}
+    potential_type_switch = {4:9,9:4}
 
     # Loop over fitting_params only 
     for i in range(model.n_fitting_params):
