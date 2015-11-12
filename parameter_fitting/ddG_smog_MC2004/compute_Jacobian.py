@@ -59,11 +59,11 @@ def get_dHk_for_state(model,rij,Fij_pairs,Fij,state,n_frames):
         pair_interaction_indices = np.where(flag == 1)[0]
         for j in range(len(pair_interaction_indices)):
             inter_idx = pair_interaction_indices[j]
-            param_idx = model.pairwise_param_assignment[inter_idx]
+            param_idx = model.long_pairwise_param_assignment[inter_idx]
             # If that interaction corresponds to a fitting parameter 
             # and is not an excluded volume interaction (e.g. LJ12)
             # then add the perturbed interaction energy.
-            if (not (model.pairwise_type[inter_idx] in SKIP_INTERACTIONS)) and (param_idx in model.fitting_params):
+            if (not (model.long_pairwise_type[inter_idx] in SKIP_INTERACTIONS)) and (param_idx in model.long_fitting_params):
                 dHk_state = dHk_state - Fij[i]*model.long_pair_eps[inter_idx]*model.long_pair_V[inter_idx](rij[state,inter_idx])
     return dHk_state
 
@@ -82,7 +82,7 @@ def get_Vp_plus_Vpk_for_state(model,Vp,rij,Fij_pairs,Fij,state):
             # If that interaction corresponds to a fitting parameter 
             # and is not an excluded volume interaction (e.g. LJ12)
             # then add the perturbed interaction energy.
-            if (not (model.long_pairwise_type[inter_idx] in SKIP_INTERACTIONS)) and (param_idx in model.fitting_params):
+            if (not (model.long_pairwise_type[inter_idx] in SKIP_INTERACTIONS)) and (param_idx in model.long_fitting_params):
                 # If that interaction is associated with one of the parameters being fit.
                 fitting_param_idx = np.where(model.long_fitting_params == param_idx)[0][0]
                 change = Fij[i]*model.long_pair_V[inter_idx](rij[state,inter_idx])
@@ -283,7 +283,7 @@ def compute_dHk(model,fitopts):
     temps = [ x.split('_')[0] for x in dirs ]
 
     bounds, state_labels = get_state_bounds()
-    bounds = [0] + bounds + [model.n_pairs]
+    bounds = [0] + bounds + [model.n_long_pairs]
 
     # Loop over temperatures.
     for n in range(len(dirs)):
@@ -381,8 +381,8 @@ def get_mutant_fij_scanning(model, mutants, fij=0.5):
             tempconts = []
             tempfij = []
 
-            for j in range(model.n_pairs):
-                if (model.pairs[j,0] == mut_res_number) and (model.pairs[j,1] == (mut_res_number+4)):
+            for j in range(model.n_long_pairs):
+                if (model.long_pairs[j,0] == mut_res_number) and (model.long_pairs[j,1] == (mut_res_number+4)):
                     contact_num = j
                     temppairs.append([mut_res_number-1,mut_res_number+3])  #i, i+4
                     tempconts.append(contact_num)
