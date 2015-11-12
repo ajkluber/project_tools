@@ -13,7 +13,7 @@ def save(model,fitopts,soln_index,nonnative=False):
     # being updated.
 
     # Use new method of model_parameters
-    eps_p_0 = model.model_param_values[model.fitting_params]
+    eps_p_0 = model.long_model_param_values[model.long_fitting_params]
     deps_p = np.loadtxt("xp_%d.dat" % soln_index)
 
     # Scale model parameters by a constant such that the ratio 
@@ -48,12 +48,8 @@ def save(model,fitopts,soln_index,nonnative=False):
 
     cwd = os.getcwd()
     relpath = cwd.split("%s/" % model.path)[1]
-    open("pairwise_params","w").write(model.pairwise_param_file_string)
-    open("model_params","w").write(model.model_param_file_string)
-    model.pairwise_params_file_location = "%s/pairwise_params" % relpath
-    model.model_params_file_location = "%s/model_params" % relpath
-
-
+    open("smog_pairs_l.top","w").write(model.long_pairs_file_string)
+    model.long_pairs_file_location = "%s/smog_pairs_l.top" % relpath
 
 def update_model_param_values_nonnative(model,new_model_param_values):
     """ If parameter changed sign, change the pairwise interaction type """
@@ -61,19 +57,17 @@ def update_model_param_values_nonnative(model,new_model_param_values):
     potential_type_switch = {4:9,9:4}
 
     # Loop over fitting_params only 
-    for i in range(model.n_fitting_params):
-        p_idx = model.fitting_params[i]
-        p_pairs = model.model_param_interactions[p_idx]
-        for n in range(len(p_pairs)):
-            if new_model_param_values[i] < 0.:
+    for i in range(model.n_long_fitting_params):
+        p_idx = model.long_fitting_params[i]
+        if new_model_param_values[i] < 0.:
                 # If parameter changes sign then the pairwise_type is flipped.
-                if model.pairwise_type[p_pairs[n]] == 1:
-                    model.pairwise_type[p_pairs[n]] = 2
-                else:
-                    model.pairwise_type[p_pairs[n]] = potential_type_switch[model.pairwise_type[p_pairs[n]]]
-
+            model.long_pairwise_type[p_idx] = potential_type_switch[model.long_pairwise_type[p_idx]]
             # Model parameters are always positive
-            model.model_param_values[p_idx] = abs(new_model_param_values[i])   
+        else:
+            pass
+
+        model.long_model_param_values[p_idx] = abs(new_model_param_values[i])
 
     # Refresh everything that depends on model parameters
+    model._determine_tabled_interactions()
     model._set_nonbonded_interactions()
