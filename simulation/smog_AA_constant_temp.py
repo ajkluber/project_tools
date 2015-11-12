@@ -276,7 +276,7 @@ def folding_temperature_loop_extension(model,fitopts,new=False):
            # E = -model.native_stability
            # N = float(model.n_residues)
            # Tf_guess = int(round((36.081061*E/N) + 56.218196)) # calibration for LJ1210 contacts circa June 2014
-            Tf_guess = 90
+            Tf_guess = 150
             T_min = Tf_guess - 30
             T_max = Tf_guess + 30
             deltaT = 2
@@ -303,7 +303,7 @@ def start_next_Tf_loop_iteration(model,fitopts,iteration):
     #E = -model.native_stability
     #N = float(model.n_residues)
     #Tf_guess = (36.081061*E/N) + 56.218196 # calibration for LJ1210 contacts circa June 2014
-    Tf_guess = 100
+    Tf_guess = 150
     T_min = Tf_guess - 15
     T_max = Tf_guess + 15
     T_min = int(round(T_min))
