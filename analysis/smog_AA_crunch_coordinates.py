@@ -20,7 +20,7 @@ def crunch_Q(name,contact_type,walltime="00:03:00",ppn="1",queue="serial"):
 
     contact_slurm = "#!/bin/bash\n"
     contact_slurm +="#SBATCH --job-name=Q_"+name+"\n"
-    contact_slurm +="#SBATCH --partition= %s\n" % queue
+    contact_slurm +="#SBATCH --partition=%s\n" % queue
     contact_slurm +="#SBATCH --nodes=1\n"
     contact_slurm +="#SBATCH --ntasks-per-node=%s\n" % ppn
     contact_slurm +="#SBATCH --time=%s\n" % walltime
@@ -33,7 +33,7 @@ def crunch_Q(name,contact_type,walltime="00:03:00",ppn="1",queue="serial"):
     
     contact_slurm +='mv Q.out Q.dat\n'
     open("contacts.slurm","w").write(contact_slurm)
-    sbatch = "sbatch contacts.pbs"
+    sbatch = "sbatch contacts.slurm"
     sb.call(sbatch.split(),stdout=open("contacts.out","w"),stderr=open("contacts.err","w"))
     
 
@@ -47,14 +47,14 @@ def crunch_all(name,contact_type,walltime="00:03:00",ppn="1",n_tables=0):
     analysis_slurm +='#SBATCH --job-name=crnch_%s\n' % name
     analysis_slurm +='#SBATCH --partition=serial\n'
     analysis_slurm +='#SBATCH --nodes=1\n'
-    analysis_slurm +='#SBATCH --ntasks_per_node=%s\n' % ppn
+    analysis_slurm +='#SBATCH --ntasks-per-node=%s\n' % ppn
     analysis_slurm +='#SBATCH --time=%s\n' % walltime
     analysis_slurm +='#SBATCH --export=ALL \n\n'
     analysis_slurm +='cd $SLURM_SUBMIT_DIR\n'
     analysis_slurm +='g_energy_sbm -f ener.edr -o energyterms -xvg none << EOF\nBond\nAngle\nCoulomb-(SR)\nProper-Dih.\nPotential\nEOF'
 
     open("analysis.slurm","w").write(analysis_slurm)
-    sbatch = "sbatch analysis.pbs"
+    sbatch = "sbatch analysis.slurm"
     sb.call(sbatch.split(),stdout=open("energyterms.out","w"),stderr=open("energyterms.err","w"))
 
 def reorganize_qimap():
