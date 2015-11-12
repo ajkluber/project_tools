@@ -308,7 +308,7 @@ def calculate_contacts_lost_for_mutants(avgflag):
 
     open("mutatepdbs.log","w").write(log_string)
 
-def modeller_mutate_pdb(modelname,respos,restyp,saveas,chain=''):  #Replaced chain='A' by chain='' FY 11-NOV-2015
+def modeller_mutate_pdb(modelname,respos,restyp,saveas,chain='A'):  #Replaced chain='A' by chain='' FY 11-NOV-2015
     """ Use MODELLER to mutate the pdb modelname at respos to restyp then save as saveas.
 
         Taken almost entirely as-is from a sample script in the MODELLER
