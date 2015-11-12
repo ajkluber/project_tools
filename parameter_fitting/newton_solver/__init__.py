@@ -18,3 +18,4 @@ Optimization and Nonlinear Equations". SIAM. 1996.
 import Levenberg_Marquardt
 import Truncated_SVD
 import Truncated_SVD_cplex
+import Smog_truncated_SVD_cplex

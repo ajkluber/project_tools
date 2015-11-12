@@ -93,6 +93,9 @@ def new_project(args):
         model.dry_run = args.dry_run
         fitopts = Fittingopts[k]
         #set default fitopts
+        os.chdir(model.name+'/mutants')
+        open("wt.pdb","w").write(model.cleanpdb_full)
+        os.chdir('../..')
         if fitopts["iteration"] == None:
             fitopts["iteration"] = 0
         iteration = fitopts["iteration"]
