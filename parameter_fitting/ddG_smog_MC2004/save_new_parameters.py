@@ -18,7 +18,8 @@ def save(model,fitopts,soln_index,nonnative=False):
 
     # Scale model parameters by a constant such that the ratio 
     # of the norm of the perturbation to the norm of the parameters
-    # is 0.2.
+    # is equal to "ratio"
+
     if os.path.exists("desired_ratio"):
         desired_ratio = np.loadtxt("desired_ratio")
     else:
