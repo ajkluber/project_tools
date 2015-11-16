@@ -63,7 +63,7 @@ def analyze_temperature_array(model,fitopts,iteration,long=False):
         qwalltime = "00:03:00"
         cwalltime = "00:03:00"
     ppn = "1"
-     if "queue" in fitopts:
+    if "queue" in fitopts:
         queue = fitopts["queue"]
     else:
         queue = "serial"
