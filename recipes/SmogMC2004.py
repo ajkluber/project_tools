@@ -135,22 +135,22 @@ def logical_flowchart_starting(model,fitopts,task):
         print "Checking if Tf_loop_iteration completed"
         simulation.smog_AA_constant_temp.check_completion(model,fitopts,iteration)
         fitopts["last_completed_task"] = "Starting: Tf_loop_iteration"
-        analysis.smog_AA_constant_temp.analyze_temperature_array(model,iteration)
+        analysis.smog_AA_constant_temp.analyze_temperature_array(model,fitopts,iteration)
         fitopts["last_completed_task"] = "Starting: Tf_loop_analysis"
         print "Starting Tf_loop_analysis"
     elif task == "Tf_loop_analysis":
         print "Checking if Tf_loop_analysis completed"
-        analysis.smog_AA_constant_temp.check_completion(model,iteration)
+        analysis.smog_AA_constant_temp.check_completion(model,fitopts,iteration)
         fitopts["last_completed_task"] = "Finished: Tf_loop_analysis"
     elif task == "Equil_Tf":
         print "Starting to check if Equil_Tf completed"
         simulation.smog_AA_constant_temp.check_completion(model,fitopts,iteration,long=True)
         fitopts["last_completed_task"] = "Finished: Equil_Tf"
-        analysis.smog_AA_constant_temp.analyze_temperature_array(model,iteration,long=True)
+        analysis.smog_AA_constant_temp.analyze_temperature_array(model,fitopts,iteration,long=True)
         fitopts["last_completed_task"] = "Starting: Equil_Tf_analysis"
     elif task == "Equil_Tf_analysis":
         print "Starting to check if Equil_Tf_analysis completed"
-        analysis.smog_AA_constant_temp.check_completion(model,iteration,long=True)
+        analysis.smog_AA_constant_temp.check_completion(model,fitopts,iteration,long=True)
         fitopts["last_completed_task"] = "Finished: Equil_Tf_analysis"
     else:
         raise ValueError("  Couldn't find next option for task: %s" % task)
@@ -161,11 +161,11 @@ def logical_flowchart_finished(model,fitopts,task):
     if task == "Tf_loop_iteration":
         print "Finished: Tf_loop_iteration"
         print "Starting: Tf_loop_analysis"
-        analysis.smog_AA_constant_temp.analyze_temperature_array(model,iteration)
+        analysis.smog_AA_constant_temp.analyze_temperature_array(model,fitopts,iteration)
         fitopts["last_completed_task"] = "Starting: Tf_loop_analysis"
     elif task == "Tf_loop_analysis":
         print "Finished: Tf_loop_analysis"
-        flag = analysis.smog_AA_constant_temp.run_wham_heat_capacity(model,iteration)
+        flag = analysis.smog_AA_constant_temp.run_wham_heat_capacity(model,fitopts,iteration)
         fitopts["last_completed_task"] = "Finished: Tf_wham"
         if flag == 1:
             pass 
@@ -179,11 +179,11 @@ def logical_flowchart_finished(model,fitopts,task):
         fitopts["last_completed_task"] = "Starting: Equil_Tf"
     elif task == "Equil_Tf":
         print "Starting Equil_Tf_analysis"
-        analysis.smog_AA_constant_temp.analyze_temperature_array(model,iteration,long=True)
+        analysis.smog_AA_constant_temp.analyze_temperature_array(model,fitopts,iteration,long=True)
         fitopts["last_completed_task"] = "Starting: Equil_Tf_analysis"
     elif task == "Equil_Tf_analysis":
         # Run heat capacity for equilibrium runs. Cv(T), F(Q)
-        analysis.smog_AA_constant_temp.run_wham_heat_capacity(model,iteration,long=True)
+        analysis.smog_AA_constant_temp.run_wham_heat_capacity(model,fitopts,iteration,long=True)
         fitopts["last_completed_task"] = "Finished: Equil_Tf_wham"
     elif task == "Equil_Tf_wham":
         print "Starting calculating feature vector and Jacobian"
