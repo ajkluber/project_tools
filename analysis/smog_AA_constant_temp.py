@@ -156,7 +156,7 @@ def check_completion(model,fitopts,iteration,long=False):
         print "  Analysis has not finished."
         raise SystemExit
 
-def run_wham_heat_capacity(model,iteration,long=False):
+def run_wham_heat_capacity(model,fitopts,iteration,long=False):
     """ Check if the last temperature step, dT=1. If it was start 
         prepping and running WHAM calculation for the Heat Capacity."""
 
