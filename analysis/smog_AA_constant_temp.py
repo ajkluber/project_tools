@@ -81,7 +81,7 @@ def analyze_temperature_array(model,fitopts,iteration,long=False):
         flagQ = all([ os.path.exists(file) for file in crunchQfiles ])
         if (not flag) or (not flag):
             print "    Calculating energies and Q for ",tdir
-            smog_AA_crunch_coordinates.crunch_all("%s_%s" % (name,tdir),model.contact_type,walltime=cwalltime,ppn=ppn,n_tables=model.n_tables)
+            smog_AA_crunch_coordinates.crunch_all("%s_%s" % (name,tdir),model.contact_type,walltime=cwalltime,ppn=ppn,n_tables=model.n_tables,queue=queue)
             smog_AA_crunch_coordinates.crunch_Q("%s_%s" % (name,tdir),model.contact_type,walltime=qwalltime,ppn=ppn,queue=queue)
         else:
             print "    Skipping directory ",tdir
@@ -97,7 +97,7 @@ def analyze_temperature_array(model,fitopts,iteration,long=False):
         logger.info(" Starting: Tf_loop_analysis")
         logger.info(" Starting: Tf_loop_analysis")
 
-def check_completion(model,iteration,long=False):
+def check_completion(model,fitopts,iteration,long=False):
     """ Check if the Tf_loop_analysis finished by seeing if all needed files
         were generated.
     """
@@ -106,6 +106,10 @@ def check_completion(model,iteration,long=False):
     cwd = os.getcwd()
     sub = "%s/iteration_%d" % (name,iteration)
     os.chdir("%s/%s" % (cwd,sub))
+    if "queue" in fitopts:
+        queue = fitopts["queue"]
+    else:
+        queue = "serial"
     if long == True:
         temperatures = [ x.rstrip("\n") for x in open("long_temps","r").readlines() ]
         qwalltime = "00:03:00"
@@ -132,10 +136,10 @@ def check_completion(model,iteration,long=False):
             flagQ = all([ os.path.exists(file) for file in crunchQfiles ])
 
             if not flag:
-                smog_AA_crunch_coordinates.crunch_all("%s_%s" % (model.name,tdir),model.contact_type,walltime=cwalltime,n_tables=model.n_tables)
+                smog_AA_crunch_coordinates.crunch_all("%s_%s" % (model.name,tdir),model.contact_type,walltime=cwalltime,n_tables=model.n_tables,queue=queue)
 
             if not flagQ:
-                smog_AA_crunch_coordinates.crunch_Q("%s_%s" % (model.name,tdir),model.contact_type,walltime=qwalltime)
+                smog_AA_crunch_coordinates.crunch_Q("%s_%s" % (model.name,tdir),model.contact_type,walltime=qwalltime,queue=queue)
             done = 0
         os.chdir("%s/%s" % (cwd,sub))
 

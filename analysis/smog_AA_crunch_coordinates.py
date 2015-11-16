@@ -37,7 +37,7 @@ def crunch_Q(name,contact_type,walltime="00:03:00",ppn="1",queue="serial"):
     sb.call(sbatch.split(),stdout=open("contacts.out","w"),stderr=open("contacts.err","w"))
     
 
-def crunch_all(name,contact_type,walltime="00:03:00",ppn="1",n_tables=0):
+def crunch_all(name,contact_type,walltime="00:03:00",ppn="1",n_tables=0,queue="serial"):
     """ Submit SLURM job to calculate observables
 
     Calculates rmsd, radius gyration, dihedrals, and potential energy with 
@@ -45,7 +45,7 @@ def crunch_all(name,contact_type,walltime="00:03:00",ppn="1",n_tables=0):
     """
     analysis_slurm = '#!/bin/bash\n'
     analysis_slurm +='#SBATCH --job-name=crnch_%s\n' % name
-    analysis_slurm +='#SBATCH --partition=serial\n'
+    analysis_slurm +='#SBATCH --partition=%s\n' % queue
     analysis_slurm +='#SBATCH --nodes=1\n'
     analysis_slurm +='#SBATCH --ntasks-per-node=%s\n' % ppn
     analysis_slurm +='#SBATCH --time=%s\n' % walltime
