@@ -7,11 +7,16 @@ import smog_AA_crunch_coordinates
 import wham
 import logging
 
-def determine_walltime(model,long=False):
+def determine_walltime(model,fitopts,long=False):
     """ Estimate an efficient walltime."""
     N = model.n_residues
     ppn = "4"
-    queue = "serial"
+
+    if "queue" in fitopts:
+        queue = fitopts["queue"]
+    else:
+        queue = "serial"
+
     if N < 60:
         qwalltime = "00:20:00"
         cwalltime = "00:15:00"
@@ -39,7 +44,7 @@ def determine_walltime(model,long=False):
             cwalltime = "00:20:00"
     return qwalltime, cwalltime, ppn, queue
 
-def analyze_temperature_array(model,iteration,long=False):
+def analyze_temperature_array(model,fitopts,iteration,long=False):
     """ Analyze the previously simulated temperatures of a Tf_loop iteration.
         Goes into the active Tf_loop directory and crunches all coordinates.
         Exits after submitting a couple PBS scripts to compute Q and 
@@ -58,7 +63,10 @@ def analyze_temperature_array(model,iteration,long=False):
         qwalltime = "00:03:00"
         cwalltime = "00:03:00"
     ppn = "1"
-    queue = "serial"
+     if "queue" in fitopts:
+        queue = fitopts["queue"]
+    else:
+        queue = "serial"
     print "  Analyzing temperatures in", sub
 
     for k in range(len(temperatures)):
