@@ -33,7 +33,7 @@ global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 def_FRET_pairs = [[114,192]]
 defspacing = 0.1 ## in nm
-
+R0 = 5.1 ## in nm
 
 def find_sim_bins(savelocation, FRETeff, fit_temp, residues=def_FRET_pairs, spacing=defspacing, weights=None):
     """find_sim_bins calculates and writes the simulation files """
