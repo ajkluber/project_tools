@@ -251,7 +251,7 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
         print FRETr_use
         
         ###CONVERT DISTANCE TO FRET EFFICIENCY
-        FRET_eff = compute_efficiency(FRETr_use, forster_radius)
+        FRETeff = compute_efficiency(FRETr_use, forster_radius)
         
         sim_feature, sim_slices = find_sim_bins(sim_location, FRETeff, fit_temp, residues=FRET_pairs[i,:], spacing=spacing, weights=None)
         Jacobian = compute_Jacobian_basic(qij,sim_feature*spacing, sim_slices, beta)
