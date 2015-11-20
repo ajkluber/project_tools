@@ -33,7 +33,7 @@ global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 def_FRET_pairs = [[114,192]]
 defspacing = 0.1 ## in nm
-R0 = 5.1 ## in nm
+def_forster_radius = 5.1 ## in nm
 
 def find_sim_bins(savelocation, FRETeff, fit_temp, residues=def_FRET_pairs, spacing=defspacing, weights=None):
     """find_sim_bins calculates and writes the simulation files """
@@ -190,7 +190,7 @@ def get_target_feature(model,fitopts):
 def compute_efficiency(FRETr, R0):
     """Convert a FRET distance trace to a FRET efficiency trace"""
     
-    eff = 1.0/(1+(FRETr/R0)**6)
+    eff = 1.0/(1.0+(FRETr/R0)**6)
     print "FRET efficiencies: "
     print eff
     
@@ -220,7 +220,8 @@ def calculate_average_Jacobian(model,fitopts, FRET_pairs=def_FRET_pairs, spacing
     
     if "forster_radius" in fitopts:
         forster_radius = fitopts["forster_radius"]
-    else forster_radius = 9999 #that's wrong lol
+    else:
+        forster_radius = def_forster_radius
         
     ##Define location of logical files    
     cwd = os.getcwd()
