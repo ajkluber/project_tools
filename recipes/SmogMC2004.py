@@ -49,16 +49,18 @@ def new_project(args):
         if not os.path.exists(sub):
             generate_files(sub)
             os.mkdir(sub)
-            for path in glob.iglob('smog_*.top'):                                                      
-                shutil.copy(path, sub)   
+            for path in glob.iglob('smog_*'):                                                      
+                shutil.move(path, sub)   
             shutil.copy('smog.gro',sub)
             shutil.copy('smog.ndx',sub)
             shutil.copy('smog.contacts',sub)
+            shutil.move('c_beta_list.dat',sub) 
             os.chdir(sub)
             smog_dir = 'smog_files'
             os.mkdir(smog_dir)
             for path in glob.iglob('smog*'):
                 shutil.move(path,smog_dir)
+            shutil.move('c_beta_list.dat',smog_dir)
             os.mkdir('mutants')
             os.chdir('..')
             shutil.copy(sub+'.pdb',sub+'/mutants/wt.pdb')
