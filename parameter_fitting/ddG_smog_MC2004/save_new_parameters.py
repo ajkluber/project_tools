@@ -50,12 +50,14 @@ def save(model,fitopts,soln_index,nonnative=False):
     cwd = os.getcwd()
     relpath = cwd.split("%s/" % model.path)[1]
     open("smog_pairs_l.top","w").write(model.long_pairs_file_string)
-    model.long_pairs_file_location = "%s/smog_pairs_l.top" % relpath
+    open("smog_pairs_long","w").write(model.long_pairs_file_string)
+    open("smog_bonds_rep.top","w").write(model.long_bonds_rep_string)
+    model.long_pairs_file_location = "%s/smog_pairs_long" % relpath
 
 def update_model_param_values_nonnative(model,new_model_param_values):
     """ If parameter changed sign, change the pairwise interaction type """
     # Switching between different interaction function types
-    potential_type_switch = {4:9,9:4}
+    potential_type_switch = {5:9,9:5}
 
     # Loop over fitting_params only 
     for i in range(model.n_long_fitting_params):
