@@ -17,6 +17,7 @@ import os
 import argparse
 import shutil
 import logging
+import time
 
 import smog_AA_mdp as mdp
 
@@ -101,6 +102,7 @@ def gmxcheck_subdirectories():
         if (errorcode in open("check.err","r").read()) or (errorcode in open("check.out","r").read()):
             print "  FATAL ERROR in directory: ",subdir
             print "  somethings wrong with Gromacs traj.xtc file. See %s/check.err" % subdir
+
             error = 1
         os.chdir("..")
     
@@ -350,17 +352,18 @@ def manually_add_equilibrium_runs(model,fitopts,iteration,temps):
     os.chdir(sub)
     # Run for longer if the protein is really big.
     walltime, queue, ppn, nsteps = determine_equil_walltime(model,fitopts)
-
+    n_repeats = 6
     T_string = ''
     for i in range(len(temps)):
         T = "%.2f" % temps[i]
-        for simnum in range(1,2):
+        for simnum in range(1,n_repeats+1):
             simpath = T+"_"+str(simnum)
             # Only start the simulation if directory doesn't exist.
             if (not os.path.exists(simpath)):
                 T_string += "%s\n" % simpath
                 os.mkdir(simpath)
                 os.chdir(simpath)
+                shutil.copy('../'+closest_dir+'/frame_'+str(simnum)+'.gro','smog.gro')
                 print "    Running temperature ", simpath
                 run_constant_temp(model,T,name,nsteps=nsteps,walltime=walltime,queue=queue)
                 os.chdir("..")
@@ -382,19 +385,53 @@ def run_equilibrium_simulations(model,fitopts,iteration):
     sub = "%s/%s/iteration_%d" % (cwd,name,iteration)
     Tf = open("%s/short_Tf" % sub ,"r").read().split()[0]
 
+    
     walltime, queue, ppn, nsteps = determine_equil_walltime(model,fitopts)
 
     os.chdir(sub)
+    #Find which directory in the short runs is closest to short_Tf
+    short_temps = open('short_temps','r').read().splitlines()
+    tf = float(Tf)
+    a = np.zeros(len(short_temps))
+    for i in range(len(short_temps)):
+        a[i] = abs(float(short_temps[i].split('_0')[0])-tf)
+    closest_dir = short_temps[np.where(np.min(a)==a)[0]]
+    
+    #Select a number of frames as uncorrelated between themselves as possible
+    os.chdir(closest_dir)
+    for line in open("nvt.mdp" ,"r"):
+            if line[:6] == "nsteps":
+                nsteps = int(line.split()[2])
+            if line[:2] == "dt":
+                dt = float(line.split()[2])
+    time_run = int(nsteps*dt)
+    first_time_step = int(0.7*time_run)
+    n_repeats = 6
+    time_increment = int(0.3*float(time_run)/float(n_repeats))
+    
+    for i in range(1,n_repeats+1):
+        frame_taken = int(first_time_step + (i-1)*time_increment)
+        trjconv_string = 'trjconv_sbm -b {0} -e {1} -s topol_4.5.tpr -o frame_{2}.gro -dump {0}\n'.format(frame_taken,(frame_taken+1),i)
+        p = os.popen(trjconv_string,'w')
+        p.write('0')
+        p.close()
+        
+    
+    os.chdir('..')
+    time.sleep(5)
+    
+    
     T_string = ''
-    for n in range(24):
-        T = "%.2f" % (float(Tf)+1.*(float(n)/8-1.))
-        for simnum in range(1,2):
+    for n in range(12):
+        T = "%.2f" % (float(Tf)+1.*(float(n)/4-1.))
+        for simnum in range(1,n_repeats+1): #Doing 6 repeats
             simpath = T+"_"+str(simnum)
             # Only start the simulation if directory doesn't exist.
             if (not os.path.exists(simpath)):
                 T_string += "%s\n" % simpath
                 os.mkdir(simpath)
                 os.chdir(simpath)
+                shutil.copy('../'+closest_dir+'/frame_'+str(simnum)+'.gro','smog.gro')
                 print "    Running temperature ", simpath
                 run_constant_temp(model,T,name,nsteps=nsteps,walltime=walltime,queue=queue)
                 os.chdir("..")
@@ -412,7 +449,7 @@ def run_equilibrium_simulations(model,fitopts,iteration):
 def determine_equil_walltime(model,fitopts):
     """ Estimate an efficient walltime."""
     N = model.n_residues
-    nsteps = "200000000"
+    nsteps = "100000000" #Changed from 200000000
     if "queue" in fitopts:
         queue = fitopts["queue"]
     else:    

@@ -29,7 +29,7 @@ def crunch_Q(name,contact_type,walltime="00:03:00",ppn="1",queue="serial"):
     contact_slurm +="echo 'I ran on:'\n"
     contact_slurm +="cat $SLURM_JOB_NODELIST\n"
      
-    contact_slurm +='g_kuh_sbm -s smog.gro -f traj.xtc -n smog_long.ndx -o Q -noshortcut -abscut -cut 0.1\n'
+    contact_slurm +='g_kuh_sbm -s smog.gro -f traj.xtc -n smog_long.ndx -o Q -noshortcut -noabscut -cut 0.3\n' #Changed to 0.3 FY 24-NOV-2015
     
     contact_slurm +='mv Q.out Q.dat\n'
     open("contacts.slurm","w").write(contact_slurm)
