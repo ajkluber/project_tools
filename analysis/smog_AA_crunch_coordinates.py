@@ -16,7 +16,7 @@ def crunch_Q(name,contact_type,walltime="00:03:00",ppn="1",queue="serial"):
     
     torque = determine_use_torque()
 
-    if torque = True:
+    if torque == True:
 
         """ Submit PBS job to calculate sets of residue-residue contacts.                                                                          
         
@@ -78,7 +78,7 @@ def crunch_all(name,contact_type,walltime="00:03:00",ppn="1",n_tables=0,queue="s
     
     torque = determine_use_torque()
 
-    if torque = True:
+    if torque == True:
 
         """ Submit PBS job to calculate observables                                                                                               
         Calculates rmsd, radius gyration, dihedrals, and potential energy with                                                                    
