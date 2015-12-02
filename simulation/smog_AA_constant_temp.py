@@ -69,7 +69,7 @@ def check_completion(model,fitopts,iteration,long=False):
             # Restart run
             if determine_use_torque():
                 if os.path.exists("rst.pbs"):
-                    sb.call("qub rst.pbs",shell=True)
+                    sb.call("qsub rst.pbs",shell=True)
                     print "  Restarting: %s " % tdir
             else:
                 if os.path.exists("rst.slurm"):
