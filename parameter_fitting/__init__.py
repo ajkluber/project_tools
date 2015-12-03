@@ -60,7 +60,7 @@ def prepare_newtons_method(model,fitopts):
     logger = logging.getLogger("parameter_fitting")
 
     available_methods = ["ddG_MC2004","FRET","RMSF","contact_Qi", "tmatrix","ddG_smog_MC2004"]
-    modules = {"ddG_MC2004":ddG_MC2004,"FRET":FRET,"RMSF":RMSF,"contact_Qi":contact_Qi,"tmatrix":Transition_Matrix, "ddG_smog_MC2004":smog_ddG_MC2004}
+    modules = {"ddG_MC2004":ddG_MC2004,"FRET":FRET,"RMSF":RMSF,"contact_Qi":contact_Qi,"tmatrix":Transition_Matrix, "ddG_smog_MC2004":ddG_smog_MC2004}
 
     if method not in available_methods:
         raise ValueError("Method %s not in available methods %s" % (method, available_methods.__repr__()) )
