@@ -50,7 +50,8 @@ def new_project(args):
             generate_files(sub)
             os.mkdir(sub)
             for path in glob.iglob('smog_*'):                                                      
-                shutil.move(path, sub)   
+                shutil.move(path, sub)
+            shutil.move('long_residue_contacts.dat',sub)
             shutil.copy('smog.gro',sub)
             shutil.copy('smog.ndx',sub)
             shutil.copy('smog.contacts',sub)
@@ -61,6 +62,7 @@ def new_project(args):
             for path in glob.iglob('smog*'):
                 shutil.move(path,smog_dir)
             shutil.move('c_beta_list.dat',smog_dir)
+            shutil.move('long_residue_contacts.dat',smog_dir)
             os.mkdir('mutants')
             os.chdir('..')
             shutil.copy(sub+'.pdb',sub+'/mutants/wt.pdb')

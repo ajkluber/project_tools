@@ -21,14 +21,14 @@ import numpy as np
 from mutatepdbs import get_core_mutations, get_scanning_mutations, get_exp_ddG
 
 #import project_tools.parameter_fitting.util.util as util
-from project_tools.parameter_fitting.util.util import *
+from project_tools.parameter_fitting.util.smog_util import *
 
 
 global GAS_CONSTANT_KJ_MOL
 GAS_CONSTANT_KJ_MOL = 0.0083144621
 
 global SKIP_INTERACTIONS
-SKIP_INTERACTIONS = [1,8,9]
+SKIP_INTERACTIONS = []
 
 def get_dHk(model,rij,Fij_conts,Fij):
     """ Get perturbed potential energy """
@@ -55,16 +55,19 @@ def get_dHk_for_state(model,rij,Fij_pairs,Fij,state,n_frames):
         pair = Fij_pairs[i]
         
         # Loop over interactions that a given pair have.
-        flag = (model.long_pairs[:,0] == pair[0]).astype(int)*(model.long_pairs[:,1] == pair[1]).astype(int)
+        flag = (model.long_residue_pairs[:,0] == pair[0]).astype(int)*(model.long_residue_pairs[:,1] == pair[1]).astype(int)
         pair_interaction_indices = np.where(flag == 1)[0]
+        
         for j in range(len(pair_interaction_indices)):
             inter_idx = pair_interaction_indices[j]
             param_idx = model.long_pairwise_param_assignment[inter_idx]
             # If that interaction corresponds to a fitting parameter 
             # and is not an excluded volume interaction (e.g. LJ12)
             # then add the perturbed interaction energy.
+
             if (not (model.long_pairwise_type[inter_idx] in SKIP_INTERACTIONS)) and (param_idx in model.long_fitting_params):
                 dHk_state = dHk_state - Fij[i]*model.long_pair_eps[inter_idx]*model.long_pair_V[inter_idx](rij[state,inter_idx])
+
     return dHk_state
 
 def get_Vp_plus_Vpk_for_state(model,Vp,rij,Fij_pairs,Fij,state):
@@ -74,7 +77,7 @@ def get_Vp_plus_Vpk_for_state(model,Vp,rij,Fij_pairs,Fij,state):
         pair = Fij_pairs[i]
 
         # Loop over interactions that a given pair have.
-        flag = (model.long_pairs[:,0] == pair[0]).astype(int)*(model.long_pairs[:,1] == pair[1]).astype(int)
+        flag = (model.long_residue_pairs[:,0] == pair[0]).astype(int)*(model.long_residue_pairs[:,1] == pair[1]).astype(int)
         pair_interaction_indices = np.where(flag == 1)[0]
         for j in range(len(pair_interaction_indices)):
             inter_idx = pair_interaction_indices[j]
@@ -382,7 +385,7 @@ def get_mutant_fij_scanning(model, mutants, fij=0.5):
             tempfij = []
 
             for j in range(model.n_long_pairs):
-                if (model.long_pairs[j,0] == mut_res_number) and (model.long_pairs[j,1] == (mut_res_number+4)):
+                if (model.long_residue_pairs[j,0] == mut_res_number) and (model.long_residue_pairs[j,1] == (mut_res_number+4)):
                     contact_num = j
                     temppairs.append([mut_res_number-1,mut_res_number+3])  #i, i+4
                     tempconts.append(contact_num)

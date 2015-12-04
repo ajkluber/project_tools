@@ -48,6 +48,7 @@ import RMSF
 import contact_Qi
 import Transition_Matrix
 import ddG_smog_MC2004
+import util
 
 def prepare_newtons_method(model,fitopts):
     """ Prepare the files to do newtons method """
