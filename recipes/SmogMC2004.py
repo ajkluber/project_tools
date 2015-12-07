@@ -52,6 +52,7 @@ def new_project(args):
             for path in glob.iglob('smog_*'):                                                      
                 shutil.move(path, sub)
             shutil.move('long_residue_contacts.dat',sub)
+            shutil.copy('smog.pdb',sub)
             shutil.copy('smog.gro',sub)
             shutil.copy('smog.ndx',sub)
             shutil.copy('smog.contacts',sub)
