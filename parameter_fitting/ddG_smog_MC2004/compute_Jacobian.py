@@ -351,7 +351,6 @@ def get_mutant_fij(model,fitopts,mutants):
         #Fij.append(mean_fij*np.ones(len(fij_temp[indices])))        # DEBUGGING
         Fij_pairs.append(np.array(zip(indices[0]+1,indices[1]+1)))
         
-    raise SystemExit
     return Fij, Fij_pairs
 
 def get_mutant_fij_scanning(model, mutants, fij=0.5):
