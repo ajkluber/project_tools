@@ -51,13 +51,13 @@ def get_Vp_plus_Vpk(model,Vp,rij,Fij_conts,Fij):
 def get_dHk_for_state(model,rij,Fij_pairs,Fij,state,n_frames):
     """ Get perturbed potential energy """
     dHk_state = np.zeros(n_frames,float)
+  
     for i in range(len(Fij_pairs)):
         pair = Fij_pairs[i]
-        
         # Loop over interactions that a given pair have.
         flag = (model.long_residue_pairs[:,0] == pair[0]).astype(int)*(model.long_residue_pairs[:,1] == pair[1]).astype(int)
         pair_interaction_indices = np.where(flag == 1)[0]
-        
+
         for j in range(len(pair_interaction_indices)):
             inter_idx = pair_interaction_indices[j]
             param_idx = model.long_pairwise_param_assignment[inter_idx]
@@ -176,7 +176,7 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,bounds,state
     sumVp_U   = np.mean(Vp_U,axis=0) 
     sumVp_TS  = np.mean(Vp_TS,axis=0) 
     sumVp_N   = np.mean(Vp_N,axis=0) 
-
+    
     # Compute deltaG for each state. Then DeltaDelta G with respect to the
     # first state (assumed to be the unfolded/denatured state).
     # Units of kT.
@@ -197,7 +197,7 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,bounds,state
         dHk_U  = get_dHk_for_state(model,rij,Fij_pairs[k],Fij[k],U,Uframes)
         dHk_TS = get_dHk_for_state(model,rij,Fij_pairs[k],Fij[k],TS,TSframes)
         dHk_N  = get_dHk_for_state(model,rij,Fij_pairs[k],Fij[k],N,Nframes)
-
+        
         # Free energy perturbation formula. Equation (4) in reference (1).
         expdHk_U  = np.mean(np.exp(-beta*dHk_U))
         expdHk_TS = np.mean(np.exp(-beta*dHk_TS))
@@ -205,11 +205,11 @@ def compute_Jacobian_for_directory(model,beta,mutants,Fij,Fij_pairs,bounds,state
         dG_U  = -np.log(expdHk_U)
         dG_TS = -np.log(expdHk_TS)
         dG_N  = -np.log(expdHk_N)
-
+        
         # DeltaDeltaG's. Equations (5) in reference (1).
         ddG_stab = (dG_N - dG_U)
         ddG_dagg = (dG_TS - dG_U)
-
+    
         #print dG_U, dG_TS, dG_N, ddG_stab, ddG_dagg     # DEBUGGING
 
         # Phi-value
@@ -338,17 +338,20 @@ def get_mutant_fij(model,fitopts,mutants):
     """
     Fij_pairs = []
     Fij = []
+
     for mut in mutants:
         if fitopts["nonnative"]:
             fij_temp = np.loadtxt("fij_%s.dat" % mut)
         else:
             fij_temp = model.Qref*np.loadtxt("fij_%s.dat" % mut)
+    
         indices = np.nonzero(fij_temp)
         Fij.append(fij_temp[indices])
         #mean_fij = np.mean(fij_temp[indices])
         #Fij.append(mean_fij*np.ones(len(fij_temp[indices])))        # DEBUGGING
         Fij_pairs.append(np.array(zip(indices[0]+1,indices[1]+1)))
         
+    raise SystemExit
     return Fij, Fij_pairs
 
 def get_mutant_fij_scanning(model, mutants, fij=0.5):

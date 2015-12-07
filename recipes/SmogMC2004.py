@@ -66,7 +66,7 @@ def new_project(args):
             os.mkdir('mutants')
             os.chdir('..')
             shutil.copy(sub+'.pdb',sub+'/mutants/wt.pdb')
-            shutil.copy('long_residue_contacts.dat',sub+'/mutants/contacts')
+            shutil.copy(sub+'/'+smog_dir+'/long_residue_contacts.dat',sub+'/mutants/contacts')
         else:
             raise IOError("Subdirectory: %s already exists!" % sub)
 
