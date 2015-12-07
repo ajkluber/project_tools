@@ -55,7 +55,7 @@ def get_dHk_for_state(model,rij,Fij_pairs,Fij,state,n_frames):
     for i in range(len(Fij_pairs)):
         pair = Fij_pairs[i]
         # Loop over interactions that a given pair have.
-        flag = (model.long_residue_pairs[:,0] == pair[0]).astype(int)*(model.long_residue_pairs[:,1] == pair[1]).astype(int)
+        flag = (model.long_residues_pairs[:,0] == pair[0]).astype(int)*(model.long_residues_pairs[:,1] == pair[1]).astype(int)
         pair_interaction_indices = np.where(flag == 1)[0]
 
         for j in range(len(pair_interaction_indices)):
@@ -77,7 +77,7 @@ def get_Vp_plus_Vpk_for_state(model,Vp,rij,Fij_pairs,Fij,state):
         pair = Fij_pairs[i]
 
         # Loop over interactions that a given pair have.
-        flag = (model.long_residue_pairs[:,0] == pair[0]).astype(int)*(model.long_residue_pairs[:,1] == pair[1]).astype(int)
+        flag = (model.long_residues_pairs[:,0] == pair[0]).astype(int)*(model.long_residues_pairs[:,1] == pair[1]).astype(int)
         pair_interaction_indices = np.where(flag == 1)[0]
         for j in range(len(pair_interaction_indices)):
             inter_idx = pair_interaction_indices[j]
