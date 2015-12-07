@@ -11,10 +11,12 @@ def find_solutions(model,fitopts,position=100,eps_lower_bound=-2.,eps_upper_boun
     Jacobian_err = np.loadtxt("Jacobian_err.dat")
     J = Jacobian
 
+    model.n_long_native_pairs = model.n_long_pairs #Added
     binned_nonnatives = False
-    if J.shape[1] > (model.n_long_native_pairs):
-        binned_nonnatives = True
-        n_bins = J.shape[1]-model.n_long_native_pairs
+#    if J.shape[1] > (model.n_long_native_pairs):
+#        binned_nonnatives = True
+#        n_bins = J.shape[1]-model.n_long_native_pairs
+    n_bins = J.shape[1]-model.n_long_native_pairs
     norm_eps = np.linalg.norm(model.long_model_param_values)
 
     ## Normalize the target step. 
