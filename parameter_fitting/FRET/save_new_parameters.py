@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 def save(model,fitopts,soln_index):
     """ Save new parameters """
     import analysis_scripts.plot_depsilon_native as eplot
-    if not (model.allow_switch == None):
+    if "allow_switch" in fitopts:
         allow_switch = model.allow_switch
     else:
         allow_switch = False
