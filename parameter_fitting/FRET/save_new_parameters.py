@@ -10,7 +10,11 @@ import matplotlib.pyplot as plt
 def save(model,fitopts,soln_index):
     """ Save new parameters """
     import analysis_scripts.plot_depsilon_native as eplot
-    
+    if not (model.allow_switch == None):
+        allow_switch = model.allow_switch
+    else:
+        allow_switch = False
+        
     if "max_step_factor" in fitopts:
         max_step_factor = float(fitopts["max_step_factor"])
     else:
@@ -40,10 +44,13 @@ def save(model,fitopts,soln_index):
     ##calculate the scaling based upon what would actually happen: if it's already at 0.01, and goes more negative, now it effectively shows a deps there of 0, and not some arbitrarily large number
     neweps_effective = eps0 + deps
     #deps_actual = neweps_effective - eps0
-    if prevent_zero:
-        neweps_effective[neweps_effective < 0.01] = 0.01
+    if allow_switch:
+        pass ##do not change the new_eps at all. 
     else:
-        neweps_effective[neweps_effective < 0.00] = 0.00
+        if prevent_zero:
+            neweps_effective[neweps_effective < 0.01] = 0.01
+        else:
+            neweps_effective[neweps_effective < 0.00] = 0.00
     deps_effective = neweps_effective - eps0
     
     
