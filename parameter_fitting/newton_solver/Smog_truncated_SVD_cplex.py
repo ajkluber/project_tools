@@ -23,9 +23,9 @@ def find_solutions(model,fitopts,position=100,eps_lower_bound=-2.,eps_upper_boun
     iteration = int(fitopts['iteration'])
     
     if iteration ==0:
-        original_eps_file = np.loadtxt(model.long_pairs_file)
+        original_eps_file = np.loadtxt('../../../'+model.long_pairs_file)
     else:
-        original_eps_file = np.loadtxt(model.long_pairs_file + '_0')
+        original_eps_file = np.loadtxt('../../../'+model.long_pairs_file + '_0')
         
     eps_bar_0 = np.average(original_eps_file[:,3])
     eps_lower_bound = -2.*eps_bar_0 

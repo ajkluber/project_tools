@@ -312,7 +312,7 @@ def start_next_Tf_loop_iteration(model,fitopts,iteration):
         Tf_guess = 100
     else:
         prev_iteration = iteration -1
-        Tf_file = sub + '/iteration_{0}/long_Tf'.format(prev_iteration)
+        Tf_file = model.name + '/iteration_{0}/long_Tf'.format(prev_iteration)
         Tf_guess = np.loadtxt(Tf_file)
 
     T_min = Tf_guess - 15
