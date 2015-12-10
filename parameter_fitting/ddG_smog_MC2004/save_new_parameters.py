@@ -54,6 +54,8 @@ def save(model,fitopts,soln_index,nonnative=False):
     open("smog_pairs_long","w").write(model.long_pairs_file_string)
     open("smog_bonds_rep.top","w").write(model.long_bonds_rep_string)
     shutil.move('../../smog_files/smog_pairs_long','../../smog_files/smog_pairs_long_{0}'.format(int(fitopts['iteration'])))
+    shutil.move('../../smog_files/smog_pairs_l.top','../../smog_files/smog_pairs_l_top_{0}'.format(int(fitopts['iteration'])))
+    shutil.move('../../smog_files/smog_bonds_rep.top','../../smog_files/smog_bonds_rep_top_{0}'.format(int(fitopts['iteration'])))
     shutil.copy('smog_pairs_l.top','../../smog_files/smog_pairs_l.top')
     shutil.copy('smog_pairs_long','../../smog_files/smog_pairs_long')
     shutil.copy('smog_bonds_rep.top','../../smog_files/smog_bonds_rep.top')
