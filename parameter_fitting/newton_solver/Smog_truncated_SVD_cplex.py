@@ -18,6 +18,19 @@ def find_solutions(model,fitopts,position=100,eps_lower_bound=-2.,eps_upper_boun
 #        n_bins = J.shape[1]-model.n_long_native_pairs
     n_bins = J.shape[1]-model.n_long_native_pairs
     norm_eps = np.linalg.norm(model.long_model_param_values)
+    
+    # Set new boundaries for new epsilon values:
+    iteration = int(fitopts['iteration'])
+    
+    if iteration ==0:
+        original_eps_file = np.loadtxt(model.long_pairs_file)
+    else:
+        original_eps_file = np.loadtxt(model.long_pairs_file + '_0')
+        
+    eps_bar_0 = np.average(original_eps_file[:,3])
+    eps_lower_bound = -2.*eps_bar_0 
+    eps_upper_bound = 3.*eps_bar_0
+    EGap_lower_bound = -1.*eps_bar_0
 
     ## Normalize the target step. 
     df = target_feature - sim_feature
