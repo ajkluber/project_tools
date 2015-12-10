@@ -301,19 +301,26 @@ def start_next_Tf_loop_iteration(model,fitopts,iteration):
         We made a calibration curve with the following points.
     """
 
+    cwd = os.getcwd()
+    sub = "%s/iteration_%d" % (model.name,iteration)
+    iteration = int(fitopts["iteration"])
     # Estimate folding temperature
     #E = -model.native_stability
     #N = float(model.n_residues)
     #Tf_guess = (36.081061*E/N) + 56.218196 # calibration for LJ1210 contacts circa June 2014
-    Tf_guess = 100
+    if iteration==0:
+        Tf_guess = 100
+    else:
+        prev_iteration = iteration -1
+        Tf_file = sub + '/iteration_{0}/long_Tf'.format(prev_iteration)
+        Tf_guess = np.loadtxt(Tf_file)
+
     T_min = Tf_guess - 15
     T_max = Tf_guess + 15
     T_min = int(round(T_min))
     T_max = int(round(T_max))
     deltaT = 1
 
-    cwd = os.getcwd()
-    sub = "%s/iteration_%d" % (model.name,iteration)
     if os.path.exists(sub):
         print "ERROR!"
         print "  The next iteration directory exists. "
