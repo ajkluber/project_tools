@@ -5,6 +5,7 @@
 
 import numpy as np
 import os
+import shutil
 
 def save(model,fitopts,soln_index,nonnative=False):
     ''' Save new parameters '''
@@ -52,7 +53,11 @@ def save(model,fitopts,soln_index,nonnative=False):
     open("smog_pairs_l.top","w").write(model.long_pairs_file_string)
     open("smog_pairs_long","w").write(model.long_pairs_file_string)
     open("smog_bonds_rep.top","w").write(model.long_bonds_rep_string)
-    model.long_pairs_file_location = "%s/smog_pairs_long" % relpath
+    shutil.move('../../smog_files/smog_pairs_long','../../smog_files/smog_pairs_long_iteration_{0}'.format(int(fitopts['iteration'])))
+    shutil.copy('smog_pairs_l.top','../../smog_files/smog_pairs_l.top')
+    shutil.copy('smog_pairs_long','../../smog_files/smog_pairs_long')
+    shutil.copy('smog_bonds_rep.top','../../smog_files/smog_bonds_rep.top')
+#    model.long_pairs_file_location = "%s/smog_pairs_long" % relpath
 
 def update_model_param_values_nonnative(model,new_model_param_values):
     """ If parameter changed sign, change the pairwise interaction type """

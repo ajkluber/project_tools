@@ -126,7 +126,8 @@ def get_core_mutation_ddG():
     return ddG_N_D,ddG_N_D_err,ddG_TS_D,ddG_TS_D_err
 
 def get_exp_ddG():
-    """ Return both surface and core ddG_exp that are useable """
+#    """ Return both surface and core ddG_exp that are useable """
+    """ Return core ddG_exp that are useable """ 
     print "  Getting experimental ddG"
     if os.path.exists("core.ddG"):
         data = np.loadtxt("core.ddG",skiprows=1,dtype=str)
@@ -141,7 +142,7 @@ def get_exp_ddG():
         useable = []
         for i in range(mutation_data.shape[0]):
             #print "%s %s%s%s" % (mutation_data[i,0],mutation_data[i,2],mutation_data[i,1],mutation_data[i,3])
-            if (mutation_data[i,8] == "True") and (mutation_data[i,11] == "0"):
+            if ((mutation_data[i,8] == "True") and (mutation_data[i,11] == "0")) and mutation_data[i,0]=="core":
                 useable.append(True)
             else:
                 useable.append(False)
