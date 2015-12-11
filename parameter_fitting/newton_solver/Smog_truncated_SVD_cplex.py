@@ -1,5 +1,6 @@
 import numpy as np
 import save_and_plot
+import os
 
 def find_solutions(model,fitopts,position=100,eps_lower_bound=-2.,eps_upper_bound=3.,eps_lower_bound_non_native=-2.,eps_upper_bound_non_native=2.,EGap_lower_bound=-1.,frustration_fraction=0.):
     
@@ -31,7 +32,7 @@ def find_solutions(model,fitopts,position=100,eps_lower_bound=-2.,eps_upper_boun
     eps_lower_bound = -2.*eps_bar_0 
     eps_upper_bound = 3.*eps_bar_0
     EGap_lower_bound = -1.*eps_bar_0
-
+    print eps_lower_bound, eps_upper_bound, EGap_lower_bound
     ## Normalize the target step. 
     df = target_feature - sim_feature
 

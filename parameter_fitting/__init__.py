@@ -133,7 +133,7 @@ def solve_newtons_method(model,fitopts):
     else:
         if fitopts["solver"] == "Smog_TSVD_Cplex":
             solver.find_solutions(model,fitopts)
-        if fitopts["solver"]  == "TSVD":
+        elif fitopts["solver"]  == "TSVD":
             solver.find_solutions(model, chosen_cutoffs=fitopts["cutoffs"], simplify=fitopts["simplify_lambdas"])
         else:
             solver.find_solutions(model,fitopts)
