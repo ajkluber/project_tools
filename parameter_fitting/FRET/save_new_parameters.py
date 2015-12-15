@@ -64,10 +64,15 @@ def save(model,fitopts,soln_index):
         fitit = max_step_factor/max_step
     
     neweps = eps0 + deps
-    if prevent_zero:
-        neweps[neweps < 0.01] = 0.01
+    
+    if allow_switch:
+        pass ##do not change the new_eps at all. 
     else:
-        neweps[neweps < 0.00] = 0.00
+        if prevent_zero:
+            neweps[neweps < 0.01] = 0.01
+        else:
+            neweps[neweps < 0.00] = 0.00
+    
         
     model.update_model_param_values(neweps)
     
