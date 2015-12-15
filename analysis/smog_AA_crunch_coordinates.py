@@ -49,6 +49,7 @@ def crunch_Q(name,contact_type,walltime="00:03:00",ppn="1",queue="serial"):
         
         Calculates contacts with structure-based models gromacs function g_kuh_sbm 
         """
+        queue="commons"
         
         contact_slurm = "#!/bin/bash\n"
         contact_slurm +="#SBATCH --job-name=Q_"+name+"\n"
@@ -105,6 +106,7 @@ def crunch_all(name,contact_type,walltime="00:03:00",ppn="1",n_tables=0,queue="s
         Calculates rmsd, radius gyration, dihedrals, and potential energy with 
         Gromacs utilities.
         """
+        queue = "commons"
         analysis_slurm = '#!/bin/bash\n'
         analysis_slurm +='#SBATCH --job-name=crnch_%s\n' % name
         analysis_slurm +='#SBATCH --partition=%s\n' % queue
