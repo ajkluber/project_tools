@@ -148,6 +148,12 @@ def get_exp_ddG():
                 useable.append(False)
         useable = np.array(useable)
         
+        if os.path.isfile('sim_target_ratio.dat'):
+            ratio = np.loadtxt('sim_target_ratio.dat')
+        else:
+            ratio = 1.
+
+        
         ddG_N_D = mutation_data[(useable == True),4].astype(float)
         ddG_N_D_err = mutation_data[(useable == True),5].astype(float)
         ddG_TS_D = mutation_data[(useable == True),6].astype(float) 
@@ -156,6 +162,10 @@ def get_exp_ddG():
     ddGexp = np.concatenate((ddG_TS_D,ddG_N_D),axis=0)
     ddGexp_err = np.concatenate((ddG_TS_D_err,ddG_N_D_err),axis=0) 
     
+    ddGexp = ratio*ddGexp
+    ddGexp_err = ratio*ddGexp_err
+
+    print 'Using ratio = '+str(ratio)
     return ddGexp, ddGexp_err
 
 def get_sim_ddG(mutants,coord):
