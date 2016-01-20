@@ -641,7 +641,8 @@ def get_pbs_string(jobname,queue,ppn,walltime,sbm=True):
     pbs_string +="#PBS -q %s \n" % queue
     pbs_string +="#PBS -l nodes=1:ppn=%s \n" % ppn
     pbs_string +="#PBS -l walltime=%s \n" % walltime
-    pbs_string +="#PBS -V \n\n"
+    pbs_string +="#PBS -V \n"
+    pbs_string +="#PBS -m n\n\n"
     pbs_string +="cd $PBS_O_WORKDIR\n"
     pbs_string +="echo 'I ran on:'\n"
     pbs_string +="cat $PBS_NODEFILE\n"
@@ -658,7 +659,8 @@ def get_rst_pbs_string(jobname,queue,ppn,walltime,sbm=True):
     rst_string +="#PBS -q %s \n" % queue
     rst_string +="#PBS -l nodes=1:ppn=%s \n" % ppn
     rst_string +="#PBS -l walltime=%s \n" % walltime
-    rst_string +="#PBS -V \n\n"
+    rst_string +="#PBS -V \n"
+    rst_string +="#PBS -m n\n\n"
     rst_string +="cd $PBS_O_WORKDIR\n"
     rst_string +="echo 'I ran on:'\n"
     rst_string +="cat $PBS_NODEFILE\n"
