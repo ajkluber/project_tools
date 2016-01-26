@@ -456,7 +456,7 @@ def run_equilibrium_simulations(model,fitopts,iteration):
 def determine_equil_walltime(model,fitopts):
     """ Estimate an efficient walltime."""
     N = model.n_residues
-    nsteps = "300000000" #Changed from 200000000
+    nsteps = "125000000" #Changed from 200000000
     if "queue" in fitopts:
         queue = fitopts["queue"]
     else:    
