@@ -13,51 +13,56 @@ import numpy as np
 import os 
 
 def crunch_Q(name,contact_type,walltime="00:01:00",ppn="1",queue="serial"):
-    """ Submit PBS job to calculate sets of residue-residue contacts.
-
-    Calculates contacts with structure-based models gromacs function g_kuh_sbm 
+    """ Submit SLURM job to calculate sets of residue-residue contacts.                                                                
+                                                                                                                                          
+    Calculates contacts with structure-based models gromacs function g_kuh_sbm                                                      
     """
+    queue="commons"
+    
+    contact_slurm = "#!/bin/bash\n"
+    contact_slurm +="#SBATCH --job-name=Q_"+name+"\n"
+    contact_slurm +="#SBATCH --partition=%s\n" % queue
+    contact_slurm +="#SBATCH --nodes=1\n"
+    contact_slurm +="#SBATCH --ntasks-per-node=%s\n" % ppn
+    contact_slurm +="#SBATCH --time=%s\n" % walltime
+    contact_slurm +="#SBATCH --export=ALL \n\n"
+    contact_slurm +="cd $SLURM_SUBMIT_DIR\n"
+    contact_slurm +="echo 'I ran on:'\n"
+    contact_slurm +="cat $SLURM_JOB_NODELIST\n"
 
-    contact_pbs = "#!/bin/bash\n"
-    contact_pbs +="#PBS -N Q_"+name+"\n"
-    contact_pbs +="#PBS -q %s\n" % queue
-    contact_pbs +="#PBS -l nodes=1:ppn=%s\n" % ppn
-    contact_pbs +="#PBS -l walltime=%s\n" % walltime
-    contact_pbs +="#PBS -j oe\n"
-    contact_pbs +="#PBS -V\n\n"
-    contact_pbs +="cd $PBS_O_WORKDIR\n"
     if contact_type == "Gaussian":
-        #contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -noshortcut -abscut -cut 0.1 -qiformat list \n'
-        contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n native_contacts.ndx -o Q -noshortcut -abscut -cut 0.1\n'
+        #contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -noshortcut -abscut -cut 0.1 -qiformat list \n'         
+        contact_slurm +='g_kuh_sbm -s conf.gro -f traj.xtc -n native_contacts.ndx -o Q -noshortcut -abscut -cut 0.1\n'
     else:
-        #contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -noshortcut -noabscut -cut 0.2 -qiformat list \n'
-        contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n native_contacts.ndx -o Q -noshortcut -noabscut -cut 0.2\n'
-    #contact_pbs +='mv qimap.out qimap.dat\n'
-    contact_pbs +='mv Q.out Q.dat\n'
-    open("contacts.pbs","w").write(contact_pbs)
-    qsub = "qsub contacts.pbs"
-    sb.call(qsub.split(),stdout=open("contacts.out","w"),stderr=open("contacts.err","w"))
+        #contact_pbs +='g_kuh_sbm -s conf.gro -f traj.xtc -n contacts.ndx -noshortcut -noabscut -cut 0.2 -qiformat list \n'               
+        contact_slurm +='g_kuh_sbm -s conf.gro -f traj.xtc -n native_contacts.ndx -o Q -noshortcut -noabscut -cut 0.2\n'
+ 
+    contact_slurm +='mv Q.out Q.dat\n'
+    open("contacts.slurm","w").write(contact_slurm)
+    sbatch = "sbatch contacts.slurm"
+    sb.call(sbatch.split(),stdout=open("contacts.out","w"),stderr=open("contacts.err","w"))
     
 
 def crunch_all(name,contact_type,walltime="00:01:00",ppn="1",n_tables=0):
-    """ Submit PBS job to calculate observables
-
-    Calculates rmsd, radius gyration, dihedrals, and potential energy with 
-    Gromacs utilities.
+    """ Submit SLURM job to calculate observables                                                                             
+                                                                                                                                  
+    Calculates rmsd, radius gyration, dihedrals, and potential energy with                                                    
+    Gromacs utilities.                                                                                                        
     """
-    analysis_pbs = '#!/bin/bash\n'
-    analysis_pbs +='#PBS -N crnch_%s\n' % name
-    analysis_pbs +='#PBS -q serial\n'
-    analysis_pbs +='#PBS -l nodes=1:ppn=%s\n' % ppn
-    analysis_pbs +='#PBS -l walltime=%s\n' % walltime
-    analysis_pbs +='#PBS -j oe\n'
-    analysis_pbs +='#PBS -V\n\n'
-    analysis_pbs +='cd $PBS_O_WORKDIR\n'
-    analysis_pbs +='g_energy -f ener.edr -o energyterms -xvg none << EOF\nBond\nAngle\nCoulomb-(SR)\nProper-Dih.\nPotential\nEOF'
+    queue = "commons"
+    analysis_slurm = '#!/bin/bash\n'
+    analysis_slurm +='#SBATCH --job-name=crnch_%s\n' % name
+    analysis_slurm +='#SBATCH --partition=%s\n' % queue
+    analysis_slurm +='#SBATCH --nodes=1\n'
+    analysis_slurm +='#SBATCH --ntasks-per-node=%s\n' % ppn
+    analysis_slurm +='#SBATCH --time=%s\n' % walltime
+    analysis_slurm +='#SBATCH --export=ALL \n\n'
+    analysis_slurm +='cd $SLURM_SUBMIT_DIR\n'
+    analysis_slurm +='g_energy_sbm -f ener.edr -o energyterms -xvg none << EOF\nBond\nAngle\nCoulomb-(SR)\nProper-Dih.\nPotential\nEOF'
 
-    open("analysis.pbs","w").write(analysis_pbs)
-    qsub = "qsub analysis.pbs"
-    sb.call(qsub.split(),stdout=open("energyterms.out","w"),stderr=open("energyterms.err","w"))
+    open("analysis.slurm","w").write(analysis_slurm)
+    sbatch = "sbatch analysis.slurm"
+    sb.call(sbatch.split(),stdout=open("energyterms.out","w"),stderr=open("energyterms.err","w"))
 
 def reorganize_qimap():
     """ Parse a couple Q coordinates from qimap.dat 
