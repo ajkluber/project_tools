@@ -371,6 +371,7 @@ def manually_add_equilibrium_runs(model,fitopts,iteration,temps):
                 os.mkdir(simpath)
                 os.chdir(simpath)
                 shutil.copy('../'+closest_dir+'/frame_'+str(simnum)+'.gro','smog.gro')
+                shutil.copy('../'+closest_dir+'/frame_'+str(simnum)+'.gro','frame.gro')
                 print "    Running temperature ", simpath
                 run_constant_temp(model,T,name,nsteps=nsteps,walltime=walltime,queue=queue)
                 os.chdir("..")
