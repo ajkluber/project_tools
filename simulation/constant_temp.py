@@ -66,14 +66,9 @@ def check_completion(model,fitopts,iteration,long=False):
         if finish_line not in open("md.log","r").read():
             print "    Check %s simulation did not finish." % tdir
             # Restart run
-            if determine_use_torque():
-                if os.path.exists("rst.pbs"):
-                    sb.call("qsub rst.pbs",shell=True)
-                    print "  Restarting: %s " % tdir
-            else:
-                if os.path.exists("rst.slurm"):
-                    sb.call("sbatch rst.slurm",shell=True)
-                    print "  Restarting: %s " % tdir
+            if os.path.exists("rst.slurm"):
+                sb.call("sbatch rst.slurm",shell=True)
+                print "  Restarting: %s " % tdir
             error = 1
         os.chdir("..")
 
@@ -232,13 +227,9 @@ def extend_temperature(T,factor,using_sbm_gmx=None):
     prep_step1 = 'grompp_sbm -n index.ndx -f nvt.mdp -c conf.gro -p topol.top -o topol_4.5.tpr '
     sb.call(prep_step1.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
 
-    # Submit rst.pbs
-    if determine_use_torque():
-        qsub = "qsub rst.pbs"
-        sb.call(qsub.split(),stdout=open("rst.out","w"),stderr=open("rst.err","w"))
-    else:
-        qsub = "sbatch rst.slurm"
-        sb.call(qsub.split(),stdout=open("rst.out","w"),stderr=open("rst.err","w"))
+    # Submit rst.slurm
+    qsub = "sbatch rst.slurm"
+    sb.call(qsub.split(),stdout=open("rst.out","w"),stderr=open("rst.err","w"))
 
 def folding_temperature_loop(model,fitopts,iteration,new=False):
     """ The "folding temperature loop" is one of the several large-scale 
@@ -535,10 +526,7 @@ def run_constant_temp(model,T,name,nsteps="100000000",walltime="23:00:00",queue=
     if model.dry_run == True:
         print "    Dryrun: Successfully saved simulation files for ", T
     else:
-        if torque_use:
-            qsub = "qsub run.pbs"
-        else:
-            qsub = "sbatch run.slurm"
+        qsub = "sbatch run.slurm"
         sb.call(qsub.split(),stdout=open("sim.out","w"),stderr=open("sim.err","w"))
             
 def prep_run(jobname,walltime="23:00:00",queue="serial",ppn="1",sbm=False, torque=False):
@@ -551,11 +539,11 @@ def prep_run(jobname,walltime="23:00:00",queue="serial",ppn="1",sbm=False, torqu
     sb.call(prep_step2.split(),stdout=open("prep.out","w"),stderr=open("prep.err","w"))
     
     if torque:
-        pbs_string = get_pbs_string(jobname,queue,ppn,walltime,sbm=sbm)
-        open("run.pbs","w").write(pbs_string)
+        slurm_string = get_slurm_string(jobname,queue,ppn,walltime,sbm=sbm)
+        open("run.slurm","w").write(slurm_string)
 
-        rst_string = get_rst_pbs_string(jobname,queue,ppn,walltime,sbm=sbm)
-        open("rst.pbs","w").write(rst_string)
+        slurm_rst_string = get_rst_slurm_string(jobname,queue,ppn,walltime,sbm=sbm)
+        open("rst.slurm","w").write(slurm_rst_string)
     else:
         slurm_string = get_slurm_string(jobname,queue,ppn,walltime,sbm=sbm)
         open("run.slurm","w").write(slurm_string)
@@ -639,7 +627,7 @@ def get_rst_pbs_string(jobname,queue,ppn,walltime,sbm=False):
 def determine_use_torque():
     import socket
     host = socket.gethostname()
-    if host[:4] == "biou":
+    if host[:4] == "davinci":
         torque_use = True
     else:
         torque_use = False
