@@ -357,7 +357,7 @@ def manually_add_equilibrium_runs(model,fitopts,iteration,temps):
 
     sub = "%s/iteration_%d" % (name,iteration)
     os.chdir(sub)
-    Tf = open("%s/short_Tf" % sub ,"r").read().split()[0]
+    Tf = open("short_Tf","r").read().split()[0]
 
  #Find which directory in the short runs is closest to short_Tf                                                                
     short_temps = open('short_temps','r').read().splitlines()
