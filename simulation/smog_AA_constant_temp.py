@@ -357,6 +357,15 @@ def manually_add_equilibrium_runs(model,fitopts,iteration,temps):
 
     sub = "%s/iteration_%d" % (name,iteration)
     os.chdir(sub)
+
+ #Find which directory in the short runs is closest to short_Tf                                                                
+    short_temps = open('short_temps','r').read().splitlines()
+    tf = float(Tf)
+    a = np.zeros(len(short_temps))
+    for i in range(len(short_temps)):
+        a[i] = abs(float(short_temps[i].split('_0')[0])-tf)
+    closest_dir = short_temps[np.where(np.min(a)==a)[0]]
+
     # Run for longer if the protein is really big.
     walltime, queue, ppn, nsteps = determine_equil_walltime(model,fitopts)
     n_repeats = 6
