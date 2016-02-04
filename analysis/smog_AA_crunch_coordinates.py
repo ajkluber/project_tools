@@ -124,10 +124,10 @@ def crunch_all(name,contact_type,walltime="00:03:00",ppn="1",n_tables=0,queue="s
 def determine_use_torque():
     import socket
     host = socket.gethostname()
-    if host[:4] == "biou":
-        torque_use = True
-    else:
-        torque_use = False
+#    if host[:4] == "biou":
+#        torque_use = True
+#    else:
+    torque_use = False
 
     return torque_use
 
