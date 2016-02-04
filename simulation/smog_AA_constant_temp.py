@@ -684,10 +684,10 @@ def get_rst_pbs_string(jobname,queue,ppn,walltime,sbm=True):
 def determine_use_torque():
     import socket
     host = socket.gethostname()
-    if host[:4] == "biou":
-        torque_use = True
-    else:
-        torque_use = False
+#    if host[:4] == "biou":
+#        torque_use = True
+#    else:
+    torque_use = False
     
     return torque_use
 
