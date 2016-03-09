@@ -198,7 +198,7 @@ def manually_extend_temperatures(model,fitopts,iteration,method,temps,factor):
             os.chdir(cwd)
             raise SystemExit
         else:
-            extend_temperature(T,factor,using_sbm_gmx=model.using_sbm_gmx)
+            extend_temperature(fitopts,T,factor,using_sbm_gmx=model.using_sbm_gmx)
             if os.path.exists("Q.dat"):
                 os.remove("Q.dat")
             if os.path.exists("energyterms.xvg"):
@@ -214,7 +214,7 @@ def manually_extend_temperatures(model,fitopts,iteration,method,temps,factor):
 
     os.chdir(cwd)
 
-def extend_temperature(T,factor,using_sbm_gmx=None):
+def extend_temperature(fitopts,T,factor,using_sbm_gmx=None):
     """ Extend individual temperature run by factor """
     # Calculate new nsteps = factor*old_nsteps
     for line in open("nvt.mdp","r").readlines():
@@ -224,7 +224,7 @@ def extend_temperature(T,factor,using_sbm_gmx=None):
             break
     
     # Write new .mdp with more steps and recreate .tpr
-    mdpfile = mdp.constant_temperature(T,new_nsteps)
+    mdpfile = mdp.constant_temperature(fitopts,T,new_nsteps)
     open("nvt.mdp","w").write(mdpfile)
 
     print "  Extending temp ", T, " to nsteps ",new_nsteps
@@ -543,7 +543,7 @@ def run_temperature_array(model,fitopts,T_min,T_max,deltaT):
             os.chdir(simpath)
             if not model.dry_run:
                 print "  Running temperature ", T
-            run_constant_temp(model,T,name,nsteps=nsteps,walltime=walltime,queue=queue,ppn=ppn)
+            run_constant_temp(model,fitopts,T,name,nsteps=nsteps,walltime=walltime,queue=queue,ppn=ppn)
             os.chdir("..")
         else:
             continue
@@ -551,7 +551,7 @@ def run_temperature_array(model,fitopts,T_min,T_max,deltaT):
     open("short_temps_last","w").write(T_string)
     open("short_Ti_Tf_dT.txt","w").write("%d %d %d" % (T_min, T_max, deltaT))
 
-def run_constant_temp(model,T,name,nsteps="100000000",walltime="23:00:00",queue="serial",ppn="1"):
+def run_constant_temp(model,fitopts,T,name,nsteps="100000000",walltime="23:00:00",queue="serial",ppn="1"):
     """ Start a constant temperature simulation with Gromacs. 
 
     Description:
@@ -561,11 +561,15 @@ def run_constant_temp(model,T,name,nsteps="100000000",walltime="23:00:00",queue=
 
     """
     # Loading and writing grompp.
-    mdpfile = mdp.constant_temperature(str(T),nsteps)
+    mdpfile = mdp.constant_temperature(fitopts,str(T),nsteps)
     open("nvt.mdp","w").write(mdpfile)
 
     # Write all needed simulation files.
     model.save_simulation_files()
+    if fitopts["ionic_strength"]:
+        ionic_strength = float(fitopts["ionic_strength"])
+        print 'Ionic strength = {0}'.format(ionic_strength)
+        model._get_debye_hueckel_table(T,ionic_strength)
     
     #determine if this is a system that still uses torque, mainly biou. This is temporary and will be deprecated soon - JC July-2015
     torque_use = determine_use_torque()

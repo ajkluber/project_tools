@@ -11,7 +11,7 @@ already set (e.g. temperature, timestep, friction constant).
 
 """
 
-def constant_temperature(T,nsteps,nstout="1000"):
+def constant_temperature(fitopts,T,nsteps,nstout="1000"):
     """ Generate grompp.mdp file string. Gromacs 4.5 """
     mdp_string = "; Run control parameters \n"
     mdp_string += "integrator               = sd  \n"
@@ -35,7 +35,10 @@ def constant_temperature(T,nsteps,nstout="1000"):
     mdp_string += "rcoulomb                 = 1.2 \n"
     mdp_string += "rvdw                     = 1.2  \n\n"
     mdp_string += "; options for electrostatics and vdw \n"
-    mdp_string += "coulombtype              = Cut-off \n"
+    if fitopts['ionic_strength']:
+        mdp_string += "coulombtype              = User \n"
+    else:
+        mdp_string += "coulombtype              = Cut-off \n"
 #    mdp_string += "vdw-type                 = User \n"
     mdp_string += "table-extension          = 1.0 \n\n"
     mdp_string += "; options for temp coupling \n"
