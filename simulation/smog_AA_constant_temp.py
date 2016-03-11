@@ -451,7 +451,7 @@ def run_equilibrium_simulations(model,fitopts,iteration):
                 os.chdir(simpath)
                 shutil.copy('../'+closest_dir+'/frame_'+str(simnum)+'.gro','frame.gro')
                 print "    Running temperature ", simpath
-                run_constant_temp(model,T,name,nsteps=nsteps,walltime=walltime,queue=queue)
+                run_constant_temp(model,fitopts,T,name,nsteps=nsteps,walltime=walltime,queue=queue)
                 os.chdir("..")
             else:
                 # Directory exists for this temperature: continue.
