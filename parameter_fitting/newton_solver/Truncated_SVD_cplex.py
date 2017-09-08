@@ -409,8 +409,8 @@ def apply_constraints_with_cplex(model,x_particular,N,eps_lower_bound,eps_upper_
 #            rows.append([ column_names, temp ])
             
 #    print (np.array(rows)).shape
-    ## Set upper and lower bounds on the solution. Arbitrary. Hopefully these 
-    ## don't matter. These are bounds on vector lambda and the (-EGap)
+    ## Set upper and lower bounds on the solution. The solution is not
+    ## too sensitive to these parameters . These are bounds on vector lambda and the (-EGap)
     ## Since (-EGap) should be negative, the upper boundary for this variable is set to 0.
     upper_bounds = list(10000.*np.ones(N.shape[1]))
     upper_bounds.append(float(eps_upper_bound))
